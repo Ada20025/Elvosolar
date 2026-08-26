@@ -224,6 +224,100 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;hei
 </svg>
 <style>@keyframes flowDash{from{stroke-dashoffset:0}to{stroke-dashoffset:-12}}</style>
 </div></div>
+<!-- ═══════════════════════════════════════════ -->
+<!-- AI MODELY 1-5 (časť Smart Meter) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card" style="margin-top:20px;padding:24px;border:1px solid rgba(251,191,36,.15);background:linear-gradient(135deg,rgba(15,23,42,.9),rgba(30,41,59,.6));">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);">
+<div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#fbbf24;">🧠 AI Regulačné modely (OKTE Cena)</div>
+<span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(251,191,36,.15);color:#fbbf24;font-weight:800;letter-spacing:1px;">BETA</span>
+</div>
+<p style="font-size:11px;color:#94a3b8;margin-bottom:16px;line-height:1.5;">AI modely riadia kedy sa striedač zapne/vypne podľa aktuálnej ceny OKTE. Vyberte si model podľa vášho stratégie.</p>
+
+<div style="display:grid;grid-template-columns:1fr;gap:10px;">
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #10b981;" onclick="setAiModel('1')" id="aiModel1">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">🛡️</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 1: Ochrana pred zápornou cenou</div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">ON keď cena > 0€/MWh • OFF keď cena < 0€/MWh</div>
+</div>
+<span style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,.1);color:#10b981;font-weight:700;">AKTÍVNY</span>
+</div></div>
+
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #3b82f6;" onclick="setAiModel('2')" id="aiModel2">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">💰</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 2: Predaj do siete (Arbitráž)</div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">ON keď cena > priemer (predávaš za vysokú cenu)</div>
+</div>
+</div></div>
+
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #8b5cf6;" onclick="setAiModel('3')" id="aiModel3">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">🔋</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 3: Nákup pod priemerom</div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">ON keď cena < priemer • Nabíja z lacnej siete • Vybíja v špičke</div>
+</div>
+</div></div>
+
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #f43f5e;" onclick="setAiModel('4')" id="aiModel4">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">📊</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 4: Kombinovaná arbitráž</div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">Nabíja keď lacno (< priemer) • Vybíja keď drahšie (> priemer)</div>
+</div>
+</div></div>
+
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #fbbf24;" onclick="setAiModel('5')" id="aiModel5">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">🏖️</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 5: Dovolenka <span style="font-size:8px;padding:2px 6px;border-radius:4px;background:rgba(251,191,36,.2);color:#fbbf24;font-weight:800;margin-left:4px;">BETA</span></div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">ZÁKAZ odberu zo siete • Len keď SOC < 15% (záchrana batérie)</div>
+</div>
+</div></div>
+</div>
+
+<div id="aiModelDesc" style="margin-top:12px;padding:12px 16px;border-radius:12px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.12);font-size:11px;color:#fbbf24;line-height:1.6;">
+Vyberte AI model kliknutím na kartu vyššie. Modely 1-5 riadia kedy sa striedač zapne podľa OKTE ceny.
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- RELÉ (BETA) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card" style="margin-top:20px;padding:24px;border:1px solid rgba(168,85,247,.15);background:linear-gradient(135deg,rgba(15,23,42,.9),rgba(30,41,59,.6));">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);">
+<div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#a855f7;">⚡ Relé ovládanie spotrebičov</div>
+<span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(168,85,247,.15);color:#a855f7;font-weight:800;letter-spacing:1px;">BETA</span>
+</div>
+<p style="font-size:11px;color:#94a3b8;margin-bottom:12px;line-height:1.5;">Ovládanie 3. strán spotrebičov (bojler, čerpadlo, klimatizácia) cez Shelly relé alebo GPIO.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+<div class="tele-card" style="text-align:center;border-color:rgba(168,85,247,.2);">
+<div style="font-size:16px;">🔥</div>
+<div style="font-size:10px;font-weight:700;color:#f8fafc;margin-top:4px;">Bojler</div>
+<div style="font-size:9px;color:#64748b;">Shelly 1PM</div>
+<div style="margin-top:8px;font-size:9px;padding:4px 8px;border-radius:6px;background:rgba(100,116,139,.15);color:#94a3b8;">Nepripojený</div>
+</div>
+<div class="tele-card" style="text-align:center;border-color:rgba(168,85,247,.2);">
+<div style="font-size:16px;">💧</div>
+<div style="font-size:10px;font-weight:700;color:#f8fafc;margin-top:4px;">Čerpadlo</div>
+<div style="font-size:9px;color:#64748b;">Shelly 1PM</div>
+<div style="margin-top:8px;font-size:9px;padding:4px 8px;border-radius:6px;background:rgba(100,116,139,.15);color:#94a3b8;">Nepripojený</div>
+</div>
+<div class="tele-card" style="text-align:center;border-color:rgba(168,85,247,.2);">
+<div style="font-size:16px;">❄️</div>
+<div style="font-size:10px;font-weight:700;color:#f8fafc;margin-top:4px;">Klimatizácia</div>
+<div style="font-size:9px;color:#64748b;">Shelly 1PM</div>
+<div style="margin-top:8px;font-size:9px;padding:4px 8px;border-radius:6px;background:rgba(100,116,139,.15);color:#94a3b8;">Nepripojený</div>
+</div>
+</div>
+</div>
+
 <div class="card" style="margin-top:20px;padding:24px;"><div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#f8fafc;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);">📊 Štatistiky spotreby</div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
 <div class="temp-card"><div class="label">Priemer</div><div class="value" style="color:#3b82f6;font-family:'JetBrains Mono',monospace;font-size:14px;" id="meterAvgConsumption">0 W</div></div>
@@ -268,5 +362,7 @@ async function fetchTelemetry(){try{const r=await fetch(basePath+`/api/device/${
 document.addEventListener('DOMContentLoaded',()=>{fetchHolidayParams();fetchTelemetry();fetchMeterData();setInterval(fetchTelemetry,10000);setInterval(fetchMeterData,8000);if('serviceWorker' in navigator){navigator.serviceWorker.register(basePath+'/sw.js').catch(()=>{});}});
 
 async function saveCustomSettings(){try{const cfg={target_consumption_w:parseFloat(document.getElementById('cfgTargetConsumption').value)||0,surplus_action:document.getElementById('cfgSurplusAction').value,zero_action:document.getElementById('cfgZeroAction').value,grid_export_limit_w:parseFloat(document.getElementById('cfgGridExportLimit').value)||0,battery_priority:document.getElementById('cfgBatteryPriority').value};await fetch(basePath+`/api/device/${deviceId}/meter/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});document.getElementById('meterModeDesc').innerText='✅ Nastavenia uložené!';}catch(e){document.getElementById('meterModeDesc').innerText='❌ Chyba: '+e.message;}}
+
+async function setAiModel(id){try{document.querySelectorAll('[id^=aiModel]').forEach(c=>c.style.boxShadow='none');const card=document.getElementById('aiModel'+id);if(card)card.style.boxShadow='0 0 20px rgba(251,191,36,.2)';const labels={1:'🛡️ Ochrana pred zápornou cenou - ON keď cena > 0€, OFF keď < 0€.',2:'💰 Arbitráž - predáva keď je drahšie ako priemer.',3:'🔋 Nákup pod priemerom - lacno nabíja, v špičke vybíja.',4:'📊 Kombinovaná arbitráž - nabíja lacno, predáva drahšie.',5:'🏖️ Dovolenka BETA - zákaz odberu zo siete, len záchrana pri SOC < 15%.'};document.getElementById('aiModelDesc').innerText=labels[id]||'';await fetch(basePath+'/api/device/'+deviceId+'/model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model_id:id})});}catch(e){}}
 </script>
 </body></html>
