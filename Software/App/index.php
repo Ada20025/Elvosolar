@@ -12,7 +12,7 @@ require_once 'config.php';
 // ==========================================
 // --- NASTAVENIE ODOSIELANIA E-MAILOV ---
 // ==========================================
-define('USE_SMTP', true);
+define('USE_SMTP', false); // SMTP blocked by Railway - using mail()
 define('SMTP_HOST', getenv('SMTP_HOST') ?: 'smtp-adamdz.alwaysdata.net');
 define('SMTP_PORT', intval(getenv('SMTP_PORT') ?: '587'));
 define('SMTP_USER', getenv('SMTP_USER') ?: 'adamdz@alwaysdata.net');
@@ -1047,35 +1047,41 @@ elseif ($path === '/debug-smtp' && $method === 'GET') {
     
     $rd = function($s) { $r=''; while(($l=fgets($s,512))!==false) { $r.=$l; if(substr($l,3,1)==' ') break; } return $r; };
     $rd($socket);
-    fwrite($socket, "EHLO elvosolar.sk
+    fwrite($socket, "EHLO elvosolar.sk
+
 ");
     echo "EHLO: " . $rd($socket) . "
 ";
     
     if (strtolower(SMTP_ENCRYPTION) === 'tls') {
-        fwrite($socket, "STARTTLS
+        fwrite($socket, "STARTTLS
+
 ");
         $tls = $rd($socket);
         echo "STARTTLS: $tls
 ";
         if (strpos($tls, '220') !== false) {
             stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-            fwrite($socket, "EHLO elvosolar.sk
+            fwrite($socket, "EHLO elvosolar.sk
+
 ");
             echo "EHLO (TLS): " . $rd($socket) . "
 ";
         }
     }
     
-    fwrite($socket, "AUTH LOGIN
+    fwrite($socket, "AUTH LOGIN
+
 ");
     echo "AUTH: " . $rd($socket) . "
 ";
-    fwrite($socket, base64_encode(SMTP_USER) . "
+    fwrite($socket, base64_encode(SMTP_USER) . "
+
 ");
     echo "USER: " . $rd($socket) . "
 ";
-    fwrite($socket, base64_encode(SMTP_PASS) . "
+    fwrite($socket, base64_encode(SMTP_PASS) . "
+
 ");
     $auth = $rd($socket);
     echo "PASS: $auth
@@ -1086,21 +1092,30 @@ elseif ($path === '/debug-smtp' && $method === 'GET') {
 SMTP AUTH OK - Sending test email...
 ";
         $sender = SMTP_USER;
-        fwrite($socket, "MAIL FROM: <$sender>
+        fwrite($socket, "MAIL FROM: <$sender>
+
 "); $rd($socket);
-        fwrite($socket, "RCPT TO: <$sender>
+        fwrite($socket, "RCPT TO: <$sender>
+
 "); $rd($socket);
-        fwrite($socket, "DATA
+        fwrite($socket, "DATA
+
 "); $rd($socket);
-        $msg = "Subject: =?UTF-8?B?" . base64_encode("ElvoControl SMTP Test") . "?=
+        $msg = "Subject: =?UTF-8?B?" . base64_encode("ElvoControl SMTP Test") . "?=
+
 ";
-        $msg .= "From: $sender
+        $msg .= "From: $sender
+
 ";
-        $msg .= "Content-Type: text/plain; charset=utf-8
-
+        $msg .= "Content-Type: text/plain; charset=utf-8
+
+
+
 ";
-        $msg .= "SMTP funguje z Railway!
-.
+        $msg .= "SMTP funguje z Railway!
+
+.
+
 ";
         fwrite($socket, $msg);
         echo "DATA: " . $rd($socket) . "
@@ -1113,7 +1128,8 @@ SMTP TEST PASSED!
 SMTP AUTH FAILED
 ";
     }
-    fwrite($socket, "QUIT
+    fwrite($socket, "QUIT
+
 ");
     fclose($socket);
 }
