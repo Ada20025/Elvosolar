@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy application files
-COPY . .
+# Copy only the app directory
+COPY Software/App/ .
 
 # Expose port
 EXPOSE 8080
