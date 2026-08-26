@@ -692,7 +692,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     $device_id = $device['id'];
     $new_saved = (float)$device['total_saved_eur'] + ($power_ac * 0.0000001);
     $new_kwh = (float)$device['total_kwh'] + ($power_ac * 0.000001);
-    $timestamp = time();
+    $timestamp = date('Y-m-d H:i:s');
 
     $okte_price = 85.0; 
     $cacheFile = __DIR__ . '/cache_okte_' . date('Y-m-d') . '.json';
