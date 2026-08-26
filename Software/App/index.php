@@ -278,6 +278,29 @@ if (!function_exists('get_user_devices')) {
     }
 }
 
+// Spracovanie statických súborov (manifest, sw, css, js)
+if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico)$#i', $path)) {
+    $static_file = __DIR__ . '/' . ltrim($path, '/');
+    if (file_exists($static_file)) {
+        $mime_types = [
+            'json' => 'application/json',
+            'js' => 'application/javascript',
+            'css' => 'text/css',
+            'svg' => 'image/svg+xml',
+            'ico' => 'image/x-icon',
+            'woff' => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf' => 'font/ttf',
+        ];
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mime = $mime_types[$ext] ?? 'application/octet-stream';
+        header('Content-Type: ' . $mime);
+        header('Cache-Control: public, max-age=3600');
+        readfile($static_file);
+        exit;
+    }
+}
+
 // Spracovanie statických súborov a obrázkov z templates adresára
 if (preg_match('#\.(png|jpg|jpeg|gif)$#i', $path)) {
     $clean_path = ltrim($path, '/');
@@ -780,7 +803,7 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
     $stmt = $pdo->prepare("INSERT INTO password_resets (user_id, code, expires_at) VALUES (?, ?, ?)");
     $stmt->execute([$user['id'], $code, $expires]);
     
-    // Posli email
+    // Posli email (s fallback ak nefunguje mail())
     $subject = "ElvoControl - Obnovenie hesla";
     $title = "Váš overovací kód";
     $html = "<p>Ahoj <strong>" . htmlspecialchars($user['username']) . "</strong>,</p>"
@@ -788,7 +811,13 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
          . "<div style='text-align:center;margin:24px 0;'><span style='font-size:32px;font-weight:900;letter-spacing:8px;color:#3b82f6;font-family:monospace;background:#f1f5f9;padding:16px 32px;border-radius:12px;'>" . $code . "</span></div>"
          . "<p style='color:#64748b;font-size:12px;'>Kód platí 15 minút. Ak ste o obnovenie hesla nepožiadali, tento e-mail ignorujte.</p>";
     
-    send_elvo_email($email, $subject, $title, $html);
+    $email_sent = @send_elvo_email($email, $subject, $title, $html);
+    if (!$email_sent) {
+        // Fallback: zobraz kód priamo na stránke
+        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Email sa nepodarilo odoslať. Váš kód: <strong style="font-size:18px;color:#3b82f6;">' . $code . '</strong> (použite ho nižšie)'];
+    } else {
+        $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Overovací kód odoslaný na ' . $email];
+    }
     
     $_SESSION['reset_email'] = $email;
     $_SESSION['reset_user_id'] = $user['id'];
