@@ -752,6 +752,16 @@ elseif ($path === '/eshop' && $method === 'GET') {
     render_template('eshop.html');
 }
 
+elseif ($path === '/forgot-password') {
+    render_template('forgot-password.html');
+}
+
+elseif ($path === '/setup_database' && $method === 'GET') {
+    // Database setup - spustiť len raz!
+    require __DIR__ . '/setup_database.php';
+    exit;
+}
+
 else {
     http_response_code(404);
     echo "Stránka nebola nájdaná.";
