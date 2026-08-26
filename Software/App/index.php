@@ -610,8 +610,9 @@ elseif (preg_match('#^/api/device/([0-9]+)/meter$#', $path, $matches)) {
         $data = get_json_input();
         $new_mode = strtoupper(trim($data['control_mode'] ?? ''));
         
-        if (!in_array($new_mode, ['UNLIMITED', 'SELF_CONSUMPTION', 'SMART'])) {
-            send_json(['error' => 'Neplatný režim. Povolené: UNLIMITED, SELF_CONSUMPTION, SMART'], 400);
+        $allowed = ['UNLIMITED', 'SELF_CONSUMPTION', 'SMART', 'ZERO', 'PLUS', 'CUSTOM'];
+        if (!in_array($new_mode, $allowed)) {
+            send_json(['error' => 'Neplatný režim. Povolené: ' . implode(', ', $allowed)], 400);
         }
         
         $ai_state = get_device_ai_state_php($device_id);
@@ -635,7 +636,8 @@ elseif (preg_match('#^/api/device/([0-9]+)/meter/config$#', $path, $matches)) {
 
     if ($method === 'GET') {
         $ai_state = get_device_ai_state_php($device_id);
-        $meter_config = $ai_state['smart_meter_config'] ?? [
+        $meter_config = $ai_state['smart_meter_config'] ?? [];
+        $meter_config = array_merge([
             'meter_mode' => 'NONE',
             'meter_slave_id' => 1,
             'meter_baudrate' => 9600,
@@ -647,7 +649,13 @@ elseif (preg_match('#^/api/device/([0-9]+)/meter/config$#', $path, $matches)) {
             'reg_consumption_w' => '',
             's0_impulses_per_kwh' => 1000,
             'cloud_api_url' => '',
-        ];
+            // CUSTOM režim nastavenia
+            'target_consumption_w' => 0,
+            'surplus_action' => 'CHARGE_BATTERY',
+            'zero_action' => 'PRODUCE_HOUSE',
+            'grid_export_limit_w' => 0,
+            'battery_priority' => 'SMART',
+        ], $meter_config);
         send_json(['status' => 'success', 'config' => $meter_config]);
     }
     elseif ($method === 'POST') {
@@ -665,6 +673,12 @@ elseif (preg_match('#^/api/device/([0-9]+)/meter/config$#', $path, $matches)) {
             'reg_consumption_w' => trim($data['reg_consumption_w'] ?? ''),
             's0_impulses_per_kwh' => intval($data['s0_impulses_per_kwh'] ?? 1000),
             'cloud_api_url' => trim($data['cloud_api_url'] ?? ''),
+            // CUSTOM režim nastavenia
+            'target_consumption_w' => floatval($data['target_consumption_w'] ?? 0),
+            'surplus_action' => trim($data['surplus_action'] ?? 'CHARGE_BATTERY'),
+            'zero_action' => trim($data['zero_action'] ?? 'PRODUCE_HOUSE'),
+            'grid_export_limit_w' => floatval($data['grid_export_limit_w'] ?? 0),
+            'battery_priority' => trim($data['battery_priority'] ?? 'SMART'),
         ];
         save_device_ai_state_php($device_id, $ai_state);
         send_json(['status' => 'success', 'message' => 'Konfigurácia smart meradla uložená.']);
