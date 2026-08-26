@@ -118,7 +118,7 @@ if (!function_exists('send_elvo_email')) {
                 ]
             ]);
 
-            $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
+            $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 2, STREAM_CLIENT_CONNECT, $context);
             if (!$socket) {
                 error_log("SMTP Pripojenie zlyhalo: $errstr ($errno)");
                 return false;
@@ -280,25 +280,36 @@ if (!function_exists('get_user_devices')) {
 
 // Spracovanie statických súborov (manifest, sw, css, js)
 if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
-    $static_file = __DIR__ . '/' . ltrim($path, '/');
-    if (file_exists($static_file)) {
-        $mime_types = [
-            'json' => 'application/json',
-            'js' => 'application/javascript',
-            'css' => 'text/css',
-            'svg' => 'image/svg+xml',
-            'ico' => 'image/x-icon',
-            'woff' => 'font/woff',
-            'woff2' => 'font/woff2',
-            'ttf' => 'font/ttf',
-            'pdf' => 'application/pdf',
-        ];
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        $mime = $mime_types[$ext] ?? 'application/octet-stream';
-        header('Content-Type: ' . $mime);
-        header('Cache-Control: public, max-age=3600');
-        readfile($static_file);
-        exit;
+    $clean_path = ltrim($path, '/');
+    if (strpos($clean_path, 'templates/') === 0) {
+        $clean_path = str_replace('templates/', '', $clean_path);
+    }
+    $possible_paths = [
+        __DIR__ . '/' . ltrim($path, '/'),
+        __DIR__ . '/App/templates/' . $clean_path,
+        __DIR__ . '/app/templates/' . $clean_path,
+        __DIR__ . '/templates/' . $clean_path,
+    ];
+    foreach ($possible_paths as $static_file) {
+        if (file_exists($static_file)) {
+            $mime_types = [
+                'json' => 'application/json',
+                'js' => 'application/javascript',
+                'css' => 'text/css',
+                'svg' => 'image/svg+xml',
+                'ico' => 'image/x-icon',
+                'woff' => 'font/woff',
+                'woff2' => 'font/woff2',
+                'ttf' => 'font/ttf',
+                'pdf' => 'application/pdf',
+            ];
+            $ext = strtolower(pathinfo($static_file, PATHINFO_EXTENSION));
+            $mime = $mime_types[$ext] ?? 'application/octet-stream';
+            header('Content-Type: ' . $mime);
+            header('Cache-Control: public, max-age=3600');
+            readfile($static_file);
+            exit;
+        }
     }
 }
 
@@ -444,19 +455,6 @@ elseif ($path === '/login') {
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
-            
-            // Login notifikácia email
-            $login_ip = $_SERVER['REMOTE_ADDR'] ?? 'neznáma';
-            $login_time = date('d.m.Y H:i');
-            @send_elvo_email($user['email'], 'Nové prihlásenie do ElvoControl', 'Prihlásenie do vášho účtu',
-                '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
-                . '<p>Zaznamenali sme prihlásenie do vášho účtu ElvoControl:</p>'
-                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
-                . '<p>📍 IP adresa: <strong>' . htmlspecialchars($login_ip) . '</strong></p>'
-                . '<p>🕐 Čas: <strong>' . $login_time . '</strong></p>'
-                . '</div>'
-                . '<p style="color:#64748b;font-size:12px;">Ak ste sa neprihlásili vy, okamžite zmeňte heslo.</p>'
-            );
             header("Location: " . $base_path . "/");
             exit;
         } else {
