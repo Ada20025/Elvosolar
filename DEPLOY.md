@@ -3,104 +3,85 @@
 ## Architektúra
 
 ```
-www.elvosolar.sk     → Statický web (Marketing, produkty, eshop)
-app.elvosolar.sk     → ElvoControl PHP aplikácia (Dashboard, riadenie)
+GitHub: Ada20025/Elvosolar  → Railway auto-deploy
+Railway: elvosolar-production.up.railway.app  → PHP + MySQL
+Hardware: CM5 lokálne       → Cloud sync na Railway
+OTA Updates: Ada20025/a     → Šifrovaný kód pre CM5
 ```
 
-## 1. Alwaysdata nastavenie
+## 1. Railway (PHP + MySQL)
 
-### Vytvor 2 webové služby na alwaysdata:
+### Nastavenie:
+1. Vytvor účet na **railway.app** → Sign up with GitHub
+2. "New Project" → "Deploy from GitHub repo" → `Ada20025/Elvosolar`
+3. Pridaj MySQL: "+ New" → "Database" → "MySQL"
+4. Premenné prostredia v Elvosolar service:
+   - `MYSQLHOST` = `${{MySQL.MYSQLHOST}}`
+   - `MYSQLPORT` = `${{MySQL.MYSQLPORT}}`
+   - `MYSQLUSER` = `${{MySQL.MYSQLUSER}}`
+   - `MYSQL_ROOT_PASSWORD` = `${{MySQL.MYSQLROOTPASSWORD}}`
+   - `MYSQL_DATABASE` = `${{MySQL.MYSQLDATABASE}}`
 
-**Služba 1 — Web (www.elvosolar.sk)**
-- Typ: Static
-- Document root: `/www/www.elvosolar.sk`
-- Doména: `www.elvosolar.sk`
+### Prvý spustenie:
+- Otvor: `https://elvosolar-production.up.railway.app/register`
+- Vytvor admin účet
+- Prihlás sa
 
-**Služba 2 — App (app.elvosolar.sk)**
-- Typ: PHP
-- Document root: `/www/app.elvosolar.sk`
-- Doména: `app.elvosolar.sk`
-- PHP verzia: 8.1+
+### Automatický deploy:
+- Push na `main` branch → Railway automaticky redeployne (~30 sek)
 
-### Databáza
-- Typ: MySQL
-- Vytvor DB pre app (meno: `elvocontrol`, heslo: generuj)
-
-## 2. GitHub Secrets (Settings → Secrets)
-
-Nastav tieto secrets v GitHub repo:
-
-| Secret | Popis |
-|--------|-------|
-| `ALWAYSDATA_HOST` | `ssh-cluster-1-alwaysdata-com` (alebo tvoj SSH host) |
-| `ALWAYSDATA_USER` | Tvoje alwaysdata SSH meno (číslo účtu) |
-| `ALWAYSDATA_SSH_KEY` | Privátny SSH kľúč pre prístup |
-
-### Ako získať SSH prístup:
-1. V alwaysdata panel → Nastavenia → SSH kľúče
-2. Pridaj verejný kľúč (`~/.ssh/id_rsa.pub`)
-3. Privátny kľúč (`~/.ssh/id_rsa`) daj do GitHub Secrets
-
-## 3. Lokálna konfigurácia
-
-### config.php — uprav DB údaje:
-```php
-$DB_HOST = "mysql-elvocontrol.alwaysdata.com";
-$DB_USER = "elvocontrol";
-$DB_PASS = "tvoje_heslo_z_alwaysdata";
-$DB_NAME = "elvocontrol";
-```
-
-### Cloud sync URL v DB (system_settings):
-```
-cloud_sync_url = https://app.elvosolar.sk/api/cloud/sync-telemetry
-```
-
-## 4. Deploy
-
-Push na `main` branch → automatický deploy cez GitHub Actions.
+## 2. GitHub (Repo)
 
 ```
-git add .
-git commit -m "Update"
-git push origin main
+Ada20025/Elvosolar
+├── Software/App/        → PHP app (Railway deploy)
+├── Software/Web/        → Statický web (elvosolar.sk)
+├── Dockerfile           → Docker build pre Railway
+├── railway.json         → Railway config
+├── upgrade.sh           → Manuálny upgrade pre CM5
+└── README.md
 ```
 
-## 5. Prvotné nastavenie
+## 3. OTA Updates (Ada20025/a)
 
-1. Otvor `app.elvosolar.sk/setup` — provisioning wizard
-2. Pripoj CM5 cez Bluetooth/LAN
-3. Nastav cloud sync na `app.elvosolar.sk`
-4. Vytvor admin účet cez `app.elvosolar.sk/register`
-
-## Súbory
-
+Admin publikuje šifrovaný kód cez `admin_publisher.py`:
+```bash
+cd "tetovacie subory"
+python3 admin_publisher.py
 ```
-Software/
-├── App/                    → app.elvosolar.sk
-│   ├── index.php           → Router
-│   ├── config.php          → DB config
-│   ├── device_db.php       → Zariadenia DB
-│   ├── .htaccess           → URL rewriting
-│   ├── manifest.json       → PWA manifest
-│   ├── sw.js               → Service Worker
-│   └── templates/          → HTML šablóny
-│       ├── dashboard.html
-│       ├── device_detail.html
-│       ├── prihlasenie.html
-│       ├── registracia.html
-│       └── ...
-├── Web/
-│   └── www.elvosolar.sk/   → www.elvosolar.sk
-│       ├── index.html
-│       ├── smart-riesenia/
-│       ├── eshop/
-│       └── Png/
 
-Hardware/                    → CM5 riadiaca jednotka
-├── app.py                  → Hlavná služba
-├── solar_service.py        → Riadiace jadro
-├── smart_meter_service.py  → Smart meter
-├── modbus_slave_service.py → Modbus TCP server
-└── ...
+CM5 sťahuje a dešifruje cez `update_service.py`:
+- Repo: `Ada20025/a/contents/updates.json`
+- Šifrovanie: AES-CBC (heslo: Elvosolarcontroller)
+- Token: `GITHUB_UPDATE_TOKEN` env var
+
+## 4. Hardware (CM5)
+
+### Manuálny upgrade:
+```bash
+cd /home/pi
+./upgrade.sh
 ```
+
+### Spustenie:
+```bash
+cd /home/pi/Hardware
+python3 app.py
+```
+
+### Cloud sync URL:
+- Default: `https://elvosolar-production.up.railway.app`
+- Custom: `export CLOUD_SERVER_URL="https://tvoj-url.sk"`
+
+## 5. Domény (voliteľné)
+
+Ak chceš vlastnú doménu:
+- `www.elvosolar.sk` → GitHub Pages (statický web)
+- `app.elvosolar.sk` → CNAME na Railway
+
+## 6. E-mail (SMTP)
+
+Railway blokuje SMTP port 587. Možnosti:
+1. **PHP mail()** — funguje automaticky na Railway
+2. **Gmail SMTP** — nastav v Railway Variables: `SMTP_USER`, `SMTP_PASS`
+3. **SendGrid API** — zadarmo 100 emailov/deň
