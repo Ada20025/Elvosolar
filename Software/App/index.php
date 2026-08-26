@@ -2,7 +2,7 @@
 // index.php
 
 // Diagnostika chýb na serveri (Alwaysdata)
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 
@@ -854,6 +854,15 @@ elseif ($path === '/verify-reset-code' && $method === 'POST') {
 
 elseif ($path === '/setup_database' && $method === 'GET') {
     // Database setup - spustiť len raz!
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    require __DIR__ . '/setup_database.php';
+    exit;
+}
+
+elseif ($path === '/setup_database.php' && $method === 'GET') {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
     require __DIR__ . '/setup_database.php';
     exit;
 }

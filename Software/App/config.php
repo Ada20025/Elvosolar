@@ -4,10 +4,11 @@
 
 // === RAILWAY (env premenné) ===
 // Railway automaticky nastaví MYSQLHOST, MYSQL_DATABASE, MYSQLUSER, MYSQL_PASSWORD
-$railway_host = getenv('MYSQLHOST');
-$railway_db   = getenv('MYSQL_DATABASE');
-$railway_user = getenv('MYSQLUSER');
-$railway_pass = getenv('MYSQL_PASSWORD');
+$railway_host = $_ENV['MYSQLHOST'] ?? getenv('MYSQLHOST') ?: '';
+$railway_db   = $_ENV['MYSQL_DATABASE'] ?? getenv('MYSQL_DATABASE') ?: '';
+$railway_user = $_ENV['MYSQLUSER'] ?? getenv('MYSQLUSER') ?: '';
+$railway_pass = $_ENV['MYSQL_PASSWORD'] ?? getenv('MYSQL_PASSWORD') ?: '';
+$railway_port = $_ENV['MYSQLPORT'] ?? getenv('MYSQLPORT') ?: '3306';
 
 // === ALWAYSDATA (fallback) ===
 $alwaysdata_host = 'mysql-adamdz.alwaysdata.net';
