@@ -331,7 +331,8 @@
         
         let selectedTransport = 'HTTP'; 
         let setupCharacteristic = null; 
-        let activeSerialPort = null;    
+        let activeSerialPort = null;
+        let discoveredSlaveIds = [];    
 
         const isDevelopment = window.location.hostname.endsWith('alwaysdata.net') || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         let localGatewayIP = isDevelopment ? 'http://cm5.local' : '';
@@ -573,6 +574,7 @@
                 }
             }
 
+            discoveredSlaveIds = discoveredSlaves;
             document.getElementById("finalReport").classList.remove("hidden");
             document.getElementById("repMode").innerText = selectedMode;
             
@@ -871,8 +873,83 @@
             goToSlide(4);
         }
 
-        function completeSetup() {
-            location.href = '/';
+        async function completeSetup() {
+            const finishBtn = document.getElementById("finishBtn");
+            finishBtn.disabled = true;
+            finishBtn.innerText = "REGISTRUJEM V CLOUDU...";
+            finishBtn.className = "w-full bg-slate-700 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
+
+            try {
+                const brand_id = document.getElementById('brandSelect').value;
+                const cat_id = document.getElementById('categorySelect').value;
+                const model_id = document.getElementById('modelSelect').value;
+                const brand = dbDevices[brand_id] ? dbDevices[brand_id].znacka : 'Huawei';
+                const models = dbDevices[brand_id] && dbDevices[brand_id].kategorie[cat_id] ? dbDevices[brand_id].kategorie[cat_id].modely : {};
+                const model = models[model_id] ? models[model_id].meno : 'SUN2000';
+                const name = brand + ' ' + model;
+
+                // Získaj sériové číslo z CM5 zariadenia
+                let serial = '';
+                try {
+                    const statusRes = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(3000) });
+                    const statusData = await statusRes.json();
+                    serial = statusData.serial_number || statusData.serial || '';
+                } catch(e) {}
+
+                // Ak nemáme sériové číslo z CM5, vygeneruj z MAC alebo náhodné
+                if (!serial) {
+                    try {
+                        const infoRes = await fetch(`${localGatewayIP}/api/system/info`, { signal: AbortSignal.timeout(3000) });
+                        const infoData = await infoRes.json();
+                        serial = infoData.serial_number || infoData.serial || infoData.mac || '';
+                    } catch(e) {}
+                }
+                if (!serial) {
+                    serial = 'CM5-' + Date.now().toString(36).toUpperCase();
+                }
+
+                // Zaregistruj zariadenie na serveri
+                const regRes = await fetch('/api/devices/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        serial_number: serial,
+                        name: name,
+                        brand: brand,
+                        model: model
+                    })
+                });
+                const regData = await regRes.json();
+
+                if (regData.status !== 'success' && regRes.status !== 409) {
+                    // 409 = už existuje, to je OK
+                    throw new Error(regData.message || 'Registrácia zlyhala');
+                }
+
+                // Ak sme našli Modbus ID, pošli update do CM5
+                if (discoveredSlaveIds.length > 0 && selectedTransport !== 'BLE') {
+                    try {
+                        await fetch(`${localGatewayIP}/api/admin/claim`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                slave_id: discoveredSlaveIds[0],
+                                serial_number: serial
+                            })
+                        });
+                    } catch(e) {}
+                }
+
+                finishBtn.innerText = "DOKONČENÉ ✓";
+                finishBtn.className = "w-full bg-emerald-600 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
+                finishBtn.onclick = () => { location.href = '/'; };
+            } catch(err) {
+                finishBtn.disabled = false;
+                finishBtn.innerText = "DOKONČIŤ NASTAVENIE";
+                finishBtn.className = "w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
+                showValidationError('Chyba registrácie: ' + err.message + '. Kliknite znova alebo dokončite manuálne.');
+            }
         }
     </script>
 </body>
