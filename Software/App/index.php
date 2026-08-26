@@ -825,7 +825,7 @@ elseif ($path === '/api/devices/register' && $method === 'POST') {
     }
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, model, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
+        $stmt = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
         $stmt->execute([$_SESSION['user_id'], $name, $serial, $brand, $model]);
         $device_id = $pdo->lastInsertId();
         
