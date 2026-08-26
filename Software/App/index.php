@@ -752,8 +752,104 @@ elseif ($path === '/eshop' && $method === 'GET') {
     render_template('eshop.html');
 }
 
-elseif ($path === '/forgot-password') {
+elseif ($path === '/forgot-password' && $method === 'GET') {
+    $_SESSION['reset_step'] = 1;
     render_template('forgot-password.html');
+}
+
+elseif ($path === '/forgot-password' && $method === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    if (!$email) {
+        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Zadajte e-mailovú adresu.'];
+        header('Location: ' . $base_path . '/forgot-password');
+        exit;
+    }
+    
+    $stmt = $pdo->prepare("SELECT id, username FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+    
+    if (!$user) {
+        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Účet s touto e-mailovou adresou nebol nájdený.'];
+        header('Location: ' . $base_path . '/forgot-password');
+        exit;
+    }
+    
+    // Vytvor 6-miestny kód
+    $code = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+    $expires = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+    
+    // Ulož do DB (vymaž staré kody pre tento email)
+    $pdo->prepare("DELETE FROM password_resets WHERE user_id = ?")->execute([$user['id']]);
+    $stmt = $pdo->prepare("INSERT INTO password_resets (user_id, code, expires_at) VALUES (?, ?, ?)");
+    $stmt->execute([$user['id'], $code, $expires]);
+    
+    // Posli email
+    $subject = "ElvoControl - Obnovenie hesla";
+    $title = "Váš overovací kód";
+    $html = "<p>Ahoj <strong>" . htmlspecialchars($user['username']) . "</strong>,</p>"
+         . "<p>Váš 6-miestny overovací kód pre obnovenie hesla:</p>"
+         . "<div style='text-align:center;margin:24px 0;'><span style='font-size:32px;font-weight:900;letter-spacing:8px;color:#3b82f6;font-family:monospace;background:#f1f5f9;padding:16px 32px;border-radius:12px;'>" . $code . "</span></div>"
+         . "<p style='color:#64748b;font-size:12px;'>Kód platí 15 minút. Ak ste o obnovenie hesla nepožiadali, tento e-mail ignorujte.</p>";
+    
+    send_elvo_email($email, $subject, $title, $html);
+    
+    $_SESSION['reset_email'] = $email;
+    $_SESSION['reset_user_id'] = $user['id'];
+    $_SESSION['reset_step'] = 2;
+    $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Overovací kód odoslaný na ' . $email];
+    header('Location: ' . $base_path . '/forgot-password');
+    exit;
+}
+
+elseif ($path === '/verify-reset-code' && $method === 'POST') {
+    $code = trim($_POST['verification_code'] ?? '');
+    $new_pass = $_POST['new_password'] ?? '';
+    $confirm = $_POST['confirm_password'] ?? '';
+    $user_id = $_SESSION['reset_user_id'] ?? null;
+    
+    if (!$user_id || !$code || !$new_pass) {
+        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Vyplňte všetky polia.'];
+        header('Location: ' . $base_path . '/forgot-password');
+        exit;
+    }
+    
+    if ($new_pass !== $confirm) {
+        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Heslá sa nezhodujú.'];
+        header('Location: ' . $base_path . '/forgot-password');
+        exit;
+    }
+    
+    if (strlen($new_pass) < 6) {
+        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Heslo musí mať aspoň 6 znakov.'];
+        header('Location: ' . $base_path . '/forgot-password');
+        exit;
+    }
+    
+    // Over kód
+    $stmt = $pdo->prepare("SELECT id FROM password_resets WHERE user_id = ? AND code = ? AND expires_at > NOW()");
+    $stmt->execute([$user_id, $code]);
+    $reset = $stmt->fetch();
+    
+    if (!$reset) {
+        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Neplatný alebo expirovaný kód.'];
+        header('Location: ' . $base_path . '/forgot-password');
+        exit;
+    }
+    
+    // Aktualizuj heslo
+    $hashed = password_hash($new_pass, PASSWORD_BCRYPT);
+    $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$hashed, $user_id]);
+    
+    // Vymaž kód
+    $pdo->prepare("DELETE FROM password_resets WHERE id = ?")->execute([$reset['id']]);
+    
+    // Vymaž session
+    unset($_SESSION['reset_email'], $_SESSION['reset_user_id'], $_SESSION['reset_step']);
+    
+    $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Heslo bolo úspešne zmenené! Môžete sa prihlásiť.'];
+    header('Location: ' . $base_path . '/login');
+    exit;
 }
 
 elseif ($path === '/setup_database' && $method === 'GET') {
