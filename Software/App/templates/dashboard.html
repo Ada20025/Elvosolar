@@ -988,7 +988,7 @@
             else if (h >= 20 && h < 23) { emoji = '🌙'; greeting = 'Príjemný večer'; mood = 'Batérie pokrývajú spotrebu domácnosti'; }
             else { emoji = '🦉'; greeting = 'Dobrú noc'; mood = 'Systém spí a šetrí energiu'; }
             document.getElementById('greeting-text').innerHTML = `${emoji} Ahoj ${name}, ${greeting}!`;
-            document.getElementById('greeting-sub').textContent = mood;
+            document.getElementById('greeting-sub').textContent = mood + ' ⚠️ BETA — modely 1-5 v testovaní.';
 
             const day = new Date().toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
             const time = new Date().toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });

@@ -7,15 +7,28 @@
  * PO SPUSTENÍ VYMAŽ TENTO SÚBOR!
  */
 
-// Načítanie config (funguje na Railway aj lokálne)
-$db_host = getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: 'localhost';
-$db_name = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: 'railway';
-$db_user = getenv('MYSQLUSER') ?: getenv('DB_USER') ?: 'root';
-$db_pass = getenv('MYSQL_PASSWORD') ?: getenv('DB_PASS') ?: '';
+// Načítanie config - robustné pre Railway + alwaysdata + lokálne
+function get_env_val($keys, $default = '') {
+    foreach ($keys as $key) {
+        // Skús $_ENV, potom getenv(), potom $_SERVER
+        $val = $_ENV[$key] ?? (@getenv($key)) ?: ($_SERVER[$key] ?? '');
+        if ($val !== '' && $val !== false && $val !== null) return $val;
+    }
+    return $default;
+}
 
-$db_port = getenv("MYSQLPORT") ?: "3306";
+$db_host = get_env_val(['MYSQLHOST', 'DB_HOST', 'DATABASE_HOST', 'MYSQL_HOST'], 'localhost');
+$db_name = get_env_val(['MYSQL_DATABASE', 'DB_NAME', 'DATABASE_NAME', 'MYSQL_DB'], 'railway');
+$db_user = get_env_val(['MYSQLUSER', 'DB_USER', 'DATABASE_USER', 'MYSQL_USER'], 'root');
+$db_pass = get_env_val(['MYSQL_PASSWORD', 'DB_PASS', 'DATABASE_PASSWORD', 'MYSQL_PASS'], '');
+$db_port = get_env_val(['MYSQLPORT', 'DB_PORT', 'DATABASE_PORT', 'MYSQL_PORT'], '3306');
+
 $charset = 'utf8mb4';
 $dsn = "mysql:host=$db_host;port=$db_port;dbname=$db_name;charset=$charset";
+
+// Debug info
+echo "<!-- DB DEBUG: host=" . htmlspecialchars($db_host) . " port=" . htmlspecialchars($db_port) . " db=" . htmlspecialchars($db_name) . " user=" . htmlspecialchars($db_user) . " pass_len=" . strlen($db_pass) . " -->
+";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

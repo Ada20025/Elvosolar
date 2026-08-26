@@ -3,12 +3,21 @@
 // Automaticky detekuje prostredie (Railway / alwaysdata / lokálne)
 
 // === RAILWAY (env premenné) ===
-// Railway automaticky nastaví MYSQLHOST, MYSQL_DATABASE, MYSQLUSER, MYSQL_PASSWORD
-$railway_host = $_ENV['MYSQLHOST'] ?? getenv('MYSQLHOST') ?: '';
-$railway_db   = $_ENV['MYSQL_DATABASE'] ?? getenv('MYSQL_DATABASE') ?: '';
-$railway_user = $_ENV['MYSQLUSER'] ?? getenv('MYSQLUSER') ?: '';
-$railway_pass = $_ENV['MYSQL_PASSWORD'] ?? getenv('MYSQL_PASSWORD') ?: '';
-$railway_port = $_ENV['MYSQLPORT'] ?? getenv('MYSQLPORT') ?: '3306';
+// Railway používa tieto premenne: MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQL_PASSWORD, MYSQL_DATABASE
+// Tiež podporuje: DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT
+function get_env_val($keys, $default = '') {
+    foreach ($keys as $key) {
+        $val = $_ENV[$key] ?? getenv($key) ?: '';
+        if ($val !== '' && $val !== false) return $val;
+    }
+    return $default;
+}
+
+$railway_host = get_env_val(['MYSQLHOST', 'DB_HOST', 'DATABASE_HOST'], '');
+$railway_db   = get_env_val(['MYSQL_DATABASE', 'DB_NAME', 'DATABASE_NAME'], '');
+$railway_user = get_env_val(['MYSQLUSER', 'DB_USER', 'DATABASE_USER'], '');
+$railway_pass = get_env_val(['MYSQL_PASSWORD', 'DB_PASS', 'DATABASE_PASSWORD'], '');
+$railway_port = get_env_val(['MYSQLPORT', 'DB_PORT', 'DATABASE_PORT'], '3306');
 
 // === ALWAYSDATA (fallback) ===
 $alwaysdata_host = 'mysql-adamdz.alwaysdata.net';
