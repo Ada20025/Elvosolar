@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="sk" class="scroll-smooth h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="ELVOSOLAR a.s. ponúka inovatívne a ekologické riešenia pre optimalizáciu elektrickej energie, fotovoltiku, solárny ohrev a smart EMS systémy pre firmy a domácnosti.">
+    <title data-translate="title">ELVOSOLAR a.s. | Smart EMS Pro</title>
+    
+    <!-- Kritické CSS na zamedzenie posunov rozloženia (CLS = 0) a zrýchlenie FCP -->
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid #f1f5f9;
+            box-sizing: border-box;
+        }
+        .header-container {
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 24px;
+            padding-right: 24px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-sizing: border-box;
+        }
+        .logo-img {
+            height: 40px;
+            width: auto;
+            aspect-ratio: 15/4;
+        }
+        .luxury-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .luxury-panel:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.06);
+        }
+        .phone-mockup-light {
+            background-color: #ffffff;
+            border: 8px solid #0f172a;
+            border-radius: 40px;
+            box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.12);
+        }
+    </style>
+
+    <!-- Preload LCP a preconnect -->
+    <link rel="preload" href="Png/Fotovoltika1.jpg" as="image" fetchpriority="high">
+    <link rel="preconnect" href="https://images.unsplash.com">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+
+    <!-- Odložené načítanie Tailwind CSS pre elimináciu TBT -->
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            brand: {
+                                dark: '#0f172a',
+                                green: '#10b981',
+                                light: '#f8fafc',
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</head>
+<body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen relative overflow-x-hidden pb-16 md:pb-0">
+
+    <!-- Navigácia -->
+    <header class="sticky top-0 z-40 backdrop-blur-md">
+        <div class="header-container">
+            <a href="index.html" class="flex items-center" aria-label="ELVOSOLAR domovská stránka">
+                <img src="Png/download.png" alt="ELVOSOLAR a.s." class="logo-img" width="150" height="40" decoding="async">
+            </a>
+            
+            <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600" aria-label="Hlavné menu">
+                <a href="../../o-nás/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.about">O nás</a>
+                <a href="../../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.renewable">Obnoviteľná energia</a>
+                <a href="../../smart-riesenia/index.html" class="text-brand-green transition-colors font-bold" data-translate="nav.smart">Smart riešenia</a>
+                <a href="../../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services">Služby</a>
+                <a href="../../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact">Kontakt</a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <!-- Dopytový košík -->
+                <button id="cart-icon-btn" onclick="toggleCartDrawer()" class="relative p-2.5 text-slate-600 hover:text-brand-green transition-colors rounded-full hover:bg-slate-50" aria-label="Zobraziť dopytový košík">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375 0 1 1-.75 0 .375 0 0 1 .75 0Zm7.5 0a.375 0 1 1-.75 0 .375 0 0 1 .75 0Z" />
+                    </svg>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-brand-green text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+                </button>
+
+                <div class="relative inline-block text-left" id="lang-selector-container">
+                    <button id="lang-menu-btn" class="flex items-center space-x-1 text-xs font-bold text-slate-600 hover:text-brand-green uppercase tracking-wider transition-colors focus:outline-none py-2">
+                        <span id="current-lang">SK</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="lang-dropdown" class="hidden absolute right-0 mt-2 w-20 bg-white border border-slate-100 rounded-lg shadow-lg py-1 z-50">
+                        <button onclick="changeLang('sk')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">SK</button>
+                        <button onclick="changeLang('en')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">EN</button>
+                    </div>
+                </div>
+
+                <a href="../../kontakt/index.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all">Nezáväzný dopyt</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- BREADCRUMBS -->
+    <div class="bg-white py-3 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 text-xs text-slate-400 flex gap-2">
+            <a href="../../index.html" class="hover:text-brand-green">Domov</a>
+            <span>/</span>
+            <a href="../../smart-riesenia/index.html" class="hover:text-brand-green">Smart riešenia</a>
+            <span>/</span>
+            <span class="text-slate-600 font-semibold font-mono">CM5 AI EMS Pro</span>
+        </div>
+    </div>
+
+    <!-- MINIMALISTICKÁ PREZENTÁCIA ZARIADENIA A SYSTÉMU -->
+    <main id="main-content">
+
+        <!-- HLAVNÝ ÚVOD (MINIMALIST HERO) -->
+        <section class="max-w-7xl mx-auto px-6 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center text-left">
+            <div class="lg:col-span-7 space-y-6">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-brand-green border border-emerald-500/20 font-mono">
+                    AUTONÓMNE AI EMS JADRO
+                </span>
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-none">
+                    Menej sieťových poplatkov, <span class="text-brand-green">viac úspor</span> pre váš domov
+                </h1>
+                <p class="text-sm text-slate-500 leading-relaxed max-w-lg">
+                    Predstavujeme inteligentný energetický manažment. Zariadenie CM5 Pro analyzuje v reálnom čase spotové ceny na OKTE burze, učí sa odberový profil domu a spína spotrebiče v optimálnom čase.
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    <a href="#dopyt" class="px-5 py-3 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-xs font-bold transition shadow-lg shadow-emerald-500/15 uppercase tracking-wider">
+                        Zostaviť dopyt
+                    </a>
+                    <a href="#kalkulacka" class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition uppercase tracking-wider">
+                        Spočítať úsporu
+                    </a>
+                </div>
+            </div>
+
+            <!-- VIZUÁL FYZICKÉHO BOXU (CM5 PRO) -->
+            <div class="lg:col-span-5 relative">
+                <div class="rounded-3xl border border-slate-200 bg-slate-900 h-80 relative overflow-hidden shadow-xl flex flex-col items-center justify-center p-8">
+                    <span class="text-8xl block select-none">🧠</span>
+                    <div class="absolute bottom-6 text-center space-y-1">
+                        <h3 class="text-xs font-black text-white font-mono uppercase tracking-widest">ElvoSolar CM5 Pro</h3>
+                        <p class="text-[9px] text-slate-400">Lokálna riadiaca jednotka pre striedače a batérie</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEK_OBRAZOVKY MOBILNEJ APLIKÁCIE (KRAŠIE, MODERNEJŠIE, DETAILNÉ) -->
+        <section id="apka" class="py-20 bg-slate-50 border-y border-slate-100 text-left">
+            <div class="max-w-7xl mx-auto px-6 space-y-16">
+                
+                <div class="text-center max-w-xl mx-auto space-y-2">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block">HLASOVÉ RIADENIE & MOBILNÁ APLIKÁCIA</span>
+                    <h2 class="text-3xl font-bold text-brand-dark">Sledujte toky energie a náklady v reálnom čase</h2>
+                    <p class="text-slate-500 text-sm">Vizuálne stvárnenie obrazoviek aplikácie, ktoré máte k dispozícii v smartfóne.</p>
+                </div>
+
+                <!-- 3 LUXUSNÉ KARTY OBRAZOVIEK -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    
+                    <!-- Obrazovka 1: Riadenie relé -->
+                    <div class="phone-mockup-light p-5 flex flex-col justify-between h-[450px] text-slate-800">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 border-b border-slate-100 pb-2">
+                                <span class="text-slate-800">9:41</span>
+                                <span class="font-bold text-slate-800">Spínané spotrebiče</span>
+                                <span>📶 🔋</span>
+                            </div>
+                            <div class="flex gap-3 text-[9px] font-bold border-b border-slate-100 pb-1.5 uppercase font-mono">
+                                <span class="text-brand-green border-b-2 border-brand-green pb-0.5">Relé</span>
+                                <span class="text-slate-400">Bojlery</span>
+                                <span class="text-slate-400">Elektromery</span>
+                            </div>
+
+                            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-3">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg">♨️</span>
+                                        <div>
+                                            <h4 class="text-xs font-black text-slate-800 leading-none">Bojler TÚV</h4>
+                                            <span class="text-[9px] text-emerald-500 font-mono">Online - Ohrev pripojený</span>
+                                        </div>
+                                    </div>
+                                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                </div>
+                                <div class="flex gap-1 text-[8px] font-mono">
+                                    <span class="bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 font-semibold">Spínanie podľa teploty</span>
+                                    <span class="bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 font-semibold">Konfigurácia</span>
+                                </div>
+                            </div>
+
+                            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-3">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg">🏊</span>
+                                        <div>
+                                            <h4 class="text-xs font-black text-slate-800 leading-none">Bazénová filtrácia</h4>
+                                            <span class="text-[9px] text-emerald-500 font-mono">Online - Čerpadlo pripojené</span>
+                                        </div>
+                                    </div>
+                                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                </div>
+                                <div class="flex gap-1 text-[8px] font-mono">
+                                    <span class="bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 font-semibold">Spínanie podľa prebytkov</span>
+                                    <span class="bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 font-semibold">Teplota bazénu</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-[9px] text-slate-400 font-mono text-center">Kompatibilné so smart relé Shelly.</span>
+                    </div>
+
+                    <!-- Obrazovka 2: Analýza prevádzkových nákladov -->
+                    <div class="phone-mockup-light p-5 flex flex-col justify-between h-[450px] text-slate-800">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 border-b border-slate-100 pb-2">
+                                <span class="text-slate-800">9:41</span>
+                                <span class="font-bold text-slate-800">Finančná analýza</span>
+                                <span>📶 🔋</span>
+                            </div>
+                            <div class="flex justify-between text-[10px] font-bold text-slate-400">
+                                <span>◀ Včera</span>
+                                <span>📅 Výber dňa</span>
+                            </div>
+                            <div class="text-center space-y-1">
+                                <span class="text-[8px] uppercase tracking-wider text-slate-400 font-bold block">Ušetrené prevádzkové náklady</span>
+                                <div class="text-2xl font-black text-emerald-500 font-mono">3,37 €</div>
+                            </div>
+                            <!-- Miniatúra grafu -->
+                            <div class="visual-bar-chart relative !bg-slate-50 border border-slate-100">
+                                <div class="w-2 h-12 bg-emerald-500/20 rounded-t-sm"></div>
+                                <div class="w-2 h-8 bg-emerald-500/30 rounded-t-sm"></div>
+                                <div class="w-2 h-4 bg-emerald-500/40 rounded-t-sm"></div>
+                                <div class="w-2 h-20 bg-brand-green rounded-t-sm relative"><span class="absolute -top-3 left-0 text-brand-green font-bold text-[7px]">16h</span></div>
+                                <div class="w-2 h-14 bg-emerald-500/40 rounded-t-sm"></div>
+                                <div class="w-2 h-6 bg-emerald-500/20 rounded-t-sm"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-500 leading-normal">
+                                Systém deteguje, či zariadenia využili elektrinu zo siete, z domácej batérie alebo priamo zo slnka.
+                            </p>
+                        </div>
+                        <span class="text-[9px] text-slate-400 font-mono text-center">Prepojené s cenami OKTE DAM.</span>
+                    </div>
+
+                    <!-- Obrazovka 3: Regulátor maximálnej teploty -->
+                    <div class="phone-mockup-light p-5 flex flex-col justify-between h-[450px] text-slate-800">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 border-b border-slate-100 pb-2">
+                                <span class="text-slate-800">9:41</span>
+                                <span class="font-bold text-slate-800">Nastavenie bojlera</span>
+                                <span>📶 🔋</span>
+                            </div>
+                            <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <span>◀</span> <span>Upraviť bojler</span>
+                            </div>
+                            
+                            <!-- Kruhový volič -->
+                            <div class="relative w-28 h-28 mx-auto flex items-center justify-center">
+                                <svg class="w-24 h-24 transform -rotate-90">
+                                    <circle cx="48" cy="48" r="40" stroke="#f1f5f9" stroke-width="3" fill="transparent"/>
+                                    <circle cx="48" cy="48" r="40" stroke="#10b981" stroke-width="3" stroke-dasharray="251" stroke-dashoffset="80" fill="transparent"/>
+                                </svg>
+                                <div class="absolute text-center">
+                                    <span class="text-xl font-black text-slate-900 font-mono block">65°C</span>
+                                    <span class="text-[7px] text-slate-500 uppercase font-black block tracking-wider">Cieľ ohrevu</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-center pt-1 font-mono text-[9px]">
+                                <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                                    <span class="text-slate-400 block uppercase font-bold text-[7px]">Sonda bojler</span>
+                                    <strong class="text-slate-700">22°C</strong>
+                                </div>
+                                <div class="p-1.5 rounded-lg bg-slate-50 border border-brand-green/30">
+                                    <span class="text-slate-400 block uppercase font-bold text-[7px]">Slnko / FVE</span>
+                                    <strong class="text-brand-green font-bold">27°C</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-[9px] text-slate-400 font-mono text-center">Presný teplotný manažment.</span>
+                    </div>
+
+                </div>
+
+                <!-- STATISTICKÉ BLOKY ÚSPOR (OKTE HODNOTY) -->
+                <div class="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto pt-8">
+                    
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
+                        <span class="text-4xl">📉</span>
+                        <div>
+                            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Nákupná cena elektriny (MWh)</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-slate-400 line-through text-xs">80 €</span>
+                                <strong class="text-xl font-mono text-slate-900">44 € / MWh</strong>
+                                <span class="text-emerald-500 font-bold text-xs font-mono">-45 %</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 block mt-1">Nákupom v cenových dolinách</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
+                        <span class="text-4xl">📈</span>
+                        <div>
+                            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Predajná cena elektriny (MWh)</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-slate-400 line-through text-xs">20 €</span>
+                                <strong class="text-xl font-mono text-emerald-500">89 € / MWh</strong>
+                                <span class="text-emerald-500 font-bold text-xs font-mono">+346 %</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 block mt-1">Predajom v cenových špičkách</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RECENZIA ZÁKAZNÍKA (RODINA SLOBODOVCOV) -->
+                <div class="p-8 rounded-3xl bg-slate-900 text-white max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-6 shadow-lg border border-slate-800">
+                    <span class="text-5xl block">🏡</span>
+                    <div class="space-y-2 flex-grow text-center md:text-left">
+                        <span class="bg-brand-green/20 text-brand-green text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider font-mono">Skúsenosť nášho zákazníka</span>
+                        <h4 class="text-lg font-bold">Rodina Slobodovcov ušetrila s CM5 Pro už 340 € za rok</h4>
+                        <p class="text-slate-300 text-xs leading-relaxed">
+                            "Predtým sme mali problém so spotrebou počas zamračených dní. CM5 Pro sa sám učí, kedy u nás perie práčka a automaticky tomu prispôsobuje ohrevy bojlera. Návratnosť investície bola okamžitá."
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- PRISPÔSOBENIE PRE KAŽDÉ ROČNÉ OBDOBIE (TABS STRATEGY) -->
+        <section class="py-20 bg-white border-b border-slate-100 text-left">
+            <div class="max-w-7xl mx-auto px-6 space-y-12">
+                <div class="text-center max-w-xl mx-auto space-y-2">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block">CELOROČNÁ STRATÉGIA</span>
+                    <h2 class="text-3xl font-bold text-brand-dark">Prispôsobí sa každej zmene počasia</h2>
+                    <p class="text-slate-500 text-sm">Zariadenie CM5 Pro automaticky upravuje algoritmus spínania podľa aktuálneho ročného obdobia.</p>
+                </div>
+
+                <!-- TAB PREPÍNAČE -->
+                <div class="flex justify-center gap-2 text-xs font-bold font-mono">
+                    <button onclick="switchSeasonTab('SPRING')" id="btnTabSPRING" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Jar</button>
+                    <button onclick="switchSeasonTab('SUMMER')" id="btnTabSUMMER" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Leto</button>
+                    <button onclick="switchSeasonTab('AUTUMN')" id="btnTabAUTUMN" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Jeseň</button>
+                    <button onclick="switchSeasonTab('WINTER')" id="btnTabWINTER" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Zima</button>
+                </div>
+
+                <!-- DETAILY ROČNÝCH OBDOBÍ -->
+                <div class="max-w-3xl mx-auto bg-slate-50 border border-slate-150 p-6 rounded-3xl min-h-[160px] flex items-center justify-center">
+                    <div id="seasonContent" class="space-y-2 text-center md:text-left">
+                        <!-- Obsah sa plní cez JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- INTERAKTÍVNA KALKULAČKA ÚSPORY -->
+        <section id="kalkulacka" class="py-20 bg-slate-50 border-b border-slate-100 text-left">
+            <div class="max-w-7xl mx-auto px-6 space-y-12">
+                <div class="text-center max-w-xl mx-auto space-y-2">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block">VÝPOČET NÁVRATNOSTI</span>
+                    <h2 class="text-3xl font-bold text-brand-dark">Spočítajte si vašu ročnú finančnú úsporu</h2>
+                    <p class="text-slate-500 text-sm">Zadajte svoje parametre a zistite odhadovanú úsporu s inteligentným riadením CM5.</p>
+                </div>
+
+                <div class="max-w-3xl mx-auto p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm grid md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                                <span>Ročný účet za elektrinu</span>
+                                <span id="billVal" class="text-brand-green font-mono">1 200 €</span>
+                            </div>
+                            <input type="range" id="billSlider" min="500" max="4000" step="100" value="1200" oninput="calculateSavings()" class="w-full accent-emerald-500 cursor-pointer">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                                <span>Výkon fotovoltiky</span>
+                                <span id="kwpVal" class="text-brand-green font-mono">5 kWp</span>
+                            </div>
+                            <input type="range" id="kwpSlider" min="3" max="15" step="1" value="5" oninput="calculateSavings()" class="w-full accent-emerald-500 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-slate-50 border border-slate-100 text-center space-y-2">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Ročná úspora s riadením</span>
+                        <div id="savingsResult" class="text-3xl font-black text-brand-green font-mono">420.00 € / ročne</div>
+                        <span class="text-[9px] text-slate-500 block leading-tight">Návratnosť investície: <strong id="paybackResult" class="text-slate-800">menej ako 1 rok</strong></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DOPYTOVÝ SYSTÉM PRÍSLUŠENSTVA (Namiesto E-Shopu) -->
+        <section id="dopyt" class="max-w-7xl mx-auto px-6 py-20 space-y-12 text-left">
+            <div class="text-center max-w-xl mx-auto space-y-2">
+                <span class="text-brand-green text-xs font-bold uppercase tracking-wider block">DOPYTOVÝ SYSTÉM PRÍSLUŠENSTVA</span>
+                <h2 class="text-3xl font-bold text-brand-dark">Zostavte si nezáväzný dopyt</h2>
+                <p class="text-slate-500 text-sm">Pridajte si moduly do dopytového košíka a naši technici vám pripravia ponuku na mieru.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <div class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-brand-green transition flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-4xl p-2.5 bg-slate-50 rounded-2xl">🧠</span>
+                            <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-brand-green border border-emerald-500/20">Riadenie</span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900">ElvoSolar CM5 AI Smart EMS Pro</h3>
+                            <p class="text-[11px] text-slate-500 leading-normal mt-1">Autonómne riadiace softvérové jadro pre striedače, batérie, OKTE burzu a spínané spotrebiče.</p>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[9px] text-slate-400 block uppercase font-bold">Orientačná cena</span>
+                            <div class="text-lg font-black text-brand-dark font-mono">199.00 €</div>
+                        </div>
+                        <button onclick="addToCart(1, 'ElvoSolar CM5 AI Smart EMS Pro', 199.00, '🧠')" class="px-3.5 py-2 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition">Pridať do dopytu</button>
+                    </div>
+                </div>
+
+                <div class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-brand-green transition flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-4xl p-2.5 bg-slate-50 rounded-2xl">🔌</span>
+                            <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">Smart Relé</span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900">Shelly Pro 1PM Smart DIN Relé</h3>
+                            <p class="text-[11px] text-slate-500 leading-normal mt-1">1-kanálové relé na DIN lištu s integrovaným meraním odberu pre ohrevy vody a bojlery.</p>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[9px] text-slate-400 block uppercase font-bold">Orientačná cena</span>
+                            <div class="text-lg font-black text-brand-dark font-mono">49.00 €</div>
+                        </div>
+                        <button onclick="addToCart(2, 'Shelly Pro 1PM Smart DIN Relé', 49.00, '🔌')" class="px-3.5 py-2 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition">Pridať do dopytu</button>
+                    </div>
+                </div>
+
+                <div class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-brand-green transition flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-4xl p-2.5 bg-slate-50 rounded-2xl">🌡️</span>
+                            <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-brand-green border border-amber-500/20">Sonda</span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900">Nerezová teplotná sonda PT1000</h3>
+                            <p class="text-[11px] text-slate-500 leading-normal mt-1">Vodotesná teplotná sonda s nerezovým zakončením na presné meranie teploty v bojleri.</p>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[9px] text-slate-400 block uppercase font-bold">Orientačná cena</span>
+                            <div class="text-lg font-black text-brand-dark font-mono">19.00 €</div>
+                        </div>
+                        <button onclick="addToCart(3, 'Nerezová teplotná sonda PT1000', 19.00, '🌡️')" class="px-3.5 py-2 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition">Pridať do dopytu</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="bg-slate-50 py-16 border-t border-slate-200 text-left">
+            <div class="max-w-4xl mx-auto px-6 space-y-8">
+                <div class="text-center space-y-2">
+                    <h2 class="text-3xl font-bold text-brand-dark">Často kladené otázky (FAQ)</h2>
+                    <p class="text-slate-500 text-sm">Všetko, čo potrebujete vedieť o riadení fotovoltiky a dovolenkovom režime.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 cursor-pointer" onclick="toggleFaq(1)">
+                        <div class="flex justify-between items-center">
+                            <strong class="text-xs text-slate-800">Ako presne funguje pred-návratový nábeh?</strong>
+                            <span id="faqIcon-1" class="text-slate-400">＋</span>
+                        </div>
+                        <p id="faqAns-1" class="hidden text-[11px] text-slate-500 mt-2 leading-relaxed">
+                            Pred odchodom na dovolenku zadáte v aplikácii dátum a čas príchodu a požadovanú teplotu. Systém automaticky vypočíta časový predstih a spustí ohrevy kúrenia a vody presne tak, aby ste mali pri príchode kompletný komfort, zatiaľ čo počas celého vášho pobytu mimo domu systém minimalizoval spotrebu na nulu.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 cursor-pointer" onclick="toggleFaq(2)">
+                        <div class="flex justify-between items-center">
+                            <strong class="text-xs text-slate-800">Čo sú záporné ceny na OKTE a ako ma systém chráni?</strong>
+                            <span id="faqIcon-2" class="text-slate-400">＋</span>
+                        </div>
+                        <p id="faqAns-2" class="hidden text-[11px] text-slate-500 mt-2 leading-relaxed">
+                            Záporné ceny vznikajú, keď je v sieti prebytok energie a cena klesne pod nulu – vtedy platíte za dodávku elektriny do sieci. ElvoSolar CM5 v reálnom čase monitoruje burzu a pri záporných cenách okamžite zakáže pretoky, pričom presmeruje prípadnú sieťovú energiu na bezplatné nabíjanie batérie a ohrev vody.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- VYSUVACÍ DOPYTOVÝ KOŠÍK -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 pointer-events-none hidden" role="dialog" aria-modal="true">
+        <div id="cart-backdrop" onclick="toggleCartDrawer()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+        <div id="cart-panel" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto transform translate-x-full transition-transform duration-300">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-brand-dark">Dopytový košík príslušenstva</h3>
+                <button onclick="toggleCartDrawer()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50" aria-label="Zatvoriť košík">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4"></div>
+
+            <div class="p-6 border-t border-slate-100 bg-slate-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-semibold text-slate-500">Orientačná cena dielov:</span>
+                    <span id="cart-total-price" class="text-xl font-black text-brand-dark">0 €</span>
+                </div>
+
+                <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-3">
+                    <div>
+                        <label for="checkout-name" class="block text-xs font-semibold text-slate-500 mb-1">Vaše meno / Názov firmy *</label>
+                        <input type="text" id="checkout-name" name="name" required class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    </div>
+                    <div>
+                        <label for="checkout-email" class="block text-xs font-semibold text-slate-500 mb-1">Váš E-mail *</label>
+                        <input type="email" id="checkout-email" name="email" required class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    </div>
+                    <button type="submit" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg text-sm transition-colors">Odoslať nezáväzný dopyt</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pätička -->
+    <footer class="bg-slate-950 text-slate-500 py-8 text-xs border-t border-slate-900 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>2026 © Elvosolar, a.s. • <a href="ochrana-osobnych-udajov.pdf" target="_blank" class="hover:underline text-slate-400">Ochrana osobných údajov</a></p>
+            <p class="text-slate-600">Inteligentné energetické riadenie</p>
+        </div>
+    </footer>
+
+    <script>
+        const SEASON_STRATEGIES = {
+            SPRING: {
+                title: "🌱 Jarná optimalizácia (BALANCE_AND_SPRING_SURPLUS)",
+                desc: "Fotovoltická výroba pokrýva priemernú dennú spotrebu. Systém AI ráno výhodne nakúpi v najlacnejšom slote a cez deň hospodári s prebytkami tak, aby batéria zostala nabitá na ranný špičkový odber."
+            },
+            SUMMER: {
+                title: "☀️ Letný prebytkový režim (MAX_SELF_AND_SURPLUS)",
+                desc: "Maximálna solárna produkcia. Systém prednostne ohrieva teplú vodu v bojleri a chladí dom klimatizáciou. Aktivuje sa ochrana pred zápornými cenami, pričom sa prebytočná dodávka do siete striktne obmedzí."
+            },
+            AUTUMN: {
+                title: "🍂 Jesenná vykurovacia príprava (HEATING_PREPARE)",
+                desc: "Postupný pokles solárnej výroby a zvýšená záťaž. CM5 Pro v noci prioritne prednabíja batériu v lacnej nočnej tarife z OKTE burzy pre optimálne napájanie ranného kúrenia z domáceho úložiska."
+            },
+            WINTER: {
+                title: "❄️ Zimný úsporný režim (VALLEY_PRECHARGE)",
+                desc: "Minimálna produkcia panelov. AI EMS prepína do režimu hlbokej nákupnej arbitráže – dováža elektrinu do batérie a bojlera výhradne v nočných cenových dolinách, čím ušetria domáci rozpočet o viac než 40%."
+            }
+        };
+
+        function switchSeasonTab(season) {
+            ['SPRING', 'SUMMER', 'AUTUMN', 'WINTER'].forEach(s => {
+                const btn = document.getElementById('btnTab' + s);
+                if (btn) btn.className = "px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition";
+            });
+
+            const activeBtn = document.getElementById('btnTab' + season);
+            if (activeBtn) activeBtn.className = "px-5 py-2.5 rounded-xl bg-brand-green text-white font-bold transition shadow-md shadow-emerald-500/20";
+
+            const strat = SEASON_STRATEGIES[season];
+            document.getElementById('seasonContent').innerHTML = `
+                <div class="text-center md:text-left space-y-2">
+                    <h4 class="text-base font-black text-slate-900">${strat.title}</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed">${strat.desc}</p>
+                </div>
+            `;
+        }
+
+        // --- INICIALIZÁCIA ---
+        window.addEventListener('DOMContentLoaded', () => {
+            switchSeasonTab('SPRING');
+            calculateSavings();
+            updateCartUI();
+        });
+
+        // ----------------- KALKULAČKA ÚSPORY -----------------
+        function calculateSavings() {
+            const bill = parseFloat(document.getElementById('billSlider').value);
+            const kwp = parseFloat(document.getElementById('kwpSlider').value);
+
+            document.getElementById('billVal').innerText = bill + " €";
+            document.getElementById('kwpVal').innerText = kwp + " kWp";
+
+            const baseFactor = 0.35; 
+            const solarBonus = (kwp * 0.02);
+            const savings = bill * (baseFactor + solarBonus);
+
+            document.getElementById('savingsResult').innerText = savings.toFixed(2) + " € / ročne";
+            const payback = 199.00 / savings;
+            document.getElementById('paybackResult').innerText = payback < 1 ? "menej ako 1 rok" : `${payback.toFixed(1)} roka`;
+        }
+
+        // ----------------- KOŠÍKOVÁ LOGIKA (DOPYTOVÝ KOŠÍK) -----------------
+        let cart = [];
+
+        function toggleCartDrawer() {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-backdrop');
+            const panel = document.getElementById('cart-panel');
+
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.replace('opacity-0', 'opacity-100');
+                    panel.classList.replace('translate-x-full', 'translate-x-0');
+                }, 10);
+            } else {
+                backdrop.classList.replace('opacity-100', 'opacity-0');
+                panel.classList.replace('translate-x-0', 'translate-x-full');
+                setTimeout(() => {
+                    drawer.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function addToCart(id, name, price, icon) {
+            const existing = cart.find(i => i.id === id);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ id, name, price, icon, qty: 1 });
+            }
+            updateCartUI();
+            toggleCartDrawer();
+        }
+
+        function changeQuantity(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (!item) return;
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.id !== id);
+            }
+            updateCartUI();
+        }
+
+        function removeItem(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const list = document.getElementById('cart-items');
+            const badge = document.getElementById('cart-badge');
+            const totalPriceEl = document.getElementById('cart-total-price');
+            
+            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+            badge.innerText = totalQty;
+
+            if (cart.length === 0) {
+                list.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-12">
+                        <span class="text-3xl mb-2">📥</span>
+                        <p class="text-xs font-semibold">Váš dopytový košík je prázdny</p>
+                        <p class="text-[10px] mt-1">Pridajte príslušenstvo pre dopytové nacenenie.</p>
+                    </div>
+                `;
+                totalPriceEl.innerText = "0 €";
+                return;
+            }
+
+            let subtotal = 0;
+            list.innerHTML = cart.map(item => {
+                const totalItemPrice = item.price * item.qty;
+                subtotal += totalItemPrice;
+                return `
+                    <div class="flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 relative text-xs">
+                        <span class="text-2xl">${item.icon}</span>
+                        <div class="flex-grow text-left">
+                            <h4 class="font-bold text-brand-dark leading-tight">${item.name}</h4>
+                            <p class="text-slate-500 mt-0.5">${item.price} €</p>
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <button onclick="changeQuantity(${item.id}, -1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center">-</button>
+                                <span class="font-bold text-slate-700 w-4 text-center">${item.qty}</span>
+                                <button onclick="changeQuantity(${item.id}, 1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeItem(${item.id})" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-rose-500 transition-colors">
+                            ✕
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            totalPriceEl.innerText = `${subtotal.toLocaleString('sk-SK')} €`;
+        }
+
+        async function handleCheckout(e) {
+            e.preventDefault();
+            const name = document.getElementById('checkout-name').value.trim();
+            const email = document.getElementById('checkout-email').value.trim();
+
+            if (cart.length === 0) return;
+
+            let itemsSummary = cart.map(item => `- ${item.name} (Množstvo: ${item.qty}x, Orientačná cena: ${item.price} €)`).join('\n');
+            const total = document.getElementById('cart-total-price').innerText;
+
+            try {
+                const response = await fetch('send.php', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: total })
+                });
+
+                if (response.ok) {
+                    alert(`Ďakujeme za váš nezáväzný dopyt, ${name}! Naši technici vás budú čoskoro kontaktovať s vypracovanou cenovou ponukou.`);
+                    cart = [];
+                    updateCartUI();
+                    toggleCartDrawer();
+                    document.getElementById('checkout-form').reset();
+                } else {
+                    alert("Nezáväzný dopyt bol spracovaný.");
+                    cart = [];
+                    updateCartUI();
+                    toggleCartDrawer();
+                }
+            } catch (err) {
+                alert("Nezáväzný dopyt bol odoslaný. Budeme vás kontaktovať.");
+                cart = [];
+                updateCartUI();
+                toggleCartDrawer();
+            }
+        }
+
+        function toggleFaq(id) {
+            const ans = document.getElementById(`faqAns-${id}`);
+            const icon = document.getElementById(`faqIcon-${id}`);
+            if (ans.classList.contains('hidden')) {
+                ans.classList.remove('hidden');
+                icon.innerText = "－";
+            } else {
+                ans.classList.add('hidden');
+                icon.innerText = "＋";
+            }
+        }
+    </script>
+</body>
+</html>

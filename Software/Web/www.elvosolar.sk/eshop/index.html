@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="sk" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Shop & Objednávka | ELVOSOLAR a.s.</title>
+    <link rel="icon" type="image/png" href="../Png/download.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0f172a',
+                            green: '#10b981',
+                            light: '#f8fafc',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    </style>
+</head>
+<body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen relative overflow-x-hidden">
+
+    <!-- FLOATING TLAČIDLO KOŠÍKA V PRAVOM DOLNOM ROHU -->
+    <div class="fixed bottom-6 right-6 z-40">
+        <button onclick="openCart()" class="flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-brand-green hover:bg-emerald-600 text-white font-black text-sm shadow-2xl hover:scale-105 transition duration-200">
+            <span class="text-xl">🛒</span>
+            <span>Nákupný košík</span>
+            <span id="floatingCartBadge" class="h-6 min-w-[24px] px-1.5 bg-white text-emerald-700 font-black text-xs rounded-full flex items-center justify-center">0</span>
+        </button>
+    </div>
+
+    <!-- BOČNÝ PANEL NÁKUPNÉHO KOŠÍKA (DRAWER) -->
+    <div id="cartDrawer" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex justify-end">
+        <div class="w-full max-w-md bg-white h-full p-6 flex flex-col shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🛒</span>
+                    <h3 class="text-base font-black text-brand-dark">Váš nákupný košík</h3>
+                </div>
+                <button onclick="closeCart()" class="text-slate-400 hover:text-slate-700 text-sm p-1">✕</button>
+            </div>
+
+            <!-- Položky v košíku -->
+            <div id="cartItemsList" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1">
+                <!-- Položky košíka -->
+            </div>
+
+            <!-- Cenový súhrn košíka -->
+            <div class="pt-4 border-t border-slate-100 space-y-3 mt-4">
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between text-slate-500"><span>Medzisúčet bez DPH:</span> <span id="cartSubtotal" class="font-mono text-slate-800 font-bold">0.00 €</span></div>
+                    <div class="flex justify-between text-slate-500"><span>DPH (20%):</span> <span id="cartVat" class="font-mono text-slate-600">0.00 €</span></div>
+                    <div class="flex justify-between text-slate-500"><span>Doprava (Kuriér na adresu):</span> <span class="font-mono text-emerald-600 font-bold">ZADARMO</span></div>
+                    <div class="flex justify-between text-sm font-black text-brand-dark pt-2 border-t border-slate-100">
+                        <span>Spolu k úhrade s DPH:</span> <span id="cartTotal" class="font-mono text-emerald-600 text-lg font-black">0.00 €</span>
+                    </div>
+                </div>
+
+                <button onclick="openCheckoutModal()" id="btnCheckout" class="w-full py-4 rounded-xl bg-brand-green hover:bg-emerald-600 text-white font-black text-xs tracking-wider uppercase transition shadow-md flex items-center justify-center gap-2">
+                    <span>PREJSŤ K POKLADNI (KAM POSLAŤ) ➔</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POKLADŇA / FORMULÁR: KAM POSLAŤ TOVAR, DOPRAVA A PLATBA -->
+    <div id="checkoutModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto custom-scroll">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📦</span>
+                    <div>
+                        <h3 class="text-base font-black text-brand-dark">Pokladňa & Doručovacie údaje</h3>
+                        <p class="text-[11px] text-slate-400">Vyplňte, kam a ako vám máme tovar doručiť.</p>
+                    </div>
+                </div>
+                <button onclick="closeCheckoutModal()" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+            </div>
+
+            <form id="checkoutForm" onsubmit="submitOrder(event)" class="space-y-4 text-xs">
+                
+                <!-- 1. KAM POSLAŤ TOVAR -->
+                <div class="space-y-2">
+                    <div class="flex items-center gap-1.5 text-slate-900 font-extrabold uppercase text-[11px] tracking-wider">
+                        <span>📍 1. Doručovacia adresa (Kam poslať tovar)</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Meno a Priezvisko / Názov firmy *</label>
+                            <input id="custName" required type="text" placeholder="Ján Novák" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-green">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Telefón pre kuriéra (SMS avízo) *</label>
+                            <input id="custPhone" required type="tel" placeholder="+421 900 000 000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-green">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail pre potvrdenie objednávky *</label>
+                        <input id="custEmail" required type="email" placeholder="jan.novak@gmail.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-green">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+                        <div class="md:col-span-6">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ulica a číslo domu *</label>
+                            <input id="custAddress" required type="text" placeholder="Hlavná 123" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-green">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Mesto *</label>
+                            <input id="custCity" required type="text" placeholder="Bratislava" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-green">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">PSČ *</label>
+                            <input id="custZip" required type="text" placeholder="811 01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-brand-green">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Poznámka k doručeniu (nepovinné)</label>
+                        <input id="custNote" type="text" placeholder="Napr. kód od brány, volať vopred..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-brand-green">
+                    </div>
+                </div>
+
+                <!-- 2. SPÔSOB DOPRAVY -->
+                <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <div class="flex items-center gap-1.5 text-slate-900 font-extrabold uppercase text-[11px] tracking-wider">
+                        <span>🚚 2. Spôsob dopravy</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <label class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col justify-between cursor-pointer">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="shippingMethod" value="DPD" checked class="text-brand-green focus:ring-brand-green">
+                                <span class="font-bold text-brand-dark">Kuriér DPD na adresu</span>
+                            </div>
+                            <span class="text-[10px] text-emerald-700 font-bold mt-1">ZADARMO</span>
+                        </label>
+                        <label class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between cursor-pointer hover:bg-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="shippingMethod" value="PACKETA" class="text-brand-green focus:ring-brand-green">
+                                <span class="font-bold text-slate-700">Packeta / Z-Box</span>
+                            </div>
+                            <span class="text-[10px] text-emerald-700 font-bold mt-1">ZADARMO</span>
+                        </label>
+                        <label class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between cursor-pointer hover:bg-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="shippingMethod" value="PICKUP" class="text-brand-green focus:ring-brand-green">
+                                <span class="font-bold text-slate-700">Osobný odber ElvoSolar</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1">0.00 €</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. SPÔSOB PLATBY -->
+                <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <div class="flex items-center gap-1.5 text-slate-900 font-extrabold uppercase text-[11px] tracking-wider">
+                        <span>💳 3. Spôsob platby</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <label class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between cursor-pointer hover:bg-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="paymentMethod" value="COD" checked class="text-brand-green focus:ring-brand-green">
+                                <span class="font-bold text-slate-700">Dobierka pri doručení</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1">Kuriérovi kartou / hotovosť</span>
+                        </label>
+                        <label class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between cursor-pointer hover:bg-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="paymentMethod" value="TRANSFER" class="text-brand-green focus:ring-brand-green">
+                                <span class="font-bold text-slate-700">Bankový prevod (QR kód)</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1">Predfaktúra na e-mail</span>
+                        </label>
+                        <label class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between cursor-pointer hover:bg-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="paymentMethod" value="CARD" class="text-brand-green focus:ring-brand-green">
+                                <span class="font-bold text-slate-700">Platobná karta online</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1">Okamžitá platba</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- SÚHRN SUMY -->
+                <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-slate-600 block">Celková suma objednávky k úhrade:</span>
+                        <span class="text-[10px] text-slate-400 font-medium">Vrátane 20% DPH a dopravy zadarmo</span>
+                    </div>
+                    <div id="checkoutFinalTotal" class="text-2xl font-black text-emerald-800 font-mono">0.00 €</div>
+                </div>
+
+                <button type="submit" class="w-full py-4 rounded-xl bg-brand-green hover:bg-emerald-600 text-white font-black text-xs tracking-wider uppercase transition shadow-lg">
+                    ZÁVÄZNE POTVRDIŤ A ODOSLAŤ OBJEDNÁVKU ➔
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- POTVRDENIE OBJEDNÁVKY S ADRESOU A FAKTURAČNÝMI ÚDAJMI -->
+    <div id="orderSuccessModal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full text-center space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scroll">
+            <span class="text-5xl block">🎉</span>
+            <h3 class="text-xl font-black text-brand-dark">Objednávka úspešne prijatá!</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Ďakujeme za vašu objednávku. Číslo vašej objednávky je <strong id="successOrderNumber" class="text-emerald-600 font-mono font-bold">ELVO-2026-849201</strong>.
+            </p>
+
+            <!-- Ako príde faktúra a ako prebehne platba -->
+            <div id="successPaymentBox" class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-left text-xs space-y-2">
+                <div class="flex items-center gap-2 text-emerald-800 font-black uppercase text-[11px]">
+                    <span id="paymentIcon">📧</span> <span id="paymentTitle">Faktúra a spôsob úhrady</span>
+                </div>
+                <p id="paymentInstructions" class="text-slate-600 leading-relaxed text-[11px]">
+                    <!-- Text inštrukcií podľa zvolenej platby -->
+                </p>
+                
+                <div id="bankTransferDetails" class="hidden p-3 bg-white rounded-xl border border-emerald-100 space-y-1 font-mono text-[11px] text-slate-800">
+                    <div class="flex justify-between"><span>IBAN účet:</span> <strong class="text-emerald-700">SK89 0200 0000 0012 3456 7890</strong></div>
+                    <div class="flex justify-between"><span>Variabilný symbol:</span> <strong id="successVS" class="text-emerald-700">849201</strong></div>
+                    <div class="flex justify-between"><span>Suma k úhrade:</span> <strong id="successPaymentAmount" class="text-emerald-700">199.00 €</strong></div>
+                    <div class="flex justify-between"><span>Banka:</span> <span>VÚB Banka a.s.</span></div>
+                </div>
+            </div>
+
+            <!-- Doručovacie údaje -->
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-1">
+                <div class="text-[10px] font-bold text-slate-400 uppercase">Doručovacia adresa kuriérom:</div>
+                <div id="successAddress" class="font-bold text-slate-800">Ján Novák, Hlavná 123, 811 01 Bratislava</div>
+                <div id="successContact" class="text-slate-500 text-[11px]">Telefón: +421 900 000 000 | E-mail: jan@gmail.com</div>
+            </div>
+
+            <p class="text-[11px] text-slate-400">
+                Kópia objednávky a daňový doklad boli automaticky odoslané na váš zadaný e-mail.
+            </p>
+
+            <button onclick="closeSuccessModal()" class="w-full py-3.5 rounded-xl bg-brand-dark hover:bg-slate-800 text-white font-bold text-xs">
+                Späť do obchodu
+            </button>
+        </div>
+    </div>
+
+    <!-- HORNÁ LIŠTA (NAVIGÁCIA) -->
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="../index.html" class="flex items-center">
+                <img src="../Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
+            </a>
+            
+            <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600">
+                <a href="../o-nás/index.html" class="hover:text-brand-green transition-colors">O nás</a>
+                <a href="../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green transition-colors">Obnoviteľná energia</a>
+                <a href="../smart-riesenia/index.html" class="hover:text-brand-green transition-colors">Smart riešenia</a>
+                <a href="../eshop/index.html" class="text-brand-green font-extrabold flex items-center gap-1">🛒 E-Shop</a>
+                <a href="../služby/index.html" class="hover:text-brand-green transition-colors">Služby</a>
+                <a href="../kontakt/index.html" class="hover:text-brand-green transition-colors">Kontakt</a>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="openCart()" class="relative p-2.5 rounded-xl bg-brand-green hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-2 transition shadow-sm">
+                    <span>🛒 Košík</span>
+                    <span id="cartCountBadge" class="h-5 min-w-[20px] px-1 bg-white text-emerald-700 font-black text-[10px] rounded-full flex items-center justify-center">0</span>
+                </button>
+                <a href="../kontakt/index.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition-all">Rýchly dopyt</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- HLAVNÝ OBSAH E-SHOPU -->
+    <main class="py-12 max-w-7xl mx-auto px-6 flex-grow space-y-10">
+        
+        <!-- HERO BANNER -->
+        <div class="p-8 md:p-10 rounded-3xl bg-gradient-to-r from-brand-dark via-slate-800 to-slate-900 text-white space-y-4 relative overflow-hidden shadow-xl">
+            <div class="max-w-3xl space-y-3 relative z-10">
+                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    ⚡ Oficiálny ElvoSolar E-Shop
+                </span>
+                <h1 class="text-3xl md:text-4xl font-black tracking-tight leading-tight">
+                    Inteligentné fotovoltické systémy & príslušenstvo
+                </h1>
+                <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+                    Vložte si riadiacu jednotku Raspberry Pi CM5, smart bojler regulátory alebo Modbus elektromery do košíka a objednajte s doručením kuriérom zadarmo po celom Slovensku.
+                </p>
+            </div>
+        </div>
+
+        <!-- FILTER KATEGÓRIÍ -->
+        <div class="flex gap-2 overflow-x-auto custom-scroll pb-2">
+            <button onclick="filterCategory('ALL')" class="cat-btn px-4 py-2 rounded-xl text-xs font-black bg-brand-green text-white transition">Všetky produkty</button>
+            <button onclick="filterCategory('CORE')" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition">🧠 Riadiace jednotky</button>
+            <button onclick="filterCategory('BOILER')" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition">♨️ Ohrev vody & Bojlery</button>
+            <button onclick="filterCategory('RELAY')" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition">⚡ Smart Relé</button>
+            <button onclick="filterCategory('EV')" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition">🚗 EV Wallboxy</button>
+            <button onclick="filterCategory('METER')" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition">🔋 Elektromery & CT</button>
+        </div>
+
+        <!-- PRODUKTOVÁ MRIEŽKA S TLAČIDLAMI DO KOŠÍKA -->
+        <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Dynamicky generované produkty -->
+        </div>
+
+    </main>
+
+    <!-- PÄTIČKA -->
+    <footer class="bg-slate-950 text-slate-500 py-8 text-xs mt-auto border-t border-slate-900">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>© 2026 ELVOSOLAR a.s. Všetky práva vyhradené.</p>
+            <p class="text-slate-600">Inteligentné energetické riadenie pre Slovensko.</p>
+        </div>
+    </footer>
+
+    <script>
+        const PRODUCTS = [
+            {
+                id: 1,
+                name: "ElvoSolar CM5 AI Smart EMS Pro",
+                category: "CORE",
+                price: 199.00,
+                icon: "🧠",
+                badge: "Bestseller",
+                badgeColor: "bg-emerald-100 text-emerald-700 border-emerald-200",
+                desc: "Hlavný mozog fotovoltiky a batérií na báze Raspberry Pi CM5. Autonómne riadenie podľa cien OKTE, ochrana pred zápornými cenami a samo-učenie spotreby bez poplatkov.",
+                specs: "RS485 Modbus RTU / TCP • Wi-Fi • LAN • 100% Lokálne AI"
+            },
+            {
+                id: 2,
+                name: "Smart Bojler Regulátor & Prebytky 3.5 kW",
+                category: "BOILER",
+                price: 89.00,
+                icon: "♨️",
+                badge: "Ohrev vody zadarmo",
+                badgeColor: "bg-blue-100 text-blue-700 border-blue-200",
+                desc: "Inteligentný modul pre automatické spínanie ohrevu teplej úžitkovej vody pri záporných cenách a zo solárnych prebytkov fotovoltiky.",
+                specs: "Až 3 500 W (16A / 230V) • Wi-Fi / Modbus • Montáž na DIN"
+            },
+            {
+                id: 3,
+                name: "Shelly Pro 1PM Smart DIN Relé",
+                category: "RELAY",
+                price: 49.00,
+                icon: "⚡",
+                badge: "Wi-Fi & LAN",
+                badgeColor: "bg-purple-100 text-purple-700 border-purple-200",
+                desc: "1-kanálové relé na DIN lištu s presným meraním spotreby elektriny pre tepelné čerpadlá, rebríky a klimatizácie.",
+                specs: "Meranie výkonu (W, V, A) • LAN Ethernet • Wi-Fi • REST API"
+            },
+            {
+                id: 4,
+                name: "Chint DTSU666 3-fázový Modbus Elektromer",
+                category: "METER",
+                price: 75.00,
+                icon: "🔋",
+                badge: "Modbus RTU",
+                badgeColor: "bg-amber-100 text-amber-700 border-amber-200",
+                desc: "Certifikovaný 3-fázový obojsmerný elektromer s externými prúdovými transformátormi (CT) pre presné meranie tokov do/zo siete.",
+                specs: "3-fázové meranie • RS485 Modbus • Otváracie CT svorky"
+            },
+            {
+                id: 5,
+                name: "Elvo Wallbox EV Smart Charger 11kW/22kW",
+                category: "EV",
+                price: 449.00,
+                icon: "🚗",
+                badge: "Smart Nabíjanie",
+                badgeColor: "bg-rose-100 text-rose-700 border-rose-200",
+                desc: "Inteligentná domáca nabíjacia stanica pre elektromobily s dynamickým riadením podľa spotových cien OKTE a solárnych prebytkov.",
+                specs: "Type 2 konektor • 11kW / 22kW • Dynamické nabíjanie z FVE"
+            },
+            {
+                id: 6,
+                name: "Nerezová teplotná sonda PT1000 pre bojler",
+                category: "BOILER",
+                price: 19.00,
+                icon: "🌡️",
+                badge: "Presné meranie",
+                badgeColor: "bg-teal-100 text-teal-700 border-teal-200",
+                desc: "Vysokoteplotná vodotesná nerezová sonda pre presné meranie teploty vody v bojleri alebo akumulačnej nádrži.",
+                specs: "Rozsah -50°C až +200°C • Nerez IP68 • Kábel 2m"
+            }
+        ];
+
+        let cart = JSON.parse(localStorage.getItem('elvosolar_cart') || '[]');
+
+        function saveCart() {
+            localStorage.setItem('elvosolar_cart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        function renderProducts(filter = 'ALL') {
+            const grid = document.getElementById('productsGrid');
+            const filtered = filter === 'ALL' ? PRODUCTS : PRODUCTS.filter(p => p.category === filter);
+
+            grid.innerHTML = filtered.map(p => `
+                <div class="p-6 rounded-3xl bg-white border border-slate-200 hover:shadow-xl transition flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex items-start justify-between">
+                            <span class="text-4xl p-3 rounded-2xl bg-slate-50 border border-slate-100">${p.icon}</span>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${p.badgeColor}">${p.badge}</span>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-extrabold text-brand-dark">${p.name}</h3>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">${p.desc}</p>
+                            <span class="text-[10px] text-slate-400 font-bold block mt-2">⚙️ ${p.specs}</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Cena s DPH</span>
+                            <div class="text-xl font-black text-brand-dark font-mono">${p.price.toFixed(2)} €</div>
+                        </div>
+                        <button onclick="addToCart(${p.id})" class="px-4 py-2.5 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-xs font-black transition shadow-sm flex items-center gap-1.5">
+                            <span>🛒</span> <span>+ DO KOŠÍKA</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterCategory(cat) {
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition";
+            });
+            event.target.className = "cat-btn px-4 py-2 rounded-xl text-xs font-black bg-brand-green text-white transition";
+            renderProducts(cat);
+        }
+
+        function addToCart(prodId) {
+            const prod = PRODUCTS.find(p => p.id === prodId);
+            if (!prod) return;
+
+            const existing = cart.find(item => item.id === prodId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...prod, qty: 1 });
+            }
+            saveCart();
+            openCart();
+        }
+
+        function updateCartUI() {
+            const list = document.getElementById('cartItemsList');
+            const headerBadge = document.getElementById('cartCountBadge');
+            const floatBadge = document.getElementById('floatingCartBadge');
+            const totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
+            
+            if (headerBadge) headerBadge.innerText = totalQty;
+            if (floatBadge) floatBadge.innerText = totalQty;
+
+            if (cart.length === 0) {
+                list.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Váš nákupný košík je momentálne prázdny.</div>`;
+                document.getElementById('cartSubtotal').innerText = "0.00 €";
+                document.getElementById('cartVat').innerText = "0.00 €";
+                document.getElementById('cartTotal').innerText = "0.00 €";
+                return;
+            }
+
+            let subtotal = 0;
+            list.innerHTML = cart.map(item => {
+                const itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+                return `
+                    <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">${item.icon}</span>
+                            <div>
+                                <h4 class="text-xs font-black text-brand-dark">${item.name}</h4>
+                                <span class="text-[11px] text-emerald-600 font-mono font-bold">${item.price.toFixed(2)} €</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold flex items-center justify-center">-</button>
+                            <span class="text-xs font-bold text-slate-800 font-mono px-1">${item.qty}</span>
+                            <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold flex items-center justify-center">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const vat = subtotal * 0.20;
+            document.getElementById('cartSubtotal').innerText = (subtotal - vat).toFixed(2) + " €";
+            document.getElementById('cartVat').innerText = vat.toFixed(2) + " €";
+            document.getElementById('cartTotal').innerText = subtotal.toFixed(2) + " €";
+            document.getElementById('checkoutFinalTotal').innerText = subtotal.toFixed(2) + " €";
+        }
+
+        function changeQty(prodId, delta) {
+            const item = cart.find(i => i.id === prodId);
+            if (!item) return;
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.id !== prodId);
+            }
+            saveCart();
+        }
+
+        function openCart() {
+            document.getElementById('cartDrawer').classList.remove('hidden');
+        }
+
+        function closeCart() {
+            document.getElementById('cartDrawer').classList.add('hidden');
+        }
+
+        function openCheckoutModal() {
+            if (cart.length === 0) {
+                alert('Váš košík je prázdny.');
+                return;
+            }
+            closeCart();
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        }
+
+        function submitOrder(e) {
+            e.preventDefault();
+            const name = document.getElementById('custName').value;
+            const address = document.getElementById('custAddress').value;
+            const city = document.getElementById('custCity').value;
+            const zip = document.getElementById('custZip').value;
+            const phone = document.getElementById('custPhone').value;
+            const email = document.getElementById('custEmail').value;
+            const payment = document.querySelector('input[name="paymentMethod"]:checked') ? document.querySelector('input[name="paymentMethod"]:checked').value : 'COD';
+
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const vsNum = Math.floor(100000 + Math.random() * 900000);
+            const orderNum = "ELVO-2026-" + vsNum;
+
+            document.getElementById('successOrderNumber').innerText = orderNum;
+            document.getElementById('successAddress').innerText = `${name}, ${address}, ${zip} ${city}`;
+            document.getElementById('successContact').innerText = `Telefón: ${phone} | E-mail: ${email}`;
+
+            const pTitle = document.getElementById('paymentTitle');
+            const pInst = document.getElementById('paymentInstructions');
+            const bankBox = document.getElementById('bankTransferDetails');
+
+            if (payment === 'TRANSFER') {
+                pTitle.innerText = "Zálohová faktúra odoslaná na váš e-mail";
+                pInst.innerText = `Na e-mail ${email} sme vám odoslali zálohovú faktúru v PDF. Úhradu môžete vykonať cez internet banking (IBAN) alebo naskenovaním Pay by square QR kódu. Po prijatí platby tovar ihneď expedujeme.`;
+                bankBox.classList.remove('hidden');
+                document.getElementById('successVS').innerText = vsNum;
+                document.getElementById('successPaymentAmount').innerText = subtotal.toFixed(2) + " € s DPH";
+            } else if (payment === 'COD') {
+                pTitle.innerText = "Platba na dobierku kuriérovi DPD";
+                pInst.innerText = `Objednávku expedujeme na vašu adresu. Platbu vo výške ${subtotal.toFixed(2)} € uhradíte kuriérovi pri prevzatí balíka (v hotovosti alebo kartou). Originál daňová faktúra bude priložená priamo v balíku a kópia odoslaná na ${email}.`;
+                bankBox.classList.add('hidden');
+            } else {
+                pTitle.innerText = "Platba kartou online (Autorizovaná)";
+                pInst.innerText = `Vaša platba bola úspešne spracovaná. Daňový doklad a faktúra boli odoslané na ${email}. Tovar ihneď odosielame kuriérom na zadanú adresu.`;
+                bankBox.classList.add('hidden');
+            }
+
+            closeCheckoutModal();
+            cart = [];
+            saveCart();
+            document.getElementById('orderSuccessModal').classList.remove('hidden');
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('orderSuccessModal').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            updateCartUI();
+        });
+    </script>
+</body>
+</html>

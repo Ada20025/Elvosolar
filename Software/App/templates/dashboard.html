@@ -1,0 +1,548 @@
+<!-- App/templates/dashboard.html -->
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Súhrnná nástenka | ElvoSolar</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandBlue: '#007aff',
+                        brandTeal: '#0d9488',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-color: #040811;
+            --card-bg: rgba(11, 17, 30, 0.7);
+            --card-hover: rgba(30, 41, 59, 0.8);
+            --border-color: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --header-bg: #090d16;
+            --input-bg: #0f172a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        .custom-card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            backdrop-filter: blur(12px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .custom-card:hover {
+            background-color: var(--card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { border-color: #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.35); }
+            50% { border-color: #fda4af; box-shadow: 0 0 4px rgba(244, 63, 94, 0.1); }
+        }
+        .card-error {
+            animation: pulse-red 2s infinite ease-in-out !important;
+        }
+
+        @keyframes toast-slide-in {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-animate {
+            animation: toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .custom-text-secondary {
+            color: var(--text-secondary);
+        }
+
+        .custom-border {
+            border-color: var(--border-color);
+        }
+
+        .custom-header {
+            background-color: var(--header-bg);
+            border-color: var(--border-color);
+            backdrop-filter: blur(12px);
+        }
+
+        .custom-input {
+            background-color: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col justify-between pb-8">
+
+    <div id="php-metadata" 
+         data-base-path="<?php echo htmlspecialchars($base_path); ?>" 
+         data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>" 
+         class="hidden"></div>
+
+    <div id="toast-container" class="fixed top-20 right-4 z-[9999] space-y-3 pointer-events-auto max-w-sm w-full"></div>
+
+    <!-- Horná lišta / Header -->
+    <header class="custom-header border-b sticky top-0 z-50 transition-colors duration-200 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="switchTab('main')" class="flex items-center gap-2 text-left focus:outline-none">
+                        <img src="<?php echo $base_path; ?>/templates/ElvosolarLogo.png" alt="ElvoSolar Logo" class="h-8 w-auto object-contain" onerror="this.src='https://images.placeholders.dev/?width=150&height=40&text=ElvoSolar'">
+                        <div class="hidden sm:flex flex-col border-l custom-border pl-3">
+                            <span class="text-sm font-black tracking-wider text-white uppercase font-mono leading-none">ElvoSolar</span>
+                            <span class="text-[9px] font-bold text-cyan-500 tracking-widest uppercase font-mono mt-0.5">Multi-Core System</span>
+                        </div>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button id="btn-profile" onclick="switchTab('account')" class="flex items-center gap-2 p-1.5 hover:bg-slate-500/10 rounded-xl transition-all border custom-border">
+                        <div class="w-8 h-8 bg-cyan-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">
+                            <?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?>
+                        </div>
+                        <span class="hidden sm:inline text-xs font-semibold pr-1"><?php echo htmlspecialchars($username); ?></span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- POHĽAD 1: DASHBOARD -->
+    <main id="view-main" class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-grow">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-white">Prehľad zdrojov</h1>
+                <p class="text-sm custom-text-secondary mt-1">Sledovanie a monitoring lokálnych riadiacich staníc CM5.</p>
+            </div>
+            
+            <button id="btn-enable-notifications" onclick="requestNotificationPermission()" class="bg-slate-500/10 hover:bg-slate-500/20 border custom-border font-bold py-2.5 px-4 rounded-xl text-xs transition duration-150 flex items-center gap-2 shadow-sm self-start">
+                <i data-lucide="bell" class="w-4 h-4 text-cyan-400"></i> Zapnúť notifikácie
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <?php foreach ($devices as $device): ?>
+            
+            <div id="card-<?php echo $device['id']; ?>" class="custom-card border rounded-3xl p-6 flex flex-col justify-between shadow-sm relative group">
+                
+                <div class="absolute top-6 right-6 flex items-center gap-2">
+                    <span id="badge-<?php echo $device['id']; ?>" class="h-2.5 w-2.5 rounded-full bg-slate-500"></span>
+                    <span id="status-text-<?php echo $device['id']; ?>" class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Zisťujem...</span>
+                </div>
+
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="px-2.5 py-1 rounded-lg text-[9px] uppercase font-black tracking-wider bg-slate-800 text-slate-300 font-mono">
+                            <?php echo htmlspecialchars(strtoupper($device['brand_id'])); ?>
+                        </span>
+                        <span class="text-[10px] font-mono font-medium custom-text-secondary">SN: <?php echo htmlspecialchars($device['serial_number']); ?></span>
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-2">
+                        <h3 id="name-display-<?php echo $device['id']; ?>" class="text-xl font-black tracking-tight text-white"><?php echo htmlspecialchars($device['name']); ?></h3>
+                        <button 
+                            data-id="<?php echo $device['id']; ?>" 
+                            data-name="<?php echo htmlspecialchars($device['name']); ?>" 
+                            onclick="openRenameModal(this)" 
+                            class="text-slate-500 hover:text-cyan-400 p-1 rounded-lg hover:bg-slate-500/10 transition" 
+                            title="Premenovať stanicu">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+
+                    <p class="text-xs custom-text-secondary font-medium mb-6">
+                        IP adresa: <strong class="text-slate-300 font-mono"><?php echo htmlspecialchars($device['static_ip'] ?? '192.168.1.150'); ?></strong>
+                    </p>
+                    
+                    <div class="bg-slate-500/5 border custom-border rounded-2xl p-4 space-y-3 mb-6">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="custom-text-secondary font-semibold">Finančná úspora:</span>
+                            <span class="font-mono text-emerald-400 font-extrabold text-sm" id="saved-<?php echo $device['id']; ?>"><?php echo htmlspecialchars(round($device['total_saved_eur'], 2)); ?> EUR</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="custom-text-secondary font-semibold">Vyrobená energia:</span>
+                            <span class="font-mono text-slate-200 font-bold" id="kwh-<?php echo $device['id']; ?>"><?php echo htmlspecialchars(round($device['total_kwh'], 2)); ?> kWh</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <a href="<?php echo $base_path; ?>/device/<?php echo $device['id']; ?>" class="block w-full text-center text-xs font-bold py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl transition duration-150 shadow-md">
+                        Otvoriť monitorovacie jadro
+                    </a>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </main>
+
+    <!-- POHĽAD 2: KONTO -->
+    <main id="view-account" class="hidden max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-grow">
+        
+        <div class="flex justify-start">
+            <button onclick="switchTab('main')" class="flex items-center gap-2 px-4 py-2 bg-slate-500/10 hover:bg-slate-500/20 rounded-xl text-xs font-semibold transition-all border custom-border">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Späť na Dashboard
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="custom-card p-5 rounded-2xl border shadow-lg space-y-4 md:col-span-1">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-cyan-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                        <?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Užívateľ'); ?></h3>
+                        <p class="text-xs custom-text-secondary">Lokálny správca jednotky CM5</p>
+                    </div>
+                </div>
+                
+                <div class="border-t custom-border pt-3 space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="custom-text-secondary">Rola v systéme:</span>
+                        <span class="font-semibold text-white">Administrátor</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="custom-text-secondary">Stav Hardvéru:</span>
+                        <span class="font-bold text-emerald-400">Pripojený</span>
+                    </div>
+                </div>
+
+                <div class="border-t custom-border pt-4">
+                    <button onclick="location.href='<?php echo $base_path; ?>/logout'" class="w-full py-2.5 text-xs font-semibold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-all">Odhlásiť sa zo systému</button>
+                </div>
+            </div>
+
+            <div class="custom-card p-5 rounded-2xl border shadow-lg space-y-6 md:col-span-2">
+                <div>
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                        <i data-lucide="smartphone" class="w-4 h-4"></i> Nastavenia aplikácie
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <span class="text-xs font-bold custom-text-secondary block">Interval aktualizácie</span>
+                        <select id="update-interval-select" onchange="handleIntervalChange()" class="w-full custom-input border p-2.5 rounded-xl text-xs outline-none focus:border-cyan-500 transition-all cursor-pointer font-semibold">
+                            <option value="5">Rýchly (každých 5 sek)</option>
+                            <option value="15" selected>Štandardný (každých 15 sek)</option>
+                            <option value="60">Úsporný (každých 60 sek)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-card p-5 rounded-2xl border shadow-lg md:col-span-3 space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-bold flex items-center gap-2 text-white">
+                            <i data-lucide="bell" class="text-cyan-400 w-4 h-4"></i> Inteligentné systémové upozornenia
+                        </h3>
+                        <p class="text-xs custom-text-secondary mt-1">Povoľte notifikácie, aby vás systém upozorňoval na dôležité zmeny v reálnom čase.</p>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="btn-enable-notifications-account" onclick="requestNotificationPermission()" class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-2">
+                            <i data-lucide="bell-ring" class="w-4 h-4"></i> Zapnúť notifikácie
+                        </button>
+                    </div>
+                </div>
+                <div class="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-3">
+                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs text-left">
+                        <span class="font-bold text-emerald-400 block">Diagnostika: Bez porúch (100% OK)</span>
+                        <span class="custom-text-secondary block">Hardvérový modul CM5 a zbernica RS485 pracujú v optimálnom režime.</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="custom-card border-t py-6 mt-12 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left sm:flex sm:justify-between sm:items-center">
+            <p class="text-xs custom-text-secondary">Autorské práva &copy; 2011&ndash;2026 Elvosolar. Všetky práva vyhradené.</p>
+            <div class="mt-2 sm:mt-0 space-x-4">
+                <a href="#" class="text-xs custom-text-secondary hover:text-cyan-400">Podpora</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL: PREMENOVANIE ZARIADENIA -->
+    <div id="rename-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-800 text-white">
+            <h3 class="text-lg font-black text-white mb-1">Premenovať riadiacu stanicu</h3>
+            <p class="text-xs text-slate-400 mb-4">Zadajte nový vlastný názov pre toto odberné miesto.</p>
+            <input type="hidden" id="rename-device-id">
+            <input type="text" id="rename-device-input" class="w-full px-4 py-3 bg-slate-950 border border-slate-850 rounded-xl text-xs font-bold focus:outline-none focus:border-cyan-500 mb-4 text-white" placeholder="Napr. Dom, Chata">
+            <div class="flex gap-2 justify-end">
+                <button onclick="closeRenameModal()" class="px-4 py-2.5 bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-xl transition">Zrušiť</button>
+                <button onclick="saveRename()" class="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition">Uložiť názov</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const metaEl = document.getElementById('php-metadata');
+        const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
+        const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids')) : [];
+
+        let deviceErrorStates = {};
+
+        function switchTab(tab) {
+            const viewMain = document.getElementById('view-main');
+            const viewAccount = document.getElementById('view-account');
+            const btnProfile = document.getElementById('btn-profile');
+
+            if (viewMain && viewAccount && btnProfile) {
+                viewMain.classList.add('hidden');
+                viewAccount.classList.add('hidden');
+                btnProfile.classList.remove('border-cyan-500', 'bg-cyan-500/10');
+
+                if (tab === 'main') {
+                    viewMain.classList.remove('hidden');
+                } else if (tab === 'account') {
+                    viewAccount.classList.remove('hidden');
+                    btnProfile.classList.add('border-cyan-500', 'bg-cyan-500/10');
+                }
+            }
+        }
+
+        function showToast(title, message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = "toast-animate flex flex-col p-4 bg-[#1f1f1f]/95 border border-white/10 rounded-xl shadow-2xl pointer-events-auto backdrop-blur-lg text-white transition-all duration-300 w-80";
+            
+            let statusDot = '🔵';
+            if (type === 'success') { statusDot = '🟢'; }
+            if (type === 'error') { statusDot = '🔴'; }
+
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            toast.innerHTML = `
+                <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-white/5 pb-2 mb-2 font-semibold">
+                    <div class="flex items-center gap-1.5">
+                        <span>☀️</span>
+                        <span class="uppercase tracking-wider">Elvosolar Systém</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>${timeStr}</span>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-slate-400 hover:text-slate-100 focus:outline-none font-bold text-[10px]">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-3 items-start">
+                    <div class="text-base select-none">${statusDot}</div>
+                    <div class="flex-grow">
+                        <span class="font-bold text-xs block text-slate-100 leading-tight">${title}</span>
+                        <span class="text-[10px] text-slate-300 block mt-1 leading-normal">${message}</span>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                showToast("Systémová správa", "Prehliadač nepodporuje externé notifikácie. Systém použije interné toasty.", "info");
+                return;
+            }
+
+            Notification.requestPermission().then(permission => {
+                updateNotificationButton();
+                if (permission === "granted") {
+                    sendNotification("Elvosolar", "🔔 Upozornenia boli úspešne prepojené!", "success");
+                }
+            });
+        }
+
+        function updateNotificationButton() {
+            const btn = document.getElementById('btn-enable-notifications');
+            const btnAccount = document.getElementById('btn-enable-notifications-account');
+
+            const applyBtnStyle = (el) => {
+                if (!el) return;
+                if (Notification.permission === "granted") {
+                    el.innerHTML = `🟢 Notifikácie aktívne`;
+                    el.className = "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold py-2.5 px-4 rounded-xl text-xs transition duration-150 flex items-center gap-2 shadow-sm cursor-default";
+                    el.onclick = null;
+                } else if (Notification.permission === "denied") {
+                    el.innerHTML = `🔴 Notifikácie zakázané`;
+                    el.className = "bg-rose-500/10 text-rose-500 border border-rose-500/20 font-bold py-2.5 px-4 rounded-xl text-xs transition duration-150 flex items-center gap-2 shadow-sm cursor-default";
+                    el.onclick = null;
+                }
+            };
+
+            applyBtnStyle(btn);
+            applyBtnStyle(btnAccount);
+        }
+
+        function sendNotification(title, message, type = 'info') {
+            showToast(title, message, type);
+            if (Notification.permission === "granted") {
+                try {
+                    const options = {
+                        body: message,
+                        icon: basePath + "/templates/ElvosolarLogo.png"
+                    };
+                    new Notification(title, options);
+                } catch (e) {}
+            }
+        }
+
+        async function refreshDashboard() {
+            for (const id of deviceIds) {
+                try {
+                    const res = await fetch(basePath + `/api/device/${id}/telemetry`);
+                    if (!res.ok) throw new Error('Zlyhanie spojenia');
+                    const data = await res.json();
+                    
+                    const card = document.getElementById(`card-${id}`);
+                    const badge = document.getElementById(`badge-${id}`);
+                    const statusText = document.getElementById(`status-text-${id}`);
+                    const savedEl = document.getElementById(`saved-${id}`);
+                    const kwhEl = document.getElementById(`kwh-${id}`);
+                    const nameDisplay = document.getElementById(`name-display-${id}`);
+
+                    if (savedEl) savedEl.innerText = `${data.total_saved_eur.toFixed(2)} EUR`;
+                    if (kwhEl) kwhEl.innerText = `${data.total_kwh.toFixed(2)} kWh`;
+
+                    const name = nameDisplay ? nameDisplay.innerText : "CM5";
+
+                    const hasError = (data.has_errors || (data.active_errors && Object.keys(data.active_errors).length > 0));
+                    const lastState = deviceErrorStates[id] || 'ok';
+
+                    if (hasError) {
+                        if (card) card.classList.add('card-error');
+                        if (badge) badge.className = "h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse";
+                        if (statusText) {
+                            statusText.innerText = "Chyba zbernice";
+                            statusText.className = "text-[9px] font-bold text-rose-500 uppercase tracking-wider";
+                        }
+                        
+                        if (lastState === 'ok') {
+                            sendNotification("⚠️ Výpadok komunikácie", `Zariadenie "${name}" stratilo spojenie so zbernicou RS485!`, "error");
+                            deviceErrorStates[id] = 'error';
+                        }
+                    } else {
+                        if (card) card.classList.remove('card-error');
+                        if (badge) badge.className = "h-2.5 w-2.5 rounded-full bg-emerald-500";
+                        if (statusText) {
+                            statusText.innerText = "Online";
+                            statusText.className = "text-[9px] font-bold text-emerald-500 uppercase tracking-wider";
+                        }
+                        
+                        if (lastState === 'error') {
+                            sendNotification("✅ Komunikácia obnovená", `Zariadenie "${name}" opäť normálne komunikuje.`, "success");
+                            deviceErrorStates[id] = 'ok';
+                        }
+                    }
+                } catch (e) {
+                    const card = document.getElementById(`card-${id}`);
+                    const badge = document.getElementById(`badge-${id}`);
+                    const statusText = document.getElementById(`status-text-${id}`);
+                    const nameDisplay = document.getElementById(`name-display-${id}`);
+                    
+                    if (card) card.classList.add('card-error');
+                    if (badge) badge.className = "h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse";
+                    if (statusText) {
+                        statusText.innerText = "Odpojené";
+                        statusText.className = "text-[9px] font-bold text-rose-500 uppercase tracking-wider";
+                    }
+
+                    const name = nameDisplay ? nameDisplay.innerText : "CM5";
+                    const lastState = deviceErrorStates[id] || 'ok';
+                    if (lastState === 'ok') {
+                        sendNotification("⚠️ Riadiaca jednotka odpojená", `Stratilo sa sieťové spojenie s jednotkou "${name}".`, "error");
+                        deviceErrorStates[id] = 'error';
+                    }
+                }
+            }
+        }
+
+        function openRenameModal(btn) {
+            const id = btn.getAttribute('data-id');
+            const currentName = btn.getAttribute('data-name');
+
+            document.getElementById('rename-device-id').value = id;
+            document.getElementById('rename-device-input').value = currentName;
+            document.getElementById('rename-modal').classList.remove('hidden');
+        }
+
+        function closeRenameModal() {
+            document.getElementById('rename-modal').classList.add('hidden');
+        }
+
+        async function saveRename() {
+            const id = document.getElementById('rename-device-id').value;
+            const newName = document.getElementById('rename-device-input').value.trim();
+            if (!newName) return;
+
+            try {
+                const res = await fetch(basePath + `/api/device/${id}/rename`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName })
+                });
+                if (res.ok) {
+                    document.getElementById(`name-display-${id}`).innerText = newName;
+                    const btn = document.querySelector(`button[data-id="${id}"]`);
+                    if (btn) btn.setAttribute('data-name', newName);
+
+                    sendNotification("Meno zmenené", `Zariadenie bolo premenované na: ${newName}`, "success");
+                    closeRenameModal();
+                } else {
+                    sendNotification("Chyba premenovania", "Nepodarilo sa uložiť nový názov.", "error");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNotificationButton();
+        });
+
+        setInterval(refreshDashboard, 5000);
+        refreshDashboard();
+    </script>
+</body>
+</html>

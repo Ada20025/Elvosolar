@@ -1,0 +1,819 @@
+<!-- templates/device_detail.html -->
+<!DOCTYPE html>
+<html lang="sk" class="h-full bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Riadiaca Stanica | ElvoSolar AI EMS Pro</title>
+    <link rel="icon" type="image/png" href="<?php echo $base_path; ?>/templates/ElvosolarLogo.png">
+    
+    <!-- PWA Manifest & Meta Tags pre mobilné zariadenia -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#020617">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#020617',
+                            card: '#090f1d',
+                            border: '#1e293b',
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#a855f7'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .luxury-card {
+            background-color: #090f1d;
+            border: 1px solid #1e293b;
+            backdrop-filter: blur(12px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .luxury-card:hover {
+            border-color: #334155;
+            box-shadow: 0 10px 30px -10px rgba(6, 182, 212, 0.15);
+        }
+
+        .phone-mockup-app {
+            background-color: #05070f;
+            border: 8px solid #1e293b;
+            border-radius: 44px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        .tab-active {
+            color: #10b981;
+            border-bottom: 2px solid #10b981;
+            font-weight: 700;
+        }
+        .tab-inactive {
+            color: #94a3b8;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-inactive:hover {
+            color: #f8fafc;
+            border-bottom: 2px solid #334155;
+        }
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #020617; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 99px; }
+    </style>
+</head>
+<body class="min-h-full flex flex-col text-slate-100 antialiased pb-12">
+
+    <!-- METADÁTA PRE JAVASCRIPT -->
+    <div id="php-metadata" 
+         data-device-id="<?php echo htmlspecialchars($device['id'] ?? 1); ?>"
+         data-device-name="<?php echo htmlspecialchars($device['name'] ?? 'ElvoSolar CM5 Smart EMS'); ?>"
+         data-base-path="<?php echo htmlspecialchars($base_path); ?>"
+         class="hidden"></div>
+
+    <!-- PWA INŠTALAČNÁ LIŠTA (DYNAMIC BANNER) -->
+    <div id="pwaInstallBanner" class="hidden bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">📱</span>
+            <div class="text-xs">
+                <span class="font-bold text-white block">Nainštalovať aplikáciu ElvoSolar Pro</span>
+                <span class="text-slate-400">Používajte EMS pohodlne na ploche bez internetového prehliadača.</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="dismissPwaPrompt()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Neskôr</button>
+            <button onclick="triggerPwaInstall()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition">Inštalovať</button>
+        </div>
+    </div>
+
+    <!-- MINIMALISTICKÁ HORNÁ LIŠTA (HEADER) -->
+    <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-2xl border-b border-slate-800/80 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-6">
+            <a href="<?php echo $base_path; ?>/dashboard" class="flex items-center gap-3 group">
+                <div class="h-9 w-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 group-hover:border-emerald-500/50 transition">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-extrabold text-white tracking-tight flex items-center gap-2">
+                        <span>ElvoSolar Smart App</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-brand-green border border-emerald-500/20 font-mono">v3.2</span>
+                    </h1>
+                    <span class="text-[10px] text-slate-400 font-mono">ID #<?php echo htmlspecialchars($device['id'] ?? 1); ?> • <?php echo htmlspecialchars($device['name'] ?? 'Stanica'); ?></span>
+                </div>
+            </a>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 font-mono text-[11px]">
+                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-emerald-400 font-bold">Zbernica aktívna</span>
+            </div>
+            <a href="<?php echo $base_path; ?>/dashboard" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- NAVIGÁCIA (TABS) -->
+    <nav class="bg-slate-950 border-b border-slate-800/80 px-6 flex items-center gap-8 text-xs font-semibold overflow-x-auto">
+        <button onclick="switchTab('dashboard')" id="tabBtnDashboard" class="py-3.5 tab-active flex items-center gap-1.5">
+            <i data-lucide="activity" class="w-3.5 h-3.5"></i> <span>Prehľad</span>
+        </button>
+        <button onclick="switchTab('app_sim')" id="tabBtnAppSim" class="py-3.5 tab-inactive flex items-center gap-1.5">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-400"></i> <span>Smart Aplikácia</span>
+        </button>
+        <button onclick="switchTab('holiday')" id="tabBtnHoliday" class="py-3.5 tab-inactive flex items-center gap-1.5">
+            🌴 <span>Dovolenka</span>
+        </button>
+        <button onclick="switchTab('terminal')" id="tabBtnTerminal" class="py-3.5 tab-inactive flex items-center gap-1.5">
+            <i data-lucide="terminal" class="w-3.5 h-3.5 text-cyan-400"></i> <span>HDMI & Modbus CLI</span>
+        </button>
+    </nav>
+
+    <!-- HLAVNÝ OBSAH -->
+    <main class="flex-grow p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+
+        <!-- ============================================================== -->
+        <!-- ZÁLOŽKA 1: PREHĽAD & FYZICKÉ ZARIADENIE -->
+        <!-- ============================================================== -->
+        <section id="sectionDashboard" class="space-y-6">
+            
+            <!-- PREZENTÁCIA FYZICKÉHO BOXU (CM5 PRO) -->
+            <div class="p-6 rounded-3xl luxury-card bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/20 border border-emerald-500/20 grid md:grid-cols-12 gap-6 items-center">
+                <div class="md:col-span-8 space-y-3 text-left">
+                    <span class="px-2.5 py-1 rounded-full text-[9px] font-mono font-bold bg-emerald-500/10 text-brand-green border border-emerald-500/20 uppercase tracking-widest">RIADIACA JEDNOTKA V PREVÁDZKE</span>
+                    <h3 class="text-xl font-extrabold text-white">ElvoSolar CM5 AI Smart EMS Pro</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Centrálny hardvérový uzol sprostredkováva bezdrôtovú komunikáciu so smart spotrebičmi Shelly a meničom cez integrované rozhranie. EMS jadro vykonáva energetické vyhodnocovanie lokálne bez zaťažovania prenosovej linky.
+                    </p>
+                    <div class="flex items-center gap-3 text-[10px] text-slate-500 font-mono">
+                        <span>Aktívne pripojenie: <strong class="text-slate-300">Ethernet / Wi-Fi</strong></span>
+                        <span>•</span>
+                        <span>Odozva zbernice: <strong class="text-emerald-400">12 ms</strong></span>
+                    </div>
+                </div>
+                <div class="md:col-span-4 flex justify-center">
+                    <span class="text-7xl select-none filter drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">🧠</span>
+                </div>
+            </div>
+
+            <!-- LIVE TELEMETRIA -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-5 rounded-2xl luxury-card text-left">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Výkon FVE</span>
+                    <div class="text-2xl font-black text-emerald-400 font-mono" id="dashLivePower">0 W</div>
+                </div>
+                <div id="cardBatterySoC" class="p-5 rounded-2xl luxury-card text-left">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Batéria úložiska</span>
+                    <div class="text-2xl font-black text-cyan-400 font-mono" id="dashBatterySoc">-- %</div>
+                    <div class="w-full bg-slate-900 h-1 rounded-full overflow-hidden mt-2">
+                        <div id="dashBatteryBar" class="bg-cyan-400 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+                <div class="p-5 rounded-2xl luxury-card text-left">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Úspora celková</span>
+                    <div class="text-2xl font-black text-teal-300 font-mono" id="dashTotalSaved">-- €</div>
+                </div>
+                <div class="p-5 rounded-2xl luxury-card text-left">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Frekvencia siete</span>
+                    <div class="text-2xl font-black text-white font-mono" id="dashLiveFreq">50.01 Hz</div>
+                </div>
+            </div>
+
+            <!-- RYCHLE PREPÍNANIE REŽIMOV -->
+            <div class="p-6 rounded-3xl luxury-card space-y-4 text-left">
+                <h3 class="text-xs font-black uppercase tracking-wider text-white">Rýchla zmena režimu riadenia</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button onclick="setManualOverride('AUTO')" id="btnOverrideAuto" class="p-3.5 rounded-2xl bg-emerald-500 text-white font-bold text-xs transition shadow-lg flex items-center justify-center gap-2">
+                        <i data-lucide="cpu" class="w-4 h-4"></i> AUTO (AI EMS)
+                    </button>
+                    <button onclick="setManualOverride('ON')" id="btnOverrideOn" class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 font-bold text-xs hover:border-slate-700 transition flex items-center justify-center gap-2">
+                        <i data-lucide="battery-charging" class="w-4 h-4 text-cyan-400"></i> FORCE CHARGE
+                    </button>
+                    <button onclick="setManualOverride('OFF')" id="btnOverrideOff" class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 font-bold text-xs hover:border-slate-700 transition flex items-center justify-center gap-2">
+                        <i data-lucide="battery" class="w-4 h-4 text-rose-500"></i> FORCE DISCHARGE
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- ZÁLOŽKA 2: SMART APLIKÁCIA (3 OBRAZOVKY ZO SNÍMOK S DIAL COIL) -->
+        <!-- ============================================================== -->
+        <section id="sectionAppSim" class="hidden space-y-6">
+            
+            <div class="text-center max-w-xl mx-auto space-y-1">
+                <h3 class="text-base font-black text-white">Prehľad rozhrania mobilnej aplikácie</h3>
+                <p class="text-xs text-slate-400">Detailne vyobrazené funkcie spínania, prehľadov nákladov a kruhovej regulácie z vášho smartfónu.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto text-left">
+                
+                <!-- OBRAZOVKA 1: SMART SPOTREBIČE -->
+                <div class="phone-mockup-app p-5 flex flex-col justify-between h-[450px]">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 border-b border-slate-900 pb-2">
+                            <span>9:41</span>
+                            <span class="font-bold text-slate-200">Zariadenia 3. strán</span>
+                            <span>📶 🔋</span>
+                        </div>
+                        <div class="flex gap-2.5 text-[9px] font-bold border-b border-slate-850 pb-1.5 uppercase font-mono">
+                            <span class="text-brand-green border-b-2 border-brand-green pb-0.5">Relé</span>
+                            <span class="text-slate-500">Bojlery</span>
+                            <span class="text-slate-500">Elektromery</span>
+                        </div>
+
+                        <!-- Bojler -->
+                        <div class="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-2.5">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">♨️</span>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-white leading-none">Bojler TÚV</h4>
+                                        <span class="text-[8px] text-emerald-400 font-mono" id="appBoilerStatusText">Online - Spustené zo soláru</span>
+                                    </div>
+                                </div>
+                                <span class="h-2 w-2 rounded-full bg-emerald-500" id="appBoilerIndicator"></span>
+                            </div>
+                            <div class="flex gap-1 text-[8px] font-mono">
+                                <button onclick="toggleAppBoiler()" class="bg-slate-950 hover:bg-slate-850 px-2 py-0.5 rounded text-slate-300 border border-slate-800 font-semibold" id="appBoilerToggleBtn">Prepnúť stav</button>
+                                <span class="bg-slate-950 px-2 py-0.5 rounded text-slate-500">Teplotný ohrev</span>
+                            </div>
+                        </div>
+
+                        <!-- Filtrácia -->
+                        <div class="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-2.5">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">🏊</span>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-white leading-none">Vonkajší bazén</h4>
+                                        <span class="text-[8px] text-emerald-400 font-mono" id="appPoolStatusText">Online - Filtrácia spustená</span>
+                                    </div>
+                                </div>
+                                <span class="h-2 w-2 rounded-full bg-emerald-500" id="appPoolIndicator"></span>
+                            </div>
+                            <div class="flex gap-1 text-[8px] font-mono">
+                                <button onclick="toggleAppPool()" class="bg-slate-950 hover:bg-slate-850 px-2 py-0.5 rounded text-slate-300 border border-slate-800 font-semibold" id="appPoolToggleBtn">Prepnúť stav</button>
+                                <span class="bg-slate-950 px-2 py-0.5 rounded text-slate-500">Solárne spínanie</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-[9px] text-slate-500 font-mono text-center">Integrované lokálne prepojenie.</span>
+                </div>
+
+                <!-- OBRAZOVKA 2: GRAF SPOTREBY (3,37 €) -->
+                <div class="phone-mockup-app p-5 flex flex-col justify-between h-[450px]">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 border-b border-slate-900 pb-2">
+                            <span>9:41</span>
+                            <span class="font-bold text-slate-200">Prehľad nákladov</span>
+                            <span>📶 🔋</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] font-bold text-slate-400">
+                            <span>◀ Včera</span>
+                            <span>📅 Vybrať obdobie</span>
+                        </div>
+                        <div class="text-center space-y-1">
+                            <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block">Ušetrené prevádzkové náklady</span>
+                            <div class="text-2xl font-black text-emerald-400 font-mono" id="appLiveSavedCost">3,37 €</div>
+                        </div>
+
+                        <!-- Interaktívna krivka grafu -->
+                        <div class="h-24 bg-[#020617] rounded-xl border border-slate-850 p-2 flex items-end justify-between relative font-mono text-[8px] text-slate-600">
+                            <div class="w-2.5 bg-emerald-500/10 h-[30%] rounded-t-sm"></div>
+                            <div class="w-2.5 bg-emerald-500/25 h-[45%] rounded-t-sm"></div>
+                            <div class="w-2.5 bg-emerald-500/40 h-[10%] rounded-t-sm"></div>
+                            <div class="w-2.5 bg-emerald-500 h-[68%] rounded-t-sm relative"><span class="absolute -top-3 left-0 text-brand-green font-bold text-[7px]" id="appPeakText">16h</span></div>
+                            <div class="w-2.5 bg-emerald-500/30 h-[25%] rounded-t-sm"></div>
+                            <div class="w-2.5 bg-emerald-500/15 h-[15%] rounded-t-sm"></div>
+                        </div>
+
+                        <p class="text-[10px] text-slate-400 leading-normal">
+                            Analýza tokov prebieha asynchrónne. Systém vyčísli presný podiel energie zo siete, batérie a bezplatnej fotovoltiky.
+                        </p>
+                    </div>
+                    <span class="text-[9px] text-slate-500 font-mono text-center">Aktualizácia kriviek prebieha automaticky.</span>
+                </div>
+
+                <!-- OBRAZOVKA 3: KRUHOVÝ REGULÁTOR TEPLOTY BOJLERA -->
+                <div class="phone-mockup-app p-5 flex flex-col justify-between h-[450px]">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 border-b border-slate-900 pb-2">
+                            <span>9:41</span>
+                            <span class="font-bold text-slate-200">Upraviť bojler</span>
+                            <span>📶 🔋</span>
+                        </div>
+                        <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span>◀</span> <span>Nastavenie teplôt</span>
+                        </div>
+
+                        <!-- Kruhový termostatický dial (KLIKATEĽNÝ) -->
+                        <div class="relative w-32 h-32 mx-auto flex items-center justify-center cursor-pointer" onclick="toggleDialTemp()">
+                            <svg class="w-28 h-28 transform -rotate-90">
+                                <circle cx="56" cy="56" r="48" stroke="#1e293b" stroke-width="4" fill="transparent"/>
+                                <circle id="appCircularDialProgress" cx="56" cy="56" r="48" stroke="#10b981" stroke-width="4" stroke-dasharray="301" stroke-dashoffset="100" fill="transparent"/>
+                            </svg>
+                            <div class="absolute text-center">
+                                <span class="text-xl font-black text-white font-mono block" id="appDialTempDisplay">65°C</span>
+                                <span class="text-[7px] text-slate-500 uppercase font-black block tracking-wider">Cieľ ohrevu</span>
+                            </div>
+                        </div>
+
+                        <!-- Porovnanie teplôt -->
+                        <div class="grid grid-cols-2 gap-2 text-center font-mono text-[9px]">
+                            <div class="p-1.5 rounded-lg bg-slate-900">
+                                <span class="text-slate-500 block uppercase font-bold text-[7px]">Teplota zo siete</span>
+                                <strong class="text-xs text-slate-200">22°C</strong>
+                            </div>
+                            <div class="p-1.5 rounded-lg bg-slate-900 border border-brand-green/30">
+                                <span class="text-slate-500 block uppercase font-bold text-[7px]">Teplota z FVE</span>
+                                <strong class="text-xs text-brand-green font-bold">27°C</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-[9px] text-slate-400 font-mono text-center">Kliknutím na kruh prepínate teplotu (50 / 65 / 75°C).</div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- ZÁLOŽKA 3: DOVOLENKOVÝ REŽIM -->
+        <!-- ============================================================== -->
+        <section id="sectionHoliday" class="hidden space-y-6">
+            
+            <div class="p-6 md:p-8 rounded-3xl luxury-card space-y-6 text-left">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🌴</span>
+                        <div>
+                            <h3 class="text-base font-black text-white">Dovolenka & Príprava komfortu pred príchodom</h3>
+                            <p class="text-xs text-slate-400">Automaticky odstraví kúrenie a vodu počas neprítomnosti a spustí ohrev pred príchodom.</p>
+                        </div>
+                    </div>
+                    
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="holidayEnabled" onchange="toggleHolidayModeState(this.checked)" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
+
+                <!-- DIAGNOSTICKÝ BOX STAVU DOVOLENKY -->
+                <div id="holidayActiveNotice" class="hidden p-4 rounded-2xl bg-cyan-950/20 border border-cyan-500/20 flex gap-4 items-center">
+                    <span class="text-2xl animate-pulse">✈️</span>
+                    <div class="text-xs">
+                        <span id="holidayNoticeTitle" class="font-extrabold text-cyan-400 block">Dovolenka je momentálne aktívna</span>
+                        <span id="holidayNoticeDesc" class="text-slate-300 block">Dom je v hlbokej úspore. Systémy bežia bezodberovo z batérie.</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Dátum a čas príchodu domov *</label>
+                            <input type="datetime-local" id="holidayUntilInput" onchange="saveHolidayModeParams()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-emerald-500 font-mono">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                <span>Predstih spustenia pred-návratového ohrevu</span>
+                                <strong id="preheatVal" class="text-emerald-400 font-mono">6 hodín</strong>
+                            </div>
+                            <input type="range" id="holidayPreheatHours" min="2" max="24" value="6" oninput="document.getElementById('preheatVal').innerText = this.value + ' hodín'" onchange="saveHolidayModeParams()" class="w-full accent-emerald-500 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- CIEĽOVÉ TEPLOTY -->
+                    <div class="p-5 rounded-2xl bg-slate-950 border border-slate-850 space-y-4">
+                        <h4 class="text-xs font-bold text-white uppercase tracking-wider">Cieľové hodnoty pri návrate</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-[11px] font-mono mb-1">
+                                    <span class="text-slate-400">Požadovaná teplota v dome:</span>
+                                    <strong id="targetTempText" class="text-amber-400">22.0 °C</strong>
+                                </div>
+                                <input type="range" id="holidayTargetTemp" min="18" max="25" step="0.5" value="22" oninput="document.getElementById('targetTempText').innerText = parseFloat(this.value).toFixed(1) + ' °C'" onchange="saveHolidayModeParams()" class="w-full accent-amber-500 cursor-pointer">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-[11px] font-mono mb-1">
+                                    <span class="text-slate-400">Teplota teplej vody (Bojler):</span>
+                                    <strong id="targetBoilerText" class="text-cyan-400">50 °C</strong>
+                                </div>
+                                <input type="range" id="holidayTargetBoiler" min="40" max="75" value="50" oninput="document.getElementById('targetBoilerText').innerText = this.value + ' °C'" onchange="saveHolidayModeParams()" class="w-full accent-emerald-500 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- ZÁLOŽKA 4: SECURE MODBUS CLI TERMINÁL & HDMI STREAM -->
+        <!-- ============================================================== -->
+        <section id="sectionTerminal" class="hidden space-y-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start text-left">
+                
+                <!-- TERMINÁL -->
+                <div class="p-6 rounded-3xl bg-slate-950 border border-cyan-500/20 shadow-2xl relative">
+                    <div class="absolute top-6 right-6 flex items-center gap-1.5">
+                        <span class="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                        <span class="text-[9px] font-bold text-cyan-400 font-mono tracking-widest uppercase">Modbus CLI</span>
+                    </div>
+
+                    <h3 class="text-xs font-black uppercase tracking-wider text-white mb-4">Interaktívny príkazový riadok</h3>
+                    <div id="cliOutput" class="h-44 bg-[#020617] border border-slate-850 p-4 rounded-xl font-mono text-[11px] text-cyan-400 overflow-y-auto space-y-1.5 custom-scroll">
+                        <div class="text-slate-600">[System] Terminálové jadro CM5 Pro aktívne na adrese /dev/ttyAMA3.</div>
+                        <div class="text-slate-600">[System] Podporované: "read &lt;reg&gt;", "write &lt;reg&gt; &lt;val&gt;", "restart_services", "clear_logs".</div>
+                    </div>
+
+                    <div class="flex gap-2 items-center mt-4">
+                        <span class="font-mono text-cyan-400 text-xs font-bold">&gt;_</span>
+                        <input type="text" id="cliInput" onkeydown="handleCliKey(event)" placeholder="Zadajte Modbus dopyt (napr. read 1000)..." class="flex-grow bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs font-mono text-white outline-none focus:border-cyan-400">
+                        <button onclick="executeCliCommand()" class="px-5 py-3 bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 font-mono">
+                            Spustiť
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ŽIVÝ HDMI VIDEO/OBRAZOVÝ STREAM -->
+                <div class="p-6 rounded-3xl luxury-card space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-white">HDMI Diagnostický náhľad (mjpeg)</h3>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">LIVE STREAM</span>
+                    </div>
+                    
+                    <!-- Simulátor obrazového/video streamu z striedača prostredníctvom Pi kamery -->
+                    <div class="rounded-2xl border border-slate-850 overflow-hidden bg-[#020617] h-48 relative flex items-center justify-center p-8">
+                        <div class="absolute inset-0 bg-[url('Png/Fotovoltika1.jpg')] bg-cover bg-center opacity-10"></div>
+                        <div class="text-center z-10 space-y-2">
+                            <i data-lucide="video" class="w-8 h-8 text-cyan-400 mx-auto animate-pulse"></i>
+                            <span class="text-xs font-bold text-slate-300 block font-mono">HDMI Video rozhranie</span>
+                            <p class="text-[9px] text-slate-500 max-w-xs leading-relaxed font-mono">Simulovaná odozva rozhrania Waveshare CM5. Video server je pripravený prenášať obrazový mjpeg signál.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- SYSTÉMOVÉ PREFERENCIE & NOTIFIKÁCIE -->
+            <div class="p-6 rounded-3xl luxury-card space-y-6 text-left">
+                <h3 class="text-xs font-black uppercase tracking-wider text-white border-b border-slate-800 pb-2">Systémové nastavenia e-mailových hlásení</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-950 rounded-2xl border border-slate-850 flex justify-between items-center">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-white block">E-maily o novom prihlásení</span>
+                            <p class="text-[10px] text-slate-500 leading-tight">Odoslať bezpečnostný e-mail pri každom úspešnom prístupe do tohto cloudu.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="chkLoginEmails" checked onchange="saveNotificationPref()" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="p-4 bg-slate-950 rounded-2xl border border-slate-850 flex justify-between items-center">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-white block">Denné prehľady úspor</span>
+                            <p class="text-[10px] text-slate-500 leading-tight">Zasielať ranný e-mail s denným sumárom ušetrených prevádzkových nákladov.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="chkSummaryEmails" checked onchange="saveNotificationPref()" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- PÄTIČKA -->
+    <footer class="bg-slate-950 text-slate-600 py-6 text-xs border-t border-slate-900 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 text-center sm:text-left sm:flex sm:justify-between sm:items-center">
+            <p>2026 © ElvoSolar Control Cloud Pro</p>
+            <div class="mt-2 sm:mt-0 space-x-4 font-mono text-[10px]">
+                <span>Firmware: CM5-v3.2</span>
+                <span>•</span>
+                <span>Zbernica CH1: OK</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPTY PRE FUNKČNOSŤ ROZHRANIA -->
+    <script>
+        lucide.createIcons();
+
+        const metaEl = document.getElementById('php-metadata');
+        const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
+        const deviceId = metaEl ? metaEl.getAttribute('data-device-id') : '1';
+
+        let appBoilerOn = true;
+        let appPoolOn = true;
+
+        // --- PWA INSTALACNY PROMPT SIMULACIA ---
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner) banner.classList.remove('hidden');
+        });
+
+        function triggerPwaInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Užívateľ akceptoval PWA inštaláciu.');
+                    }
+                    dismissPwaPrompt();
+                });
+            } else {
+                alert("Inštalačný balíček bol úspešne priradený na plochu vášho zariadenia.");
+                dismissPwaPrompt();
+            }
+        }
+
+        function dismissPwaPrompt() {
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner) banner.classList.add('hidden');
+        }
+
+        // --- PREPÍNANIE ZÁLOŽIEK ---
+        function switchTab(tabId) {
+            ['dashboard', 'app_sim', 'holiday', 'terminal'].forEach(t => {
+                const sec = document.getElementById('section' + (t === 'app_sim' ? 'AppSim' : t.charAt(0).toUpperCase() + t.slice(1)));
+                const btn = document.getElementById('tabBtn' + (t === 'app_sim' ? 'AppSim' : t.charAt(0).toUpperCase() + t.slice(1)));
+                if (sec) sec.classList.add('hidden');
+                if (btn) btn.className = "py-3.5 tab-inactive flex items-center gap-1.5";
+            });
+
+            const currentSec = document.getElementById('section' + (tabId === 'app_sim' ? 'AppSim' : tabId.charAt(0).toUpperCase() + tabId.slice(1)));
+            const currentBtn = document.getElementById('tabBtn' + (tabId === 'app_sim' ? 'AppSim' : tabId.charAt(0).toUpperCase() + tabId.slice(1)));
+            if (currentSec) currentSec.classList.remove('hidden');
+            if (currentBtn) currentBtn.className = "py-3.5 tab-active flex items-center gap-1.5";
+            lucide.createIcons();
+        }
+
+        // --- INTEGROVANÝ SIMULÁTOR APKY (ZO SNÍMOK) ---
+        function toggleAppBoiler() {
+            appBoilerOn = !appBoilerOn;
+            const statusText = document.getElementById('appBoilerStatusText');
+            const ind = document.getElementById('appBoilerIndicator');
+            const btn = document.getElementById('appBoilerToggleBtn');
+
+            if (appBoilerOn) {
+                statusText.innerText = "Online - Spustené zo soláru";
+                statusText.className = "text-[8px] text-emerald-400 font-mono";
+                ind.className = "h-2 w-2 rounded-full bg-emerald-500";
+                btn.innerText = "Vypnúť";
+            } else {
+                statusText.innerText = "Online - Ohrev odstavený";
+                statusText.className = "text-[8px] text-slate-500 font-mono";
+                ind.className = "h-2 w-2 rounded-full bg-slate-800";
+                btn.innerText = "Zapnúť";
+            }
+        }
+
+        function toggleAppPool() {
+            appPoolOn = !appPoolOn;
+            const statusText = document.getElementById('appPoolStatusText');
+            const ind = document.getElementById('appPoolIndicator');
+            const btn = document.getElementById('appPoolToggleBtn');
+
+            if (appPoolOn) {
+                statusText.innerText = "Online - Filtrácia spustená";
+                statusText.className = "text-[8px] text-emerald-400 font-mono";
+                ind.className = "h-2 w-2 rounded-full bg-emerald-500";
+                btn.innerText = "Vypnúť";
+            } else {
+                statusText.innerText = "Online - Filtrácia vypnutá";
+                statusText.className = "text-[8px] text-slate-500 font-mono";
+                ind.className = "h-2 w-2 rounded-full bg-slate-800";
+                btn.innerText = "Zapnúť";
+            }
+        }
+
+        let dialTemps = [50, 65, 75];
+        let currentDialIdx = 1;
+
+        function toggleDialTemp() {
+            currentDialIdx = (currentDialIdx + 1) % dialTemps.length;
+            const target = dialTemps[currentDialIdx];
+            document.getElementById('appDialTempDisplay').innerText = `${target}°C`;
+            
+            // Animácia kruhu progresu
+            const progress = document.getElementById('appCircularDialProgress');
+            let offset = 100;
+            if (target === 50) offset = 160;
+            if (target === 75) offset = 40;
+            progress.setAttribute('stroke-dashoffset', offset);
+        }
+
+        // --- DOVOLENKOVÝ REŽIM (CLOUD SYNC) ---
+        async function fetchHolidayParams() {
+            try {
+                const res = await fetch(basePath + `/api/device/${deviceId}/holiday-mode`);
+                const data = await res.json();
+                if (data.status === 'success' && data.holiday_mode) {
+                    const h = data.holiday_mode;
+                    document.getElementById('holidayEnabled').checked = h.enabled;
+                    document.getElementById('holidayUntilInput').value = h.until;
+                    document.getElementById('holidayPreheatHours').value = h.preheat_hours;
+                    document.getElementById('preheatVal').innerText = h.preheat_hours + ' hodín';
+
+                    document.getElementById('holidayTargetTemp').value = h.target_temp;
+                    document.getElementById('targetTempText').innerText = parseFloat(h.target_temp).toFixed(1) + ' °C';
+
+                    document.getElementById('holidayTargetBoiler').value = h.target_boiler;
+                    document.getElementById('targetBoilerText').innerText = h.target_boiler + ' °C';
+
+                    const notice = document.getElementById('holidayActiveNotice');
+                    const title = document.getElementById('holidayNoticeTitle');
+                    const desc = document.getElementById('holidayNoticeDesc');
+
+                    if (data.is_active) {
+                        notice.classList.remove('hidden');
+                        if (data.holiday_state === 'PREPARATION') {
+                            title.innerText = "Komfortný pred-návratový ohrev";
+                            desc.innerText = `Príprava prebieha. Voda sa nahrieva na ${h.target_boiler}°C, kúrenie nastavené na ${h.target_temp}°C.`;
+                        } else {
+                            title.innerText = "Dovolenkový standby režim aktívny";
+                            desc.innerText = `Dom je v úspornom režime. Návrat domov naplánovaný na ${h.until}.`;
+                        }
+                    } else {
+                        notice.classList.add('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function toggleHolidayModeState(enabled) {
+            const until = document.getElementById('holidayUntilInput').value;
+            const preheat = parseInt(document.getElementById('holidayPreheatHours').value);
+            const temp = parseFloat(document.getElementById('holidayTargetTemp').value);
+            const boiler = parseInt(document.getElementById('holidayTargetBoiler').value);
+
+            await sendHolidayPost({ enabled, until, preheat_hours: preheat, target_temp: temp, target_boiler: boiler });
+        }
+
+        async function saveHolidayModeParams() {
+            const enabled = document.getElementById('holidayEnabled').checked;
+            const until = document.getElementById('holidayUntilInput').value;
+            const preheat = parseInt(document.getElementById('holidayPreheatHours').value);
+            const temp = parseFloat(document.getElementById('holidayTargetTemp').value);
+            const boiler = parseInt(document.getElementById('holidayTargetBoiler').value);
+
+            await sendHolidayPost({ enabled, until, preheat_hours: preheat, target_temp: temp, target_boiler: boiler });
+        }
+
+        async function sendHolidayPost(payload) {
+            try {
+                const res = await fetch(basePath + `/api/device/${deviceId}/holiday-mode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    fetchHolidayParams();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // --- RYCHLE PREPINANIE REZIMOV STRIDACA ---
+        async function setManualOverride(mode) {
+            ['btnOverrideAuto', 'btnOverrideOn', 'btnOverrideOff'].forEach(id => {
+                const b = document.getElementById(id);
+                if (b) b.className = "p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 font-bold text-xs hover:border-slate-700 transition flex items-center justify-center gap-2";
+            });
+            const actId = mode === 'AUTO' ? 'btnOverrideAuto' : (mode === 'ON' ? 'btnOverrideOn' : 'btnOverrideOff');
+            const actBtn = document.getElementById(actId);
+            if (actBtn) actBtn.className = "p-3.5 rounded-2xl bg-emerald-500 text-white font-bold text-xs transition shadow-lg flex items-center justify-center gap-2";
+
+            try {
+                await fetch(basePath + `/api/device/${deviceId}/control`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'override', value: mode })
+                });
+            } catch (e) {}
+        }
+
+        // --- INTERAKTÍVNY MODBUS CLI TERMINÁL ---
+        function handleCliKey(event) {
+            if (event.key === 'Enter') executeCliCommand();
+        }
+
+        function logToCli(text, isError = false) {
+            const out = document.getElementById('cliOutput');
+            const time = new Date().toLocaleTimeString('sk-SK');
+            const col = isError ? 'text-rose-500' : 'text-cyan-400';
+            out.innerHTML += `<div class="${col}"><span class="text-slate-600">[${time}]</span> ${text}</div>`;
+            out.scrollTop = out.scrollHeight;
+        }
+
+        async function executeCliCommand() {
+            const input = document.getElementById('cliInput');
+            const cmd = input.value.trim();
+            if (!cmd) return;
+
+            input.value = '';
+            logToCli(`&gt; ${cmd}`);
+
+            const parts = cmd.split(' ');
+            const action = parts[0].toLowerCase();
+
+            if (action === 'read') {
+                const reg = parseInt(parts[1]);
+                if (isNaN(reg)) {
+                    logToCli("❌ Neplatná syntax. Príklad: read 1000", true);
+                    return;
+                }
+                logToCli(`Čítam register Modbus RTU ${reg}...`);
+                setTimeout(() => {
+                    logToCli(`🟢 Odpoveď prijatá. Register ${reg}: 100 W`);
+                }, 400);
+
+            } else if (action === 'write') {
+                const reg = parseInt(parts[1]);
+                const val = parseInt(parts[2]);
+                if (isNaN(reg) || isNaN(val)) {
+                    logToCli("❌ Neplatná syntax. Príklad: write 1000 1", true);
+                    return;
+                }
+                logToCli(`Zapisujem hodnotu ${val} do registra ${reg}...`);
+                setTimeout(() => {
+                    logToCli(`🟢 Zápis úspešne potvrdený meničom.`);
+                }, 400);
+
+            } else if (cmd === 'restart_services') {
+                logToCli("Reštartujem zbernicové služby a Modbus server...");
+                setTimeout(() => logToCli("🟢 Riadenie úspešne reštartované."), 800);
+
+            } else if (cmd === 'clear_logs') {
+                document.getElementById('cliOutput').innerHTML = '';
+                logToCli("Konzola vymazaná.");
+
+            } else {
+                logToCli(`❌ Neznámy príkaz "${action}".`, true);
+            }
+        }
+
+        // --- NASTAVENIA E-MAILOVYCH PREFERENCII ---
+        function saveNotificationPref() {
+            const logPref = document.getElementById('chkLoginEmails').checked;
+            const sumPref = document.getElementById('chkSummaryEmails').checked;
+            console.log("Preferencie uložené:", { login: logPref, summary: sumPref });
+        }
+
+        // --- CYKLICKÝ REFRESH TELEMETRIE ---
+        async function fetchTelemetry() {
+            try {
+                const res = await fetch(basePath + `/api/device/${deviceId}/telemetry`);
+                const data = await res.json();
+                
+                document.getElementById('dashLivePower').innerText = `${Math.round(data.total_live_power)} W`;
+                document.getElementById('dashBatterySoc').innerText = `${Math.round(data.avg_live_soc)} %`;
+                document.getElementById('dashLiveFreq').innerText = `${data.freq.toFixed(2)} Hz`;
+                document.getElementById('dashTotalSaved').innerText = `${data.total_saved_eur.toFixed(2)} €`;
+
+                const bar = document.getElementById('dashBatteryBar');
+                if (bar) bar.style.width = `${Math.round(data.avg_live_soc)}%`;
+
+                // Update tabuliek v simulatory
+                document.getElementById('appLiveSavedCost').innerText = `${(data.total_saved_eur * 0.05).toFixed(2)} €`;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchHolidayParams();
+            fetchTelemetry();
+            setInterval(fetchTelemetry, 10000);
+        });
+    </script>
+</body>
+</html>

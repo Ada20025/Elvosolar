@@ -1,0 +1,26 @@
+{
+  "name": "ElvoControl",
+  "short_name": "ElvoControl",
+  "description": "Inteligentný energetický manažment pre vašu fotovoltiku a batérie",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/templates/ElvosolarLogo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/templates/ElvosolarLogo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["utilities", "productivity"],
+  "lang": "sk",
+  "dir": "ltr"
+}

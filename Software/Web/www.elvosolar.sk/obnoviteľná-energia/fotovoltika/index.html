@@ -1,0 +1,933 @@
+<!-- Uložiť do: fotovoltika/index.html -->
+<!DOCTYPE html>
+<html lang="sk" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="pv_page.title">Fotovoltika | ELVOSOLAR a.s.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0f172a',
+                            green: '#10b981',
+                            light: '#f8fafc',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen relative overflow-x-hidden">
+
+    <!-- Navigácia -->
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="../../index.html" class="flex items-center transition-transform active:scale-95">
+                <img src="../../Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
+            </a>
+            
+            <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600">
+                <a href="../../o-nás/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.about">O nás</a>
+                
+                <!-- Dropdown Obnoviteľná energia (Desktop) -->
+                <div class="relative inline-block text-left" id="renewable-dropdown-container">
+                    <button id="renewable-menu-btn" class="flex items-center gap-1 hover:text-brand-green font-semibold text-sm text-slate-600 transition-colors focus:outline-none py-2">
+                        <span data-translate="nav.renewable">Obnoviteľná energia</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="renewable-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-lg shadow-lg py-1.5 z-50">
+                        <a href="../../obnoviteľná-energia/fotovoltika/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title">Fotovoltika</a>
+                        <a href="../../obnoviteľná-energia/solárny-ohrev/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title">Solárny ohrev</a>
+                        <a href="../../obnoviteľná-energia/orc-jednotky/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title">ORC jednotky</a>
+                        <a href="../../obnoviteľná-energia/absorpčné-chladenie/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title">Absorpčné chladenie</a>
+                        <a href="../../obnoviteľná-energia/bateriové-úložiská/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title">Batériové úložištia</a>
+                    </div>
+                </div>
+
+                <a href="../../smart-riesenia/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart">Smart riešenia</a>
+                <a href="../../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services">Služby</a>
+                <a href="../../zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise">Zelená podnikom</a>
+                <a href="../../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact">Kontakt</a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <button id="cart-icon-btn" onclick="toggleCartDrawer()" class="hidden relative p-2.5 text-slate-600 hover:text-brand-green transition-colors rounded-full hover:bg-slate-50 mr-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                    </svg>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-brand-green text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+                </button>
+
+                <!-- Jazykový prepínač -->
+                <div class="relative inline-block text-left" id="lang-selector-container">
+                    <button id="lang-menu-btn" class="flex items-center space-x-1 text-xs font-bold text-slate-600 hover:text-brand-green uppercase tracking-wider transition-colors focus:outline-none py-2">
+                        <span id="current-lang">SK</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="lang-dropdown" class="hidden absolute right-0 mt-2 w-20 bg-white border border-slate-100 rounded-lg shadow-lg py-1 z-50">
+                        <button onclick="changeLang('sk')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">SK</button>
+                        <button onclick="changeLang('en')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">EN</button>
+                    </div>
+                </div>
+
+                <a href="../../kontakt/index.html#kontakt-formular" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]" data-translate="nav.quick_inquiry">Rýchly dopyt</a>
+                
+                <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-brand-green focus:outline-none p-2" aria-label="Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path id="hamburger-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobilné menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 transition-all duration-300">
+            <nav class="flex flex-col px-6 py-4 space-y-4 font-semibold text-slate-600">
+                <a href="../../o-nás/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about">O nás</a>
+                
+                <!-- Akordeón pre Obnoviteľnú energiu v mobile -->
+                <div class="flex flex-col">
+                    <button id="mobile-renewable-menu-btn" class="flex items-center justify-between hover:text-brand-green py-2 border-b border-slate-50 font-semibold text-slate-600 focus:outline-none w-full text-left">
+                        <span data-translate="nav.renewable">Obnoviteľná energia</span>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="mobile-renewable-submenu" class="hidden pl-4 flex-col space-y-2 py-2 border-b border-slate-50 bg-slate-50/50">
+                        <a href="../../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title">Fotovoltika</a>
+                        <a href="../../obnoviteľná-energia/solárny-ohrev/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title">Solárny ohrev</a>
+                        <a href="../../obnoviteľná-energia/orc-jednotky/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title">ORC jednotky</a>
+                        <a href="../../obnoviteľná-energia/absorpčné-chladenie/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title">Absorpčné chladenie</a>
+                        <a href="../../obnoviteľná-energia/bateriové-úložiská/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title">Batériové úložištia</a>
+                    </div>
+                </div>
+
+                <a href="../../smart-riesenia/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart">Smart riešenia</a>
+                <a href="../../služby/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services">Služby</a>
+                <a href="../../zelená-podnikom/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise">Zelená podnikom</a>
+                <a href="../../kontakt/index.html" class="hover:text-brand-green py-2" data-translate="nav.contact">Kontakt</a>
+                <a href="../../kontakt/index.html#kontakt-formular" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry">Rýchly dopyt</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Sekcia -->
+    <section class="relative bg-brand-dark text-white py-16 lg:py-24 overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <span class="text-brand-green text-xs font-bold uppercase tracking-widest mb-3 block" data-translate="pv_page.hero_badge">Obnoviteľné zdroje</span>
+            <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight" data-translate="pv_page.hero_title">Fotovoltika</h1>
+        </div>
+    </section>
+
+    <!-- Hlavný obsah -->
+    <main class="flex-grow animate-fade-in-up">
+        <section class="py-12 lg:py-16 max-w-7xl mx-auto px-6">
+            <div class="grid lg:grid-cols-12 gap-12 items-start">
+                
+                <!-- Ľavá časť: Podrobný Odborný Text -->
+                <div class="lg:col-span-8 space-y-8 text-slate-600 text-sm md:text-base leading-relaxed">
+                    <div class="space-y-4">
+                        <p class="text-lg md:text-xl text-slate-900 font-semibold leading-snug" data-translate="pv_page.lead_text">
+                            Slnko predstavuje jeden z najdostupnejších a najčistejších obnoviteľných energetických zdrojov. Aj preto je fotovoltika oblasťou, ktorej rozvoj zaznamenal v posledných desiatich rokoch najväčší pokrok.
+                        </p>
+                        <p data-translate="pv_page.desc_p1">
+                            Premena slnečnej energie na elektrickú energiu je dnes založená na sieťových, hybridných a ostrovných technológiách s možnosťou zabezpečenia energetickej zálohy.
+                        </p>
+                        <p data-translate="pv_page.desc_p2">
+                            Naša spoločnosť sa zaoberá výstavbou, prevádzkovaním a servisom všetkých typov fotovoltických elektrární od jednotiek kilowattov do stoviek megawattov, v jednofázovom aj trojfázovom prevedení, pre strešné aj poľné aplikácie.
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl overflow-hidden border border-slate-100 shadow-sm group">
+                        <img src="../../Png/Fotovoltika1.jpg" alt="Fotovoltické panely" class="w-full h-64 md:h-96 object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1200&q=80'">
+                    </div>
+
+                    <!-- Viac informácií -->
+                    <div class="space-y-6">
+                        <h2 class="text-xl md:text-2xl font-bold text-brand-dark" data-translate="pv_page.more_info_title">Viac informácií</h2>
+                        <p data-translate="pv_page.more_info_intro">
+                            Pod pojmom fotovoltika sa rozumie jednoduchý proces premeny slnečnej energie na elektrickú energiu prostredníctvom elektrochemických procesov. Už v roku 1830 bol Antoine César Becquerelom spozorovaný fotovoltický jav, ale až v roku 1950 bol vytvorený prvý fotovoltický článok, ktorý predznamenal nový rozmach fotovoltických zdrojov.
+                        </p>
+                        <p data-translate="pv_page.more_info_attractiveness">
+                            Atraktívnosť fotovoltických riešení je predovšetkým v čiastočnej alebo úplnej nezávislosti od dodávok elektrickej energie z distribučnej siete, pričom slnko predstavuje trvalo udržateľný a ekologický zdroj, ktorého energiu môžeme efektívne využívať všetci.
+                        </p>
+                    </div>
+
+                    <!-- Tri technológie transformácie -->
+                    <div class="space-y-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-brand-dark" data-translate="pv_page.transformation_title">Fotovoltické elektrárne využívajúce fotovoltický jav štandardne transformujú vyrobenú energiu tromi spôsobmi:</h2>
+                        
+                        <!-- On-grid -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                            <h3 class="text-lg font-bold text-brand-dark flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 bg-brand-green rounded-full"></span>
+                                <span data-translate="pv_page.ongrid_title">On-grid – sieťové systémy</span>
+                            </h3>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.ongrid_p1">
+                                Najčastejším a aj najjednoduchším riešením transformácie a distribúcie vyrobenej elektrickej energie zo slnečného žiarenia je štandardné prepojenie fotovoltických panelov a distribučnej sieti prostredníctvom striedača. Fotovoltický striedač mení priamo jednosmernú energiu získanú zo slnka a fotovoltických panelov na striedavú. Výstupné elektrické parametre striedača sú závislé od parametrov distribučnej siete. Striedač teda nie je bez prítomnosti sieťového napätia na svorkách striedavej strany prevádzkyschopný.
+                            </p>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.ongrid_p2">
+                                Takýto typ zdroja je možné využiť pre účely energetickej čiastočnej alebo úplnej dotácie vlastnej spotreby (domáce spotrebiče, priemyselné zariadenia) alebo pre predaj energie energetickým podnikom.
+                            </p>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.ongrid_p3">
+                                Sieťová technológia je štandardne použitá pri realizácii fotovoltických fariem a je tiež obľúbeným a cenovo atraktívnym riešením aj pri strešných aplikáciách.
+                            </p>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.ongrid_p4">
+                                Výstavba fotovoltických fariem je komplexným projektom, ktorý si vyžaduje skúsenosti v oblasti návrhu riešenia (výber a orientácia terénu, spôsob spracovania jednosmerného výkonu,…), tvorby projektovej dokumentácie, samotnej realizácie, pripojenia do distribučnej sústavy, prevádzkovania elektrárne, jej servisu a údržby. Výkon takýchto elektrární sa pohybuje v stovkách kilowattov až desiatkach megawattov, pričom pre účely výstavby sa využívajú malé kilowattové striedače (decentrálne riešenie), ale častejšie väčšie, trojfázové striedače (stovky kilowattov) označované ako centrálne riešenie.
+                            </p>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.ongrid_p5">
+                                Projekt sieťového systému fotovoltickej elektrárne na strechu rezidenčných alebo komerčných budov je jednoduchší, avšak pre dosiahnutie maximálnej efektivity si vyžaduje dobrú znalosť správania sa fotovoltických panelov počas celoročnej prevádzky. Striedač je výkonovo na úrovni jednotiek až desiatok kilowattov, a keďže vyrobená energia nie je v samotnom sieťovom striedači skladovateľná, mal by byť jej vyrobený výkon menší ako je celková spotreba domácnosti alebo prevádzky. Vznikajúce prebytky sú totižto distribuované do distribučnej siete, pričom v dnešnej dobe nie je takáto dodávka energie vykupovaná (v niektorých prípadoch je dokonca nežiaduca), a tak je len ekonomickou stratou pre prevádzkovateľa elektrárne.
+                            </p>
+                            <p class="text-slate-655 text-sm font-semibold text-slate-700" data-translate="pv_page.ongrid_p6">
+                                Výhodami implementácie on-grid – sieťového systému sú jednoduchosť realizácie, vyššia priama účinnosť, priame pripojenie do uzla siete (veľkosť striedača nie je závislá od veľkosti záťaže) and taktiež nižšie investičné náklady. Nevýhodou je závislosť na prítomnosti distribučnej siete a v mnohých prípadoch nevyhnutný manažment spotreby vyrobenej energie.
+                            </p>
+                        </div>
+
+                        <!-- Off-grid -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                            <h3 class="text-lg font-bold text-brand-dark flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 bg-brand-green rounded-full"></span>
+                                <span data-translate="pv_page.offgrid_title">Off-grid – ostrovné systémy</span>
+                            </h3>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.offgrid_p1">
+                                Ostrovné systémy sa často využívajú v prevádzkach vzdialených od štandardných zdrojov elektrickej energie, respektíve v aplikáciách, kde je požiadavka nezávislého napájania.
+                            </p>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.offgrid_p2">
+                                Princíp ostrovných fotovoltických systémov je založený na dodávke elektrickej energie, ktorá je získaná zo slnka a spracovaná tak, aby zabezpečila požadované, nominálne elektrické parametre spotrebičov. Schopnosť nezávislej tvorby požadovaného priebehu napätia a prúdu od distribučnej elektrickej siete je nevyhnutnosťou pri prevádzke ostrovného systému. Keďže je žiarenie zo slnka nestabilným zdrojom energie (mračná, hmla, teplota, …), zabezpečenie stability procesu dodávok elektrickej energie sa v týchto ostrovných systémoch rieši prostredníctvom akumulácie energie v batériách. V čase zníženej spotreby, resp. zvýšených dodávok elektrickej energie zo slnka, je možné túto, „prebytočnú“ energiu akumulovať do batérií a následne sa dá využiť v čase, keď nie je možné zabezpečiť dostatok energie z fotovoltických panelov.
+                            </p>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.offgrid_p3">
+                                Celá zostava ostrovného systému teda pozostáva z troch základných celkov: nabíjačka (elektrickú energiu zo slnka transformuje na jednosmernú energiu vhodnú pre nabíjanie batérií), batérie (udržujú energetickú stabilitu systému a zabezpečujú nezávislosť od akéhokoľvek energetického zdroja), striedač (premieňa jednosmernú energiu z batérií na striedavú s požadovanými parametrami). Systém môže dodávať ako striedavú, tak aj jednosmernú energiu (z batérií) a off-grid striedač umožňuje pre podporu výroby elektrickej energie pripojiť si na svoje vstupy aj iné alternatívne zdroje, ako sú veterná turbína alebo dieselagregát.
+                            </p>
+                            <p class="text-slate-600 text-sm font-semibold text-slate-700" data-translate="pv_page.offgrid_p4">
+                                Nevýhodou je technologicky náročnejšia a drahšia inštalácia, energetická závislosť od veľkosti výkonových batérií a striedačom limitujúca veľkosť pripojenej záťaže. Najvýznamnejšou nevýhodou je vypnutie napájania spotrebičov v prípade slabej výroby a nulovej zásoby energie. Hlavnou výhodou ostrovných systémov je nezávislosť od distribučnej siete a tiež nezávislosť prítomnosti záťaže od výroby energie.
+                            </p>
+                        </div>
+
+                        <!-- Hybridné systémy -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                            <h3 class="text-lg font-bold text-brand-dark flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 bg-brand-green rounded-full"></span>
+                                <span data-translate="pv_page.hybrid_title">Hybridné systémy</span>
+                            </h3>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.hybrid_p1">
+                                Hybridný systém je vlastne ostrovný systém s možnosťou pripojenia sa do distribučnej siete. Zabezpečuje sa tak spojenie výhod ostrovných systémov (dodávka energie nezávisle od prítomnosti siete, možnosť uskladnenia prebytočnej energie do batérií, možnosť doplnenia ďalších alternatívnych zdrojov) a sieťových systémov (v prípade nedostatku energie z fotovoltiky, schopnosť dodávky energie z distribučnej siete) do jedného celku. Vytvára sa tak ideálny zdroj energie pre domácnosti, ktoré si takto vytvárajú alternatívny, nezávislý zdroj k bežnej distribučnej sieti.
+                            </p>
+                            <p class="text-slate-600 text-sm" data-translate="pv_page.hybrid_p2">
+                                Riešenie pozostáva podobne ako u ostrovných systémov z nabíjačky, batérie a striedača. Striedač je schopný pripojenia na distribučnú sieť a dokáže inteligentne manažovať odber medzi sieťou a fotovoltikou, prípadne ďalším alternatívnym zdrojom.
+                            </p>
+                            <p class="text-slate-600 text-sm font-semibold text-slate-700" data-translate="pv_page.hybrid_p3">
+                                Nevýhodou týchto systémov je vyššia obstarávacia cena (významne závislá nielen od ceny panelov, ale aj batérií), ako aj náročnejšia a rozsiahlejšia inštalácia. Hybridné riešenie vyvedenia výkonu fotovoltickej elektrárne je možné realizovať od jednotiek kilowattov do desiatok kilowattov v jednofázovom, ale aj trojfázovom prevedení.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pravá časť: Bočný panel (Možnosti + Referencie) -->
+                <div class="lg:col-span-4 space-y-8">
+                    <!-- Možnosti aplikácie -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-5">
+                        <h3 class="font-bold text-brand-dark text-base border-b pb-3 border-slate-100" data-translate="pv_page.apps_title">Aplikácie</h3>
+                        <div class="space-y-3 text-xs">
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                                <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="pv_page.app1_title">/// Energetika</h4>
+                                <p class="text-slate-500 leading-relaxed" data-translate="pv_page.app1_desc">Fotovoltické farmy od desiatok kWp po desiatky MWp.</p>
+                            </div>
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                                <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="pv_page.app2_title">/// Priemysel, komerčný a verejný sektor</h4>
+                                <p class="text-slate-500 leading-relaxed" data-translate="pv_page.app2_desc">Fotovoltika na strechách priemyselných, komerčných a verejných objektov do 100 kWp.</p>
+                            </div>
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                                <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="pv_page.app3_title">/// Infraštruktúra</h4>
+                                <p class="text-slate-500 leading-relaxed" data-translate="pv_page.app3_desc">Fotovoltika na parkoviskách od jednotiek do desiatok kWp.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Referencie v bočnom paneli -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-5">
+                        <div>
+                            <span class="text-brand-green text-[10px] font-bold uppercase tracking-wider block" data-translate="pv_page.references_badge">Skúsenosti a stabilita</span>
+                            <h3 class="font-bold text-brand-dark text-base" data-translate="pv_page.references_title">Naše Referencie</h3>
+                        </div>
+
+                        <!-- Mriežka pre logá v bočnom paneli (zoradené a rozbaľovacie) -->
+                        <div id="references-sidebar-container" class="grid grid-cols-2 gap-3 items-center justify-items-center">
+                            <!-- Logá sa generujú dynamicky cez JS -->
+                        </div>
+
+                        <!-- Rozbaľovacie tlačidlo -->
+                        <div class="text-center pt-2">
+                            <button id="toggle-references-btn" onclick="toggleReferences()" class="hidden w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs py-2.5 rounded-lg border border-slate-200 transition-all focus:outline-none select-none">
+                                Zobraziť viac
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Kontaktná Sekcia -->
+        <section id="kontakt-formular" class="bg-slate-900 text-white py-16 lg:py-24">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="grid lg:grid-cols-12 gap-12 items-start">
+                    <div class="lg:col-span-5 space-y-6">
+                        <div>
+                            <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="contact.badge">Kontakt</span>
+                            <h2 class="text-3xl font-bold" data-translate="contact.title">Kontaktujte nás</h2>
+                        </div>
+                        <div class="space-y-4 text-slate-300 text-sm">
+                            <p>📞 <strong data-translate="contact.phone_label">Tel.:</strong> <span data-translate="contact.phone_value">+421 914 332 169</span></p>
+                            <p>✉️ <strong data-translate="contact.email_label">Email:</strong> <span data-translate="contact.email_value">info@elvosolar.sk</span></p>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-7 bg-slate-800/40 p-6 md:p-8 rounded-2xl border border-slate-700/50">
+                        <h3 class="text-lg font-bold mb-6" data-translate="contact.form_title">Nezáväzný dopyt</h3>
+                        <form id="contact-form" class="space-y-4" onsubmit="handleInquirySubmit(event)">
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <input type="text" id="contact-form-name" required data-translate-placeholder="contact.form_name_placeholder" placeholder="Meno a Priezvisko *" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white">
+                                <input type="email" id="contact-form-email" required data-translate-placeholder="contact.form_email_placeholder" placeholder="Váš e-mail *" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white">
+                            </div>
+                            <textarea id="contact-form-message" required rows="4" data-translate-placeholder="contact.form_message_placeholder" placeholder="Opíšte Vaše požiadavky..." class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white"></textarea>
+                            <button type="submit" id="contact-form-btn" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all hover:scale-[1.01]">
+                                <span data-translate="contact.form_submit">Vypracovať dopyt</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Nákupný košík (Drawer) -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 pointer-events-none hidden" role="dialog" aria-modal="true">
+        <div id="cart-backdrop" onclick="toggleCartDrawer()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+        <div id="cart-panel" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto transform translate-x-full transition-transform duration-300">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-brand-dark" data-translate="cart.title">Váš dopytový košík</h3>
+                <button onclick="toggleCartDrawer()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4"></div>
+            <div class="p-6 border-t border-slate-100 bg-slate-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-semibold text-slate-500" data-translate="cart.estimated_price">Orientačná cena:</span>
+                    <span id="cart-total-price" class="text-xl font-black text-brand-dark">0 €</span>
+                </div>
+                <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-3">
+                    <input type="text" id="checkout-name" required data-translate-placeholder="cart.checkout_name_placeholder" class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    <input type="email" id="checkout-email" required data-translate-placeholder="cart.checkout_email_placeholder" class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    <button type="submit" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg text-sm transition-colors" data-translate="cart.checkout_submit">Odoslať dopyt košíka</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pätička -->
+    <footer class="bg-slate-950 text-slate-500 py-8 text-xs mt-auto">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p data-translate="footer.copyright">2026 © Elvosolar, a.s. • Ochrana osobných údajov</p>
+            <p class="text-slate-600" data-translate="footer.tagline">Inovatívne energetické riešenia</p>
+        </div>
+    </footer>
+
+    <!-- Skripty -->
+    <script>
+        // ----------------- INICIALIZÁCIA DROPDOWNOV (DESKTOP & MOBILE) -----------------
+        document.addEventListener("DOMContentLoaded", () => {
+            // 1. Desktop dropdown "Obnoviteľná energia"
+            const renewableMenuBtn = document.getElementById('renewable-menu-btn');
+            const renewableDropdown = document.getElementById('renewable-dropdown');
+            const renewableDropdownContainer = document.getElementById('renewable-dropdown-container');
+
+            if (renewableMenuBtn && renewableDropdown) {
+                renewableMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    renewableDropdown.classList.toggle('hidden');
+                });
+            }
+
+            // 2. Jazykový prepínač dropdown
+            const langMenuBtn = document.getElementById('lang-menu-btn');
+            const langDropdown = document.getElementById('lang-dropdown');
+            const langSelectorContainer = document.getElementById('lang-selector-container');
+
+            if (langMenuBtn && langDropdown) {
+                langMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    langDropdown.classList.toggle('hidden');
+                });
+            }
+
+            // Zatvorenie desktopových dropdownov pri kliknutí mimo nich
+            document.addEventListener('click', (e) => {
+                if (renewableDropdownContainer && !renewableDropdownContainer.contains(e.target)) {
+                    renewableDropdown.classList.add('hidden');
+                }
+                if (langSelectorContainer && !langSelectorContainer.contains(e.target)) {
+                    langDropdown.classList.add('hidden');
+                }
+            });
+
+            // 3. Mobilné hlavné menu hamburger toggle
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+            // 4. Mobilný akordeón "Obnoviteľná energia"
+            const mobileRenewableMenuBtn = document.getElementById('mobile-renewable-menu-btn');
+            const mobileRenewableSubmenu = document.getElementById('mobile-renewable-submenu');
+
+            if (mobileRenewableMenuBtn && mobileRenewableSubmenu) {
+                mobileRenewableMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    mobileRenewableSubmenu.classList.toggle('hidden');
+                });
+            }
+
+            // Načítanie vybraného jazyka pri štarte
+            loadLanguage(currentLang);
+        });
+
+        // ----------------- DYNAMICKÁ DATABÁZA REFERENCIÍ S URČENÝM PORADÍM -----------------
+        const referencesData = [
+            { id: 1, name: "HB Reavis", order: 10, img: "../../Png/Referencie/hbreavis.png-200x99.webp" },
+            { id: 2, name: "OMV", order: 20, img: "../../Png/Referencie/omv.jpg" },
+            { id: 3, name: "Stellantis", order: 30, img: "../../Png/Referencie/Stellantis.svg-210x44.png" },
+            { id: 4, name: "Slovnaft", order: 40, img: "../../Png/Referencie/slovnaft.png" },
+            { id: 5, name: "Nafta", order: 50, img: "../../Png/Referencie/nafta_cmyk_p-150x83.png" },
+            { id: 6, name: "BILLA", order: 60, img: "../../Png/Referencie/billa.png" }, 
+            { id: 7, name: "Mondeléz", order: 70, img: "../../Png/Referencie/Mondelez.png" },
+            { id: 8, name: "OVS", order: 80, img: "../../Png/Referencie/ovs.webp" },
+            { id: 9, name: "POVS", order: 90, img: "../../Png/Referencie/povs.png" },
+            { id: 10, name: "J & T", order: 100, img: "../../Png/Referencie/jt.jpg" },
+            { id: 11, name: "Contour Global", order: 110, img: "../../Png/Referencie/contourglobal.png" },
+            { id: 12, name: "SPP", order: 120, img: "../../Png/Referencie/spp.png" },
+            { id: 13, name: "OBO Batermann", order: 130, img: "../../Png/Referencie/obo.png" }
+        ];
+
+        let showAllReferences = false;
+        const INITIAL_LIMIT = 4; // V bočnom paneli zobrazujeme na úvod len 4 logá
+
+        function renderReferences() {
+            const container = document.getElementById('references-sidebar-container');
+            const btn = document.getElementById('toggle-references-btn');
+            if (!container) return;
+
+            // Vzostupné zoradenie podľa prioritného čísla (Order)
+            const sorted = [...referencesData].sort((a, b) => a.order - b.order);
+            
+            container.innerHTML = '';
+            
+            const listToDisplay = showAllReferences ? sorted : sorted.slice(0, INITIAL_LIMIT);
+
+            listToDisplay.forEach(ref => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-3 h-20 w-full rounded-xl border border-slate-200/60 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 group relative overflow-hidden";
+                card.innerHTML = `
+                    <img src="${ref.img}" alt="${ref.name}" class="max-h-12 max-w-[85%] object-contain transition-transform duration-300 group-hover:scale-105" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <span class="hidden text-[10px] font-bold text-slate-400 text-center tracking-wide px-1 select-none">${ref.name}</span>
+                    <span class="absolute top-1 right-2 text-[8px] font-bold text-slate-300 select-none">#${ref.order}</span>
+                `;
+                container.appendChild(card);
+            });
+
+            if (sorted.length > INITIAL_LIMIT) {
+                btn.classList.remove('hidden');
+                const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
+                const textShowMore = getNestedValue(dictionary, 'pv_page.show_more') || "Zobraziť viac";
+                const textShowLess = getNestedValue(dictionary, 'pv_page.show_less') || "Zobraziť menej";
+                btn.innerText = showAllReferences ? textShowLess : textShowMore;
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        function toggleReferences() {
+            showAllReferences = !showAllReferences;
+            renderReferences();
+        }
+
+        // ----------------- LOKALIZAČNÝ ENGINE -----------------
+        let currentTranslations = {};
+        let currentLang = localStorage.getItem('elvo_lang') || 'sk';
+
+        async function loadLanguage(lang) {
+            let fetchedData = null;
+            try {
+                const response = await fetch(`../../preklad/${lang.toUpperCase()}/index.json`);
+                if (response.ok) {
+                    fetchedData = await response.json();
+                }
+            } catch (error) {
+                console.warn("Spustené lokálne. Načítava sa vstavaná záloha.");
+            }
+
+            if (!fetchedData) {
+                fetchedData = fullEmbeddedTranslations[lang];
+            }
+
+            currentTranslations = fetchedData;
+            applyTranslations(fetchedData, lang);
+            renderReferences();
+        }
+
+        function applyTranslations(dictionary, lang) {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                const value = getNestedValue(dictionary, key);
+                if (value !== undefined) {
+                    el.innerHTML = value;
+                }
+            });
+
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-translate-placeholder');
+                const value = getNestedValue(dictionary, key);
+                if (value !== undefined) {
+                    el.setAttribute('placeholder', value);
+                }
+            });
+
+            document.documentElement.lang = lang;
+            document.getElementById('current-lang').innerText = lang.toUpperCase();
+            localStorage.setItem('elvo_lang', lang);
+            currentLang = lang;
+
+            updateCartUI();
+        }
+
+        function changeLang(lang) {
+            loadLanguage(lang);
+        }
+
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+        }
+
+        // ----------------- ODOSIELANIE E-MAILOV CEZ PHP (mail.php) -----------------
+        function handleInquirySubmit(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const submitBtn = document.getElementById('contact-form-btn');
+            
+            const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
+            const tSending = getNestedValue(dictionary, 'pv_page.alert_sending') || "Odosiela sa...";
+            const tSent = getNestedValue(dictionary, 'pv_page.alert_sent') || "Ďakujeme. Váš dopyt bol úspešne odoslaný.";
+            const tError = getNestedValue(dictionary, 'pv_page.alert_error') || "Nastal problém pri odosielaní. Skúste to neskôr prosím.";
+
+            const nameVal = document.getElementById('contact-form-name').value;
+            const emailVal = document.getElementById('contact-form-email').value;
+            const messageVal = document.getElementById('contact-form-message').value;
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = tSending;
+
+            // AJAX požiadavka na mail.php s nastavením akcie "contact"
+            fetch('../../mail.php', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                body: JSON.stringify({
+                    action: "contact",
+                    name: nameVal,
+                    email: emailVal,
+                    message: messageVal
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Chyba sieťovej odpovede");
+                }
+                return response.json();
+            })
+            .then(resData => {
+                if (resData.success) {
+                    alert(tSent);
+                    form.reset();
+                } else {
+                    alert(resData.message || tError);
+                }
+            })
+            .catch(error => {
+                console.error("Chyba odosielania kontaktného dopytu:", error);
+                alert(tError);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span data-translate="contact.form_submit">${getNestedValue(dictionary, 'contact.form_submit') || "Vypracovať dopyt"}</span>`;
+            });
+        }
+
+        // ----------------- LOGIKA KOŠÍKA -----------------
+        let cart = JSON.parse(localStorage.getItem('elvo_cart')) || [];
+
+        function toggleCartDrawer() {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-backdrop');
+            const panel = document.getElementById('cart-panel');
+
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.replace('opacity-0', 'opacity-100');
+                    panel.classList.replace('translate-x-full', 'translate-x-0');
+                }, 10);
+            } else {
+                backdrop.classList.replace('opacity-100', 'opacity-0');
+                panel.classList.replace('translate-x-0', 'translate-x-full');
+                setTimeout(() => {
+                    drawer.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function changeQuantity(id, delta) {
+            const itemIndex = cart.findIndex(item => item.id === id);
+            if (itemIndex > -1) {
+                cart[itemIndex].quantity += delta;
+                if (cart[itemIndex].quantity <= 0) {
+                    cart.splice(itemIndex, 1);
+                }
+                saveCart();
+                updateCartUI();
+            }
+        }
+
+        function removeItem(id) {
+            cart = cart.filter(item => item.id !== id);
+            saveCart();
+            updateCartUI();
+        }
+
+        function saveCart() {
+            localStorage.setItem('elvo_cart', JSON.stringify(cart));
+        }
+
+        function updateCartUI() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartIconBtn = document.getElementById('cart-icon-btn');
+            const cartBadge = document.getElementById('cart-badge');
+            const cartTotalPrice = document.getElementById('cart-total-price');
+
+            let totalQuantity = 0;
+            let totalPrice = 0;
+
+            cartItemsContainer.innerHTML = '';
+
+            const tEmptyTitle = getNestedValue(currentTranslations, 'cart.empty_title') || 'Váš košík je prázdny';
+            const tEmptySubtitle = getNestedValue(currentTranslations, 'cart.empty_subtitle') || 'Pridajte smart riešenia v príslušnej sekcii.';
+            const tUnitPrice = getNestedValue(currentTranslations, 'cart.unit_price') || '€ / ks';
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mb-3 text-slate-300">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                        <p class="text-sm font-semibold">${tEmptyTitle}</p>
+                        <p class="text-xs mt-1">${tEmptySubtitle}</p>
+                    </div>
+                `;
+                cartIconBtn.classList.add('hidden');
+            } else {
+                cart.forEach(item => {
+                    totalQuantity += item.quantity;
+                    totalPrice += item.price * item.quantity;
+
+                    const itemElement = document.createElement('div');
+                    itemElement.className = "flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 relative text-xs";
+                    itemElement.innerHTML = `
+                        <img src="${item.img}" alt="${item.name}" class="w-12 h-12 object-cover rounded-lg bg-white border border-slate-100">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-brand-dark leading-tight">${item.name}</h4>
+                            <p class="text-slate-500 mt-0.5">${item.price} ${tUnitPrice}</p>
+                            
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <button onclick="changeQuantity('${item.id}', -1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center">-</button>
+                                <span class="font-bold text-slate-700 w-4 text-center">${item.quantity}</span>
+                                <button onclick="changeQuantity('${item.id}', 1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeItem('${item.id}')" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-red-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                        </button>
+                    `;
+                    cartItemsContainer.appendChild(itemElement);
+                });
+
+                cartIconBtn.classList.remove('hidden');
+                cartBadge.innerText = totalQuantity;
+            }
+
+            const formatterLang = currentLang === 'sk' ? 'sk-SK' : 'en-US';
+            cartTotalPrice.innerText = `${totalPrice.toLocaleString(formatterLang)} €`;
+        }
+
+        function handleCheckout(event) {
+            event.preventDefault();
+            const name = document.getElementById('checkout-name').value;
+            const email = document.getElementById('checkout-email').value;
+
+            if (cart.length === 0) return;
+
+            const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
+            const alertThankYou = getNestedValue(dictionary, 'cart.alert_thank_you') || "Ďakujeme za váš dopyt, {name}!";
+            const alertContact = getNestedValue(dictionary, 'cart.alert_contact') || "Čoskoro vás budeme kontaktovať.";
+            const tUnitPrice = getNestedValue(dictionary, 'cart.unit_price') || "€ / ks";
+            const tError = getNestedValue(dictionary, 'pv_page.alert_error') || "Nastal problém pri odosielaní. Skúste to neskôr prosím.";
+
+            let itemsSummary = cart.map(item => `- ${item.name} (${item.quantity}x) - ${item.price} ${tUnitPrice}`).join('\n');
+            let totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            const formatterLang = currentLang === 'sk' ? 'sk-SK' : 'en-US';
+            let formattedTotalPrice = `${totalPrice.toLocaleString(formatterLang)} €`;
+
+            fetch('../../mail.php', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                body: JSON.stringify({
+                    action: "cart",
+                    name: name,
+                    email: email,
+                    cart_items: itemsSummary,
+                    total_price: formattedTotalPrice
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Chyba sieťovej odpovede");
+                }
+                return response.json();
+            })
+            .then(resData => {
+                if (resData.success) {
+                    const formattedThankYou = alertThankYou.replace('{name}', name);
+                    alert(`${formattedThankYou}\n\n${alertContact}`);
+                    cart = [];
+                    saveCart();
+                    updateCartUI();
+                    toggleCartDrawer();
+                    document.getElementById('checkout-form').reset();
+                } else {
+                    alert(resData.message || tError);
+                }
+            })
+            .catch(error => {
+                console.error("Chyba dopytu košíka:", error);
+                alert(tError);
+            });
+        }
+
+        // ----------------- INTEGROVANÁ ZÁLOHA PREKLADOV (FALLBACK) -----------------
+        const fullEmbeddedTranslations = {
+            sk: {
+                "nav": {
+                    "about": "O nás",
+                    "renewable": "Obnoviteľná energia",
+                    "smart": "Smart riešenia",
+                    "services": "Služby",
+                    "green_enterprise": "Zelená podnikom",
+                    "contact": "Kontakt",
+                    "quick_inquiry": "Rýchly dopyt"
+                },
+                "renewable": {
+                    "card1_title": "Fotovoltika",
+                    "card2_title": "Solárny ohrev",
+                    "card3_title": "ORC jednotky",
+                    "card4_title": "Absorpčné chladenie",
+                    "card5_title": "Batériové úložištia"
+                },
+                "pv_page": {
+                    "title": "Fotovoltika | ELVOSOLAR a.s.",
+                    "hero_badge": "Obnoviteľné zdroje",
+                    "hero_title": "Fotovoltika",
+                    "lead_text": "Slnko predstavuje jeden z najdostupnejších a najčistejších obnoviteľných energetických zdrojov. Aj preto je fotovoltika oblasťou, ktorej rozvoj zaznamenal v posledných desiatich rokoch najväčší pokrok.",
+                    "desc_p1": "Premena slnečnej energie na elektrickú energiu je dnes založená na sieťových, hybridných a ostrovných technológiách s možnosťou zabezpečenia energetickej zálohy.",
+                    "desc_p2": "Naša spoločnosť sa zaoberá výstavbou, prevádzkovaním a servisom všetkých typov fotovoltických elektrární od jednotiek kilowattov do stoviek megawattov, v jednofázovom aj trojfázovom prevedení, pre strešné aj poľné aplikácie.",
+                    "more_info_title": "Viac informácií",
+                    "more_info_intro": "Pod pojmom fotovoltika sa rozumie jednoduchý proces premeny slnečnej energie na elektrickú energiu prostredníctvom elektrochemických procesov. Už v roku 1830 bol Antoine César Becquerelom spozorovaný fotovoltický jav, ale až v roku 1950 bol vytvorený prvý fotovoltický článok, ktorý predznamenal nový rozmach fotovoltických zdrojov.",
+                    "more_info_attractiveness": "Atraktívnosť fotovoltických riešení je predovšetkým v čiastočnej alebo úplnej nezávislosti od dodávok elektrickej energie z distribučnej siete, pričom slnko predstavuje trvalo udržateľný a ekologický zdroj, ktorého energiu môžeme efektívne využívať všetci.",
+                    "transformation_title": "Fotovoltické elektrárne využívajúce fotovoltický jav štandardne transformujú vyrobenú energiu tromi spôsobmi:",
+                    "ongrid_title": "On-grid – sieťové systémy",
+                    "ongrid_p1": "Najčastejším a aj najjednoduchším riešením transformácie a distribúcie vyrobenej elektrickej energie zo slnečného žiarenia je štandardné prepojenie fotovoltických panelov a distribučnej sieti prostredníctvom striedača. Fotovoltický striedač mení priamo jednosmernú energiu získanú zo slnka a fotovoltických panelov na striedavú. Výstupné elektrické parametre striedača sú závislé od parametrov distribučnej siete. Striedač teda nie je bez prítomnosti sieťového napätia na svorkách striedavej strany prevádzkyschopný.",
+                    "ongrid_p2": "Takýto typ zdroja je možné využiť pre účely energetickej čiastočnej alebo úplnej dotácie vlastnej spotreby (domáce spotrebiče, priemyselné zariadenia) alebo pre predaj energie energetickým podnikom.",
+                    "ongrid_p3": "Sieťová technológia je štandardne použitá pri realizácii fotovoltických fariem a je tiež obľúbeným a cenovo atraktívnym riešením aj pri strešných aplikáciách.",
+                    "ongrid_p4": "Výstavba fotovoltických fariem je komplexným projektom, ktorý si vyžaduje skúsenosti v oblasti návrhu riešenia (výber a orientácia terénu, spôsob spracovania jednosmerného výkonu,…), tvorby projektovej dokumentácie, samotnej realizácie, pripojenia do distribučnej sústavy, prevádzkovania elektrárne, jej servisu a údržby. Výkon takýchto elektrární sa pohybuje v stovkách kilowattov až desiatkach megawattov, pričom pre účely výstavby sa využívajú malé kilowattové striedače (decentrálne riešenie), ale častejšie väčšie, trojfázové striedače (stovky kilowattov) označované ako centrálne riešenie.",
+                    "ongrid_p5": "Projekt sieťového systému fotovoltickej elektrárne na strechu rezidenčných alebo komerčných budov je jednoduchší, avšak pre dosiahnutie maximálnej efektivity si vyžaduje dobrú znalosť správania sa fotovoltických panelov počas celoročnej prevádzky. Striedač je výkonovo na úrovni jednotiek až desiatok kilowattov, a keďže vyrobená energia nie je v samotnom sieťovom striedači skladovateľná, mal by byť jej vyrobený výkon menší ako je celková spotreba domácnosti alebo prevádzky. Vznikajúce prebytky sú totižto distribuované do distribučnej siete, pričom v dnešnej dobe nie je takáto dodávka energie vykupovaná (v niektorých prípadoch je dokonca nežiaduca), a tak je len ekonomickou stratou pre prevádzkovateľa elektrárne.",
+                    "ongrid_p6": "Výhodami inštalácie on-grid – sieťového systému sú jednoduchosť realizácie, vyššia priama účinnosť, priame pripojenie do uzla siete (veľkosť striedača nie je závislá od veľkosti záťaže) and taktiež nižšie investičné náklady. Nevýhodou je závislosť na prítomnosti distribučnej siete a v mnohých prípadoch nevyhnutný manažment spotreby vyrobenej energie.",
+                    "offgrid_title": "Off-grid – ostrovné systémy",
+                    "offgrid_p1": "Ostrovné systémy sa často využívajú v prevádzkach vzdialených od štandardných zdrojov elektrickej energie, respektíve v aplikáciách, kde je požiadavka nezávislého napájania.",
+                    "offgrid_p2": "Princíp ostrovných fotovoltických systémov je založený na dodávke elektrickej energie, ktorá je získaná zo slnka a spracovaná tak, aby zabezpečila požadované, nominálne elektrické parametre spotrebičov. Schopnosť nezávislej tvorby požadovaného priebehu napätia a prúdu od distribučnej elektrickej siete je nevyhnutnosťou pri prevádzke ostrovného systému. Keďže je žiarenie zo slnka nestabilným zdrojom energie (mračná, hmla, teplota, ...), zabezpečenie stability procesu dodávok elektrickej energie sa v týchto ostrovných systémoch rieši prostredníctvom akumulácie energie v batériách. V čase zníženej spotreby, resp. zvýšených dodávok elektrickej energie zo slnka, je možné túto, „prebytočnú“ energiu akumulovať do batérií a následne sa dá využiť v čase, keď nie je možné zabezpečiť dostatok energie z fotovoltických panelov.",
+                    "offgrid_p3": "Celá zostava ostrovného systému teda pozostáva z troch základných celkov: nabíjačka (elektrickú energiu zo slnka transformuje na jednosmernú energiu vhodnú pre nabíjanie batérií), batérie (udržujú energetickú stabilitu systému a zabezpečujú nezávislosť od akéhokoľvek energetického zdroja), striedač (premieňa jednosmernú energiu z batérií na striedavú s požadovanými parametrami). Systém môže dodávať ako striedavú, tak aj jednosmernú energiu (z batérií) a off-grid striedač umožňuje pre podporu výroby elektrickej energie pripojiť si na svoje vstupy aj iné alternatívne zdroje, ako sú veterná turbína alebo dieselagregát.",
+                    "offgrid_p4": "Nevýhodou je technologicky náročnejšia a drahšia inštalácia, energetická závislosť od veľkosti výkonových batérií a striedačom limitujúca veľkosť pripojenej záťaže. Najvýznamnejšou nevýhodou je vypnutie napájania spotrebičov v prípade slabej výroby a nulovej zásoby energie. Hlavnou výhodou ostrovných systémov je nezávislosť od distribučnej siete a tiež nezávislosť prítomnosti záťaže od výroby energie.",
+                    "hybrid_title": "Hybridné systémy",
+                    "hybrid_p1": "Hybridný systém je vlastne ostrovný systém s možnosťou pripojenia sa do distribučnej siete. Zabezpečuje sa tak spojenie výhod ostrovných systémov (dodávka energie nezávisle od prítomnosti siete, možnosť uskladnenia prebytočnej energie do batérií, možnosť doplnenia ďalších alternatívnych zdrojov) a sieťových systémov (v prípade nedostatku energie z fotovoltiky, schopnosť dodávky energie z distribučnej sieti) do jedného celku. Vytvára sa tak ideálny zdroj energie pre domácnosti, ktoré si takto vytvárajú alternatívny, nezávislý zdroj k bežnej distribučnej sieti.",
+                    "hybrid_p2": "Riešenie pozostáva podobne ako u ostrovných systémov z nabíjačky, batérie a striedača. Striedač je schopný pripojenia na distribučnú sieť a dokáže inteligentne manažovať odber medzi sieťou a fotovoltikou, prípadne ďalším alternatívnym zdrojom.",
+                    "hybrid_p3": "Nevýhodou týchto systémov je vyššia obstarávacia cena (významne závislá nielen od ceny panelov, ale aj batérií), ako aj náročnejšia a rozsiahlejšia inštalácia. Hybridné riešenie vyvedenia výkonu fotovoltickej elektrárne je možné realizovať od jednotiek kilowattov do desiatok kilowattov v jednofázovom, ale aj trojfázovom prevedení.",
+                    "apps_title": "Aplikácie",
+                    "app1_title": "/// Energetika",
+                    "app1_desc": "Fotovoltické farmy od desiatok kWp po desiatky MWp.",
+                    "app2_title": "/// Priemysel, komerčný a verejný sektor",
+                    "app2_desc": "Fotovoltika na strechách priemyselných, komerčných a verejných objektov do 100 kWp.",
+                    "app3_title": "/// Infraštruktúra",
+                    "app3_desc": "Fotovoltika na parkoviskách od jednotiek do desiatok kWp.",
+                    "references_badge": "Skúsenosti a stabilita",
+                    "references_title": "Naše Referencie",
+                    "show_more": "Zobraziť viac",
+                    "show_less": "Zobraziť menej",
+                    "alert_sending": "Odosiela sa...",
+                    "alert_sent": "Ďakujeme. Váš dopyt bol úspešne odoslaný.",
+                    "alert_error": "Nastal problém pri odosielaní. Skúste to neskôr prosím."
+                },
+                "contact": {
+                    "badge": "Kontakt",
+                    "title": "Kontaktujte nás",
+                    "phone_label": "Tel.:",
+                    "phone_value": "+421 914 332 169",
+                    "email_label": "Email:",
+                    "email_value": "info@elvosolar.sk",
+                    "form_title": "Nezáväzný dopyt",
+                    "form_name_placeholder": "Meno a Priezvisko *",
+                    "form_email_placeholder": "Váš e-mail *",
+                    "form_message_placeholder": "Opíšte Vaše požiadavky...",
+                    "form_submit": "Vypracovať dopyt"
+                },
+                "cart": {
+                    "title": "Váš dopytový košík",
+                    "empty_title": "Váš košík je prázdny",
+                    "empty_subtitle": "Pridajte smart riešenia v príslušnej sekcii.",
+                    "unit_price": "€ / ks",
+                    "estimated_price": "Orientačná cena:",
+                    "checkout_name_placeholder": "Vaše meno / Firma",
+                    "checkout_email_placeholder": "Váš E-mail",
+                    "checkout_submit": "Odoslať dopyt košíka",
+                    "alert_thank_you": "Ďakujeme za váš dopyt, {name}!",
+                    "alert_received": "Na e-mail {email} sme zaznamenali záujem o produkty:",
+                    "alert_contact": "Čoskoro vás budeme kontaktovať."
+                },
+                "footer": {
+                    "copyright": "2026 © Elvosolar, a.s. • Ochrana osobných údajov",
+                    "tagline": "Inovatívne energetické riešenia"
+                }
+            },
+            en: {
+                "nav": {
+                    "about": "About Us",
+                    "renewable": "Renewable Energy",
+                    "smart": "Smart Solutions",
+                    "services": "Services",
+                    "green_enterprise": "Green for Enterprises",
+                    "contact": "Contact",
+                    "quick_inquiry": "Quick Inquiry"
+                },
+                "renewable": {
+                    "card1_title": "Photovoltaics",
+                    "card2_title": "Solar heating",
+                    "card3_title": "ORC units",
+                    "card4_title": "Absorption cooling",
+                    "card5_title": "Battery storage"
+                },
+                "pv_page": {
+                    "title": "Photovoltaics | ELVOSOLAR a.s.",
+                    "hero_badge": "Renewable Sources",
+                    "hero_title": "Photovoltaics",
+                    "lead_text": "The sun represents one of the most accessible and cleanest renewable energy sources. This is why photovoltaics has seen the most progress in its development over the past ten years.",
+                    "desc_p1": "The conversion of solar energy into electrical energy is currently based on grid-tied, hybrid, and off-grid technologies with options for energy backup.",
+                    "desc_p2": "Our company is engaged in the construction, operation, and maintenance of all types of photovoltaic power plants from single kilowatts up to hundreds of megawatts, in both single-phase and three-phase designs, for rooftop and ground-mounted applications.",
+                    "more_info_title": "More Information",
+                    "more_info_intro": "The term photovoltaics refers to a simple process of converting solar energy into electricity through electrochemical processes. Although the photovoltaic effect was first observed by Antoine César Becquerel in 1830, the first practical photovoltaic cell was not created until 1950, ushering in a new era of solar power generation.",
+                    "more_info_attractiveness": "The appeal of solar solutions lies primarily in partial or total independence from electricity supply from the distribution grid, with the sun representing a sustainable and ecological source that can be effectively utilized by everyone.",
+                    "transformation_title": "Photovoltaic plants utilizing the photovoltaic effect typically transform the generated energy in three ways:",
+                    "ongrid_title": "On-grid – grid-tied systems",
+                    "ongrid_p1": "The most common and simplest solution for transforming and distributing generated solar electricity is a standard connection between photovoltaic panels and the utility grid through an inverter. The solar inverter directly converts the direct current (DC) obtained from the sun and solar panels into alternating current (AC). The electrical output parameters of the inverter are dependent on the parameters of the utility grid. Therefore, without the presence of grid voltage on the AC terminals, the inverter cannot operate.",
+                    "ongrid_p2": "This type of power source can be used to partially or fully substitute self-consumption (household appliances, industrial equipment) or to sell energy back to utilities.",
+                    "ongrid_p3": "Grid-tied technology is a standard for solar farms and remains a popular and cost-effective solution for rooftop installations.",
+                    "ongrid_p4": "The construction of solar farms is a complex project requiring extensive expertise in solution design (terrain selection and orientation, DC power processing layout, etc.), project documentation, actual execution, grid connection, operation, service, and maintenance. The output of such plants ranges from hundreds of kilowatts to tens of megawatts. For construction, small kilowatt-level inverters (decentralized solutions) or larger three-phase inverters (hundreds of kilowatts) called centralized solutions are utilized.",
+                    "ongrid_p5": "Rooftop grid-tied system projects for residential or commercial buildings are simpler, but for maximum efficiency, they require a deep understanding of solar panel behavior during year-round operation. Inverter capacities are on the level of units to tens of kilowatts. Since the generated energy cannot be stored in standard grid-tied inverters, its output capacity should be smaller than the building's total consumption. Surplus energy is exported to the grid, and currently, this exported energy is often not compensated (and in some cases is even undesirable), resulting in economic loss for the plant operator.",
+                    "ongrid_p6": "The advantages of implementing an on-grid system are simplicity of execution, higher direct efficiency, direct connection to the network node (the inverter size is independent of the load size), and lower initial investment costs. The disadvantage is complete dependence on utility grid presence and, in many cases, the necessity of active consumption management.",
+                    "offgrid_title": "Off-grid – independent systems",
+                    "offgrid_p1": "Off-grid systems are frequently used in operations far from standard power grids or in applications where independent power supply is required.",
+                    "offgrid_p2": "The principle of off-grid solar systems is based on supplying electricity harvested from the sun and processed to match the required nominal parameters of the appliances. The ability to generate voltage and current independent of the utility grid is essential for off-grid operations. Since sunlight is an unstable energy source (clouds, fog, temperature), maintaining stable power supply is secured via battery energy storage. During periods of low consumption or high solar output, surplus energy is accumulated in battery banks, which can be utilized later when solar panels generate insufficient power.",
+                    "offgrid_p3": "An off-grid system configuration consists of three basic components: a charger (which converts solar power into DC current suitable for battery charging), battery banks (which maintain system stability and guarantee independence from utility sources), and an inverter (which converts DC battery power into AC power with target parameters). The system can supply both AC and DC current, and off-grid inverters allow connecting auxiliary generators (such as wind turbines or diesel generators) to support power production.",
+                    "offgrid_p4": "Disadvantages include technically complex and more expensive installations, high dependence on battery bank capacities, and load limitations strictly constrained by the inverter size. The most significant drawback is power cutout for all appliances in case of poor weather and complete depletion of battery reserves. The main benefit is absolute independence from the distribution network.",
+                    "hybrid_title": "Hybrid Systems",
+                    "hybrid_p1": "A hybrid system is essentially an off-grid system with the option to connect to the utility distribution network. This merges the benefits of off-grid systems (power delivery independent of grid presence, battery storage of surplus energy, auxiliary generator input options) and grid-tied systems (ability to draw grid power when solar and battery reserves are insufficient) into a single solution. This creates an ideal power setup for households seeking a reliable, alternative, and independent energy source parallel to the public grid.",
+                    "hybrid_p2": "Similar to off-grid systems, the setup consists of a solar charger, battery banks, and a hybrid inverter. The inverter is connected to the grid and intelligently manages energy distribution between utility, solar, and battery reserves.",
+                    "hybrid_p3": "The disadvantage of hybrid systems is a higher purchase cost (highly dependent on battery costs) and more extensive installation requirements. Hybrid solutions can be deployed in capacities ranging from units to tens of kilowatts in single-phase or three-phase configurations.",
+                    "apps_title": "Applications",
+                    "app1_title": "/// Power Generation",
+                    "app1_desc": "Photovoltaic plants ranging from tens of kWp to tens of MWp.",
+                    "app2_title": "/// Industry, Commercial & Public Sector",
+                    "app2_desc": "Photovoltaics on the rooftops of industrial, commercial, and public facilities up to 100 kWp.",
+                    "app3_title": "/// Infrastructure",
+                    "app3_desc": "Photovoltaics on parking lots from units to tens of kWp.",
+                    "references_badge": "Experience and Stability",
+                    "references_title": "Our References",
+                    "show_more": "Show more",
+                    "show_less": "Show less",
+                    "alert_sending": "Sending...",
+                    "alert_sent": "Thank you. Your inquiry has been successfully sent.",
+                    "alert_error": "An error occurred while sending. Please try again later."
+                },
+                "contact": {
+                    "badge": "Contact",
+                    "title": "Contact us",
+                    "phone_label": "Phone:",
+                    "phone_value": "+421 914 332 169",
+                    "email_label": "Email:",
+                    "email_value": "info@elvosolar.sk",
+                    "form_title": "Non-binding Inquiry",
+                    "form_name_placeholder": "Full Name *",
+                    "form_email_placeholder": "Your email *",
+                    "form_message_placeholder": "Describe your requirements...",
+                    "form_submit": "Send Inquiry"
+                },
+                "cart": {
+                    "title": "Your Inquiry Cart",
+                    "empty_title": "Your cart is empty",
+                    "empty_subtitle": "Add smart solutions in the respective section.",
+                    "unit_price": "€ / pc",
+                    "estimated_price": "Estimated price:",
+                    "checkout_name_placeholder": "Your name / Company",
+                    "checkout_email_placeholder": "Your E-mail",
+                    "checkout_submit": "Send cart inquiry",
+                    "alert_thank_you": "Thank you for your inquiry, {name}!",
+                    "alert_received": "We have recorded interest in the following products for email {email}:",
+                    "alert_contact": "We will contact you shortly."
+                },
+                "footer": {
+                    "copyright": "2026 © Elvosolar, a.s. • Personal data protection",
+                    "tagline": "Innovative energy solutions"
+                }
+            }
+        };
+
+        const localFallbackTranslations = {};
+    </script>
+</body>
+</html>

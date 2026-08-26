@@ -1,0 +1,41 @@
+# === SECRETS - NIKDY neposielať na GitHub ===
+Software/App/config.php
+Software/App/create_admin.php
+*.env
+.env*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+*.tmp
+*.bak
+
+# Node
+node_modules/
+
+# Freebuff internal
+.freebuff/
+
+# Tetovacie subory - nepatria do hlavného repo
+tetovacie subory/
+
+# Hw Windows - duplicita
+Hw Windows/

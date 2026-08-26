@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="sk" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="title">Smart riešenia | ELVOSOLAR a.s.</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0f172a', /* Slate 900 */
+                            green: '#10b981', /* Emerald 500 */
+                            light: '#f8fafc', /* Slate 50 */
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen relative overflow-x-hidden">
+
+    <!-- Navigácia -->
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="../index.html" class="flex items-center">
+                <img src="../Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
+            </a>
+            
+            <!-- Menu pre počítače -->
+            <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600">
+                <a href="../o-nás/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.about"></a>
+                
+                <!-- Dropdown Obnoviteľná energia -->
+                <div class="relative inline-block text-left" id="renewable-dropdown-container">
+                    <button id="renewable-menu-btn" class="flex items-center gap-1 hover:text-brand-green font-semibold text-sm text-slate-600 transition-colors focus:outline-none py-2">
+                        <span data-translate="nav.renewable"></span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="renewable-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-lg shadow-lg py-1.5 z-50">
+                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
+                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
+                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
+                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
+                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
+                    </div>
+                </div>
+
+                <a href="../smart-riesenia/index.html" class="text-brand-green transition-colors" data-translate="nav.smart"></a>
+                <a href="../eshop/index.html" class="text-brand-green hover:text-emerald-600 font-extrabold flex items-center gap-1">🛒 E-Shop</a>
+                <a href="../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
+                <a href="../zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
+                <a href="../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <!-- Dynamická ikona košíka -->
+                <button id="cart-icon-btn" onclick="toggleCartDrawer()" class="hidden relative p-2.5 text-slate-600 hover:text-brand-green transition-colors rounded-full hover:bg-slate-50 mr-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                    </svg>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-brand-green text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+                </button>
+
+                <!-- Jazykový prepínač -->
+                <div class="relative inline-block text-left" id="lang-selector-container">
+                    <button id="lang-menu-btn" class="flex items-center space-x-1 text-xs font-bold text-slate-600 hover:text-brand-green uppercase tracking-wider transition-colors focus:outline-none py-2">
+                        <span id="current-lang">SK</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="lang-dropdown" class="hidden absolute right-0 mt-2 w-20 bg-white border border-slate-100 rounded-lg shadow-lg py-1 z-50">
+                        <button onclick="changeLang('sk')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">SK</button>
+                        <button onclick="changeLang('en')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">EN</button>
+                    </div>
+                </div>
+
+                <a href="../kontakt/index.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+
+                <!-- Hamburger pre mobilné telefóny -->
+                <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-brand-green focus:outline-none p-2" aria-label="Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path id="hamburger-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobilné menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 transition-all duration-300">
+            <nav class="flex flex-col px-6 py-4 space-y-4 font-semibold text-slate-600">
+                <a href="../o-nás/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
+                
+                <!-- Akordeón pre Obnoviteľnú energiu v mobile -->
+                <div class="flex flex-col">
+                    <button id="mobile-renewable-menu-btn" class="flex items-center justify-between hover:text-brand-green py-2 border-b border-slate-50 font-semibold text-slate-600 focus:outline-none w-full text-left">
+                        <span data-translate="nav.renewable"></span>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="mobile-renewable-submenu" class="hidden pl-4 flex-col space-y-2 py-2 border-b border-slate-50 bg-slate-50/50">
+                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
+                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
+                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
+                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
+                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
+                    </div>
+                </div>
+
+                <a href="../smart-riesenia/index.html" class="text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
+                <a href="../služby/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
+                <a href="../zelená-podnikom/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
+                <a href="../kontakt/index.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
+                <a href="../kontakt/index.html" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Sekcia -->
+    <section class="bg-brand-dark text-white py-16 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div class="max-w-7xl mx-auto px-6 relative z-10 text-center">
+            <span class="text-xs font-bold uppercase tracking-widest text-brand-green mb-3 block" data-translate="smart_page.hero_badge"></span>
+            <h1 class="text-3xl lg:text-5xl font-extrabold tracking-tight mb-4" data-translate="smart_page.hero_title"></h1>
+        </div>
+    </section>
+
+    <!-- Hlavný produktový obsah -->
+    <main class="py-16 max-w-7xl mx-auto px-6 flex-grow">
+        <div class="grid md:grid-cols-2 gap-12">
+            
+            <!-- Smart Cenový kontroler -->
+            <div class="bg-white rounded-3xl border border-slate-100 hover:shadow-xl transition-all overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="relative h-64 bg-slate-100 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=800&q=80" alt="Smart Cenový kontroler" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-8">
+                        <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart_page.prod1_badge"></span>
+                        <h2 class="text-2xl font-bold text-brand-dark mb-3" data-translate="smart_page.prod1_title"></h2>
+                        <p class="text-slate-500 text-sm leading-relaxed mb-6" data-translate="smart_page.prod1_desc"></p>
+                        <a href="Solarcontroller2/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="smart_page.prod1_more"></a>
+                    </div>
+                </div>
+                <div class="p-8 pt-0">
+                    <button onclick="location.href='../eshop/index.html'; //, 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=120&q=80', 'smart_page.prod1_title')" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                        <span data-translate="smart_page.prod1_btn"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Smart EMS Controller (Stanov projekt) -->
+            <div class="bg-white rounded-3xl border border-slate-100 hover:shadow-xl transition-all overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="relative h-64 bg-slate-100 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Smart EMS Controller" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-8">
+                        <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart_page.prod2_badge"></span>
+                        <h2 class="text-2xl font-bold text-brand-dark mb-3" data-translate="smart_page.prod2_title"></h2>
+                        <p class="text-slate-500 text-sm leading-relaxed mb-6" data-translate="smart_page.prod2_desc"></p>
+                        <a href="Solarcontroller2/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="smart_page.prod2_more"></a>
+                    </div>
+                </div>
+                <div class="p-8 pt-0">
+                    <button onclick="location.href='../eshop/index.html'; //, 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=120&q=80', 'smart_page.prod2_title')" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                        <span data-translate="smart_page.prod2_btn"></span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Nákupný košík - Vysúvací bočný panel (Drawer) -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 pointer-events-none hidden" role="dialog" aria-modal="true">
+        <!-- Pozadie / Backdrop -->
+        <div id="cart-backdrop" onclick="toggleCartDrawer()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+        
+        <!-- Samotný panel -->
+        <div id="cart-panel" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto transform translate-x-full transition-transform duration-300">
+            <!-- Hlavička košíka -->
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-brand-dark" data-translate="cart.title"></h3>
+                <button onclick="toggleCartDrawer()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Položky košíka -->
+            <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4">
+                <!-- Generované dynamicky prostredníctvom JS -->
+            </div>
+
+            <!-- Pätička košíka s formulárom dopytu -->
+            <div class="p-6 border-t border-slate-100 bg-slate-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-semibold text-slate-500" data-translate="cart.estimated_price"></span>
+                    <span id="cart-total-price" class="text-xl font-black text-brand-dark">0 €</span>
+                </div>
+
+                <!-- Formulár odoslania -->
+                <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-3">
+                    <input type="text" id="checkout-name" required data-translate-placeholder="cart.checkout_name_placeholder" class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    <input type="email" id="checkout-email" required data-translate-placeholder="cart.checkout_email_placeholder" class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    <button type="submit" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg text-sm transition-colors" data-translate="cart.checkout_submit"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pätička -->
+    <footer class="bg-slate-950 text-slate-500 py-8 text-xs border-t border-slate-900 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p data-translate="footer.copyright"></p>
+            <p class="text-slate-600" data-translate="footer.tagline"></p>
+        </div>
+    </footer>
+
+    <!-- Skripty -->
+    <script>
+        // Mobilné menu (Hamburger)
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const hamburgerIcon = document.getElementById('hamburger-icon');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            const isHidden = mobileMenu.classList.contains('hidden');
+            if (isHidden) {
+                mobileMenu.classList.remove('hidden');
+                hamburgerIcon.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+            } else {
+                mobileMenu.classList.add('hidden');
+                hamburgerIcon.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+            }
+        });
+
+        // Dropdown pre výber jazyka
+        const langMenuBtn = document.getElementById('lang-menu-btn');
+        const langDropdown = document.getElementById('lang-dropdown');
+
+        langMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeDropdowns();
+            langDropdown.classList.toggle('hidden');
+        });
+
+        // Dropdown pre Obnoviteľnú energiu (Desktop)
+        const renewableMenuBtn = document.getElementById('renewable-menu-btn');
+        const renewableDropdown = document.getElementById('renewable-dropdown');
+
+        renewableMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeDropdowns();
+            renewableDropdown.classList.toggle('hidden');
+        });
+
+        // Akordeón pre Obnoviteľnú energiu (Mobile)
+        const mobileRenewableMenuBtn = document.getElementById('mobile-renewable-menu-btn');
+        const mobileRenewableSubmenu = document.getElementById('mobile-renewable-submenu');
+
+        mobileRenewableMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileRenewableSubmenu.classList.toggle('hidden');
+        });
+
+        // Pomocná funkcia na zatvorenie otvorených desktop dropdownov
+        function closeDropdowns() {
+            langDropdown.classList.add('hidden');
+            renewableDropdown.classList.add('hidden');
+        }
+
+        // Zatvorenie všetkých dropdownov pri kliknutí mimo nich
+        document.addEventListener('click', () => {
+            closeDropdowns();
+        });
+
+        // ----------------- LOKALIZAČNÝ ENGINE -----------------
+        let currentTranslations = {};
+        let currentLang = localStorage.getItem('elvo_lang') || 'sk';
+
+        async function loadLanguage(lang) {
+            let fetchedData = null;
+            try {
+                const response = await fetch(`../preklad/${lang.toUpperCase()}/index.json`);
+                if (response.ok) {
+                    fetchedData = await response.json();
+                }
+            } catch (error) {
+                console.warn("Spustené lokálne (CORS pravidlo). Načítava sa vstavaná záloha slovníka.");
+            }
+
+            if (!fetchedData) {
+                fetchedData = fullEmbeddedTranslations[lang] || localFallbackTranslations[lang];
+            }
+
+            currentTranslations = fetchedData;
+            applyTranslations(fetchedData, lang);
+        }
+
+        function applyTranslations(dictionary, lang) {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                const value = getNestedValue(dictionary, key);
+                if (value !== undefined) {
+                    el.innerHTML = value;
+                }
+            });
+
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-translate-placeholder');
+                const value = getNestedValue(dictionary, key);
+                if (value !== undefined) {
+                    el.setAttribute('placeholder', value);
+                }
+            });
+
+            document.documentElement.lang = lang;
+            document.getElementById('current-lang').innerText = lang.toUpperCase();
+            localStorage.setItem('elvo_lang', lang);
+            currentLang = lang;
+
+            updateCartUI();
+        }
+
+        function changeLang(lang) {
+            loadLanguage(lang);
+        }
+
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+        }
+
+        // ----------------- LOGIKA KOŠÍKA -----------------
+        let cart = JSON.parse(localStorage.getItem('elvo_cart')) || [];
+
+        function toggleCartDrawer() {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-backdrop');
+            const panel = document.getElementById('cart-panel');
+
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.replace('opacity-0', 'opacity-100');
+                    panel.classList.replace('translate-x-full', 'translate-x-0');
+                }, 10);
+            } else {
+                backdrop.classList.replace('opacity-100', 'opacity-0');
+                panel.classList.replace('translate-x-0', 'translate-x-full');
+                setTimeout(() => {
+                    drawer.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function addToCart(id, price, img, translationKey) {
+            const existingItemIndex = cart.findIndex(item => item.id === id);
+            if (existingItemIndex > -1) {
+                cart[existingItemIndex].quantity += 1;
+            } else {
+                cart.push({ id, price, img, translationKey, quantity: 1 });
+            }
+            saveCart();
+            updateCartUI();
+            if (document.getElementById('cart-drawer').classList.contains('hidden')) {
+                toggleCartDrawer();
+            }
+        }
+
+        function changeQuantity(id, delta) {
+            const itemIndex = cart.findIndex(item => item.id === id);
+            if (itemIndex > -1) {
+                cart[itemIndex].quantity += delta;
+                if (cart[itemIndex].quantity <= 0) {
+                    cart.splice(itemIndex, 1);
+                }
+                saveCart();
+                updateCartUI();
+            }
+        }
+
+        function removeItem(id) {
+            cart = cart.filter(item => item.id !== id);
+            saveCart();
+            updateCartUI();
+        }
+
+        function saveCart() {
+            localStorage.setItem('elvo_cart', JSON.stringify(cart));
+        }
+
+        function updateCartUI() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartIconBtn = document.getElementById('cart-icon-btn');
+            const cartBadge = document.getElementById('cart-badge');
+            const cartTotalPrice = document.getElementById('cart-total-price');
+
+            let totalQuantity = 0;
+            let totalPrice = 0;
+
+            cartItemsContainer.innerHTML = '';
+
+            const tEmptyTitle = getNestedValue(currentTranslations, 'cart.empty_title') || 'Váš košík je prázdny';
+            const tEmptySubtitle = getNestedValue(currentTranslations, 'cart.empty_subtitle') || 'Pridajte smart riešenia v príslušnej sekcii.';
+            const tUnitPrice = getNestedValue(currentTranslations, 'cart.unit_price') || '€ / ks';
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mb-3 text-slate-300">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                        <p class="text-sm font-semibold">${tEmptyTitle}</p>
+                        <p class="text-xs mt-1">${tEmptySubtitle}</p>
+                    </div>
+                `;
+                cartIconBtn.classList.add('hidden');
+            } else {
+                cart.forEach(item => {
+                    totalQuantity += item.quantity;
+                    totalPrice += item.price * item.quantity;
+
+                    // Dynamický preklad názvu produktu v košíku
+                    const translatedName = getNestedValue(currentTranslations, item.translationKey) || item.translationKey;
+
+                    const itemElement = document.createElement('div');
+                    itemElement.className = "flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 relative text-xs";
+                    itemElement.innerHTML = `
+                        <img src="${item.img}" alt="${translatedName}" class="w-12 h-12 object-cover rounded-lg bg-white border border-slate-100">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-brand-dark leading-tight">${translatedName}</h4>
+                            <p class="text-slate-500 mt-0.5">${item.price} ${tUnitPrice}</p>
+                            
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <button onclick="changeQuantity('${item.id}', -1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center">-</button>
+                                <span class="font-bold text-slate-700 w-4 text-center">${item.quantity}</span>
+                                <button onclick="changeQuantity('${item.id}', 1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeItem('${item.id}')" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-red-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                        </button>
+                    `;
+                    cartItemsContainer.appendChild(itemElement);
+                });
+
+                cartIconBtn.classList.remove('hidden');
+                cartBadge.innerText = totalQuantity;
+            }
+
+            const formatterLang = currentLang === 'sk' ? 'sk-SK' : 'en-US';
+            cartTotalPrice.innerText = `${totalPrice.toLocaleString(formatterLang)} €`;
+        }
+
+        function handleCheckout(event) {
+            event.preventDefault();
+            const name = document.getElementById('checkout-name').value;
+            const email = document.getElementById('checkout-email').value;
+
+            if (cart.length === 0) return;
+
+            let itemsSummary = cart.map(item => {
+                const translatedName = getNestedValue(currentTranslations, item.translationKey) || item.translationKey;
+                return `- ${translatedName} (${item.quantity}x)`;
+            }).join('\n');
+
+            const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
+            const alertThankYou = getNestedValue(dictionary, 'cart.alert_thank_you') || "Ďakujeme za váš dopyt, {name}!";
+            const alertReceived = getNestedValue(dictionary, 'cart.alert_received') || "Na e-mail {email} sme zaznamenali záujem o produkty:";
+            const alertContact = getNestedValue(dictionary, 'cart.alert_contact') || "Čoskoro vás budeme kontaktovať.";
+
+            const formattedThankYou = alertThankYou.replace('{name}', name);
+            const formattedReceived = alertReceived.replace('{email}', email);
+
+            alert(`${formattedThankYou}\n\n${formattedReceived}\n${itemsSummary}\n\n${alertContact}`);
+            
+            cart = [];
+            saveCart();
+            updateCartUI();
+            toggleCartDrawer();
+            document.getElementById('checkout-form').reset();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadLanguage(currentLang);
+        });
+
+        // ----------------- INTEGROVANÁ ZÁLOHA PREKLADOV (FALLBACK) -----------------
+        const fullEmbeddedTranslations = {
+            sk: {
+                "title": "Smart riešenia | ELVOSOLAR a.s.",
+                "nav": {
+                    "about": "O nás",
+                    "renewable": "Obnoviteľná energia",
+                    "smart": "Smart riešenia",
+                    "services": "Služby",
+                    "green_enterprise": "Zelená podnikom",
+                    "contact": "Kontakt",
+                    "quick_inquiry": "Rýchly dopyt"
+                },
+                "renewable": {
+                    "card1_title": "Fotovoltika",
+                    "card2_title": "Solárny ohrev",
+                    "card3_title": "ORC jednotky",
+                    "card4_title": "Absorpčné chladenie",
+                    "card5_title": "Batériové úložištia"
+                },
+                "smart_page": {
+                    "hero_badge": "Inovácie pre vašu energetiku",
+                    "hero_title": "Smart technologické riešenia",
+                    "prod1_badge": "Optimalizácia a spotreba",
+                    "prod1_title": "Smart Cenový kontroler",
+                    "prod1_desc": "Precízny fázový monitoring spotreby a odberných miest. Umožňuje automatizované spínanie a vypínanie príkonu energie na základe vývoja cien elektriny pre maximálnu úsporu.",
+                    "prod1_more": "Zobraziť parametre a obsah balenia ►",
+                    "prod1_btn": "Pridať do dopytového košíka",
+                    "prod2_badge": "Vo vývoji: Riadenie tokov energií",
+                    "prod2_title": "Smart EMS Controller (Projekt Stanov)",
+                    "prod2_desc": "Inteligentný energetický manažment (EMS) riadi výrobu a spotrebu elektriny v reálnom čase. Vyhodnocuje predpovede počasia, spotrebiteľské správanie a optimalizuje toky do spotrebičov, batérií či distribučnej siete.",
+                    "prod2_more": "Zobraziť parametre a obsah balenia ►",
+                    "prod2_btn": "Pridať do dopytového košíka"
+                },
+                "cart": {
+                    "title": "Váš dopytový košík",
+                    "empty_title": "Váš košík je prázdny",
+                    "empty_subtitle": "Pridajte smart riešenia v príslušnej sekcii.",
+                    "unit_price": "€ / ks",
+                    "estimated_price": "Orientačná cena:",
+                    "checkout_name_placeholder": "Vaše meno / Firma",
+                    "checkout_email_placeholder": "Váš E-mail",
+                    "checkout_submit": "Odoslať dopyt košíka",
+                    "alert_thank_you": "Ďakujeme za váš dopyt, {name}!",
+                    "alert_received": "Na e-mail {email} sme zaznamenali záujem o produkty:",
+                    "alert_contact": "Čoskoro vás budeme kontaktovať."
+                },
+                "footer": {
+                    "copyright": "2026 © Elvosolar, a.s. • Ochrana osobných údajov",
+                    "tagline": "Inovatívne energetické riešenia"
+                }
+            },
+            en: {
+                "title": "Smart Solutions | ELVOSOLAR a.s.",
+                "nav": {
+                    "about": "About Us",
+                    "renewable": "Renewable Energy",
+                    "smart": "Smart Solutions",
+                    "services": "Services",
+                    "green_enterprise": "Green for Enterprises",
+                    "contact": "Contact",
+                    "quick_inquiry": "Quick Inquiry"
+                },
+                "renewable": {
+                    "card1_title": "Photovoltaics",
+                    "card2_title": "Solar heating",
+                    "card3_title": "ORC units",
+                    "card4_title": "Absorption cooling",
+                    "card5_title": "Battery storage"
+                },
+                "smart_page": {
+                    "hero_badge": "Innovations for your energy sector",
+                    "hero_title": "Smart Technological Solutions",
+                    "prod1_badge": "Optimization and consumption",
+                    "prod1_title": "Smart Price Controller",
+                    "prod1_desc": "Precise phase monitoring of consumption and delivery points. Enables automated switching and power load shedding based on grid electricity prices for maximum savings.",
+                    "prod1_more": "Show parameters and package contents ►",
+                    "prod1_btn": "Add to inquiry cart",
+                    "prod2_badge": "In development: Energy flow management",
+                    "prod2_title": "Smart EMS Controller (Stano's Project)",
+                    "prod2_desc": "Intelligent Energy Management System (EMS) controls production and consumption in real time. It analyzes weather forecasts, consumer behavior, and dynamically manages flows to appliances, batteries, or the grid.",
+                    "prod2_more": "Show parameters and package contents ►",
+                    "prod2_btn": "Add to inquiry cart"
+                },
+                "cart": {
+                    "title": "Your Inquiry Cart",
+                    "empty_title": "Your cart is empty",
+                    "empty_subtitle": "Add smart solutions in the respective section.",
+                    "unit_price": "€ / pc",
+                    "estimated_price": "Estimated price:",
+                    "checkout_name_placeholder": "Your name / Company",
+                    "checkout_email_placeholder": "Your E-mail",
+                    "checkout_submit": "Send cart inquiry",
+                    "alert_thank_you": "Thank you for your inquiry, {name}!",
+                    "alert_received": "We have recorded interest in the following products for email {email}:",
+                    "alert_contact": "We will contact you shortly."
+                },
+                "footer": {
+                    "copyright": "2026 © Elvosolar, a.s. • Personal data protection",
+                    "tagline": "Innovative energy solutions"
+                }
+            }
+        };
+
+        const localFallbackTranslations = {}; // Ponechané pre konzistentnosť importu
+    </script>
+
+</body>
+</html>

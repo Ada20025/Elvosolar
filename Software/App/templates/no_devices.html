@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="sk" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Žiadne zariadenie | ElvoSolar</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .solar-bg {
+            background-image: url('/templates/Fotovoltika1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+
+    <div class="absolute inset-0 solar-bg pointer-events-none"></div>
+    <div class="absolute inset-0 bg-slate-950/85 backdrop-blur-sm pointer-events-none"></div>
+
+    <!-- CENTRÁLNA KARTA -->
+    <div class="relative w-full max-w-md bg-slate-900/75 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl z-10 text-center space-y-6">
+        
+        <!-- Logo spoločnosti -->
+        <div class="flex justify-center pb-2">
+            <img src="/templates/ElvosolarLogo1.png" class="h-14 w-auto object-contain" alt="ElvoSolar Logo" onerror="this.style.display='none'">
+        </div>
+
+        <!-- Informačný blok: Nemáte zariadenie -->
+        <div class="space-y-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                Stav účtu
+            </span>
+            <h1 class="text-xl font-extrabold text-white">Nemáte priradené žiadne zariadenie</h1>
+            <p class="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto">
+                Pre prístup k monitoringu fotovoltiky a správe systému je potrebné najskôr pridať a nakonfigurovať vašu riadiacu jednotku CM5.
+            </p>
+        </div>
+
+        <!-- Akčné voľby -->
+        <div class="space-y-3 pt-2">
+            <!-- Pridať zariadenie (Presmerovanie priamo na setup.html) -->
+            <button onclick="navigateToAddDevice()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wider transition shadow-lg hover:opacity-95 uppercase">
+                ➕ Pridať nové zariadenie (Setup)
+            </button>
+
+            <!-- Objednať v E-Shope -->
+            <a href="/eshop" class="block w-full bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 font-bold text-xs py-3.5 rounded-xl transition border border-cyan-500/30 uppercase tracking-wider">
+                🛒 Kúpiť jednotku v E-Shope
+            </a>
+            
+            <!-- Odhlásiť sa -->
+            <a href="/logout" class="block w-full bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs py-3.5 rounded-xl transition border border-slate-700 uppercase tracking-wider">
+                🚪 Odhlásiť sa
+            </a>
+        </div>
+
+        <!-- Pätička -->
+        <div class="text-[10px] text-slate-500 pt-2">
+            Riadiaci systém CM5 Gateway &copy; ElvoSolar
+        </div>
+
+    </div>
+
+    <script>
+        function navigateToAddDevice() {
+            // Presmerovanie priamo na váš konfiguračný súbor setup.html
+            location.href = 'setup.html'; 
+        }
+    </script>
+</body>
+</html>

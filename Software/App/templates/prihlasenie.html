@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prihlásenie | ElvoSolar Control</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .solar-bg {
+            background-image: url('<?php echo $base_path; ?>/Fotovoltika1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800 antialiased">
+
+    <!-- ĽAVÁ STRANA: PRIHLASOVACÍ FORMULÁR -->
+    <div class="w-full md:w-[45%] xl:w-[35%] bg-white flex flex-col justify-between p-8 md:p-12 xl:p-16 shadow-2xl z-10 border-r border-slate-100">
+        
+        <!-- Logo -->
+        <div class="flex items-center justify-start mb-8 md:mb-0">
+            <img src="<?php echo $base_path; ?>/ElvosolarLogo1.png" class="h-14 w-auto" alt="Logo" onerror="this.style.display='none'">
+        </div>
+
+        <!-- Hlavná časť formulára -->
+        <div class="w-full max-w-sm mx-auto my-auto py-6">
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight mb-2">Prihlásiť sa</h1>
+                <p class="text-sm text-slate-500 font-medium">Zadajte svoje údaje pre prístup k systému</p>
+            </div>
+
+            <!-- SYSTÉMOVÉ SPRÁVY (Chyby / Úspechy) -->
+            <?php if (!empty($flash)): ?>
+              <?php foreach ($flash as $msg): ?>
+                <div class="mb-6 p-4 rounded-2xl text-xs font-bold text-center <?php echo $msg['category'] === 'error' ? 'bg-red-500/10 text-red-700 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-700 border border-emerald-500/20'; ?>">
+                  <?php echo htmlspecialchars($msg['message']); ?>
+                </div>
+              <?php endforeach; ?>
+            <?php endif; ?>
+
+            <form method="POST" action="<?php echo $base_path; ?>/login" class="space-y-5">
+                
+                <!-- E-mail -->
+                <div>
+                    <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-2">E-mailová adresa</label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-4 text-slate-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                        </span>
+                        <input type="email" name="email" class="w-full bg-slate-50 border border-slate-200 focus:border-[#007aff] focus:bg-white text-slate-900 text-sm font-semibold rounded-2xl pl-12 pr-4 py-4 outline-none transition-all duration-200 focus:ring-4 focus:ring-blue-500/10" placeholder="priklad@email.com" required>
+                    </div>
+                </div>
+
+                <!-- Heslo s ikonkou oka -->
+                <div>
+                    <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-2">Heslo</label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-4 text-slate-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </span>
+                        <input id="login-password" type="password" name="password" class="w-full bg-slate-50 border border-slate-200 focus:border-[#007aff] focus:bg-white text-slate-900 text-sm font-semibold rounded-2xl pl-12 pr-12 py-4 outline-none transition-all duration-200 focus:ring-4 focus:ring-blue-500/10" placeholder="••••••••" required>
+                        
+                        <!-- Interaktívne tlačidlo oka -->
+                        <button type="button" onclick="togglePasswordVisibility('login-password', 'login-eye-open', 'login-eye-closed')" class="absolute right-4 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors">
+                            <!-- Otvorené oko -->
+                            <svg id="login-eye-open" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <!-- Zatvorené oko (skryté ako predvolené) -->
+                            <svg id="login-eye-closed" class="h-5 w-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tlačidlo -->
+                <button type="submit" class="w-full bg-[#007aff] hover:bg-blue-600 text-white font-bold text-sm py-4 rounded-2xl transition-all duration-200 shadow-lg shadow-blue-500/15 hover:shadow-blue-500/25 mt-2 active:scale-[0.98]">
+                    Prihlásiť sa
+                </button>
+            </form>
+
+            <!-- Sekundárne odkazy -->
+            <div class="flex justify-between items-center mt-6 text-xs font-bold">
+                <a href="<?php echo $base_path; ?>/register" class="text-slate-400 hover:text-[#007aff] transition-colors">Vytvoriť nový profil</a>
+                <a href="<?php echo $base_path; ?>/forgot-password" class="text-[#007aff] hover:text-blue-700 transition-colors">Zabudli ste heslo?</a>
+            </div>
+        </div>
+
+        <!-- Pätička -->
+        <footer class="text-[11px] text-slate-400 leading-relaxed border-t border-slate-100 pt-6">
+            Autorské práva © 2011–2026 Elvosolar.<br>
+            <a href="ochrana-osobnych-udajov.pdf" target="_blank" rel="noopener noreferrer" class="underline cursor-pointer hover:text-slate-600 transition-colors">
+                Zásady súborov cookie
+            </a>
+        </footer>
+    </div>
+
+    <!-- PRAVÁ STRANA: INFORMAČNÝ PANEL S POZADÍM -->
+    <div class="hidden md:flex flex-1 solar-bg relative items-end p-12 lg:p-16">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+        
+        <div class="relative w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 z-20">
+            
+            <div class="max-w-md">
+                <span class="text-xs font-bold uppercase tracking-widest text-[#007aff] bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-full backdrop-blur-md">Smart Monitoring</span>
+                <h2 class="text-3xl lg:text-4xl font-extrabold text-white mt-5 tracking-tight drop-shadow-md">Čistá energia pod úplnou kontrolou</h2>
+                <p class="text-slate-200/90 text-sm mt-2.5 font-medium drop-shadow-sm">Sledujte výkonnosť a efektivitu vašich solárnych systémov v reálnom čase na akomkoľvek zariadení.</p>
+            </div>
+
+            <!-- QR Kód -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex items-center gap-4 shrink-0 shadow-2xl self-start lg:self-auto">
+                <div class="bg-white p-2 rounded-xl shrink-0">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=https://elvosolar.sk" alt="QR" class="w-16 h-16 lg:w-20 lg:h-20 block object-contain">
+                </div>
+                <div class="flex flex-col text-white">
+                    <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Mobilná aplikácia</span>
+                    <span class="text-xs font-extrabold mt-0.5 whitespace-nowrap">Stiahnuť pre iOS & Android</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility(passwordId, openEyeId, closedEyeId) {
+            const passwordInput = document.getElementById(passwordId);
+            const openEye = document.getElementById(openEyeId);
+            const closedEye = document.getElementById(closedEyeId);
+
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                openEye.classList.add("hidden");
+                closedEye.classList.remove("hidden");
+            } else {
+                passwordInput.type = "password";
+                openEye.classList.remove("hidden");
+                closedEye.classList.add("hidden");
+            }
+        }
+    </script>
+</body>
+</html>

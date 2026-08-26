@@ -1,0 +1,17 @@
+DirectoryIndex index.html index.php
+Options -Indexes +FollowSymLinks
+AddDefaultCharset UTF-8
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Správne servovanie existujúcich súborov a priečinkov
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Automatické presmerovanie bez koncovej lomky na index.html v podadresároch
+    RewriteCond %{REQUEST_FILENAME}/index.html -f
+    RewriteRule ^(.*)$ $1/index.html [L]
+</IfModule>

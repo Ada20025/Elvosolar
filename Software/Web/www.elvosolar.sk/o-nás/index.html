@@ -1,0 +1,511 @@
+<!-- Uložiť do: o-nás/index.html -->
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="about_page.title">O nás | ELVOSOLAR a.s.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0f172a',
+                            green: '#10b981',
+                            light: '#f8fafc',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen relative overflow-x-hidden">
+
+    <!-- Navigácia -->
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="../index.html" class="flex items-center">
+                <img src="../Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
+            </a>
+            
+            <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600">
+                <a href="../o-nás/index.html" class="text-brand-green transition-colors" data-translate="nav.about"></a>
+                
+                <!-- Dropdown Obnoviteľná energia (Desktop) -->
+                <div class="relative inline-block text-left" id="renewable-dropdown-container">
+                    <button id="renewable-menu-btn" class="flex items-center gap-1 hover:text-brand-green font-semibold text-sm text-slate-600 transition-colors focus:outline-none py-2">
+                        <span data-translate="nav.renewable"></span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="renewable-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-lg shadow-lg py-1.5 z-50">
+                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
+                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
+                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
+                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
+                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
+                    </div>
+                </div>
+
+                <a href="../smart-riesenia/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
+                <a href="../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
+                <a href="../zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
+                <a href="../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <button id="cart-icon-btn" onclick="toggleCartDrawer()" class="hidden relative p-2.5 text-slate-600 hover:text-brand-green transition-colors rounded-full hover:bg-slate-50 mr-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                    </svg>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-brand-green text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+                </button>
+
+                <!-- Jazykový prepínač -->
+                <div class="relative inline-block text-left" id="lang-selector-container">
+                    <button id="lang-menu-btn" class="flex items-center space-x-1 text-xs font-bold text-slate-600 hover:text-brand-green uppercase tracking-wider transition-colors focus:outline-none py-2">
+                        <span id="current-lang">SK</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="lang-dropdown" class="hidden absolute right-0 mt-2 w-20 bg-white border border-slate-100 rounded-lg shadow-lg py-1 z-50">
+                        <button onclick="changeLang('sk')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">SK</button>
+                        <button onclick="changeLang('en')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">EN</button>
+                    </div>
+                </div>
+
+                <a href="../kontakt/index.html#kontakt-formular" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+                
+                <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-brand-green focus:outline-none p-2" aria-label="Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path id="hamburger-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobilné menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 transition-all duration-300">
+            <nav class="flex flex-col px-6 py-4 space-y-4 font-semibold text-slate-600">
+                <a href="../o-nás/index.html" class="text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
+                
+                <!-- Akordeón pre Obnoviteľnú energiu v mobile -->
+                <div class="flex flex-col">
+                    <button id="mobile-renewable-menu-btn" class="flex items-center justify-between hover:text-brand-green py-2 border-b border-slate-50 font-semibold text-slate-600 focus:outline-none w-full text-left">
+                        <span data-translate="nav.renewable"></span>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="mobile-renewable-submenu" class="hidden pl-4 flex-col space-y-2 py-2 border-b border-slate-50 bg-slate-50/50">
+                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
+                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
+                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
+                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
+                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
+                    </div>
+                </div>
+
+                <a href="../smart-riesenia/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
+                <a href="../služby/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
+                <a href="../zelená-podnikom/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
+                <a href="../kontakt/index.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
+                <a href="../kontakt/index.html#kontakt-formular" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="relative bg-brand-dark text-white py-16 lg:py-24 overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <span class="text-brand-green text-xs font-bold uppercase tracking-widest mb-3 block" data-translate="about_page.hero_badge"></span>
+            <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight" data-translate="about_page.hero_title"></h1>
+        </div>
+    </section>
+
+    <!-- Obsah -->
+    <section class="py-20 max-w-7xl mx-auto px-6">
+        <div class="grid lg:grid-cols-12 gap-12 items-start">
+            <div class="lg:col-span-8 space-y-6 text-slate-600 text-sm leading-relaxed">
+                <p class="text-lg text-slate-900 font-semibold leading-snug" data-translate="about_page.content_title"></p>
+                <div class="my-8 rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                    <img src="https://images.unsplash.com/photo-1466611653911-95081537e5b7?auto=format&fit=crop&w=1200&q=80" alt="Obnoviteľné zdroje" class="w-full h-72 object-cover">
+                </div>
+                <p data-translate="about_page.content_p1"></p>
+            </div>
+
+            <!-- Pravá časť -->
+            <div class="lg:col-span-4 space-y-8">
+                <div class="bg-white p-6 rounded-2xl border border-slate-150 shadow-sm space-y-4">
+                    <h3 class="font-bold text-brand-dark text-base mb-3" data-translate="about_page.sidebar_title"></h3>
+                    <a href="../Png/brozura_elvosolar-1.pdf" target="_blank" class="inline-flex items-center justify-between bg-slate-50 hover:bg-slate-100 text-brand-dark text-xs font-bold py-3.5 px-4 rounded-xl w-full border border-slate-100">
+                        <span data-translate="about_page.sidebar_brochure"></span>
+                        <span class="text-brand-green" data-translate="about_page.sidebar_download"></span>
+                    </a>
+                </div>
+
+                <div class="rounded-2xl overflow-hidden border border-slate-100">
+                    <img src="../Png/instalace.jpg" alt="Technológie" class="w-full h-56 object-cover">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Nákupný košík -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 pointer-events-none hidden" role="dialog" aria-modal="true">
+        <div id="cart-backdrop" onclick="toggleCartDrawer()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+        <div id="cart-panel" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto transform translate-x-full transition-transform duration-300">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-brand-dark" data-translate="cart.title"></h3>
+                <button onclick="toggleCartDrawer()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4"></div>
+            <div class="p-6 border-t border-slate-100 bg-slate-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-semibold text-slate-500" data-translate="cart.estimated_price"></span>
+                    <span id="cart-total-price" class="text-xl font-black text-brand-dark">0 €</span>
+                </div>
+                <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-3">
+                    <input type="text" id="checkout-name" required data-translate-placeholder="cart.checkout_name_placeholder" class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    <input type="email" id="checkout-email" required data-translate-placeholder="cart.checkout_email_placeholder" class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    <button type="submit" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg text-sm transition-colors" data-translate="cart.checkout_submit"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-slate-950 text-slate-500 py-8 text-xs mt-auto">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p data-translate="footer.copyright"></p>
+            <p class="text-slate-600" data-translate="footer.tagline"></p>
+        </div>
+    </footer>
+
+    <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const hamburgerIcon = document.getElementById('hamburger-icon');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            const isHidden = mobileMenu.classList.contains('hidden');
+            if (isHidden) {
+                mobileMenu.classList.remove('hidden');
+                hamburgerIcon.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+            } else {
+                mobileMenu.classList.add('hidden');
+                hamburgerIcon.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+            }
+        });
+
+        // Dropdown pre výber jazyka
+        const langMenuBtn = document.getElementById('lang-menu-btn');
+        const langDropdown = document.getElementById('lang-dropdown');
+
+        langMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeDropdowns();
+            langDropdown.classList.toggle('hidden');
+        });
+
+        // Dropdown pre Obnoviteľnú energiu (Desktop)
+        const renewableMenuBtn = document.getElementById('renewable-menu-btn');
+        const renewableDropdown = document.getElementById('renewable-dropdown');
+
+        renewableMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeDropdowns();
+            renewableDropdown.classList.toggle('hidden');
+        });
+
+        // Akordeón pre Obnoviteľnú energiu (Mobile)
+        const mobileRenewableMenuBtn = document.getElementById('mobile-renewable-menu-btn');
+        const mobileRenewableSubmenu = document.getElementById('mobile-renewable-submenu');
+
+        mobileRenewableMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileRenewableSubmenu.classList.toggle('hidden');
+        });
+
+        function closeDropdowns() {
+            langDropdown.classList.add('hidden');
+            renewableDropdown.classList.add('hidden');
+        }
+
+        document.addEventListener('click', () => {
+            closeDropdowns();
+        });
+
+        // ----------------- LOKALIZAČNÝ ENGINE -----------------
+        let currentTranslations = {};
+        let currentLang = localStorage.getItem('elvo_lang') || 'sk';
+
+        async function loadLanguage(lang) {
+            let fetchedData = null;
+            try {
+                // Relatívna cesta k priečinku o-nás vyžaduje ../
+                const response = await fetch(`../preklad/${lang.toUpperCase()}/index.json`);
+                if (response.ok) {
+                    fetchedData = await response.json();
+                }
+            } catch (error) {
+                console.warn("Načítava sa lokálna záloha.");
+            }
+
+            if (!fetchedData) {
+                fetchedData = fullEmbeddedTranslations[lang];
+            }
+
+            currentTranslations = fetchedData;
+            applyTranslations(fetchedData, lang);
+        }
+
+        function applyTranslations(dictionary, lang) {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                const value = getNestedValue(dictionary, key);
+                if (value !== undefined) {
+                    el.innerHTML = value;
+                }
+            });
+
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-translate-placeholder');
+                const value = getNestedValue(dictionary, key);
+                if (value !== undefined) {
+                    el.setAttribute('placeholder', value);
+                }
+            });
+
+            document.documentElement.lang = lang;
+            document.getElementById('current-lang').innerText = lang.toUpperCase();
+            localStorage.setItem('elvo_lang', lang);
+            currentLang = lang;
+
+            updateCartUI();
+        }
+
+        function changeLang(lang) {
+            loadLanguage(lang);
+        }
+
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+        }
+
+        // ----------------- LOGIKA KOŠÍKA -----------------
+        let cart = JSON.parse(localStorage.getItem('elvo_cart')) || [];
+
+        function toggleCartDrawer() {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-backdrop');
+            const panel = document.getElementById('cart-panel');
+
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.replace('opacity-0', 'opacity-100');
+                    panel.classList.replace('translate-x-full', 'translate-x-0');
+                }, 10);
+            } else {
+                backdrop.classList.replace('opacity-100', 'opacity-0');
+                panel.classList.replace('translate-x-0', 'translate-x-full');
+                setTimeout(() => { drawer.classList.add('hidden'); }, 300);
+            }
+        }
+
+        function changeQuantity(id, delta) {
+            const itemIndex = cart.findIndex(item => item.id === id);
+            if (itemIndex > -1) {
+                cart[itemIndex].quantity += delta;
+                if (cart[itemIndex].quantity <= 0) { cart.splice(itemIndex, 1); }
+                saveCart(); updateCartUI();
+            }
+        }
+
+        function removeItem(id) {
+            cart = cart.filter(item => item.id !== id);
+            saveCart(); updateCartUI();
+        }
+
+        function saveCart() { localStorage.setItem('elvo_cart', JSON.stringify(cart)); }
+
+        function updateCartUI() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartIconBtn = document.getElementById('cart-icon-btn');
+            const cartBadge = document.getElementById('cart-badge');
+            const cartTotalPrice = document.getElementById('cart-total-price');
+            let totalQuantity = 0; let totalPrice = 0;
+            cartItemsContainer.innerHTML = '';
+
+            const tEmptyTitle = getNestedValue(currentTranslations, 'cart.empty_title') || 'Váš košík je prázdny';
+            const tEmptySubtitle = getNestedValue(currentTranslations, 'cart.empty_subtitle') || 'Pridajte smart riešenia v príslušnej sekcii.';
+            const tUnitPrice = getNestedValue(currentTranslations, 'cart.unit_price') || '€ / ks';
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-12">
+                        <p class="text-sm font-semibold">${tEmptyTitle}</p>
+                    </div>`;
+                cartIconBtn.classList.add('hidden');
+            } else {
+                cart.forEach(item => {
+                    totalQuantity += item.quantity;
+                    totalPrice += item.price * item.quantity;
+                    const itemElement = document.createElement('div');
+                    itemElement.className = "flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 relative text-xs";
+                    itemElement.innerHTML = `
+                        <img src="${item.img}" class="w-12 h-12 object-cover rounded-lg">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-brand-dark">${item.name}</h4>
+                            <p>${item.price} ${tUnitPrice}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <button onclick="changeQuantity('${item.id}', -1)" class="px-1.5 bg-white border border-slate-200">-</button>
+                                <span>${item.quantity}</span>
+                                <button onclick="changeQuantity('${item.id}', 1)" class="px-1.5 bg-white border border-slate-200">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeItem('${item.id}')" class="absolute top-2 right-2 text-slate-400">×</button>`;
+                    cartItemsContainer.appendChild(itemElement);
+                });
+                cartIconBtn.classList.remove('hidden');
+                cartBadge.innerText = totalQuantity;
+            }
+            const formatterLang = currentLang === 'sk' ? 'sk-SK' : 'en-US';
+            cartTotalPrice.innerText = `${totalPrice.toLocaleString(formatterLang)} €`;
+        }
+
+        function handleCheckout(event) {
+            event.preventDefault();
+            const name = document.getElementById('checkout-name').value;
+            const email = document.getElementById('checkout-email').value;
+
+            if (cart.length === 0) return;
+
+            let itemsSummary = cart.map(item => `- ${item.name} (${item.quantity}x)`).join('\n');
+
+            const dictionary = translations[currentLang] || translations['sk'];
+            const alertThankYou = getNestedValue(currentTranslations, 'cart.alert_thank_you') || "Ďakujeme za váš dopyt, {name}!";
+            const alertReceived = getNestedValue(currentTranslations, 'cart.alert_received') || "Na e-mail {email} sme zaznamenali záujem o produkty:";
+            const alertContact = getNestedValue(currentTranslations, 'cart.alert_contact') || "Čoskoro vás budeme kontaktovať.";
+
+            const formattedThankYou = alertThankYou.replace('{name}', name);
+            const formattedReceived = alertReceived.replace('{email}', email);
+
+            alert(`${formattedThankYou}\n\n${formattedReceived}\n${itemsSummary}\n\n${alertContact}`);
+
+            cart = []; saveCart(); updateCartUI(); toggleCartDrawer();
+            document.getElementById('checkout-form').reset();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadLanguage(currentLang);
+        });
+
+        // ----------------- INTEGROVANÁ ZÁLOHA PREKLADOV (FALLBACK) -----------------
+        const fullEmbeddedTranslations = {
+            sk: {
+                "title": "O nás | ELVOSOLAR a.s.",
+                "nav": {
+                    "about": "O nás",
+                    "renewable": "Obnoviteľná energia",
+                    "smart": "Smart riešenia",
+                    "services": "Služby",
+                    "green_enterprise": "Zelená podnikom",
+                    "contact": "Kontakt",
+                    "quick_inquiry": "Rýchly dopyt"
+                },
+                "about_page": {
+                    "title": "O nás | ELVOSOLAR a.s.",
+                    "hero_badge": "Profil spoločnosti",
+                    "hero_title": "O nás | Elvosolar, a.s.",
+                    "content_title": "Od svojho vzniku v roku 2009 sme postavili a úspešne zapojili do distribučnej sítě 32 fotovoltických elektrární.",
+                    "content_p1": "V súčasnosti zabezpečujeme prevádzku a komplexný servis pre 38 elektrární s celkovým inštalovaným výkonom do 40 MWp a zároveň realizujeme ďalšie stavby.",
+                    "sidebar_title": "Naše materiály",
+                    "sidebar_brochure": "Firemná brožúra (PDF)",
+                    "sidebar_download": "Stiahnuť ►"
+                },
+                "renewable": {
+                    "card1_title": "Fotovoltika",
+                    "card2_title": "Solárny ohrev",
+                    "card3_title": "ORC jednotky",
+                    "card4_title": "Absorpčné chladenie",
+                    "card5_title": "Batériové úložištia"
+                },
+                "cart": {
+                    "title": "Váš dopytový košík",
+                    "empty_title": "Váš košík je prázdny",
+                    "empty_subtitle": "Pridajte smart riešenia v príslušnej sekcii.",
+                    "unit_price": "€ / ks",
+                    "estimated_price": "Orientačná cena:",
+                    "checkout_name_placeholder": "Vaše meno",
+                    "checkout_email_placeholder": "Váš E-mail",
+                    "checkout_submit": "Odoslať dopyt",
+                    "alert_thank_you": "Ďakujeme za váš dopyt, {name}!",
+                    "alert_received": "Na e-mail {email} sme zaznamenali záujem o produkty:",
+                    "alert_contact": "Čoskoro vás budeme kontaktovať."
+                },
+                "footer": {
+                    "copyright": "2026 © Elvosolar, a.s. • Ochrana osobných údajov",
+                    "tagline": "Inovatívne energetické riešenia"
+                }
+            },
+            en: {
+                "title": "About Us | ELVOSOLAR a.s.",
+                "nav": {
+                    "about": "About Us",
+                    "renewable": "Renewable Energy",
+                    "smart": "Smart Solutions",
+                    "services": "Services",
+                    "green_enterprise": "Green for Enterprises",
+                    "contact": "Contact",
+                    "quick_inquiry": "Quick Inquiry"
+                },
+                "about_page": {
+                    "title": "About Us | ELVOSOLAR a.s.",
+                    "hero_badge": "Company profile",
+                    "hero_title": "About Us | Elvosolar, a.s.",
+                    "content_title": "Since our establishment in 2009, we have built and successfully connected 32 photovoltaic power plants to the distribution grid.",
+                    "content_p1": "Currently, we provide operation and comprehensive service for 38 power plants with a total installed capacity of up to 40 MWp while simultaneously executing further constructions.",
+                    "sidebar_title": "Our Materials",
+                    "sidebar_brochure": "Company Brochure (PDF)",
+                    "sidebar_download": "Download ►"
+                },
+                "renewable": {
+                    "card1_title": "Photovoltaics",
+                    "card2_title": "Solar heating",
+                    "card3_title": "ORC units",
+                    "card4_title": "Absorption cooling",
+                    "card5_title": "Battery storage"
+                },
+                "cart": {
+                    "title": "Your Inquiry Cart",
+                    "empty_title": "Your cart is empty",
+                    "empty_subtitle": "Add smart solutions in the respective section.",
+                    "unit_price": "€ / pc",
+                    "estimated_price": "Estimated price:",
+                    "checkout_name_placeholder": "Your name",
+                    "checkout_email_placeholder": "Your E-mail",
+                    "checkout_submit": "Send inquiry",
+                    "alert_thank_you": "Thank you for your inquiry, {name}!",
+                    "alert_received": "We have recorded interest in the following products for email {email}:",
+                    "alert_contact": "We will contact you shortly."
+                },
+                "footer": {
+                    "copyright": "2026 © Elvosolar, a.s. • Personal data protection",
+                    "tagline": "Innovative energy solutions"
+                }
+            }
+        };
+    </script>
+</body>
+</html>

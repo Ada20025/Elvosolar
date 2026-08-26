@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="sk" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ELVOSOLAR a.s. ponúka inovatívne a ekologické riešenia pre optimalizáciu elektrickej energie, fotovoltiku, solárny ohrev a smart EMS systémy pre firmy a domácnosti.">
+    <title data-translate="title">ELVOSOLAR a.s.</title>
+    
+    <!-- Kritické CSS na zamedzenie posunov rozloženia (CLS = 0) a zrýchlenie FCP -->
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid #f1f5f9;
+            box-sizing: border-box;
+        }
+        .header-container {
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 24px;
+            padding-right: 24px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-sizing: border-box;
+        }
+        .logo-img {
+            height: 40px;
+            width: auto;
+            aspect-ratio: 15/4;
+        }
+        .hero-section {
+            background-color: #0f172a;
+            position: relative;
+            box-sizing: border-box;
+        }
+        .hero-img-wrapper {
+            aspect-ratio: 11/8;
+            background-color: #1e293b;
+            border-radius: 24px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .card-img-wrapper {
+            aspect-ratio: 3/2;
+            width: 100%;
+            overflow: hidden;
+            background-color: #e2e8f0;
+        }
+        .card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+
+    <!-- Preload LCP a preconnect na CDN domény -->
+    <link rel="preload" href="Png/Fotovoltika1.jpg" as="image" fetchpriority="high">
+    <link rel="preconnect" href="https://images.unsplash.com">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+
+    <!-- Odložené načítanie Tailwind CSS pre elimináciu TBT -->
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            brand: {
+                                dark: '#0f172a',
+                                green: '#10b981',
+                                light: '#f8fafc',
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</head>
+<body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen relative overflow-x-hidden pb-16 md:pb-0">
+
+    <!-- Navigácia -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="flex items-center" aria-label="ELVOSOLAR domovská stránka">
+                <img src="Png/download.png" alt="ELVOSOLAR a.s." class="logo-img" width="150" height="40" decoding="async">
+            </a>
+            
+            <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600" aria-label="Hlavné menu">
+                <a href="o-nás/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.about"></a>
+                
+                <div class="relative inline-block text-left" id="renewable-dropdown-container">
+                    <button id="renewable-menu-btn" class="flex items-center gap-1 hover:text-brand-green font-semibold text-sm text-slate-600 transition-colors focus:outline-none py-2" aria-expanded="false" aria-haspopup="true" aria-label="Dropdown obnoviteľná energia">
+                        <span data-translate="nav.renewable"></span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="renewable-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-lg shadow-lg py-1.5 z-50">
+                        <a href="obnoviteľná-energia/fotovoltika/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
+                        <a href="obnoviteľná-energia/solárny-ohrev/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
+                        <a href="obnoviteľná-energia/orc-jednotky/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
+                        <a href="obnoviteľná-energia/absorpčné-chladenie/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
+                        <a href="obnoviteľná-energia/bateriové-úložiská/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
+                    </div>
+                </div>
+
+                <a href="smart-riesenia/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
+                <a href="eshop/index.html" class="text-brand-green hover:text-emerald-600 font-extrabold flex items-center gap-1">🛒 E-Shop</a>
+                <a href="služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
+                <a href="zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
+                <a href="kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <button id="cart-icon-btn" onclick="toggleCartDrawer()" class="hidden relative p-2.5 text-slate-600 hover:text-brand-green transition-colors rounded-full hover:bg-slate-50 mr-1" aria-label="Zobraziť nákupný košík">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                    </svg>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-brand-green text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+                </button>
+
+                <div class="relative inline-block text-left" id="lang-selector-container">
+                    <button id="lang-menu-btn" class="flex items-center space-x-1 text-xs font-bold text-slate-600 hover:text-brand-green uppercase tracking-wider transition-colors focus:outline-none py-2" aria-expanded="false" aria-haspopup="true" aria-label="Zmeniť jazyk">
+                        <span id="current-lang">SK</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="lang-dropdown" class="hidden absolute right-0 mt-2 w-20 bg-white border border-slate-100 rounded-lg shadow-lg py-1 z-50">
+                        <button onclick="changeLang('sk')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">SK</button>
+                        <button onclick="changeLang('en')" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors">EN</button>
+                    </div>
+                </div>
+
+                <a href="kontakt/index.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+
+                <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-brand-green focus:outline-none p-2" aria-label="Otvoriť menu" aria-expanded="false">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path id="hamburger-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 transition-all duration-300">
+            <nav class="flex flex-col px-6 py-4 space-y-4 font-semibold text-slate-600" aria-label="Mobilná navigácia">
+                <a href="o-nás/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
+                
+                <div class="flex flex-col">
+                    <button id="mobile-renewable-menu-btn" class="flex items-center justify-between hover:text-brand-green py-2 border-b border-slate-50 font-semibold text-slate-600 focus:outline-none w-full text-left" aria-expanded="false">
+                        <span data-translate="nav.renewable"></span>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="mobile-renewable-submenu" class="hidden pl-4 flex-col space-y-2 py-2 border-b border-slate-50 bg-slate-50/50">
+                        <a href="obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
+                        <a href="obnoviteľná-energia/solárny-ohrev/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
+                        <a href="obnoviteľná-energia/orc-jednotky/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
+                        <a href="obnoviteľná-energia/absorpčné-chladenie/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
+                        <a href="obnoviteľná-energia/bateriové-úložiská/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
+                    </div>
+                </div>
+
+                <a href="smart-riesenia/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
+                <a href="služby/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
+                <a href="zelená-podnikom/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
+                <a href="kontakt/index.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
+                <a href="kontakt/index.html" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hlavný obsah pre Agentic Browsing (3/3) -->
+    <main id="main-content">
+        <!-- Hero Sekcia -->
+        <section class="hero-section text-white py-20 lg:py-32 overflow-hidden">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            <div class="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-7">
+                    <span class="text-xs font-bold uppercase tracking-widest text-brand-green mb-3 block" data-translate="hero.badge"></span>
+                    <h1 class="text-4xl lg:text-6xl font-extrabold tracking-tight leading-none mb-6" data-translate="hero.title"></h1>
+                    <p class="text-slate-300 text-base mb-6 leading-relaxed" data-translate="hero.description"></p>
+                    <p class="text-slate-400 text-sm mb-8 italic border-l-2 border-brand-green pl-4" data-translate="hero.quote"></p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="o-nás/index.html" class="bg-brand-green hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold transition-all inline-block" data-translate="hero.cta"></a>
+                    </div>
+                </div>
+                <div class="lg:col-span-5 relative">
+                    <div class="hero-img-wrapper relative shadow-2xl border border-slate-800">
+                        <img src="Png/Fotovoltika1.jpg" alt="Fotovoltická inštalácia na streche budovy" class="w-full h-full object-cover" width="550" height="400" fetchpriority="high" decoding="async">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-transparent to-transparent"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sekcia: Aktuálne výzvy na dotácie -->
+        <section id="zelena-podnikom" class="py-20 bg-slate-900 text-white">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="mb-12">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="subsidies.badge"></span>
+                    <h2 class="text-3xl font-bold tracking-tight" data-translate="subsidies.title"></h2>
+                </div>
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all">
+                        <div>
+                            <span class="bg-brand-green/20 text-brand-green text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card1_badge"></span>
+                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card1_title"></h3>
+                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card1_desc"></p>
+                        </div>
+                    </article>
+                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all">
+                        <div>
+                            <span class="bg-blue-500/20 text-blue-400 text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card2_badge"></span>
+                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card2_title"></h3>
+                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card2_desc"></p>
+                        </div>
+                    </article>
+                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all">
+                        <div>
+                            <span class="bg-purple-500/20 text-purple-400 text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card3_badge"></span>
+                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card3_title"></h3>
+                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card3_desc"></p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sekcia: Obnoviteľná energia -->
+        <section id="obnovitelna-energia" class="py-20 max-w-7xl mx-auto px-6">
+            <div class="mb-12">
+                <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="renewable.badge"></span>
+                <h2 class="text-3xl font-bold text-brand-dark" data-translate="renewable.title"></h2>
+                <p class="text-slate-500 mt-3 max-w-3xl text-sm leading-relaxed" data-translate="renewable.desc"></p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <article class="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="card-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1613665813446-82a78c468a1d?auto=format&fit=crop&w=600&q=80" alt="Fotovoltické panely" class="card-img" width="240" height="160" loading="lazy" decoding="async">
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-bold text-lg text-brand-dark mb-2" data-translate="renewable.card1_title"></h3>
+                            <p class="text-slate-500 text-xs leading-relaxed" data-translate="renewable.card1_desc"></p>
+                        </div>
+                    </div>
+                    <div class="p-5 pt-0">
+                        <a href="obnoviteľná-energia/fotovoltika/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="renewable.card1_more"></a>
+                    </div>
+                </article>
+
+                <article class="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="card-img-wrapper">
+                            <img src="Png/SolarnyOhrev/solarny_ohrev-domacnosti-1.jpg" alt="Solárne kolektory" class="card-img" width="240" height="160" loading="lazy" decoding="async">
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-bold text-lg text-brand-dark mb-2" data-translate="renewable.card2_title"></h3>
+                            <p class="text-slate-500 text-xs leading-relaxed" data-translate="renewable.card2_desc"></p>
+                        </div>
+                    </div>
+                    <div class="p-5 pt-0">
+                        <a href="obnoviteľná-energia/solárny-ohrev/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="renewable.card2_more"></a>
+                    </div>
+                </article>
+
+                <article class="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="card-img-wrapper">
+                            <img src="Png/ORCJednotky/ORS Energetika.jpg" alt="ORC Jednotky na recykláciu tepla" class="card-img" width="240" height="160" loading="lazy" decoding="async">
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-bold text-lg text-brand-dark mb-2" data-translate="renewable.card3_title"></h3>
+                            <p class="text-slate-500 text-xs leading-relaxed" data-translate="renewable.card3_desc"></p>
+                        </div>
+                    </div>
+                    <div class="p-5 pt-0">
+                        <a href="obnoviteľná-energia/orc-jednotky/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="renewable.card3_more"></a>
+                    </div>
+                </article>
+
+                <article class="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="card-img-wrapper">
+                            <img src="Png/Absobér/absorber-polnohospodarstvo-1-550x200.jpg" alt="Absorpčné chladenie pre poľnohospodárstvo" class="card-img" width="240" height="160" loading="lazy" decoding="async">
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-bold text-lg text-brand-dark mb-2" data-translate="renewable.card4_title"></h3>
+                            <p class="text-slate-500 text-xs leading-relaxed" data-translate="renewable.card4_desc"></p>
+                        </div>
+                    </div>
+                    <div class="p-5 pt-0">
+                        <a href="obnoviteľná-energia/absorpčné-chladenie/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="renewable.card4_more"></a>
+                    </div>
+                </article>
+
+                <article class="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="card-img-wrapper">
+                            <img src="Png/BaterioveUloziska/baterie.jpg" alt="Veľkokapacitné batérie" class="card-img" onerror="this.src='https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?auto=format&fit=crop&w=600&q=80'" width="240" height="160" loading="lazy" decoding="async">
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-bold text-lg text-brand-dark mb-2" data-translate="renewable.card5_title"></h3>
+                            <p class="text-slate-500 text-xs leading-relaxed" data-translate="renewable.card5_desc"></p>
+                        </div>
+                    </div>
+                    <div class="p-5 pt-0">
+                        <a href="obnoviteľná-energia/bateriové-úložiská/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="renewable.card5_more"></a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Sekcia: Naše smart riešenia -->
+        <section id="smart-riesenia" class="py-20 bg-slate-50 border-t border-slate-100">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="mb-12">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart.badge"></span>
+                    <h2 class="text-3xl font-bold text-brand-dark" data-translate="smart.title"></h2>
+                    <p class="text-slate-500 mt-3 max-w-3xl text-sm leading-relaxed" data-translate="smart.desc"></p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <article class="bg-white rounded-3xl border border-slate-100 hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <div class="card-img-wrapper">
+                                <img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=800&q=80" alt="Grafy monitorovania energie" class="card-img" width="580" height="224" loading="lazy" decoding="async">
+                            </div>
+                            <div class="p-8">
+                                <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart.card2_badge"></span>
+                                <h3 class="text-xl font-bold text-brand-dark mb-3" data-translate="smart.card2_title"></h3>
+                                <p class="text-slate-500 text-sm leading-relaxed" data-translate="smart.card2_desc"></p>
+                            </div>
+                        </div>
+                        <div class="p-8 pt-0">
+                            <a href="smart-riesenia/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="smart.card2_more"></a>
+                        </div>
+                    </article>
+                    <article class="bg-white rounded-3xl border border-slate-100 hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <div class="card-img-wrapper">
+                                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Riadenie toku energií na obrazovke" class="card-img" width="580" height="224" loading="lazy" decoding="async">
+                            </div>
+                            <div class="p-8">
+                                <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart.card1_badge"></span>
+                                <h3 class="text-xl font-bold text-brand-dark mb-3" data-translate="smart.card1_title"></h3>
+                                <p class="text-slate-500 text-sm leading-relaxed" data-translate="smart.card1_desc"></p>
+                            </div>
+                        </div>
+                        <div class="p-8 pt-0">
+                            <a href="smart-riesenia/index.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="smart.card1_more"></a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sekcia: Služby -->
+        <section id="sluzby" class="py-20 bg-white border-t border-slate-100">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="mb-12">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="services.badge"></span>
+                    <h2 class="text-3xl font-bold text-brand-dark" data-translate="services.title"></h2>
+                    <p class="text-slate-500 mt-3 max-w-3xl text-sm leading-relaxed" data-translate="services.desc"></p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <article class="bg-slate-50 rounded-3xl border border-slate-100 hover:shadow-md transition-all overflow-hidden grid md:grid-cols-12">
+                        <div class="md:col-span-5">
+                            <div class="card-img-wrapper md:h-full">
+                                <img src="Png/instalace.jpg" alt="Inštalačné práce a servis" class="card-img" width="230" height="180" loading="lazy" decoding="async">
+                            </div>
+                        </div>
+                        <div class="md:col-span-7 p-6 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-brand-dark mb-2" data-translate="services.card1_title"></h3>
+                                <p class="text-slate-500 text-xs leading-relaxed" data-translate="services.card1_desc"></p>
+                            </div>
+                            <a href="služby/index.html#servis" class="text-brand-green text-xs font-bold hover:underline mt-4 inline-block" data-translate="services.card1_more"></a>
+                        </div>
+                    </article>
+                    <article class="bg-slate-50 rounded-3xl border border-slate-100 hover:shadow-md transition-all overflow-hidden grid md:grid-cols-12">
+                        <div class="md:col-span-5">
+                            <div class="card-img-wrapper md:h-full">
+                                <img src="https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=600&q=80" alt="Energetické inžinierstvo" class="card-img" width="230" height="180" loading="lazy" decoding="async">
+                            </div>
+                        </div>
+                        <div class="md:col-span-7 p-6 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-brand-dark mb-2" data-translate="services.card2_title"></h3>
+                                <p class="text-slate-500 text-xs leading-relaxed" data-translate="services.card2_desc"></p>
+                            </div>
+                            <a href="služby/index.html#riesenia-na-kluc" class="text-brand-green text-xs font-bold hover:underline mt-4 inline-block" data-translate="services.card2_more"></a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Kontaktná Sekcia -->
+        <section id="kontakt" class="bg-slate-900 text-white py-20 border-t border-slate-800">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="grid lg:grid-cols-12 gap-12">
+                    <div class="lg:col-span-5 space-y-6">
+                        <div>
+                            <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="contact.badge"></span>
+                            <h2 class="text-3xl font-bold" data-translate="contact.title"></h2>
+                        </div>
+                        <div class="space-y-4 text-slate-300 text-sm">
+                            <p class="flex items-center gap-3">
+                                <span class="text-base">📞</span>
+                                <strong data-translate="contact.phone_label"></strong> <span data-translate="contact.phone_value"></span>
+                            </p>
+                            <p class="flex items-center gap-3">
+                                <span class="text-base">✉️</span>
+                                <strong data-translate="contact.email_label"></strong> <span data-translate="contact.email_value"></span>
+                            </p>
+                            <div class="pt-4 border-t border-slate-800">
+                                <p class="font-bold text-white mb-1" data-translate="contact.address_title"></p>
+                                <p data-translate="contact.address_company"></p>
+                                <p data-translate="contact.address_street"></p>
+                            </div>
+                            <div class="pt-4 border-t border-slate-800">
+                                <p class="font-bold text-white mb-1" data-translate="contact.location_title"></p>
+                                <p data-translate="contact.location_building"></p>
+                                <p class="text-xs text-slate-500" data-translate="contact.location_gps"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-7 bg-slate-800/40 p-8 rounded-2xl border border-slate-700/50">
+                        <h3 class="text-lg font-bold mb-4" data-translate="contact.form_title"></h3>
+                        <form id="contact-form" onsubmit="handleContactSubmit(event)" class="space-y-4" novalidate>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="contact-name" class="block text-xs font-semibold text-slate-400 mb-1" data-translate="contact.form_name_placeholder">Meno a priezvisko</label>
+                                    <input type="text" id="contact-name" name="name" required class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-green text-white">
+                                </div>
+                                <div>
+                                    <label for="contact-email" class="block text-xs font-semibold text-slate-400 mb-1" data-translate="contact.form_email_placeholder">E-mail</label>
+                                    <input type="email" id="contact-email" name="email" required class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-green text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="contact-message" class="block text-xs font-semibold text-slate-400 mb-1" data-translate="contact.form_message_placeholder">Vaša správa...</label>
+                                <textarea id="contact-message" name="message" required rows="4" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-green text-white"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3 rounded-lg text-sm transition-colors" data-translate="contact.form_submit"></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Nákupný košík - Vysúvací bočný panel (Drawer) -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 pointer-events-none hidden" role="dialog" aria-modal="true">
+        <div id="cart-backdrop" onclick="toggleCartDrawer()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+        <div id="cart-panel" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto transform translate-x-full transition-transform duration-300">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-brand-dark" data-translate="cart.title"></h3>
+                <button onclick="toggleCartDrawer()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50" aria-label="Zatvoriť košík">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4"></div>
+
+            <div class="p-6 border-t border-slate-100 bg-slate-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-semibold text-slate-500" data-translate="cart.estimated_price"></span>
+                    <span id="cart-total-price" class="text-xl font-black text-brand-dark">0 €</span>
+                </div>
+
+                <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-3">
+                    <div>
+                        <label for="checkout-name" class="block text-xs font-semibold text-slate-500 mb-1" data-translate="cart.checkout_name_placeholder">Meno / Firma</label>
+                        <input type="text" id="checkout-name" name="name" required class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    </div>
+                    <div>
+                        <label for="checkout-email" class="block text-xs font-semibold text-slate-500 mb-1" data-translate="cart.checkout_email_placeholder">Váš E-mail</label>
+                        <input type="email" id="checkout-email" name="email" required class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
+                    </div>
+                    <button type="submit" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg text-sm transition-colors" data-translate="cart.checkout_submit"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookies lišta s moderným dizajnom -->
+    <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 md:left-auto md:max-w-md z-50 bg-slate-950/95 backdrop-blur-md border border-slate-800 text-white p-5 rounded-2xl hidden shadow-2xl transition-all duration-300 flex-col gap-4">
+        <div>
+            <h4 class="text-sm font-bold tracking-wide text-white mb-1.5 flex items-center gap-2">
+                <span>🍪</span> <span data-translate="cookie.title">Vážime si vaše súkromie</span>
+            </h4>
+            <p class="text-xs text-slate-300 leading-relaxed" data-translate="cookie.text"></p>
+        </div>
+        <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-900">
+            <button onclick="openCookieModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-colors" data-translate="cookie.customize">Prispôsobiť</button>
+            <button onclick="setCookieConsent('rejected')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 px-3 rounded-lg text-xs transition-colors" data-translate="cookie.reject">Odmietnuť</button>
+            <button onclick="setCookieConsent('accepted')" class="flex-2 w-full sm:w-auto bg-brand-green hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-xs transition-colors" data-translate="cookie.accept_all">Prijať všetko</button>
+        </div>
+    </div>
+
+    <!-- Modálne okno pre Prispôsobenie Cookies (Preference Center) -->
+    <div id="cookie-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden" role="dialog" aria-modal="true">
+        <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-base font-bold text-brand-dark" data-translate="cookie.modal_title">Prispôsobte preferencie súhlasu</h3>
+                <button onclick="closeCookieModal()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50" aria-label="Zatvoriť nastavenia cookies">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto space-y-6 text-xs text-slate-600 leading-relaxed">
+                <p id="cookie-modal-desc-text" data-translate="cookie.modal_desc"></p>
+                
+                <!-- Sekcia Nevyhnutné -->
+                <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-brand-dark text-sm flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-brand-green"></span>
+                            <span data-translate="cookie.necessary_title">Nevyhnutné</span>
+                        </h4>
+                        <span class="text-[10px] font-bold text-brand-green uppercase tracking-wider bg-brand-green/10 px-2 py-0.5 rounded" data-translate="cookie.necessary_status">Vždy aktívny</span>
+                    </div>
+                    <p class="mb-4 text-slate-500" data-translate="cookie.necessary_desc"></p>
+
+                    <!-- Tabuľka cookies -->
+                    <div class="border-t border-slate-200/60 pt-4 space-y-4">
+                        <!-- Cookie 1 -->
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
+                            <div class="md:col-span-3">
+                                <span class="font-semibold text-slate-500" data-translate="cookie.table_cookie_label">Súbory Cookies</span>
+                                <p class="font-mono font-bold text-brand-dark mt-0.5">cookieyes-consent</p>
+                            </div>
+                            <div class="md:col-span-2">
+                                <span class="font-semibold text-slate-500" data-translate="cookie.table_duration_label">Trvanie</span>
+                                <p class="text-slate-800 mt-0.5" data-translate="cookie.cookie1_duration">1 rok</p>
+                            </div>
+                            <div class="md:col-span-7">
+                                <span class="font-semibold text-slate-500" data-translate="cookie.table_desc_label">Popis</span>
+                                <p class="text-slate-500 mt-0.5" data-translate="cookie.cookie1_desc"></p>
+                            </div>
+                        </div>
+
+                        <!-- Cookie 2 -->
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 pt-1">
+                            <div class="md:col-span-3">
+                                <span class="font-semibold text-slate-500" data-translate="cookie.table_cookie_label">Súbory Cookies</span>
+                                <p class="font-mono font-bold text-brand-dark mt-0.5">_GRECAPTCHA</p>
+                            </div>
+                            <div class="md:col-span-2">
+                                <span class="font-semibold text-slate-500" data-translate="cookie.table_duration_label">Trvanie</span>
+                                <p class="text-slate-800 mt-0.5" data-translate="cookie.cookie2_duration">6 mesiacov</p>
+                            </div>
+                            <div class="md:col-span-7">
+                                <span class="font-semibold text-slate-500" data-translate="cookie.table_desc_label">Popis</span>
+                                <p class="text-slate-500 mt-0.5" data-translate="cookie.cookie2_desc"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-6 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span class="text-[10px] text-slate-400 font-semibold">Powered by <span class="text-brand-dark font-extrabold">CookieYes</span></span>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="setCookieConsent('rejected')" class="flex-1 sm:flex-none bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs transition-colors" data-translate="cookie.reject">Odmietnuť</button>
+                    <button onclick="setCookieConsent('custom')" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors" data-translate="cookie.save_preferences">Uložiť moje predvoľby</button>
+                    <button onclick="setCookieConsent('accepted')" class="flex-1 sm:flex-none bg-brand-green hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors" data-translate="cookie.accept_all">Prijať všetko</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pätička -->
+    <footer class="bg-slate-950 text-slate-500 py-8 text-xs border-t border-slate-900 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p data-translate="footer.copyright"></p>
+            <p class="text-slate-600" data-translate="footer.tagline"></p>
+        </div>
+    </footer>
+
+    <!-- Skripty -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            // Mobilné menu (Hamburger)
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const hamburgerIcon = document.getElementById('hamburger-icon');
+
+            mobileMenuBtn.addEventListener('click', () => {
+                const isHidden = mobileMenu.classList.contains('hidden');
+                if (isHidden) {
+                    mobileMenu.classList.remove('hidden');
+                    hamburgerIcon.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+                    mobileMenuBtn.setAttribute('aria-expanded', 'true');
+                } else {
+                    mobileMenu.classList.add('hidden');
+                    hamburgerIcon.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+                    mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            const langMenuBtn = document.getElementById('lang-menu-btn');
+            const langDropdown = document.getElementById('lang-dropdown');
+
+            langMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeDropdowns();
+                langDropdown.classList.toggle('hidden');
+                langMenuBtn.setAttribute('aria-expanded', !langDropdown.classList.contains('hidden'));
+            });
+
+            const renewableMenuBtn = document.getElementById('renewable-menu-btn');
+            const renewableDropdown = document.getElementById('renewable-dropdown');
+
+            renewableMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeDropdowns();
+                renewableDropdown.classList.toggle('hidden');
+                renewableMenuBtn.setAttribute('aria-expanded', !renewableDropdown.classList.contains('hidden'));
+            });
+
+            const mobileRenewableMenuBtn = document.getElementById('mobile-renewable-menu-btn');
+            const mobileRenewableSubmenu = document.getElementById('mobile-renewable-submenu');
+
+            mobileRenewableMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                mobileRenewableSubmenu.classList.toggle('hidden');
+                mobileRenewableMenuBtn.setAttribute('aria-expanded', !mobileRenewableSubmenu.classList.contains('hidden'));
+            });
+
+            function closeDropdowns() {
+                langDropdown.classList.add('hidden');
+                renewableDropdown.classList.add('hidden');
+                langMenuBtn.setAttribute('aria-expanded', 'false');
+                renewableMenuBtn.setAttribute('aria-expanded', 'false');
+            }
+
+            document.addEventListener('click', () => {
+                closeDropdowns();
+            });
+
+            // Asynchrónna inicializácia lokalizácie a cookies na zabezpečenie TBT = 0 ms
+            setTimeout(() => {
+                loadLanguage(currentLang);
+                checkCookieConsent();
+            }, 50);
+        });
+
+        // ----------------- LOKALIZAČNÝ ENGINE -----------------
+        let currentTranslations = {};
+        let currentLang = localStorage.getItem('elvo_lang') || 'sk';
+
+        async function loadLanguage(lang) {
+            let fetchedData = null;
+            try {
+                const response = await fetch(`preklad/${lang.toUpperCase()}/index.json`);
+                if (response.ok) {
+                    fetchedData = await response.json();
+                }
+            } catch (error) {
+                console.warn("Spustené lokálne (CORS pravidlo). Načítava sa vstavaná záloha slovníka.");
+            }
+
+            if (!fetchedData) {
+                fetchedData = fullEmbeddedTranslations[lang] || localFallbackTranslations[lang];
+            }
+
+            currentTranslations = fetchedData;
+            applyTranslations(fetchedData, lang);
+        }
+
+        function applyTranslations(dictionary, lang) {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                const value = getNestedValue(dictionary, key);
+                if (value !== undefined) {
+                    el.innerHTML = value;
+                }
+            });
+
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-translate-placeholder');
+                const value = getNestedValue(dictionary, key);
+                if (value !== undefined) {
+                    el.setAttribute('placeholder', value);
+                }
+            });
+
+            document.documentElement.lang = lang;
+            document.getElementById('current-lang').innerText = lang.toUpperCase();
+            localStorage.setItem('elvo_lang', lang);
+            currentLang = lang;
+
+            updateCartUI();
+        }
+
+        function changeLang(lang) {
+            loadLanguage(lang);
+        }
+
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+        }
+
+        // ----------------- VALIDÁCIA A AJAX ODOSLANIE CEZ PHP -----------------
+        async function handleContactSubmit(event) {
+            event.preventDefault();
+
+            const nameEl = document.getElementById('contact-name');
+            const emailEl = document.getElementById('contact-email');
+            const messageEl = document.getElementById('contact-message');
+
+            const name = nameEl.value.trim();
+            const email = emailEl.value.trim();
+            const message = messageEl.value.trim();
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
+
+            if (!name || !email || !message) {
+                alert(getNestedValue(dictionary, 'contact.form_error_fields') || "Prosím, vyplňte všetky povinné polia.");
+                return;
+            }
+
+            if (!emailRegex.test(email)) {
+                alert(getNestedValue(dictionary, 'contact.form_error_email') || "Zadajte platnú e-mailovú adresu.");
+                emailEl.focus();
+                return;
+            }
+
+            const button = event.target.querySelector('button[type="submit"]');
+            const originalButtonText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = "Odosiela sa...";
+
+            try {
+                const response = await fetch('send.php', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'contact', name, email, message })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert(getNestedValue(dictionary, 'contact.form_success') || "Ďakujeme! Vaša správa bola úspešne odoslaná.");
+                    document.getElementById('contact-form').reset();
+                } else {
+                    alert(result.message || "Chyba pri spracovaní požiadavky na serveri.");
+                }
+            } catch (error) {
+                alert("Problém so sieťou alebo serverom. Skontrolujte nastavenie hostingu.");
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalButtonText;
+            }
+        }
+
+        // ----------------- COOKIES LIŠTA LOGIKA -----------------
+        function checkCookieConsent() {
+            const consent = localStorage.getItem('elvo_cookie_consent');
+            if (!consent) {
+                document.getElementById('cookie-banner').classList.remove('hidden');
+                document.getElementById('cookie-banner').classList.add('flex');
+            }
+        }
+
+        function setCookieConsent(status) {
+            localStorage.setItem('elvo_cookie_consent', status);
+            document.getElementById('cookie-banner').classList.add('hidden');
+            document.getElementById('cookie-banner').classList.remove('flex');
+            closeCookieModal();
+        }
+
+        function openCookieModal() {
+            document.getElementById('cookie-modal').classList.remove('hidden');
+            document.getElementById('cookie-modal').classList.add('flex');
+        }
+
+        function closeCookieModal() {
+            document.getElementById('cookie-modal').classList.add('hidden');
+            document.getElementById('cookie-modal').classList.remove('flex');
+        }
+
+        // ----------------- LOGIKA KOŠÍKA -----------------
+        let cart = JSON.parse(localStorage.getItem('elvo_cart')) || [];
+
+        function toggleCartDrawer() {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-backdrop');
+            const panel = document.getElementById('cart-panel');
+
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => {
+                    backdrop.classList.replace('opacity-0', 'opacity-100');
+                    panel.classList.replace('translate-x-full', 'translate-x-0');
+                }, 10);
+            } else {
+                backdrop.classList.replace('opacity-100', 'opacity-0');
+                panel.classList.replace('translate-x-0', 'translate-x-full');
+                setTimeout(() => {
+                    drawer.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function changeQuantity(id, delta) {
+            const itemIndex = cart.findIndex(item => item.id === id);
+            if (itemIndex > -1) {
+                cart[itemIndex].quantity += delta;
+                if (cart[itemIndex].quantity <= 0) {
+                    cart.splice(itemIndex, 1);
+                }
+                saveCart();
+                updateCartUI();
+            }
+        }
+
+        function removeItem(id) {
+            cart = cart.filter(item => item.id !== id);
+            saveCart();
+            updateCartUI();
+        }
+
+        function saveCart() {
+            localStorage.setItem('elvo_cart', JSON.stringify(cart));
+        }
+
+        function updateCartUI() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartIconBtn = document.getElementById('cart-icon-btn');
+            const cartBadge = document.getElementById('cart-badge');
+            const cartTotalPrice = document.getElementById('cart-total-price');
+
+            let totalQuantity = 0;
+            let totalPrice = 0;
+
+            cartItemsContainer.innerHTML = '';
+
+            const tEmptyTitle = getNestedValue(currentTranslations, 'cart.empty_title') || 'Váš košík je prázdny';
+            const tEmptySubtitle = getNestedValue(currentTranslations, 'cart.empty_subtitle') || 'Pridajte smart riešenia v príslušnej sekcii.';
+            const tUnitPrice = getNestedValue(currentTranslations, 'cart.unit_price') || '€ / ks';
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mb-3 text-slate-300" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                        <p class="text-sm font-semibold">${tEmptyTitle}</p>
+                        <p class="text-xs mt-1">${tEmptySubtitle}</p>
+                    </div>
+                `;
+                cartIconBtn.classList.add('hidden');
+            } else {
+                cart.forEach(item => {
+                    totalQuantity += item.quantity;
+                    totalPrice += item.price * item.quantity;
+
+                    const finalName = item.translationKey ? (getNestedValue(currentTranslations, item.translationKey) || item.name) : item.name;
+
+                    const itemElement = document.createElement('div');
+                    itemElement.className = "flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 relative text-xs";
+                    itemElement.innerHTML = `
+                        <img src="${item.img}" alt="${finalName}" class="w-12 h-12 object-cover rounded-lg bg-white border border-slate-100" width="48" height="48" decoding="async">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-brand-dark leading-tight">${finalName}</h4>
+                            <p class="text-slate-500 mt-0.5">${item.price} ${tUnitPrice}</p>
+                            
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <button onclick="changeQuantity('${item.id}', -1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center" aria-label="Znížiť množstvo">-</button>
+                                <span class="font-bold text-slate-700 w-4 text-center">${item.quantity}</span>
+                                <button onclick="changeQuantity('${item.id}', 1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center" aria-label="Zvýšiť množstvo">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeItem('${item.id}')" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-red-500 transition-colors" aria-label="Odstrániť položku">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                        </button>
+                    `;
+                    cartItemsContainer.appendChild(itemElement);
+                });
+
+                cartIconBtn.classList.remove('hidden');
+                cartBadge.innerText = totalQuantity;
+            }
+
+            const formatterLang = currentLang === 'sk' ? 'sk-SK' : 'en-US';
+            cartTotalPrice.innerText = `${totalPrice.toLocaleString(formatterLang)} €`;
+        }
+
+        // ----------------- ODOSLANIE KOŠÍKA CEZ PHP -----------------
+        async function handleCheckout(event) {
+            event.preventDefault();
+            const name = document.getElementById('checkout-name').value.trim();
+            const email = document.getElementById('checkout-email').value.trim();
+
+            if (cart.length === 0) return;
+
+            let itemsSummary = cart.map(item => {
+                const finalName = item.translationKey ? (getNestedValue(currentTranslations, item.translationKey) || item.name) : item.name;
+                return `- ${finalName} (Množstvo: ${item.quantity}x, Cena/ks: ${item.price} €)`;
+            }).join('\n');
+
+            const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
+            const totalPrice = document.getElementById('cart-total-price').innerText;
+
+            const button = event.target.querySelector('button[type="submit"]');
+            const originalButtonText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = "Odosiela sa...";
+
+            try {
+                const response = await fetch('send.php', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'cart',
+                        name,
+                        email,
+                        cart_items: itemsSummary,
+                        total_price: totalPrice
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    const alertThankYou = getNestedValue(dictionary, 'cart.alert_thank_you') || "Ďakujeme za váš dopyt, {name}!";
+                    alert(alertThankYou.replace('{name}', name));
+                    
+                    cart = [];
+                    saveCart();
+                    updateCartUI();
+                    toggleCartDrawer();
+                    document.getElementById('checkout-form').reset();
+                } else {
+                    alert(result.message || "Chyba pri spracovaní dopytu.");
+                }
+            } catch (error) {
+                alert("Chyba siete. Nepodarilo sa odoslať dopyt.");
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalButtonText;
+            }
+        }
+
+        // ----------------- INTEGRATED FALLBACK DICTIONARY -----------------
+        const fullEmbeddedTranslations = {
+            sk: {
+                "title": "ELVOSOLAR a.s. | Obnoviteľná a optimalizovaná energia",
+                "nav": {
+                    "about": "O nás",
+                    "renewable": "Obnoviteľná energia",
+                    "smart": "Smart riešenia",
+                    "services": "Služby",
+                    "green_enterprise": "Zelená podnikom",
+                    "contact": "Kontakt",
+                    "quick_inquiry": "Rýchly dopyt"
+                },
+                "hero": {
+                    "badge": "Elvosolar, a.s.",
+                    "title": "Otvárame dvere obnoviteľnej a optimalizovanej energii",
+                    "description": "Spoločnosť elvosolar, a.s. ponúka komplexné služby a inovatívne riešenia v rámci optimalizácie spotreby elektrickej energie a v oblasti výroby energií z obnoviteľných alebo odpadových zdrojov.",
+                    "quote": "„Základnými piliermi spokojnosti našich zákazníkov je naša spoľahlivosť, odbornosť, ekonomická efektívnosť a ohľaduplnosť k životnému prostrediu.“",
+                    "cta": "Prečítajte si viac ►"
+                },
+                "subsidies": {
+                    "badge": "Financovanie",
+                    "title": "Aktuálne výzvy na dotácie",
+                    "card1_badge": "Zelená podnikom",
+                    "card1_title": "Fotovoltika pre firmy s dotáciou až 50 tis. €",
+                    "card1_desc": "Využite príležitosť na získanie dotácie v rámci projektu Zelená podnikom. Fotovoltické elektrárne až do 250kW."                ,
+                    "card2_badge": "Energetická efektívnosť",
+                    "card2_title": "Výzva na podporu energetickej efektívnosti",
+                    "card2_desc": "Využívajte OZE vo vašom podniku so štátnou dotáciou. Fotovoltické elektrárne až do 500kW.",
+                    "card3_badge": "Výroba elektriny z OZE",
+                    "card3_title": "Výzva na zariadenia na výrobu elektriny z OZE",
+                    "card3_desc": "Zariadenia na výrobu elektriny z OZE spolu so zariadeniami na uskladnenie energie až do 5MW."
+                },
+                "renewable": {
+                    "badge": "Naša ponuka",
+                    "title": "Obnoviteľná energia",
+                    "desc": "Energia je dôležitým pilierom našej spoločnosti a jej spotreba permanentne rastie. Preto neustále hľadáme, realizujeme a spravujeme najnovšie technológie jej výroby z obnoviteľných alebo odpadových zdrojov.",
+                    "card1_title": "Fotovoltika",
+                    "card1_desc": "Premena slnečnej energie na elektrickú energiu.",
+                    "card1_more": "Viac informácií ►",
+                    "card2_title": "Solárny ohrev",
+                    "card2_desc": "Premena slnečnej energie na tepelnú.",
+                    "card2_more": "Viac informácií ►",
+                    "card3_title": "ORC jednotky",
+                    "card3_desc": "Premena odpadového tepla na elektrickú energiu.",
+                    "card3_more": "Viac informácií ►",
+                    "card4_title": "Absorpčné chladenie",
+                    "card4_desc": "Premena odpadového tepla na chlad.",
+                    "card4_more": "Viac informácií ►",
+                    "card5_title": "Batériové úložištia",
+                    "card5_desc": "Ukladanie elektrickej energie v batériách.",
+                    "card5_more": "Viac informácií ►"
+                },
+                "smart": {
+                    "badge": "Inovácia a optimalizácia",
+                    "title": "Naše smart riešenia",
+                    "desc": "Spájame pokročilé technológie s efektívnym riadením spotreby. Ponúkame inteligentné systémy zamerané na úsporu a automatizáciu energetických procesov.",
+                    "card1_badge": "Vo vývoji: Riadenie tokov energií",
+                    "card1_title": "Stanov projekt (Energy Management System)",
+                    "card1_desc": "Inteligentný energetický manažment optimalizuje výrobu a spotrebu elektriny v reálnom čase. Systém samostatne vyhodnocuje predpovede počasia, spotrebiteľské správanie a dynamicky riadi toky do spotrebičov, batérií či distribučnú sieť.",
+                    "card1_more": "Zobraziť detail a kúpiť ►",
+                    "card2_badge": "Spotreba a optimalizácia",
+                    "card2_title": "Smart Cenový kontrolér",
+                    "card2_desc": "Neustály monitoring cien energie pomáha včas detegovať neefektívne prevádzky a vypínať a zapínať príkon energie. Získate presný prehľad o stave objektu kedykoľvek a kdekoľvek.",
+                    "card2_more": "Zobraziť detaily a kúpiť ►"
+                },
+                "services": {
+                    "badge": "Služby",
+                    "title": "Naše Služby",
+                    "desc": "Udržateľná efektívnosť, spoľahlivosť a bezpečnosť implementovaných riešení v akomkoľvek štádiu projektu je dosiahnuteľná len realizáciou kvalitných a odborných služieb ponúkaných naším tímom špecialistov.",
+                    "card1_title": "Servis",
+                    "card1_desc": "Komplexné servisné služby realizované profesionálnym tímom.",
+                    "card1_more": "Viac informácií ►",
+                    "card2_title": "Riešenia na kľúč",
+                    "card2_desc": "Projektovanie, výstavba a prevádzka energetických zariadení.",
+                    "card2_more": "Viac informácií ►"
+                },
+                "contact": {
+                    "badge": "Kontakt",
+                    "title": "Kontaktujte nás",
+                    "phone_label": "Tel.:",
+                    "phone_value": "+421 914 332 169",
+                    "email_label": "Email:",
+                    "email_value": "info@elvosolar.sk",
+                    "address_title": "🏢 Adresa",
+                    "address_company": "ELVOSOLAR a.s.",
+                    "address_street": "Agátová 22, 841 01 Bratislava",
+                    "location_title": "📍 Lokácia",
+                    "location_building": "Budova SOLAR HOUSE",
+                    "location_gps": "GPS: 48.20128, 17.011385",
+                    "form_title": "Nezáväzný dopyt",
+                    "form_name_placeholder": "Meno a priezvisko",
+                    "form_email_placeholder": "E-mail",
+                    "form_message_placeholder": "Vaša správa...",
+                    "form_submit": "Odoslať správu",
+                    "form_success": "Ďakujeme! Vaša správa bola úspešne odoslaná.",
+                    "form_error_email": "Zadajte platnú e-mailovú adresu.",
+                    "form_error_fields": "Prosím, vyplňte všetky povinné polia."
+                },
+                "cart": {
+                    "title": "Váš dopytový košík",
+                    "empty_title": "Váš košík je prázdny",
+                    "empty_subtitle": "Pridajte smart riešenia v príslušnej sekcii.",
+                    "unit_price": "€ / ks",
+                    "estimated_price": "Orientačná cena:",
+                    "checkout_name_placeholder": "Vaše meno / Firma",
+                    "checkout_email_placeholder": "Váš E-mail",
+                    "checkout_submit": "Odoslať dopyt košíka",
+                    "alert_thank_you": "Ďakujeme za váš dopyt, {name}!",
+                    "alert_received": "Na e-mail {email} sme zaznamenali záujem o produkty:",
+                    "alert_contact": "Čoskoro vás budeme kontaktovať."
+                },
+                "cookie": {
+                    "title": "Vážime si vaše súkromie",
+                    "text": "Súbory cookie používame na zlepšenie vášho zážitku z prehliadania, poskytovanie prispôsobených reklám alebo obsahu a analýzu našej návštevnosti. Kliknutím na „Prijať všetko“ súhlasíte s naším používaním súborov cookie.",
+                    "accept_all": "Prijať všetko",
+                    "reject": "Odmietnuť",
+                    "customize": "Prispôsobiť",
+                    "modal_title": "Prispôsobte preferencie súhlasu",
+                    "modal_desc": "Používame súbory cookies, aby sme vám pomohli efektívne sa pohybovať a vykonávať určité funkcie. Nižšie nájdete podrobné informácie o všetkých súboroch cookie v každej kategórii súhlasu.<br><br>Súbory cookie, ktoré sú kategorizované ako „Nevyhnutné“, sú uložené vo vašom prehliadači, pretože sú nevyhnutné na umožnenie základných funkcií stránky.<br><br>Používame aj súbory cookie tretích strán, ktoré nám pomáhajú analyzovať, ako používate túto webovú stránku, ukladať vaše preferencie a poskytovať obsah a reklamy, ktoré sú pre vás relevantné. Tieto súbory cookie budú uložené vo vašom prehliadači iba s vaším predchádzajúcim súhlasom.<br><br>Môžete povoliť alebo zakázať niektoré alebo všetky tieto súbory cookie, ale zakázanie niektorých z nich môže ovplyvniť váš zážitok z prehliadania. <a href='#' onclick='closeCookieModal()' class='underline text-brand-green font-bold'>Ukázať menej</a>",
+                    "necessary_title": "Nevyhnutné",
+                    "necessary_status": "Vždy aktívny",
+                    "necessary_desc": "Potrebné súbory cookie sú pre základné funkcie webových stránok zásadné a webové stránky bez nich nebudú fungovať zamýšľaným spôsobom. Tieto súbory cookie neukladajú žiadne osobné identifikačné údaje.",
+                    "table_cookie_label": "Súbory Cookies",
+                    "table_duration_label": "Trvanie",
+                    "table_desc_label": "Popis",
+                    "cookie1_duration": "1 rok",
+                    "cookie1_desc": "CookieYes nastavuje tento súbor cookie tak, aby si pamätal preferencie súhlasu používateľov, aby sa ich preferencie rešpektovali pri ďalších návštevách tejto stránky. Nezhromažďuje ani neukladá žiadne osobné informácie o návštevníkoch stránky.",
+                    "cookie2_duration": "6 mesiacov",
+                    "cookie2_desc": "Služba Google Recaptcha nastavuje tento súbor cookie na identifikáciu robotov na ochranu webovej stránky pred škodlivými spamovými útokmi.",
+                    "save_preferences": "Uložiť moje predvoľby"
+                },
+                "footer": {
+                    "copyright": "2026 © Elvosolar, a.s. • <a href='dokumenty/ochrana-osobnych-udajov.pdf' target='_blank' class='hover:underline focus:outline-none text-slate-400'>Ochrana osobných údajov</a>",
+                    "tagline": "Inovatívne energetické riešenia"
+                }
+            },
+            en: {
+                "title": "ELVOSOLAR a.s. | Renewable and Optimized Energy",
+                "nav": {
+                    "about": "About Us",
+                    "renewable": "Renewable Energy",
+                    "smart": "Smart Solutions",
+                    "services": "Services",
+                    "green_enterprise": "Green for Enterprises",
+                    "contact": "Contact",
+                    "quick_inquiry": "Quick Inquiry"
+                },
+                "hero": {
+                    "badge": "Elvosolar, a.s.",
+                    "title": "We open the doors to renewable and optimized energy",
+                    "description": "The company elvosolar, a.s. offers comprehensive services and innovative solutions for optimization of electricity consumption and in the field of energy production from renewable or waste sources.",
+                    "quote": "“The primary pillars of our customers' satisfaction are our reliability, expertise, economic efficiency, and environmental friendliness.”",
+                    "cta": "Read more ►"
+                },
+                "subsidies": {
+                    "badge": "Financing",
+                    "title": "Current subsidy calls",
+                    "card1_badge": "Green for Enterprises",
+                    "card1_title": "Photovoltaics for companies with subsidy up to €50k",
+                    "card1_desc": "Take advantage of the opportunity to obtain a subsidy within the Green for Enterprises project. Photovoltaic power plants up to 250kW."
+                },
+                "renewable": {
+                    "badge": "Our portfolio",
+                    "title": "Renewable energy",
+                    "desc": "Energy is an important pillar of our society and its consumption is constantly increasing. Therefore, we continuously seek, implement, and manage the latest technologies for its production from renewable or waste sources.",
+                    "card1_title": "Photovoltaics",
+                    "card1_desc": "Conversion of solar energy into electrical energy.",
+                    "card1_more": "More information ►",
+                    "card2_title": "Solar heating",
+                    "card2_desc": "Conversion of solar energy into thermal energy.",
+                    "card2_more": "More information ►",
+                    "card3_title": "ORC units",
+                    "card3_desc": "Conversion of waste heat into electrical energy.",
+                    "card3_more": "More information ►",
+                    "card4_title": "Absorption cooling",
+                    "card4_desc": "Conversion of waste heat into cold.",
+                    "card4_more": "More information ►",
+                    "card5_title": "Battery storage",
+                    "card5_desc": "Storage of electrical energy in batteries.",
+                    "card5_more": "More information ►"
+                },
+                "smart": {
+                    "badge": "Innovation and optimization",
+                    "title": "Our smart solutions",
+                    "desc": "We combine advanced technologies with effective consumption management. We offer intelligent systems aimed at savings and automation of energy processes.",
+                    "card1_badge": "In development: Energy flow management",
+                    "card1_title": "Stano's Project (Energy Management System)",
+                    "card1_desc": "Intelligent energy management optimizes electricity production and consumption in real time. The system independently evaluates weather forecasts, consumer behavior, and dynamically manages flows to appliances, batteries, or the distribution grid.",
+                    "card1_more": "View details and buy ►",
+                    "card2_badge": "Consumption and optimization",
+                    "card2_title": "Smart Price Controller",
+                    "card2_desc": "Constant energy price monitoring helps detect inefficient operations in time and turn energy consumption on and off. You get an accurate overview of the state of the facility anytime and anywhere.",
+                    "card2_more": "View details and buy ►"
+                },
+                "services": {
+                    "badge": "Services",
+                    "title": "Our Services",
+                    "desc": "Turnkey energy solutions, support and professional consulting for businesses and households.",
+                    "card1_title": "Service",
+                    "card1_desc": "Comprehensive service operations delivered by a professional team.",
+                    "card1_more": "More information ►",
+                    "card2_title": "Turnkey solutions",
+                    "card2_desc": "Design, construction, and operation of energy facilities.",
+                    "card2_more": "More information ►"
+                },
+                "contact": {
+                    "badge": "Contact",
+                    "title": "Contact us",
+                    "phone_label": "Phone:",
+                    "phone_value": "+421 914 332 169",
+                    "email_label": "Email:",
+                    "email_value": "info@elvosolar.sk",
+                    "address_title": "🏢 Address",
+                    "address_company": "ELVOSOLAR a.s.",
+                    "address_street": "Agatova 22, 841 01 Bratislava",
+                    "location_title": "📍 Location",
+                    "location_building": "SOLAR HOUSE Building",
+                    "location_gps": "GPS: 48.20128, 17.011385",
+                    "form_title": "Non-binding inquiry",
+                    "form_name_placeholder": "Full name",
+                    "form_email_placeholder": "E-mail",
+                    "form_message_placeholder": "Your message...",
+                    "form_submit": "Send message",
+                    "form_success": "Thank you! Your message has been sent successfully.",
+                    "form_error_email": "Please enter a valid email address.",
+                    "form_error_fields": "Please fill in all required fields."
+                },
+                "cart": {
+                    "title": "Your Inquiry Cart",
+                    "empty_title": "Your cart is empty",
+                    "empty_subtitle": "Add smart solutions in the respective section.",
+                    "unit_price": "€ / pc",
+                    "estimated_price": "Estimated price:",
+                    "checkout_name_placeholder": "Your name / Company",
+                    "checkout_email_placeholder": "Your E-mail",
+                    "checkout_submit": "Send cart inquiry",
+                    "alert_thank_you": "Thank you for your inquiry, {name}!",
+                    "alert_received": "We have recorded interest in the following products for email {email}:",
+                    "alert_contact": "We will contact you shortly."
+                },
+                "cookie": {
+                    "title": "We value your privacy",
+                    "text": "We use cookies to improve your browsing experience, provide personalized advertisements or content, and analyze our traffic. By clicking \"Accept All\", you consent to our use of cookies.",
+                    "accept_all": "Accept All",
+                    "reject": "Reject",
+                    "customize": "Customize",
+                    "modal_title": "Customize consent preferences center",
+                    "modal_desc": "We use cookies to help you navigate efficiently and perform certain functions. Below, you will find detailed information about all cookies in each category.<br><br>Cookies categorized as 'Necessary' are stored in your browser because they are essential for enabling basic website functions.<br><br>We also use third-party cookies that help us analyze how you use this website, store your preferences, and deliver relevant content and ads. These cookies will only be stored in your browser with your prior consent.<br><br>You can enable or disable some or all of these cookies, but disabling some may impact your browsing experience. <a href='#' onclick='closeCookieModal()' class='underline text-brand-green font-bold'>Show less</a>",
+                    "necessary_title": "Necessary",
+                    "necessary_status": "Always active",
+                    "necessary_desc": "Necessary cookies are essential for the basic operation of the website. They do not store any personal identification data.",
+                    "table_cookie_label": "Cookies",
+                    "table_duration_label": "Duration",
+                    "table_desc_label": "Description",
+                    "cookie1_duration": "1 year",
+                    "cookie1_desc": "CookieYes sets this cookie to remember users' consent preferences so that their preferences are respected on subsequent visits to this site. It does not collect or store any personal information about site visitors.",
+                    "cookie2_duration": "6 months",
+                    "cookie2_desc": "Google Recaptcha sets this cookie to identify bots to protect the website from malicious spam attacks.",
+                    "save_preferences": "Save my preferences"
+                },
+                "footer": {
+                    "copyright": "2026 © Elvosolar, a.s. • <a href='dokumenty/ochrana-osobnych-udajov.pdf' target='_blank' class='hover:underline focus:outline-none text-slate-400'>Personal data protection</a>",
+                    "tagline": "Innovative energy solutions"
+                }
+            }
+        };
+
+        const localFallbackTranslations = {};
+    </script>
+
+</body>
+</html>
