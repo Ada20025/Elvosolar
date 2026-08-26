@@ -1016,103 +1016,110 @@ elseif ($path === '/setup_database.php' && $method === 'GET') {
     exit;
 }
 
-else {
-
-// === SMTP TEST ===
+// === SMTP DEBUG ===
 elseif ($path === '/debug-smtp' && $method === 'GET') {
     header('Content-Type: text/plain; charset=utf-8');
     echo "=== SMTP TEST ===
 ";
-    
-    $host = SMTP_HOST;
-    $port = SMTP_PORT;
-    $user = SMTP_USER;
-    $pass = SMTP_PASS;
-    $enc = SMTP_ENCRYPTION;
-    
-    echo "Host: $host
+    echo "Host: " . SMTP_HOST . "
 ";
-    echo "Port: $port
+    echo "Port: " . SMTP_PORT . "
 ";
-    echo "User: $user
+    echo "User: " . SMTP_USER . "
 ";
-    echo "Pass: " . (strlen($pass) > 0 ? str_repeat('*', strlen($pass)) . " ({$len} chars)" : "EMPTY") . "
+    echo "Pass: " . str_repeat('*', strlen(SMTP_PASS)) . " (" . strlen(SMTP_PASS) . " chars)
 ";
-    echo "Encryption: $enc
+    echo "Encryption: " . SMTP_ENCRYPTION . "
 
 ";
     
-    // Test connection
-    $socket_host = ($enc === 'ssl') ? 'ssl://' . $host : $host;
-    $context = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]]);
+    $socket_host = (strtolower(SMTP_ENCRYPTION) === 'ssl') ? 'ssl://' . SMTP_HOST : SMTP_HOST;
+    $ctx = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]]);
     
     $start = microtime(true);
-    $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
-    $elapsed = round((microtime(true) - $start) * 1000) . 'ms';
+    $socket = @stream_socket_client($socket_host . ':' . SMTP_PORT, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $ctx);
+    $ms = round((microtime(true) - $start) * 1000);
     
-    if (!$socket) {
-        echo "CONNECTION FAILED: $errstr ($errno) in $elapsed
-";
-        exit;
-    }
-    echo "Connected in $elapsed
+    if (!$socket) { echo "CONNECTION FAILED: $errstr ($errno) in {$ms}ms
+"; exit; }
+    echo "Connected in {$ms}ms
 ";
     
-    $read = function($s) { $r = ''; while (($l = fgets($s, 512)) !== false) { $r .= $l; if (substr($l,3,1)==' ') break; } return $r; };
-    
-    echo "Banner: " . $read($socket) . "
-";
+    $rd = function($s) { $r=''; while(($l=fgets($s,512))!==false) { $r.=$l; if(substr($l,3,1)==' ') break; } return $r; };
+    $rd($socket);
     fwrite($socket, "EHLO elvosolar.sk
 ");
-    echo "EHLO: " . $read($socket) . "
+    echo "EHLO: " . $rd($socket) . "
 ";
     
-    if ($enc === 'tls') {
+    if (strtolower(SMTP_ENCRYPTION) === 'tls') {
         fwrite($socket, "STARTTLS
 ");
-        $tls = $read($socket);
+        $tls = $rd($socket);
         echo "STARTTLS: $tls
 ";
         if (strpos($tls, '220') !== false) {
             stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
             fwrite($socket, "EHLO elvosolar.sk
 ");
-            echo "EHLO (TLS): " . $read($socket) . "
+            echo "EHLO (TLS): " . $rd($socket) . "
 ";
         }
     }
     
-    if (!empty($user) && !empty($pass)) {
-        fwrite($socket, "AUTH LOGIN
+    fwrite($socket, "AUTH LOGIN
 ");
-        echo "AUTH: " . $read($socket) . "
+    echo "AUTH: " . $rd($socket) . "
 ";
-        fwrite($socket, base64_encode($user) . "
+    fwrite($socket, base64_encode(SMTP_USER) . "
 ");
-        echo "USER: " . $read($socket) . "
+    echo "USER: " . $rd($socket) . "
 ";
-        fwrite($socket, base64_encode($pass) . "
+    fwrite($socket, base64_encode(SMTP_PASS) . "
 ");
-        $auth = $read($socket);
-        echo "PASS: $auth
+    $auth = $rd($socket);
+    echo "PASS: $auth
 ";
-        
-        if (strpos($auth, '235') !== false) {
-            echo "
-✅ SMTP AUTH SUCCESSFUL - Email should work!
-";
-        } else {
-            echo "
-❌ SMTP AUTH FAILED
-";
-        }
-    }
     
+    if (strpos($auth, '235') !== false) {
+        echo "
+SMTP AUTH OK - Sending test email...
+";
+        $sender = SMTP_USER;
+        fwrite($socket, "MAIL FROM: <$sender>
+"); $rd($socket);
+        fwrite($socket, "RCPT TO: <$sender>
+"); $rd($socket);
+        fwrite($socket, "DATA
+"); $rd($socket);
+        $msg = "Subject: =?UTF-8?B?" . base64_encode("ElvoControl SMTP Test") . "?=
+";
+        $msg .= "From: $sender
+";
+        $msg .= "Content-Type: text/plain; charset=utf-8
+
+";
+        $msg .= "SMTP funguje z Railway!
+.
+";
+        fwrite($socket, $msg);
+        echo "DATA: " . $rd($socket) . "
+";
+        echo "
+SMTP TEST PASSED!
+";
+    } else {
+        echo "
+SMTP AUTH FAILED
+";
+    }
     fwrite($socket, "QUIT
 ");
     fclose($socket);
 }
 
+// --- 404 HANDLER ---
+else {
     http_response_code(404);
     echo "Stránka nebola nájdaná.";
 }
