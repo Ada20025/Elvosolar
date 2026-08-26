@@ -18,9 +18,9 @@ function get_env_val($keys, $default = '') {
 }
 
 $railway_host = get_env_val(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST', 'DATABASE_HOST'], '');
-$railway_db   = get_env_val(['MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME', 'DATABASE_NAME'], '');
+$railway_db   = get_env_val(['MYSQL_DATABASE', 'MYSQLDATABASE', 'DB_NAME', 'DATABASE_NAME'], '');
 $railway_user = get_env_val(['MYSQLUSER', 'MYSQL_USER', 'DB_USER', 'DATABASE_USER'], '');
-$railway_pass = get_env_val(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS', 'DATABASE_PASSWORD'], '');
+$railway_pass = get_env_val(['MYSQL_ROOT_PASSWORD', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'DB_PASS', 'DATABASE_PASSWORD'], '');
 $railway_port = get_env_val(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT', 'DATABASE_PORT'], '3306');
 
 // Debug — zapíše do logu
