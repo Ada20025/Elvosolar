@@ -462,6 +462,14 @@ elseif ($path === '/register') {
         try {
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
             $stmt->execute([$username, $email, $hashed]);
+            
+            // Welcome email
+            @send_elvo_email($email, "Vitajte v ElvoControl!", "Vitajte v ElvoControl, " . htmlspecialchars($username) . "!",
+                "<p>Váš účet bol úspešne vytvorený.</p>"
+                . "<p><strong>Prihlasovací e-mail:</strong> " . htmlspecialchars($email) . "</p>"
+                . "<p><a href='" . $base_path . "/login' style='display:inline-block;padding:12px 24px;background:#3b82f6;color:white;border-radius:8px;text-decoration:none;font-weight:bold;'>Prihlásiť sa</a></p>"
+                . "<p style='color:#64748b;font-size:12px;margin-top:16px;'>Pre prístup k monitoringu fotovoltiky pripojte vašu riadiacu jednotku CM5.</p>"
+            );
             flash('Účet vytvorený. Teraz sa môžete prihlásiť.', 'success');
             header("Location: " . $base_path . "/login");
             exit;

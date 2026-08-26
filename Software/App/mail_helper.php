@@ -5,19 +5,19 @@
 // --- NASTAVENIE ODOSIELANIA E-MAILOV ---
 // ==========================================
 if (!defined('USE_SMTP')) {
-    define('USE_SMTP', false);                  // Ak nefunguje klasický mail, prepíšte na: true
+    define('USE_SMTP', true);                  // Ak nefunguje klasický mail, prepíšte na: true
 }
 if (!defined('SMTP_HOST')) {
-    define('SMTP_HOST', 'smtp.alwaysdata.com'); // SMTP server (napr. smtp.alwaysdata.com alebo smtp.gmail.com)
+    define('SMTP_HOST', 'smtp.gmail.com'); // SMTP server (napr. smtp.alwaysdata.com alebo smtp.gmail.com)
 }
 if (!defined('SMTP_PORT')) {
     define('SMTP_PORT', 587);                   // Port (najčastejšie 587 pre TLS, 465 pre SSL)
 }
 if (!defined('SMTP_USER')) {
-    define('SMTP_USER', 'no-reply@elvosolar.sk');  // Prihlasovacie meno (váš e-mail)
+    define('SMTP_USER', getenv('SMTP_USER') ?: 'no-reply@elvosolar.sk');  // Prihlasovacie meno (váš e-mail)
 }
 if (!defined('SMTP_PASS')) {
-    define('SMTP_PASS', 'vase_heslo');          // Heslo k e-mailu
+    define('SMTP_PASS', getenv('SMTP_PASS') ?: '');          // Heslo k e-mailu
 }
 if (!defined('SMTP_ENCRYPTION')) {
     define('SMTP_ENCRYPTION', 'tls');           // Šifrovanie: 'tls', 'ssl' alebo 'none'
