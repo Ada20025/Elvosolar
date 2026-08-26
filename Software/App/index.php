@@ -13,11 +13,11 @@ require_once 'config.php';
 // --- NASTAVENIE ODOSIELANIA E-MAILOV ---
 // ==========================================
 define('USE_SMTP', true);
-define('SMTP_HOST', 'smtp-adamdz.alwaysdata.net');
-define('SMTP_PORT', 587);
-define('SMTP_USER', 'adamdz@alwaysdata.net');
-define('SMTP_PASS', '1Adamko.');
-define('SMTP_ENCRYPTION', 'tls');
+define('SMTP_HOST', getenv('SMTP_HOST') ?: 'smtp-adamdz.alwaysdata.net');
+define('SMTP_PORT', intval(getenv('SMTP_PORT') ?: '587'));
+define('SMTP_USER', getenv('SMTP_USER') ?: 'adamdz@alwaysdata.net');
+define('SMTP_PASS', getenv('SMTP_PASS') ?: '1Adamko.');
+define('SMTP_ENCRYPTION', getenv('SMTP_ENCRYPTION') ?: 'tls');
 // ==========================================
 
 $request_uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -279,7 +279,7 @@ if (!function_exists('get_user_devices')) {
 }
 
 // Spracovanie statických súborov (manifest, sw, css, js)
-if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico)$#i', $path)) {
+if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
     $static_file = __DIR__ . '/' . ltrim($path, '/');
     if (file_exists($static_file)) {
         $mime_types = [
@@ -291,6 +291,7 @@ if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico)$#i', $path)) {
             'woff' => 'font/woff',
             'woff2' => 'font/woff2',
             'ttf' => 'font/ttf',
+            'pdf' => 'application/pdf',
         ];
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         $mime = $mime_types[$ext] ?? 'application/octet-stream';
@@ -443,6 +444,19 @@ elseif ($path === '/login') {
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
+            
+            // Login notifikácia email
+            $login_ip = $_SERVER['REMOTE_ADDR'] ?? 'neznáma';
+            $login_time = date('d.m.Y H:i');
+            @send_elvo_email($user['email'], 'Nové prihlásenie do ElvoControl', 'Prihlásenie do vášho účtu',
+                '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
+                . '<p>Zaznamenali sme prihlásenie do vášho účtu ElvoControl:</p>'
+                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
+                . '<p>📍 IP adresa: <strong>' . htmlspecialchars($login_ip) . '</strong></p>'
+                . '<p>🕐 Čas: <strong>' . $login_time . '</strong></p>'
+                . '</div>'
+                . '<p style="color:#64748b;font-size:12px;">Ak ste sa neprihlásili vy, okamžite zmeňte heslo.</p>'
+            );
             header("Location: " . $base_path . "/");
             exit;
         } else {
@@ -788,6 +802,56 @@ elseif ($path === '/api/devices/list' && $method === 'GET') {
         "huawei" => ["znacka" => "Huawei", "zapojenie" => "Modul CH1: R/A(+) a T/B(-).", "kategorie" => ["sun2000" => ["meno" => "SUN2000", "modely" => ["1" => ["meno" => "Jednofázové aj Trojfázové SUN2000"]]]]],
         "solax" => ["znacka" => "SolaX", "zapojenie" => "Modrá na A(+), Modrobiela na B(-).", "kategorie" => ["g4" => ["meno" => "X3-Hybrid G4", "modely" => ["1" => ["meno" => "Všetky modely G4"]]]]]
     ]);
+}
+
+// --- REGISTRÁCIA ZARIADENIA ---
+elseif ($path === '/api/devices/register' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) {
+        send_json(['status' => 'error', 'message' => 'Nie ste prihlásený'], 401);
+    }
+    $data = get_json_input();
+    $serial = trim($data['serial_number'] ?? '');
+    $name = trim($data['name'] ?? 'Moje zariadenie');
+    $brand = trim($data['brand'] ?? 'Huawei');
+    $model = trim($data['model'] ?? 'SUN2000');
+    
+    if (!$serial) {
+        send_json(['status' => 'error', 'message' => 'Sériové číslo je povinné'], 400);
+    }
+    
+    // Skontroluj či už neexistuje
+    $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ?");
+    $stmt->execute([$serial]);
+    if ($stmt->fetch()) {
+        send_json(['status' => 'error', 'message' => 'Zariadenie s týmto sériovým číslom už existuje'], 409);
+    }
+    
+    try {
+        $stmt = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, model, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
+        $stmt->execute([$_SESSION['user_id'], $name, $serial, $brand, $model]);
+        $device_id = $pdo->lastInsertId();
+        
+        // Email notifikácia o pridaní zariadenia
+        $user_email = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
+        $user_email->execute([$_SESSION['user_id']]);
+        $u = $user_email->fetch();
+        if ($u) {
+            @send_elvo_email($u['email'], 'Nové zariadenie v ElvoControl', 'Zariadenie bolo pridané',
+                '<p>Ahoj <strong>' . htmlspecialchars($u['username']) . '</strong>,</p>'
+                . '<p>Pridali ste nové zariadenie do ElvoControl:</p>'
+                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
+                . '<p>📦 Názov: <strong>' . htmlspecialchars($name) . '</strong></p>'
+                . '<p>🔢 Sériové číslo: <strong>' . htmlspecialchars($serial) . '</strong></p>'
+                . '<p>🏭 Značka: <strong>' . htmlspecialchars($brand) . ' ' . htmlspecialchars($model) . '</strong></p>'
+                . '</div>'
+                . '<p style="color:#64748b;font-size:12px;">Zariadenie sa prihlási automaticky keď bude online.</p>'
+            );
+        }
+        
+        send_json(['status' => 'success', 'device_id' => $device_id, 'message' => 'Zariadenie úspešne zaregistrované']);
+    } catch (PDOException $e) {
+        send_json(['status' => 'error', 'message' => 'Chyba pri registrácii zariadenia'], 500);
+    }
 }
 
 elseif ($path === '/forgot-password' && $method === 'GET') {
