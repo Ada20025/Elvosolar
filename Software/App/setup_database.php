@@ -13,8 +13,9 @@ $db_name = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: 'railway';
 $db_user = getenv('MYSQLUSER') ?: getenv('DB_USER') ?: 'root';
 $db_pass = getenv('MYSQL_PASSWORD') ?: getenv('DB_PASS') ?: '';
 
+$db_port = getenv("MYSQLPORT") ?: "3306";
 $charset = 'utf8mb4';
-$dsn = "mysql:host=$db_host;dbname=$db_name;charset=$charset";
+$dsn = "mysql:host=$db_host;port=$db_port;dbname=$db_name;charset=$charset";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

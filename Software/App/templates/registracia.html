@@ -189,14 +189,18 @@
             right: 12px;
             background: none;
             border: none;
-            color: #475569;
+            color: #64748b;
             cursor: pointer;
-            padding: 6px;
-            border-radius: 8px;
-            transition: all 0.2s;
+            padding: 8px;
+            border-radius: 10px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .toggle-pw:hover { color: #94a3b8; background: rgba(255,255,255,0.05); }
-        .toggle-pw svg { width: 18px; height: 18px; }
+        .toggle-pw:hover { color: #818cf8; background: rgba(99,102,241,0.08); }
+        .toggle-pw:active { transform: scale(0.9); }
+        .toggle-pw svg { width: 20px; height: 20px; transition: all 0.2s; }
 
         .submit-btn {
             width: 100%;
@@ -270,6 +274,8 @@
         }
         .login-footer a { color: #475569; text-decoration: none; transition: color 0.2s; }
         .login-footer a:hover { color: #8b5cf6; }
+
+        .hidden { display: none !important; }
 
         @media (max-width: 480px) {
             .glass-card { padding: 36px 24px; }
