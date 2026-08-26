@@ -125,11 +125,25 @@
         </div>
     </header>
 
+    <!-- Premium animácie -->
+    <style>
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); } 50% { box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.15); } }
+        .card-premium { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-premium:hover { transform: translateY(-8px); box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); }
+        .btn-glow { position: relative; overflow: hidden; }
+        .btn-glow::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); transform: translateX(-100%); transition: transform 0.6s; }
+        .btn-glow:hover::after { transform: translateX(100%); }
+        .hero-badge-pulse { animation: pulse-glow 2s ease-in-out infinite; }
+        #back-to-top { opacity: 0; pointer-events: none; transition: all 0.3s; }
+        #back-to-top.show { opacity: 1; pointer-events: auto; }
+        .gradient-text { background: linear-gradient(135deg, #10b981, #06b6d4, #10b981); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer 3s linear infinite; }
+    </style>
+
     <!-- Hero Sekcia -->
     <section class="bg-brand-dark text-white py-16 relative overflow-hidden">
         <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
-        <div class="max-w-7xl mx-auto px-6 relative z-10 text-center">
-            <span class="text-xs font-bold uppercase tracking-widest text-brand-green mb-3 block" data-translate="smart_page.hero_badge"></span>
+        <div class="max-w-7xl mx-auto px-6 relative z-10 text-center">                    <span class="text-xs font-bold uppercase tracking-widest text-brand-green mb-3 block hero-badge-pulse" data-translate="smart_page.hero_badge"></span>
             <h1 class="text-3xl lg:text-5xl font-extrabold tracking-tight mb-4" data-translate="smart_page.hero_title"></h1>
         </div>
     </section>
@@ -139,7 +153,7 @@
         <div class="grid md:grid-cols-2 gap-12">
             
             <!-- Smart Cenový kontroler -->
-            <div class="bg-white rounded-3xl border border-slate-100 hover:shadow-xl transition-all overflow-hidden flex flex-col justify-between">
+            <div class="bg-white rounded-3xl border border-slate-100 hover:shadow-xl transition-all overflow-hidden flex flex-col justify-between card-premium">
                 <div>
                     <div class="relative h-64 bg-slate-100 overflow-hidden">
                         <img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=800&q=80" alt="Smart Cenový kontroler" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
@@ -152,14 +166,14 @@
                     </div>
                 </div>
                 <div class="p-8 pt-0">
-                    <button onclick="location.href='../eshop/index.html'; //, 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=120&q=80', 'smart_page.prod1_title')" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                    <button onclick="location.href='../eshop/index.html'" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 btn-glow">
                         <span data-translate="smart_page.prod1_btn"></span>
                     </button>
                 </div>
             </div>
 
             <!-- Smart EMS Controller (Stanov projekt) -->
-            <div class="bg-white rounded-3xl border border-slate-100 hover:shadow-xl transition-all overflow-hidden flex flex-col justify-between">
+            <div class="bg-white rounded-3xl border border-slate-100 hover:shadow-xl transition-all overflow-hidden flex flex-col justify-between card-premium">
                 <div>
                     <div class="relative h-64 bg-slate-100 overflow-hidden">
                         <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Smart EMS Controller" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
@@ -172,7 +186,7 @@
                     </div>
                 </div>
                 <div class="p-8 pt-0">
-                    <button onclick="location.href='../eshop/index.html'; //, 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=120&q=80', 'smart_page.prod2_title')" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                    <button onclick="location.href='../eshop/index.html'" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 btn-glow">
                         <span data-translate="smart_page.prod2_btn"></span>
                     </button>
                 </div>
@@ -220,8 +234,13 @@
         </div>
     </div>
 
+    <!-- Back to Top -->
+    <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 left-6 z-50 w-11 h-11 rounded-full bg-brand-dark hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all" aria-label="Späť hore">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+    </button>
+
     <!-- Pätička -->
-    <footer class="bg-slate-950 text-slate-500 py-8 text-xs border-t border-slate-900 mt-auto">
+    <footer class="bg-slate-950 text-slate-500 py-10 text-xs border-t border-slate-900 mt-auto">
         <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <p data-translate="footer.copyright"></p>
             <p class="text-slate-600" data-translate="footer.tagline"></p>
@@ -604,6 +623,37 @@
         };
 
         const localFallbackTranslations = {}; // Ponechané pre konzistentnosť importu
+    </script>
+
+    <!-- Scroll Reveal + Back to Top -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const revealElements = document.querySelectorAll('section > div, .card-premium, main > div');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry, i) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.style.opacity = '1';
+                            entry.target.style.transform = 'translateY(0)';
+                        }, i * 80);
+                        revealObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08 });
+            revealElements.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                revealObserver.observe(el);
+            });
+
+            // Back to Top
+            const backToTop = document.getElementById('back-to-top');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 400) backToTop.classList.add('show');
+                else backToTop.classList.remove('show');
+            });
+        });
     </script>
 
 </body>

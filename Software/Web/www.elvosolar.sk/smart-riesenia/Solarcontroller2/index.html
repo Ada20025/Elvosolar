@@ -5,22 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Bojler Regulátor & Prebytky 3.5 kW | ELVOSOLAR a.s.</title>
     <link rel="icon" type="image/png" href="../../Png/download.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            dark: '#0f172a',
-                            green: '#10b981',
-                            light: '#f8fafc',
+        window.addEventListener('DOMContentLoaded', () => {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            brand: {
+                                dark: '#0f172a',
+                                green: '#10b981',
+                                light: '#f8fafc',
+                            }
                         }
                     }
                 }
             }
-        }
+        });
     </script>
+    <style>
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); } 50% { box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.15); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .card-premium { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-premium:hover { transform: translateY(-6px); box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); }
+        .btn-glow { position: relative; overflow: hidden; }
+        .btn-glow::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); transform: translateX(-100%); transition: transform 0.6s; }
+        .btn-glow:hover::after { transform: translateX(100%); }
+        .hero-badge-pulse { animation: pulse-glow 2s ease-in-out infinite; }
+        .phone-mockup { background-color: #ffffff; border: 8px solid #0f172a; border-radius: 40px; box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.12); }
+        .float-anim { animation: float 3s ease-in-out infinite; }
+        #back-to-top { opacity: 0; pointer-events: none; transition: all 0.3s; }
+        #back-to-top.show { opacity: 1; pointer-events: auto; }
+        .visual-bar-chart { display: flex; align-items: flex-end; gap: 4px; padding: 12px; background: white; border-radius: 12px; }
+    </style>
 </head>
 <body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen relative overflow-x-hidden">
 
@@ -41,7 +59,7 @@
             </nav>
 
             <div class="flex items-center space-x-3">
-                <a href="../../eshop/index.html" class="bg-brand-green hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                <a href="../../eshop/index.html" class="bg-brand-green hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm btn-glow">
                     <span>🛒</span> <span>Do E-Shopu</span>
                 </a>
             </div>
@@ -55,107 +73,474 @@
             <span>/</span>
             <a href="../../smart-riesenia/index.html" class="hover:text-brand-green">Smart riešenia</a>
             <span>/</span>
-            <span class="text-slate-700 font-semibold">Smart Bojler Regulátor & Prebytky 3.5 kW</span>
+            <span class="text-slate-700 font-semibold font-mono">Smart Bojler Regulátor</span>
         </div>
     </div>
 
-    <!-- Hlavný obsah produktu -->
-    <main class="py-12 max-w-7xl mx-auto px-6 flex-grow space-y-12">
-        <div class="grid lg:grid-cols-12 gap-12 items-start">
-            
-            <!-- Foto / Náhľad stanice -->
-            <div class="lg:col-span-6 space-y-4">
-                <div class="rounded-3xl overflow-hidden border border-slate-200 bg-slate-900 p-8 flex items-center justify-center min-h-[400px] relative shadow-lg">
-                    <div class="text-center space-y-4">
-                        <span class="text-7xl block">♨️</span>
-                        <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 inline-block">
-                            Ohrev vody v záporných cenách
-                        </span>
-                        <h2 class="text-2xl font-black text-white">Smart Bojler Regulátor & Prebytky 3.5 kW</h2>
-                        <p class="text-xs text-slate-400 max-w-md">Inteligentné relé a regulátor pre ohrev teplej úžitkovej vody v hodinách, kedy je elektrina najlacnejšia alebo záporná.</p>
-                    </div>
-                </div>
+    <!-- HLAVNÝ ÚVOD -->
+    <main id="main-content">
 
-                <div class="grid grid-cols-2 gap-3 text-xs font-semibold">
-                    <div class="p-3.5 bg-white rounded-2xl border border-slate-100 flex items-center gap-2">
-                        <span class="text-emerald-500 text-base">✓</span> <span>Ohrev vody za záporné ceny</span>
-                    </div>
-                    <div class="p-3.5 bg-white rounded-2xl border border-slate-100 flex items-center gap-2">
-                        <span class="text-emerald-500 text-base">✓</span> <span>100% využitie solárnych prebytkov</span>
-                    </div>
-                    <div class="p-3.5 bg-white rounded-2xl border border-slate-100 flex items-center gap-2">
-                        <span class="text-emerald-500 text-base">✓</span> <span>Výkon až 3 500 W (16A)</span>
-                    </div>
-                    <div class="p-3.5 bg-white rounded-2xl border border-slate-100 flex items-center gap-2">
-                        <span class="text-emerald-500 text-base">✓</span> <span>Jednoduchá montáž na DIN lištu</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Informácie a kúpa -->
-            <div class="lg:col-span-6 space-y-6">
-                <div>
-                    <span class="text-xs font-bold text-brand-green uppercase tracking-wider block">Maximalizácia vlastnej spotreby</span>
-                    <h1 class="text-3xl font-black text-brand-dark leading-tight mt-1">Smart Bojler Regulátor & Prebytky 3.5 kW</h1>
-                    <p class="text-sm text-slate-500 mt-2 leading-relaxed">
-                        Premeňte prebytočnú energiu z fotovoltiky a záporné ceny na spotovom trhu OKTE na teplú vodu zadarmo. Modul automaticky zopína ohrev v hodinách s najnižšou cenou a šetrí životnosť vašej domácej batérie.
-                    </p>
-                </div>
-
-                <!-- Cenový box -->
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <span class="text-xs text-slate-400 block uppercase font-bold">Cena regulátora</span>
-                        <div class="text-3xl font-black text-brand-dark">89.00 € <span class="text-sm font-semibold text-slate-400">s DPH</span></div>
-                        <span class="text-[11px] text-emerald-600 font-bold">Skladom • Doprava zadarmo</span>
-                    </div>
-                    
-                    <a href="../../eshop/index.html" class="bg-brand-green hover:bg-emerald-600 text-white font-black px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-md hover:shadow-lg">
-                        Kúpiť v E-Shope ➔
+        <!-- HERO SECTION -->
+        <section class="max-w-7xl mx-auto px-6 py-12 lg:py-20 grid lg:grid-cols-12 gap-12 items-center text-left">
+            <div class="lg:col-span-7 space-y-6">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-500 border border-blue-500/20 font-mono hero-badge-pulse">
+                    INTELIGENTNÝ OHREV VODY
+                </span>
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-none">
+                    Ohrev vody zadarmo zo <span class="text-brand-green">slnečných prebytkov</span>
+                </h1>
+                <p class="text-sm text-slate-500 leading-relaxed max-w-lg">
+                    Smart Bojler Regulátor automaticky zopína ohrev v hodinách, keď je elektrina najlacnejšia alebo dokonca záporná. Využite 100% solárnych prebytkov namiesto ich predaja do siete za smiešnu cenu.
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    <a href="#kalkulacka" class="px-5 py-3 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-xs font-bold transition shadow-lg shadow-emerald-500/15 uppercase tracking-wider btn-glow">
+                        Spočítať úsporu
+                    </a>
+                    <a href="#dopyt" class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition uppercase tracking-wider">
+                        Zostaviť dopyt
                     </a>
                 </div>
+            </div>
 
-                <!-- Kľúčové funkcie -->
-                <div class="space-y-3 pt-2">
-                    <h3 class="text-sm font-extrabold text-brand-dark uppercase tracking-wider">Prečo sa tento regulátor oplatí:</h3>
+            <!-- Vizuál zariadenia -->
+            <div class="lg:col-span-5 relative">
+                <div class="rounded-3xl border border-slate-200 bg-slate-900 h-80 relative overflow-hidden shadow-xl flex flex-col items-center justify-center p-8">
+                    <span class="text-8xl block select-none float-anim">♨️</span>
+                    <div class="absolute bottom-6 text-center space-y-1">
+                        <h3 class="text-xs font-black text-white font-mono uppercase tracking-widest">ElvoSolar Bojler Regulátor</h3>
+                        <p class="text-[9px] text-slate-400">3.5 kW • DIN lišta • Wi-Fi / Modbus</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEKCIA: APLIKÁCIA -->
+        <section id="apka" class="py-20 bg-slate-50 border-y border-slate-100 text-left">
+            <div class="max-w-7xl mx-auto px-6 space-y-16">
+                
+                <div class="text-center max-w-xl mx-auto space-y-2">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block">SLEDUJTE V APLIKÁCII</span>
+                    <h2 class="text-3xl font-bold text-brand-dark">Automatický ohrev v reálnom čase</h2>
+                    <p class="text-slate-500 text-sm">Vizuálne stvárnenie obrazoviek aplikácie pre riadenie bojlera.</p>
+                </div>
+
+                <!-- 2 PHONE MOCKUPS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                     
-                    <div class="space-y-2 text-xs text-slate-600">
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-2.5">
-                            <span class="text-base">💰</span>
-                            <div>
-                                <strong class="text-slate-800">Ohrev vody so ziskom:</strong>
-                                <p class="text-[11px] text-slate-500 mt-0.5">V čase záporných cien na slovenskom trhu OKTE vám systém zohreje bojler a vy za odber elektriny ešte zarobíte.</p>
+                    <!-- Obrazovka 1: Stav bojlera -->
+                    <div class="phone-mockup p-5 flex flex-col justify-between h-[420px] text-slate-800">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 border-b border-slate-100 pb-2">
+                                <span class="text-slate-800">9:41</span>
+                                <span class="font-bold text-slate-800">Stav bojlera</span>
+                                <span>📶 🔋</span>
+                            </div>
+
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-3">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg">♨️</span>
+                                        <div>
+                                            <h4 class="text-xs font-black text-slate-800">Bojler TÚV</h4>
+                                            <span class="text-[9px] text-emerald-500 font-mono">Online - Ohrev aktívny</span>
+                                        </div>
+                                    </div>
+                                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                </div>
+                                <!-- Teplotný progress -->
+                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                    <div class="bg-brand-green h-2 rounded-full" style="width: 65%"></div>
+                                </div>
+                                <div class="flex justify-between text-[9px] font-mono text-slate-500">
+                                    <span>Aktuálna: 42°C</span>
+                                    <span>Cieľ: 65°C</span>
+                                </div>
+                            </div>
+
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-3">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg">💰</span>
+                                        <div>
+                                            <h4 class="text-xs font-black text-slate-800">Cena energie</h4>
+                                            <span class="text-[9px] text-emerald-500 font-mono">Záporná cena!</span>
+                                        </div>
+                                    </div>
+                                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                </div>
+                                <div class="flex gap-2 text-[8px] font-mono">
+                                    <span class="bg-emerald-50 border border-emerald-200 px-2 py-1 rounded text-emerald-700 font-bold">-12.50 €/MWh</span>
+                                    <span class="bg-white border border-slate-200 px-2 py-1 rounded text-slate-500">OKTE DAM</span>
+                                </div>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-brand-green/10 border border-brand-green/20 text-center">
+                                <span class="text-[9px] font-bold text-brand-green uppercase tracking-wider">Automatika: ZAP</span>
+                                <p class="text-[8px] text-slate-500 mt-0.5">Ohrev bude pokračovať kým cena stúpne nad 0 €/MWh</p>
                             </div>
                         </div>
+                        <span class="text-[9px] text-slate-400 font-mono text-center">Kompatibilné s CM5 AI EMS.</span>
+                    </div>
 
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-2.5">
-                            <span class="text-base">☀️</span>
-                            <div>
-                                <strong class="text-slate-800">100% Solárne prebytky:</strong>
-                                <p class="text-[11px] text-slate-500 mt-0.5">Namiesto lacného odovzdávania elektriny do distribučnej siete ju akumulujete do tepla v zásobníku vody.</p>
+                    <!-- Obrazovka 2: Štatistiky -->
+                    <div class="phone-mockup p-5 flex flex-col justify-between h-[420px] text-slate-800">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 border-b border-slate-100 pb-2">
+                                <span class="text-slate-800">9:41</span>
+                                <span class="font-bold text-slate-800">Štatistiky</span>
+                                <span>📶 🔋</span>
+                            </div>
+
+                            <div class="text-center space-y-1">
+                                <span class="text-[8px] uppercase tracking-wider text-slate-400 font-bold block">Ušetrené na ohreve vody</span>
+                                <div class="text-2xl font-black text-emerald-500 font-mono">23.40 €</div>
+                                <span class="text-[9px] text-slate-400">za posledný mesiac</span>
+                            </div>
+
+                            <div class="visual-bar-chart relative">
+                                <div class="w-3 h-8 bg-emerald-500/20 rounded-t-sm"></div>
+                                <div class="w-3 h-12 bg-emerald-500/30 rounded-t-sm"></div>
+                                <div class="w-3 h-6 bg-emerald-500/40 rounded-t-sm"></div>
+                                <div class="w-3 h-20 bg-brand-green rounded-t-sm relative"><span class="absolute -top-3 left-0 text-brand-green font-bold text-[7px]">Max</span></div>
+                                <div class="w-3 h-14 bg-emerald-500/40 rounded-t-sm"></div>
+                                <div class="w-3 h-10 bg-emerald-500/30 rounded-t-sm"></div>
+                                <div class="w-3 h-5 bg-emerald-500/20 rounded-t-sm"></div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-center font-mono text-[9px]">
+                                <div class="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                    <span class="text-slate-400 block uppercase font-bold text-[7px]">Záporné ceny</span>
+                                    <strong class="text-emerald-600">14 hod.</strong>
+                                </div>
+                                <div class="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                    <span class="text-slate-400 block uppercase font-bold text-[7px]">Solárne prebytky</span>
+                                    <strong class="text-brand-green font-bold">6.2 kWh</strong>
+                                </div>
                             </div>
                         </div>
+                        <span class="text-[9px] text-slate-400 font-mono text-center">Prepojené s cenami OKTE DAM.</span>
+                    </div>
 
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-2.5">
-                            <span class="text-base">🔗</span>
-                            <div>
-                                <strong class="text-slate-800">Priame prepojenie s CM5:</strong>
-                                <p class="text-[11px] text-slate-500 mt-0.5">Plne integrovaný cez Wi-Fi / LAN alebo Modbus TCP do riadiacej jednotky ElvoSolar CM5 AI EMS.</p>
+                </div>
+
+                <!-- ŠTATISTIKY ÚSPOR -->
+                <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto pt-8">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5 card-premium">
+                        <span class="text-4xl">📉</span>
+                        <div>
+                            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Priemerná cena nákupu</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-slate-400 line-through text-xs">80 €</span>
+                                <strong class="text-xl font-mono text-slate-900">32 € / MWh</strong>
                             </div>
+                            <span class="text-[10px] text-emerald-500 font-bold block mt-1">-60% vďaka záporným cenám</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5 card-premium">
+                        <span class="text-4xl">💰</span>
+                        <div>
+                            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Ročná úspora na TÚV</span>
+                            <strong class="text-xl font-mono text-emerald-500">280 € / ročne</strong>
+                            <span class="text-[10px] text-slate-400 block mt-1">Pre 4-člennú domácnosť</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5 card-premium">
+                        <span class="text-4xl">⚡</span>
+                        <div>
+                            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Výkon zariadenia</span>
+                            <strong class="text-xl font-mono text-slate-900">3 500 W</strong>
+                            <span class="text-[10px] text-slate-400 block mt-1">16A / 230V • DIN lišta</span>
                         </div>
                     </div>
                 </div>
 
+                <!-- RECENZIA ZÁKAZNÍKA -->
+                <div class="p-8 rounded-3xl bg-slate-900 text-white max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-6 shadow-lg border border-slate-800">
+                    <span class="text-5xl block">🏡</span>
+                    <div class="space-y-2 flex-grow text-center md:text-left">
+                        <span class="bg-brand-green/20 text-brand-green text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider font-mono">Skúsenosť zákazníka</span>
+                        <h4 class="text-lg font-bold">Rodina Novákovcov ušetrila 340 € za rok na ohreve vody</h4>
+                        <p class="text-slate-300 text-xs leading-relaxed">
+                            "Predtým sme nechávali bojler bežať nonstop. Teraz sa automaticky ohrieva v noci keď je elektrina zadarmo a cez deň zo solárnych prebytkov. Voda je teplá vždy, keď ju potrebujeme."
+                        </p>
+                    </div>
+                </div>
+
             </div>
-        </div>
+        </section>
+
+        <!-- Kľúčové funkcie -->
+        <section class="py-20 bg-white border-b border-slate-100 text-left">
+            <div class="max-w-7xl mx-auto px-6 space-y-12">
+                <div class="text-center max-w-xl mx-auto space-y-2">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block">AKO TO FUNGUJE</span>
+                    <h2 class="text-3xl font-bold text-brand-dark">Prečo sa tento regulátor oplatí</h2>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <div class="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-4 card-premium">
+                        <span class="text-4xl block">💰</span>
+                        <h3 class="text-lg font-bold text-brand-dark">Ohrev vody so ziskom</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">V čase záporných cien na slovenskom trhu OKTE vám systém zohreje bojler a vy za odber elektriny ešte zarobíte. Systém automaticky detekuje záporné ceny a spúšťa ohrev.</p>
+                    </div>
+
+                    <div class="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-4 card-premium">
+                        <span class="text-4xl block">☀️</span>
+                        <h3 class="text-lg font-bold text-brand-dark">100% Solárne prebytky</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">Namiesto lacného odovzdávania elektriny do distribučnej siete ju akumulujete do tepla v zásobníku vody. Každý watt z fotovoltiky sa využije naplno.</p>
+                    </div>
+
+                    <div class="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-4 card-premium">
+                        <span class="text-4xl block">🔗</span>
+                        <h3 class="text-lg font-bold text-brand-dark">Priame prepojenie s CM5</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">Plne integrovaný cez Wi-Fi / LAN alebo Modbus TCP do riadiacej jednotky ElvoSolar CM5 AI EMS. Jednoduchá konfigurácia cez mobilnú aplikáciu.</p>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto pt-4">
+                    <div class="p-5 bg-white rounded-2xl border border-slate-200 flex items-start gap-3">
+                        <span class="text-emerald-500 text-lg mt-0.5">✓</span>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800">Montáž na DIN lištu</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Jednoduchá inštalácia do rozvodnej skrine bez dodatočných úprav.</p>
+                        </div>
+                    </div>
+                    <div class="p-5 bg-white rounded-2xl border border-slate-200 flex items-start gap-3">
+                        <span class="text-emerald-500 text-lg mt-0.5">✓</span>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800">Výkon až 3 500 W (16A)</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Postačujúce pre väčšinu domácich bojlerov a zásobníkov TÚV.</p>
+                        </div>
+                    </div>
+                    <div class="p-5 bg-white rounded-2xl border border-slate-200 flex items-start gap-3">
+                        <span class="text-emerald-500 text-lg mt-0.5">✓</span>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800">Ochrana pred zápornými cenami</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Automatické zapnutie ohrevu pri záporných cenách na OKTE burze.</p>
+                        </div>
+                    </div>
+                    <div class="p-5 bg-white rounded-2xl border border-slate-200 flex items-start gap-3">
+                        <span class="text-emerald-500 text-lg mt-0.5">✓</span>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800">Diaľkové ovládanie cez appku</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Kedykoľvek a odkiaľkoľvek skontrolujete stav a nastavenia bojlera.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- KALKULAČKA ÚSPORY -->
+        <section id="kalkulacka" class="py-20 bg-slate-50 border-b border-slate-100 text-left">
+            <div class="max-w-7xl mx-auto px-6 space-y-12">
+                <div class="text-center max-w-xl mx-auto space-y-2">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block">VÝPOČET NÁVRATNOSTI</span>
+                    <h2 class="text-3xl font-bold text-brand-dark">Spočítajte si ročnú úsporu na TÚV</h2>
+                    <p class="text-slate-500 text-sm">Zadajte počet členov domácnosti a zistite odhadovanú úsporu.</p>
+                </div>
+
+                <div class="max-w-3xl mx-auto p-6 md:p-8 bg-white rounded-3xl border border-slate-200 shadow-sm grid md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                                <span>Počet členov domácnosti</span>
+                                <span id="peopleVal" class="text-brand-green font-mono">4 osoby</span>
+                            </div>
+                            <input type="range" id="peopleSlider" min="1" max="8" step="1" value="4" oninput="calculateSavings()" class="w-full accent-emerald-500 cursor-pointer">
+                        </div>
+                        <div>
+                            <div class="flex-between text-xs font-bold text-slate-600 mb-1 flex justify-between">
+                                <span>Výkon bojlera</span>
+                                <span id="powerVal" class="text-brand-green font-mono">200 L</span>
+                            </div>
+                            <input type="range" id="powerSlider" min="80" max="500" step="20" value="200" oninput="calculateSavings()" class="w-full accent-emerald-500 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-slate-50 border border-slate-100 text-center space-y-2">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Ročná úspora s regulátorom</span>
+                        <div id="savingsResult" class="text-3xl font-black text-brand-green font-mono">280.00 € / ročne</div>
+                        <span class="text-[9px] text-slate-500 block leading-tight">Návratnosť investície: <strong id="paybackResult" class="text-slate-800">menej ako 4 mesiace</strong></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DOPYTOVÝ SYSTÉM -->
+        <section id="dopyt" class="max-w-7xl mx-auto px-6 py-20 space-y-12 text-left">
+            <div class="text-center max-w-xl mx-auto space-y-2">
+                <span class="text-brand-green text-xs font-bold uppercase tracking-wider block">OBJEDNÁVKA</span>
+                <h2 class="text-3xl font-bold text-brand-dark">Kúpte si Smart Bojler Regulátor</h2>
+                <p class="text-slate-500 text-sm">Pridajte si regulátor do košíka alebo nás kontaktujte pre konzultáciu.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                
+                <div class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-brand-green transition card-premium flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-4xl p-2.5 bg-slate-50 rounded-2xl">♨️</span>
+                            <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-500 border border-blue-500/20">Skladom</span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900">Smart Bojler Regulátor 3.5 kW</h3>
+                            <p class="text-[11px] text-slate-500 leading-normal mt-1">Kompletné zariadenie na DIN lištu s Wi-Fi pripojením pre automatické riadenie ohrevu TÚV.</p>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[9px] text-slate-400 block uppercase font-bold">Cena s DPH</span>
+                            <div class="text-lg font-black text-brand-dark font-mono">89.00 €</div>
+                        </div>
+                        <a href="../../eshop/index.html" class="px-3.5 py-2 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition btn-glow">Kúpiť v E-Shope</a>
+                    </div>
+                </div>
+
+                <div class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-brand-green transition card-premium flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-4xl p-2.5 bg-slate-50 rounded-2xl">🧠</span>
+                            <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-brand-green border border-emerald-500/20">Odporúčané</span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900">CM5 AI EMS + Bojler Regulátor</h3>
+                            <p class="text-[11px] text-slate-500 leading-normal mt-1">Kompletný set: riadiaca jednotka CM5 pre FVE + bojler regulátor pre automatický ohrev vody.</p>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[9px] text-slate-400 block uppercase font-bold">Set cena s DPH</span>
+                            <div class="text-lg font-black text-brand-dark font-mono">268.00 €</div>
+                        </div>
+                        <a href="../../eshop/index.html" class="px-3.5 py-2 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition btn-glow">Kúpiť set</a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="bg-slate-50 py-16 border-t border-slate-200 text-left">
+            <div class="max-w-4xl mx-auto px-6 space-y-8">
+                <div class="text-center space-y-2">
+                    <h2 class="text-3xl font-bold text-brand-dark">Často kladené otázky</h2>
+                    <p class="text-slate-500 text-sm">Všetko, čo potrebujete vedieť o Smart Bojler Regulátore.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 cursor-pointer hover:border-brand-green/30 transition" onclick="toggleFaq(1)">
+                        <div class="flex justify-between items-center">
+                            <strong class="text-xs text-slate-800">Ako funguje ohrev pri záporných cenách?</strong>
+                            <span id="faqIcon-1" class="text-slate-400 transition-transform">+</span>
+                        </div>
+                        <p id="faqAns-1" class="hidden text-[11px] text-slate-500 mt-3 leading-relaxed">
+                            Regulátor monitoruje ceny elektriny na slovenskom spotovom trhu OKTE v reálnom čase. Keď cena klesne pod nulu (záporná cena), automaticky zapne ohrev bojlera. Vy nielenže neplatíte za elektrinu, ale ešte dostanete zaplatené za jej odber. Systém automaticky vypne ohrev keď cena stúpne nad nastavený limit.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 cursor-pointer hover:border-brand-green/30 transition" onclick="toggleFaq(2)">
+                        <div class="flex justify-between items-center">
+                            <strong class="text-xs text-slate-800">Môžem regulátor použiť aj bez CM5?</strong>
+                            <span id="faqIcon-2" class="text-slate-400 transition-transform">+</span>
+                        </div>
+                        <p id="faqAns-2" class="hidden text-[11px] text-slate-500 mt-3 leading-relaxed">
+                            Áno, regulátor funguje samostatne cez Wi-Fi pripojenie k internetu. Pre plnú integráciu s fotovoltikou a ďalšími zariadeniami však odporúčame kombináciu s CM5 AI EMS, ktorá umožňuje koordinované riadenie celého energetického systému.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 cursor-pointer hover:border-brand-green/30 transition" onclick="toggleFaq(3)">
+                        <div class="flex justify-between items-center">
+                            <strong class="text-xs text-slate-800">Aká je návratnosť investície?</strong>
+                            <span id="faqIcon-3" class="text-slate-400 transition-transform">+</span>
+                        </div>
+                        <p id="faqAns-3" class="hidden text-[11px] text-slate-500 mt-3 leading-relaxed">
+                            Pri bežnej 4-člennej domácnosti sa investícia 89 € vráti už za 3-4 mesiace. Priemerne ušetríte 280 € ročne na nákladoch na ohrev teplej úžitkovej vody. Pri väčších bojleroch a viacerých členoch domácnosti môže byť úspora ešte vyššia.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
+    <!-- Back to Top -->
+    <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 left-6 z-50 w-11 h-11 rounded-full bg-brand-dark hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all" aria-label="Späť hore">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+    </button>
+
     <!-- Pätička -->
-    <footer class="bg-slate-950 text-slate-500 py-8 text-xs mt-auto border-t border-slate-900">
+    <footer class="bg-slate-950 text-slate-500 py-10 text-xs mt-auto border-t border-slate-900">
         <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <p>© 2026 ELVOSOLAR a.s. Všetky práva vyhradené.</p>
             <p class="text-slate-600">Inteligentné energetické riadenie pre Slovensko.</p>
         </div>
     </footer>
+
+    <script>
+        // Kalkulačka
+        function calculateSavings() {
+            const people = parseFloat(document.getElementById('peopleSlider').value);
+            const liters = parseFloat(document.getElementById('powerSlider').value);
+            document.getElementById('peopleVal').innerText = people + ' osoby';
+            document.getElementById('powerVal').innerText = liters + ' L';
+            
+            const dailyUsage = people * 50; // 50L per person
+            const heatingCostPerDay = (dailyUsage * 0.06) * 0.20; // electricity cost
+            const savingsPerDay = heatingCostPerDay * 0.65; // 65% savings with smart control
+            const yearlySavings = savingsPerDay * 365;
+            
+            document.getElementById('savingsResult').innerText = yearlySavings.toFixed(2) + ' € / ročne';
+            const payback = 89.00 / yearlySavings;
+            const paybackMonths = Math.round(payback * 12);
+            document.getElementById('paybackResult').innerText = paybackMonths < 1 ? 'okamžitá' : paybackMonths + ' mesiacov';
+        }
+
+        // FAQ
+        function toggleFaq(id) {
+            const ans = document.getElementById('faqAns-' + id);
+            const icon = document.getElementById('faqIcon-' + id);
+            if (ans.classList.contains('hidden')) {
+                ans.classList.remove('hidden');
+                icon.textContent = '−';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                ans.classList.add('hidden');
+                icon.textContent = '+';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Scroll Reveal + Back to Top
+        document.addEventListener('DOMContentLoaded', () => {
+            calculateSavings();
+            
+            const revealElements = document.querySelectorAll('section > div, .card-premium, main > div');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry, i) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.style.opacity = '1';
+                            entry.target.style.transform = 'translateY(0)';
+                        }, i * 80);
+                        revealObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08 });
+            revealElements.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                revealObserver.observe(el);
+            });
+
+            const backToTop = document.getElementById('back-to-top');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 400) backToTop.classList.add('show');
+                else backToTop.classList.remove('show');
+            });
+        });
+    </script>
 </body>
 </html>

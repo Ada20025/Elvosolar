@@ -503,6 +503,120 @@ elseif (preg_match('#^/api/device/([0-9]+)/holiday-mode$#', $path, $matches)) {
     }
 }
 
+// --- SMART METER: ŽIVÉ DÁTA ---
+elseif (preg_match('#^/api/device/([0-9]+)/meter$#', $path, $matches)) {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $device = $stmt->fetch();
+    if (!$device) send_json(['error' => 'Device not found'], 404);
+
+    if ($method === 'GET') {
+        // Načítanie živých meter dát z cache (naplnené cez cloud sync)
+        $meter_cache_file = __DIR__ . '/cache_meter_' . $device_id . '.json';
+        $meter_data = [
+            'house_consumption_w' => 0.0,
+            'house_consumption_kwh_today' => 0.0,
+            'grid_import_w' => 0.0,
+            'grid_export_w' => 0.0,
+            'fve_surplus_w' => 0.0,
+            'control_mode' => 'SMART',
+            'meter_mode' => 'NONE',
+            'avg_consumption_w' => 0.0,
+            'peak_consumption_w' => 0.0,
+            'min_consumption_w' => 0.0,
+            'history' => []
+        ];
+        
+        if (file_exists($meter_cache_file)) {
+            $cached = json_decode(file_get_contents($meter_cache_file), true);
+            if ($cached) $meter_data = array_merge($meter_data, $cached);
+        }
+        
+        // Načítanie histórie spotreby (posledných 48 hodinových záznamov)
+        $stmt = $pdo->prepare("SELECT timestamp, power_ac, battery_soc, temp FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 48");
+        $stmt->execute([$device_id]);
+        $history = [];
+        foreach (array_reverse($stmt->fetchAll()) as $row) {
+            $history[] = [
+                'timestamp' => (int)$row['timestamp'],
+                'power_ac' => (float)$row['power_ac'],
+                'battery_soc' => (float)$row['battery_soc'],
+                'temp' => (float)$row['temp']
+            ];
+        }
+        $meter_data['history'] = $history;
+        
+        send_json(['status' => 'success', 'meter' => $meter_data]);
+    }
+    elseif ($method === 'POST') {
+        // Nastavenie režimu riadenia (UNLIMITED, SELF_CONSUMPTION, SMART)
+        $data = get_json_input();
+        $new_mode = strtoupper(trim($data['control_mode'] ?? ''));
+        
+        if (!in_array($new_mode, ['UNLIMITED', 'SELF_CONSUMPTION', 'SMART'])) {
+            send_json(['error' => 'Neplatný režim. Povolené: UNLIMITED, SELF_CONSUMPTION, SMART'], 400);
+        }
+        
+        $ai_state = get_device_ai_state_php($device_id);
+        if (!isset($ai_state['smart_meter'])) $ai_state['smart_meter'] = [];
+        $ai_state['smart_meter']['control_mode'] = $new_mode;
+        save_device_ai_state_php($device_id, $ai_state);
+        
+        send_json(['status' => 'success', 'control_mode' => $new_mode, 'message' => 'Režim riadenia nastavený na ' . $new_mode]);
+    }
+}
+
+// --- SMART METER: KONFIGURÁCIA ---
+elseif (preg_match('#^/api/device/([0-9]+)/meter/config$#', $path, $matches)) {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $device = $stmt->fetch();
+    if (!$device) send_json(['error' => 'Device not found'], 404);
+
+    if ($method === 'GET') {
+        $ai_state = get_device_ai_state_php($device_id);
+        $meter_config = $ai_state['smart_meter_config'] ?? [
+            'meter_mode' => 'NONE',
+            'meter_slave_id' => 1,
+            'meter_baudrate' => 9600,
+            'meter_parity' => 'N',
+            'reg_import_wh' => '',
+            'reg_export_wh' => '',
+            'reg_import_w' => '',
+            'reg_export_w' => '',
+            'reg_consumption_w' => '',
+            's0_impulses_per_kwh' => 1000,
+            'cloud_api_url' => '',
+        ];
+        send_json(['status' => 'success', 'config' => $meter_config]);
+    }
+    elseif ($method === 'POST') {
+        $data = get_json_input();
+        $ai_state = get_device_ai_state_php($device_id);
+        $ai_state['smart_meter_config'] = [
+            'meter_mode' => trim($data['meter_mode'] ?? 'NONE'),
+            'meter_slave_id' => intval($data['meter_slave_id'] ?? 1),
+            'meter_baudrate' => intval($data['meter_baudrate'] ?? 9600),
+            'meter_parity' => trim($data['meter_parity'] ?? 'N'),
+            'reg_import_wh' => trim($data['reg_import_wh'] ?? ''),
+            'reg_export_wh' => trim($data['reg_export_wh'] ?? ''),
+            'reg_import_w' => trim($data['reg_import_w'] ?? ''),
+            'reg_export_w' => trim($data['reg_export_w'] ?? ''),
+            'reg_consumption_w' => trim($data['reg_consumption_w'] ?? ''),
+            's0_impulses_per_kwh' => intval($data['s0_impulses_per_kwh'] ?? 1000),
+            'cloud_api_url' => trim($data['cloud_api_url'] ?? ''),
+        ];
+        save_device_ai_state_php($device_id, $ai_state);
+        send_json(['status' => 'success', 'message' => 'Konfigurácia smart meradla uložená.']);
+    }
+}
+
 // --- TELEMETRIA SYNC ---
 elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     $data = get_json_input();
@@ -552,6 +666,20 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             save_device_ai_state_php($device_id, $ai_state);
         }
 
+        // Uloženie smart meter dát do cache
+        if (isset($data['house_consumption_w']) || isset($data['meter_control_mode'])) {
+            $meter_cache = [
+                'house_consumption_w' => floatval($data['house_consumption_w'] ?? 0),
+                'grid_import_w' => floatval($data['grid_import_w'] ?? 0),
+                'grid_export_w' => floatval($data['grid_export_w'] ?? 0),
+                'control_mode' => $data['meter_control_mode'] ?? 'SMART',
+                'meter_mode' => $data['meter_mode'] ?? 'NONE',
+                'fve_surplus_w' => max(0, $power_ac - floatval($data['house_consumption_w'] ?? 0)),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            @file_put_contents(__DIR__ . '/cache_meter_' . $device_id . '.json', json_encode($meter_cache));
+        }
+
         send_json([
             'status' => 'success',
             'timestamp' => $timestamp,
@@ -562,7 +690,8 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                 'live_okte_price' => $okte_price,
                 'holiday_mode'    => $ai_state['holiday_mode'] ?? null,
                 'rules_config'    => $ai_state['rules_config'] ?? null,
-                'custom_rules'    => $ai_state['custom_rules'] ?? null
+                'custom_rules'    => $ai_state['custom_rules'] ?? null,
+                'meter_control_mode' => ($ai_state['smart_meter']['control_mode'] ?? 'SMART')
             ]
         ]);
     } catch (PDOException $e) {

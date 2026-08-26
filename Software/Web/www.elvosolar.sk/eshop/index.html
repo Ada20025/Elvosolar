@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Shop & Objednávka | ELVOSOLAR a.s.</title>
+    <title>Smart Riešenia & E-Shop | ELVOSOLAR a.s.</title>
     <link rel="icon" type="image/png" href="../Png/download.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -25,6 +25,19 @@
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); } 50% { box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.15); } }
+        .card-premium { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-premium:hover { transform: translateY(-6px); box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); }
+        .btn-glow { position: relative; overflow: hidden; }
+        .btn-glow::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); transform: translateX(-100%); transition: transform 0.6s; }
+        .btn-glow:hover::after { transform: translateX(100%); }
+        .hero-badge-pulse { animation: pulse-glow 2s ease-in-out infinite; }
+        #back-to-top { opacity: 0; pointer-events: none; transition: all 0.3s; }
+        #back-to-top.show { opacity: 1; pointer-events: auto; }
+        .gradient-text { background: linear-gradient(135deg, #10b981, #06b6d4, #10b981); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer 3s linear infinite; }
+        .product-img { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-premium:hover .product-img { transform: scale(1.05); }
     </style>
 </head>
 <body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen relative overflow-x-hidden">
@@ -191,6 +204,19 @@
                     </div>
                 </div>
 
+                <!-- ZHRNUTIE OBJEDNAVKY -->
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div class="flex items-center gap-1.5 text-slate-900 font-extrabold uppercase text-[11px] tracking-wider">
+                        <span>📋 Zhrnutie objednávky</span>
+                    </div>
+                    <div id="orderSummaryList" class="space-y-2 text-xs"></div>
+                    <div class="border-t border-slate-200 pt-2">
+                        <div class="flex justify-between text-slate-500"><span>Medzisúčet bez DPH:</span> <span id="summarySubtotal" class="font-mono text-slate-800 font-bold">0.00 €</span></div>
+                        <div class="flex justify-between text-slate-500"><span>DPH (20%):</span> <span id="summaryVat" class="font-mono text-slate-600">0.00 €</span></div>
+                        <div class="flex justify-between text-slate-500"><span>Doprava:</span> <span class="font-mono text-emerald-600 font-bold">ZADARMO</span></div>
+                    </div>
+                </div>
+
                 <!-- SÚHRN SUMY -->
                 <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-between">
                     <div>
@@ -281,15 +307,14 @@
         
         <!-- HERO BANNER -->
         <div class="p-8 md:p-10 rounded-3xl bg-gradient-to-r from-brand-dark via-slate-800 to-slate-900 text-white space-y-4 relative overflow-hidden shadow-xl">
-            <div class="max-w-3xl space-y-3 relative z-10">
-                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    ⚡ Oficiálny ElvoSolar E-Shop
+            <div class="max-w-3xl space-y-3 relative z-10">                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hero-badge-pulse">
+                    ⚡ Smart riešenia pre energetiku
                 </span>
                 <h1 class="text-3xl md:text-4xl font-black tracking-tight leading-tight">
                     Inteligentné fotovoltické systémy & príslušenstvo
                 </h1>
                 <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
-                    Vložte si riadiacu jednotku Raspberry Pi CM5, smart bojler regulátory alebo Modbus elektromery do košíka a objednajte s doručením kuriérom zadarmo po celom Slovensku.
+                    Riadiace jednotky, smart bojlery, elektromery a ďalšie zariadenia pre optimalizáciu vašej energie. Doručenie zadarmo po celom Slovensku.
                 </p>
             </div>
         </div>
@@ -311,8 +336,13 @@
 
     </main>
 
+    <!-- Back to Top -->
+    <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 left-6 z-50 w-11 h-11 rounded-full bg-brand-dark hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all" aria-label="Späť hore">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+    </button>
+
     <!-- PÄTIČKA -->
-    <footer class="bg-slate-950 text-slate-500 py-8 text-xs mt-auto border-t border-slate-900">
+    <footer class="bg-slate-950 text-slate-500 py-10 text-xs mt-auto border-t border-slate-900">
         <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <p>© 2026 ELVOSOLAR a.s. Všetky práva vyhradené.</p>
             <p class="text-slate-600">Inteligentné energetické riadenie pre Slovensko.</p>
@@ -401,7 +431,7 @@
             const filtered = filter === 'ALL' ? PRODUCTS : PRODUCTS.filter(p => p.category === filter);
 
             grid.innerHTML = filtered.map(p => `
-                <div class="p-6 rounded-3xl bg-white border border-slate-200 hover:shadow-xl transition flex flex-col justify-between space-y-4">
+                <div class="p-6 rounded-3xl bg-white border border-slate-200 hover:shadow-xl transition flex flex-col justify-between space-y-4 card-premium">
                     <div class="space-y-3">
                         <div class="flex items-start justify-between">
                             <span class="text-4xl p-3 rounded-2xl bg-slate-50 border border-slate-100">${p.icon}</span>
@@ -520,6 +550,29 @@
             }
             closeCart();
             document.getElementById('checkoutModal').classList.remove('hidden');
+            populateOrderSummary();
+        }
+
+        function populateOrderSummary() {
+            const summaryList = document.getElementById('orderSummaryList');
+            if (!summaryList) return;
+            let subtotal = 0;
+            summaryList.innerHTML = cart.map(item => {
+                const itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+                return `<div class="flex justify-between items-center py-1.5 border-b border-slate-100 last:border-0">
+                    <div class="flex items-center gap-2">
+                        <span>${item.icon || '📦'}</span>
+                        <span class="font-semibold text-slate-700">${item.name}</span>
+                        <span class="text-slate-400">×${item.qty}</span>
+                    </div>
+                    <span class="font-mono font-bold text-slate-800">${itemTotal.toFixed(2)} €</span>
+                </div>`;
+            }).join('');
+            const vat = subtotal * 0.20;
+            document.getElementById('summarySubtotal').innerText = (subtotal - vat).toFixed(2) + ' €';
+            document.getElementById('summaryVat').innerText = vat.toFixed(2) + ' €';
+            document.getElementById('checkoutFinalTotal').innerText = subtotal.toFixed(2) + ' €';
         }
 
         function closeCheckoutModal() {
@@ -572,12 +625,38 @@
 
         function closeSuccessModal() {
             document.getElementById('orderSuccessModal').classList.add('hidden');
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
+        }        document.addEventListener('DOMContentLoaded', () => {
             renderProducts();
             updateCartUI();
+
+            // Scroll Reveal
+            const revealElements = document.querySelectorAll('main > div, .card-premium');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry, i) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.style.opacity = '1';
+                            entry.target.style.transform = 'translateY(0)';
+                        }, i * 80);
+                        revealObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08 });
+            revealElements.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                revealObserver.observe(el);
+            });
+
+            // Back to Top
+            const backToTop = document.getElementById('back-to-top');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 400) backToTop.classList.add('show');
+                else backToTop.classList.remove('show');
+            });
         });
     </script>
+
 </body>
 </html>

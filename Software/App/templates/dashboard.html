@@ -1,307 +1,841 @@
-<!-- App/templates/dashboard.html -->
 <!DOCTYPE html>
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Súhrnná nástenka | ElvoSolar</title>
-    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Prehľad | ElvoControl</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b82f6'/><text x='50' y='68' font-family='Arial' font-weight='900' font-size='60' fill='white' text-anchor='middle'>E</text></svg>">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#020617">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brandBlue: '#007aff',
-                        brandTeal: '#0d9488',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        :root {
-            --bg-color: #040811;
-            --card-bg: rgba(11, 17, 30, 0.7);
-            --card-hover: rgba(30, 41, 59, 0.8);
-            --border-color: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --header-bg: #090d16;
-            --input-bg: #0f172a;
-        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            transition: background-color 0.25s ease, color 0.25s ease;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            background: #020617;
+            color: #f8fafc;
         }
 
-        .custom-card {
-            background-color: var(--card-bg);
-            border-color: var(--border-color);
-            backdrop-filter: blur(12px);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Background orbs */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(180px);
+            opacity: 0.10;
+            pointer-events: none;
+            z-index: 0;
+            animation: orbFloat 25s ease-in-out infinite;
+        }
+        .bg-orb-1 { width: 650px; height: 650px; background: radial-gradient(circle, #6366f1, transparent 70%); top: -250px; left: -200px; }
+        .bg-orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #3b82f6, transparent 70%); bottom: -200px; right: -150px; animation-delay: -12s; }
+        .bg-orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, #818cf8, transparent 70%); top: 35%; left: 45%; animation-delay: -6s; }
+        @keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 33% { transform: translate(30px, -40px); } 66% { transform: translate(-20px, 30px); } }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(2, 6, 23, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
         }
 
-        .custom-card:hover {
-            background-color: var(--card-hover);
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+        }
+
+        .brand-icon svg { width: 18px; height: 18px; }
+
+        .brand-text {
+            font-size: 16px;
+            font-weight: 900;
+            color: #f8fafc;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-tag {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #6366f1;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 14px 6px 6px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .header-user:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 800;
+            color: white;
+        }
+
+        .user-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: #cbd5e1;
+        }
+
+        /* Main content */
+        .main-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        /* Page header */
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #f8fafc, #64748b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.3));
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 18px;
+            padding: 22px;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent, #6366f1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(255, 255, 255, 0.08);
             transform: translateY(-2px);
-            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.4);
         }
 
-        @keyframes pulse-red {
-            0%, 100% { border-color: #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.35); }
-            50% { border-color: #fda4af; box-shadow: 0 0 4px rgba(244, 63, 94, 0.1); }
-        }
-        .card-error {
-            animation: pulse-red 2s infinite ease-in-out !important;
+        .stat-card:hover::before {
+            opacity: 1;
         }
 
-        @keyframes toast-slide-in {
-            from { transform: translateX(120%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .toast-animate {
-            animation: toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
 
-        .custom-text-secondary {
-            color: var(--text-secondary);
+        .stat-card .stat-value {
+            background: linear-gradient(90deg, currentColor 0%, rgba(255,255,255,0.9) 50%, currentColor 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .custom-border {
-            border-color: var(--border-color);
+        .stat-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #475569;
+            margin-bottom: 8px;
         }
 
-        .custom-header {
-            background-color: var(--header-bg);
-            border-color: var(--border-color);
-            backdrop-filter: blur(12px);
+        .stat-value {
+            font-size: 24px;
+            font-weight: 900;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.5px;
         }
 
-        .custom-input {
-            background-color: var(--input-bg);
-            border-color: var(--border-color);
-            color: var(--text-primary);
+        .stat-value.cyan { color: #6366f1; }
+        .stat-value.blue { color: #818cf8; }
+        .stat-value.amber { color: #f59e0b; }
+
+        .stat-change {
+            font-size: 10px;
+            font-weight: 700;
+            color: #818cf8;
+            margin-top: 4px;
+        }
+
+        /* Device cards grid */
+        .devices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        /* Animated gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1, #3b82f6, #818cf8, #6366f1);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            width: 2px;
+            height: 2px;
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float-up linear infinite;
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        /* Micro-interaction buttons */
+        .micro-btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .micro-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        }
+
+        .micro-btn:active::after {
+            width: 200px;
+            height: 200px;
+        }
+
+        .device-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.3));
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 22px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        .device-card:nth-child(1) { animation-delay: 0.1s; }
+        .device-card:nth-child(2) { animation-delay: 0.2s; }
+        .device-card:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes cardIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #6366f1, #3b82f6);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .device-card:hover {
+            border-color: rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        .device-card:hover::before { opacity: 1; }
+
+        .device-card.error {
+            border-color: rgba(244, 63, 94, 0.3);
+            animation: pulseError 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseError {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.2); }
+            50% { box-shadow: 0 0 20px 0 rgba(244, 63, 94, 0.1); }
+        }
+
+        /* Card header */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .card-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #475569;
+            transition: all 0.3s;
+        }
+
+        .status-dot.online {
+            background: #3b82f6;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        .status-dot.error {
+            background: #f43f5e;
+            animation: pulseDot 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+            50% { box-shadow: 0 0 8px 3px rgba(244, 63, 94, 0.2); }
+        }
+
+        .status-text {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #475569;
+            transition: color 0.3s;
+        }
+
+        .status-text.online { color: #818cf8; }
+        .status-text.error { color: #f43f5e; }
+
+        .card-brand {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #64748b;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .card-name {
+            font-size: 18px;
+            font-weight: 900;
+            color: #f8fafc;
+            letter-spacing: -0.3px;
+            margin-bottom: 4px;
+        }
+
+        .card-serial {
+            font-size: 10px;
+            color: #475569;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        /* Card metrics */
+        .card-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .metric-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .metric-value.green { color: #818cf8; }
+        .metric-value.white { color: #e2e8f0; }
+
+        /* Open button */
+        .card-open {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            color: #818cf8;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        .card-open:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(99, 102, 241, 0.25));
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Rename modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-card {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 32px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: #f8fafc;
+            margin-bottom: 4px;
+        }
+
+        .modal-desc {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            outline: none;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .modal-input:focus {
+            border-color: rgba(6, 182, 212, 0.5);
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .btn-ghost {
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-ghost:hover { background: rgba(255, 255, 255, 0.05); color: #f8fafc; }
+
+        .btn-primary {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            border: none;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3); }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 16px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 14px 16px;
+            min-width: 300px;
+            max-width: 380px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+            animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .toast-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .toast-brand {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #6366f1;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .toast-time {
+            font-size: 10px;
+            color: #475569;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .toast-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+
+        .toast-msg {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 60px;
+            padding: 24px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .footer-text {
+            font-size: 11px;
+            color: #334155;
+        }
+
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .devices-grid { grid-template-columns: 1fr; }
+            .page-title { font-size: 22px; }
         }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col justify-between pb-8">
+<body>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
 
-    <div id="php-metadata" 
-         data-base-path="<?php echo htmlspecialchars($base_path); ?>" 
-         data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>" 
+    <div id="php-metadata"
+         data-base-path="<?php echo htmlspecialchars($base_path); ?>"
+         data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>"
          class="hidden"></div>
 
-    <div id="toast-container" class="fixed top-20 right-4 z-[9999] space-y-3 pointer-events-auto max-w-sm w-full"></div>
+    <div class="toast-container" id="toast-container"></div>
 
-    <!-- Horná lišta / Header -->
-    <header class="custom-header border-b sticky top-0 z-50 transition-colors duration-200 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                
-                <div class="flex items-center gap-3">
-                    <button onclick="switchTab('main')" class="flex items-center gap-2 text-left focus:outline-none">
-                        <img src="<?php echo $base_path; ?>/templates/ElvosolarLogo.png" alt="ElvoSolar Logo" class="h-8 w-auto object-contain" onerror="this.src='https://images.placeholders.dev/?width=150&height=40&text=ElvoSolar'">
-                        <div class="hidden sm:flex flex-col border-l custom-border pl-3">
-                            <span class="text-sm font-black tracking-wider text-white uppercase font-mono leading-none">ElvoSolar</span>
-                            <span class="text-[9px] font-bold text-cyan-500 tracking-widest uppercase font-mono mt-0.5">Multi-Core System</span>
-                        </div>
-                    </button>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="<?php echo $base_path; ?>/dashboard" class="header-brand">
+                <img src="/templates/ElvosolarLogo.png" alt="ElvoControl" style="height:38px;width:auto;border-radius:10px;filter:drop-shadow(0 0 8px rgba(99,102,241,.3));">
+                <div>
+                    <div class="brand-text">ElvoControl</div>
+                    <div class="brand-tag">SMART EMS</div>
                 </div>
-                
-                <div class="flex items-center gap-3">
-                    <button id="btn-profile" onclick="switchTab('account')" class="flex items-center gap-2 p-1.5 hover:bg-slate-500/10 rounded-xl transition-all border custom-border">
-                        <div class="w-8 h-8 bg-cyan-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">
-                            <?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?>
-                        </div>
-                        <span class="hidden sm:inline text-xs font-semibold pr-1"><?php echo htmlspecialchars($username); ?></span>
-                    </button>
-                </div>
+            </a>
 
+            <div class="header-user" onclick="document.getElementById('user-menu').classList.toggle('hidden')">
+                <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?></div>
+                <span class="user-name"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Užívateľ'); ?></span>
+            </div>
+
+            <!-- User dropdown -->
+            <div id="user-menu" class="hidden" style="position: absolute; top: 56px; right: 24px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 8px; min-width: 180px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 60;">
+                <a href="<?php echo $base_path; ?>/logout" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #f43f5e; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='rgba(244,63,94,0.1)'" onmouseout="this.style.background='transparent'">
+                    <i data-lucide="log-out" style="width: 14px; height: 14px;"></i> Odhlásiť sa
+                </a>
             </div>
         </div>
     </header>
 
-    <!-- POHĽAD 1: DASHBOARD -->
-    <main id="view-main" class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-grow">
-        
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-black tracking-tight text-white">Prehľad zdrojov</h1>
-                <p class="text-sm custom-text-secondary mt-1">Sledovanie a monitoring lokálnych riadiacich staníc CM5.</p>
-            </div>
-            
-            <button id="btn-enable-notifications" onclick="requestNotificationPermission()" class="bg-slate-500/10 hover:bg-slate-500/20 border custom-border font-bold py-2.5 px-4 rounded-xl text-xs transition duration-150 flex items-center gap-2 shadow-sm self-start">
-                <i data-lucide="bell" class="w-4 h-4 text-cyan-400"></i> Zapnúť notifikácie
-            </button>
+    <!-- Main -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title" id="greeting-text"></h1>
+            <p class="page-subtitle" id="greeting-sub"></p>
+            <div id="greeting-extra" style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <?php foreach ($devices as $device): ?>
-            
-            <div id="card-<?php echo $device['id']; ?>" class="custom-card border rounded-3xl p-6 flex flex-col justify-between shadow-sm relative group">
-                
-                <div class="absolute top-6 right-6 flex items-center gap-2">
-                    <span id="badge-<?php echo $device['id']; ?>" class="h-2.5 w-2.5 rounded-full bg-slate-500"></span>
-                    <span id="status-text-<?php echo $device['id']; ?>" class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Zisťujem...</span>
+        <!-- Summary stats -->
+        <div class="stats-row">
+            <div class="stat-card" style="cursor:pointer;" onclick="window.location.href='<?php echo $base_path; ?>/dashboard'">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div class="stat-label">Zariadenia</div>
+                        <div class="stat-value cyan font-mono"><?php echo count($devices); ?></div>
+                    </div>
+                    <div style="font-size:32px;opacity:0.8;">⚡</div>
                 </div>
+                <div class="stat-change">Všetky online</div>
+            </div>
+            <div class="stat-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div class="stat-label">Celková úspora</div>
+                        <div class="stat-value blue font-mono"><?php echo round(array_sum(array_column($devices, 'total_saved_eur')), 2); ?> €</div>
+                    </div>
+                    <div style="font-size:32px;opacity:0.8;">💰</div>
+                </div>
+                <div class="stat-change">📈 Rastie každý deň</div>
+            </div>
+            <div class="stat-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div class="stat-label">Vyrobená energia</div>
+                        <div class="stat-value amber font-mono"><?php echo round(array_sum(array_column($devices, 'total_kwh')), 1); ?> kWh</div>
+                    </div>
+                    <div style="font-size:32px;opacity:0.8;">☀️</div>
+                </div>
+                <div class="stat-change">🌱 Šetríte planétu</div>
+            </div>
+        </div>
 
+        <!-- Smart Meter Live Widget -->
+        <div id="dashMeterWidget" style="margin-top:32px;display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="px-2.5 py-1 rounded-lg text-[9px] uppercase font-black tracking-wider bg-slate-800 text-slate-300 font-mono">
-                            <?php echo htmlspecialchars(strtoupper($device['brand_id'])); ?>
-                        </span>
-                        <span class="text-[10px] font-mono font-medium custom-text-secondary">SN: <?php echo htmlspecialchars($device['serial_number']); ?></span>
-                    </div>
+                    <h2 style="font-size:18px;font-weight:900;color:#f8fafc;letter-spacing:-.3px;">⚡ Smart Meter — Tok energie</h2>
+                    <p style="font-size:12px;color:#64748b;margin-top:2px;">Reálna spotreba vs výroba FVE v reálnom čase</p>
+                </div>
+                <span style="padding:4px 12px;border-radius:8px;font-size:9px;font-weight:700;color:#818cf8;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);font-family:'JetBrains Mono',monospace;">LIVE</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+                <div class="stat-card" style="--accent:#3b82f6;">
+                    <div class="stat-label">🏠 Spotreba domu</div>
+                    <div class="stat-value blue font-mono" id="dashMeterHouse">0 W</div>
+                    <div class="stat-change" id="dashMeterHousePercent"></div>
+                </div>
+                <div class="stat-card" style="--accent:#6366f1;">
+                    <div class="stat-label">☀️ FVE výroba</div>
+                    <div class="stat-value cyan font-mono" id="dashMeterFve">0 W</div>
+                    <div class="stat-change" id="dashMeterFvePercent"></div>
+                </div>
+                <div class="stat-card" style="--accent:#818cf8;">
+                    <div class="stat-label">⬆️ Odber zo siete</div>
+                    <div class="stat-value" style="color:#94a3b8;font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:900;" id="dashMeterImport">0 W</div>
+                </div>
+                <div class="stat-card" style="--accent:#a78bfa;">
+                    <div class="stat-label">⬇️ Vývoz do siete</div>
+                    <div class="stat-value" style="color:#a78bfa;font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:900;" id="dashMeterExport">0 W</div>
+                </div>
+            </div>
+            <!-- Energy flow bar -->
+            <div style="margin-top:16px;padding:16px 20px;background:rgba(15,23,42,.5);border:1px solid rgba(255,255,255,.04);border-radius:14px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;">
+                    <span>FVE → Dom</span><span id="dashMeterSelfPercent">0%</span><span>Sieť</span>
+                </div>
+                <div style="height:8px;background:rgba(255,255,255,.04);border-radius:8px;overflow:hidden;display:flex;">
+                    <div id="dashMeterSelfBar" style="height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:8px 0 0 8px;transition:width .5s;width:0%;"></div>
+                    <div id="dashMeterImportBar" style="height:100%;background:rgba(99,102,241,.3);transition:width .5s;width:0%;"></div>
+                </div>
+            </div>
+        </div>
 
-                    <div class="flex items-center gap-2 mb-2">
-                        <h3 id="name-display-<?php echo $device['id']; ?>" class="text-xl font-black tracking-tight text-white"><?php echo htmlspecialchars($device['name']); ?></h3>
-                        <button 
-                            data-id="<?php echo $device['id']; ?>" 
-                            data-name="<?php echo htmlspecialchars($device['name']); ?>" 
-                            onclick="openRenameModal(this)" 
-                            class="text-slate-500 hover:text-cyan-400 p-1 rounded-lg hover:bg-slate-500/10 transition" 
-                            title="Premenovať stanicu">
-                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
+        <!-- Device cards -->
+        <div class="devices-grid">
+            <?php foreach ($devices as $i => $device): ?>
+            <div id="card-<?php echo $device['id']; ?>" class="device-card" style="animation-delay: <?php echo ($i * 0.1); ?>s;">
 
-                    <p class="text-xs custom-text-secondary font-medium mb-6">
-                        IP adresa: <strong class="text-slate-300 font-mono"><?php echo htmlspecialchars($device['static_ip'] ?? '192.168.1.150'); ?></strong>
-                    </p>
-                    
-                    <div class="bg-slate-500/5 border custom-border rounded-2xl p-4 space-y-3 mb-6">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="custom-text-secondary font-semibold">Finančná úspora:</span>
-                            <span class="font-mono text-emerald-400 font-extrabold text-sm" id="saved-<?php echo $device['id']; ?>"><?php echo htmlspecialchars(round($device['total_saved_eur'], 2)); ?> EUR</span>
-                        </div>
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="custom-text-secondary font-semibold">Vyrobená energia:</span>
-                            <span class="font-mono text-slate-200 font-bold" id="kwh-<?php echo $device['id']; ?>"><?php echo htmlspecialchars(round($device['total_kwh'], 2)); ?> kWh</span>
-                        </div>
+                <div class="card-header">
+                    <div class="card-brand"><?php echo htmlspecialchars(strtoupper($device['brand_id'])); ?></div>
+                    <div class="card-status">
+                        <span id="badge-<?php echo $device['id']; ?>" class="status-dot"></span>
+                        <span id="status-text-<?php echo $device['id']; ?>" class="status-text">Zisťujem...</span>
                     </div>
                 </div>
 
-                <div class="mt-4">
-                    <a href="<?php echo $base_path; ?>/device/<?php echo $device['id']; ?>" class="block w-full text-center text-xs font-bold py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl transition duration-150 shadow-md">
-                        Otvoriť monitorovacie jadro
-                    </a>
+                <div class="card-name" id="name-display-<?php echo $device['id']; ?>"><?php echo htmlspecialchars($device['name']); ?></div>
+                <div class="card-serial">SN: <?php echo htmlspecialchars($device['serial_number']); ?></div>
+
+                <div class="card-metrics">
+                    <div class="metric-box">
+                        <div class="metric-label">Úspora</div>
+                        <div class="metric-value blue font-mono" id="saved-<?php echo $device['id']; ?>"><?php echo htmlspecialchars(round($device['total_saved_eur'], 2)); ?> €</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Energia</div>
+                        <div class="metric-value white font-mono" id="kwh-<?php echo $device['id']; ?>"><?php echo htmlspecialchars(round($device['total_kwh'], 1)); ?> kWh</div>
+                    </div>
                 </div>
+
+                <a href="<?php echo $base_path; ?>/device/<?php echo $device['id']; ?>" class="card-open">
+                    Otvoriť monitorovací panel →
+                </a>
             </div>
             <?php endforeach; ?>
         </div>
     </main>
 
-    <!-- POHĽAD 2: KONTO -->
-    <main id="view-account" class="hidden max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-grow">
-        
-        <div class="flex justify-start">
-            <button onclick="switchTab('main')" class="flex items-center gap-2 px-4 py-2 bg-slate-500/10 hover:bg-slate-500/20 rounded-xl text-xs font-semibold transition-all border custom-border">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Späť na Dashboard
-            </button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <div class="custom-card p-5 rounded-2xl border shadow-lg space-y-4 md:col-span-1">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-cyan-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                        <?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-white"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Užívateľ'); ?></h3>
-                        <p class="text-xs custom-text-secondary">Lokálny správca jednotky CM5</p>
-                    </div>
-                </div>
-                
-                <div class="border-t custom-border pt-3 space-y-2 text-xs">
-                    <div class="flex justify-between">
-                        <span class="custom-text-secondary">Rola v systéme:</span>
-                        <span class="font-semibold text-white">Administrátor</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="custom-text-secondary">Stav Hardvéru:</span>
-                        <span class="font-bold text-emerald-400">Pripojený</span>
-                    </div>
-                </div>
-
-                <div class="border-t custom-border pt-4">
-                    <button onclick="location.href='<?php echo $base_path; ?>/logout'" class="w-full py-2.5 text-xs font-semibold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-all">Odhlásiť sa zo systému</button>
-                </div>
-            </div>
-
-            <div class="custom-card p-5 rounded-2xl border shadow-lg space-y-6 md:col-span-2">
-                <div>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
-                        <i data-lucide="smartphone" class="w-4 h-4"></i> Nastavenia aplikácie
-                    </h3>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <span class="text-xs font-bold custom-text-secondary block">Interval aktualizácie</span>
-                        <select id="update-interval-select" onchange="handleIntervalChange()" class="w-full custom-input border p-2.5 rounded-xl text-xs outline-none focus:border-cyan-500 transition-all cursor-pointer font-semibold">
-                            <option value="5">Rýchly (každých 5 sek)</option>
-                            <option value="15" selected>Štandardný (každých 15 sek)</option>
-                            <option value="60">Úsporný (každých 60 sek)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="custom-card p-5 rounded-2xl border shadow-lg md:col-span-3 space-y-4">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-sm font-bold flex items-center gap-2 text-white">
-                            <i data-lucide="bell" class="text-cyan-400 w-4 h-4"></i> Inteligentné systémové upozornenia
-                        </h3>
-                        <p class="text-xs custom-text-secondary mt-1">Povoľte notifikácie, aby vás systém upozorňoval na dôležité zmeny v reálnom čase.</p>
-                    </div>
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <button id="btn-enable-notifications-account" onclick="requestNotificationPermission()" class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-2">
-                            <i data-lucide="bell-ring" class="w-4 h-4"></i> Zapnúť notifikácie
-                        </button>
-                    </div>
-                </div>
-                <div class="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-3">
-                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
-                        <i data-lucide="shield-check" class="w-5 h-5"></i>
-                    </div>
-                    <div class="text-xs text-left">
-                        <span class="font-bold text-emerald-400 block">Diagnostika: Bez porúch (100% OK)</span>
-                        <span class="custom-text-secondary block">Hardvérový modul CM5 a zbernica RS485 pracujú v optimálnom režime.</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </main>
-
-    <footer class="custom-card border-t py-6 mt-12 transition-colors duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left sm:flex sm:justify-between sm:items-center">
-            <p class="text-xs custom-text-secondary">Autorské práva &copy; 2011&ndash;2026 Elvosolar. Všetky práva vyhradené.</p>
-            <div class="mt-2 sm:mt-0 space-x-4">
-                <a href="#" class="text-xs custom-text-secondary hover:text-cyan-400">Podpora</a>
-            </div>
-        </div>
+    <footer class="footer">
+        <p class="footer-text">&copy; 2011–2026 ElvoControl. Všetky práva vyhradené.</p>
     </footer>
 
-    <!-- MODAL: PREMENOVANIE ZARIADENIA -->
-    <div id="rename-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-800 text-white">
-            <h3 class="text-lg font-black text-white mb-1">Premenovať riadiacu stanicu</h3>
-            <p class="text-xs text-slate-400 mb-4">Zadajte nový vlastný názov pre toto odberné miesto.</p>
+    <!-- Rename modal -->
+    <div id="rename-modal" class="modal-overlay" onclick="if(event.target===this)closeRenameModal()">
+        <div class="modal-card">
+            <div class="modal-title">Premenovať stanicu</div>
+            <div class="modal-desc">Zadajte nový názov pre toto odberné miesto.</div>
             <input type="hidden" id="rename-device-id">
-            <input type="text" id="rename-device-input" class="w-full px-4 py-3 bg-slate-950 border border-slate-850 rounded-xl text-xs font-bold focus:outline-none focus:border-cyan-500 mb-4 text-white" placeholder="Napr. Dom, Chata">
-            <div class="flex gap-2 justify-end">
-                <button onclick="closeRenameModal()" class="px-4 py-2.5 bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-xl transition">Zrušiť</button>
-                <button onclick="saveRename()" class="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition">Uložiť názov</button>
+            <input type="text" id="rename-device-input" class="modal-input" placeholder="Napr. Dom, Chata, Firma">
+            <div class="modal-actions">
+                <button onclick="closeRenameModal()" class="btn-ghost">Zrušiť</button>
+                <button onclick="saveRename()" class="btn-primary">Uložiť</button>
             </div>
         </div>
     </div>
@@ -312,210 +846,58 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
         const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids')) : [];
-
         let deviceErrorStates = {};
 
-        function switchTab(tab) {
-            const viewMain = document.getElementById('view-main');
-            const viewAccount = document.getElementById('view-account');
-            const btnProfile = document.getElementById('btn-profile');
-
-            if (viewMain && viewAccount && btnProfile) {
-                viewMain.classList.add('hidden');
-                viewAccount.classList.add('hidden');
-                btnProfile.classList.remove('border-cyan-500', 'bg-cyan-500/10');
-
-                if (tab === 'main') {
-                    viewMain.classList.remove('hidden');
-                } else if (tab === 'account') {
-                    viewAccount.classList.remove('hidden');
-                    btnProfile.classList.add('border-cyan-500', 'bg-cyan-500/10');
-                }
-            }
-        }
-
+        // Toast notification system
         function showToast(title, message, type = 'info') {
             const container = document.getElementById('toast-container');
             if (!container) return;
+            const now = new Date();
+            const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const dot = type === 'success' ? '🟢' : type === 'error' ? '🔴' : '🔵';
 
             const toast = document.createElement('div');
-            toast.className = "toast-animate flex flex-col p-4 bg-[#1f1f1f]/95 border border-white/10 rounded-xl shadow-2xl pointer-events-auto backdrop-blur-lg text-white transition-all duration-300 w-80";
-            
-            let statusDot = '🔵';
-            if (type === 'success') { statusDot = '🟢'; }
-            if (type === 'error') { statusDot = '🔴'; }
-
-            const now = new Date();
-            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
+            toast.className = 'toast';
             toast.innerHTML = `
-                <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-white/5 pb-2 mb-2 font-semibold">
-                    <div class="flex items-center gap-1.5">
-                        <span>☀️</span>
-                        <span class="uppercase tracking-wider">Elvosolar Systém</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span>${timeStr}</span>
-                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-slate-400 hover:text-slate-100 focus:outline-none font-bold text-[10px]">
-                            ✕
-                        </button>
-                    </div>
+                <div class="toast-header">
+                    <span class="toast-brand">${dot} ElvoControl</span>
+                    <span class="toast-time">${time}</span>
                 </div>
-                <div class="flex gap-3 items-start">
-                    <div class="text-base select-none">${statusDot}</div>
-                    <div class="flex-grow">
-                        <span class="font-bold text-xs block text-slate-100 leading-tight">${title}</span>
-                        <span class="text-[10px] text-slate-300 block mt-1 leading-normal">${message}</span>
-                    </div>
-                </div>
+                <div class="toast-title">${title}</div>
+                <div class="toast-msg">${message}</div>
             `;
-
             container.appendChild(toast);
-            lucide.createIcons();
 
             setTimeout(() => {
                 toast.style.opacity = '0';
-                toast.style.transform = 'translateY(-10px)';
+                toast.style.transform = 'translateX(100px)';
+                toast.style.transition = 'all 0.3s';
                 setTimeout(() => toast.remove(), 300);
             }, 5000);
         }
 
-        function requestNotificationPermission() {
-            if (!("Notification" in window)) {
-                showToast("Systémová správa", "Prehliadač nepodporuje externé notifikácie. Systém použije interné toasty.", "info");
-                return;
-            }
-
-            Notification.requestPermission().then(permission => {
-                updateNotificationButton();
-                if (permission === "granted") {
-                    sendNotification("Elvosolar", "🔔 Upozornenia boli úspešne prepojené!", "success");
-                }
-            });
-        }
-
-        function updateNotificationButton() {
-            const btn = document.getElementById('btn-enable-notifications');
-            const btnAccount = document.getElementById('btn-enable-notifications-account');
-
-            const applyBtnStyle = (el) => {
-                if (!el) return;
-                if (Notification.permission === "granted") {
-                    el.innerHTML = `🟢 Notifikácie aktívne`;
-                    el.className = "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold py-2.5 px-4 rounded-xl text-xs transition duration-150 flex items-center gap-2 shadow-sm cursor-default";
-                    el.onclick = null;
-                } else if (Notification.permission === "denied") {
-                    el.innerHTML = `🔴 Notifikácie zakázané`;
-                    el.className = "bg-rose-500/10 text-rose-500 border border-rose-500/20 font-bold py-2.5 px-4 rounded-xl text-xs transition duration-150 flex items-center gap-2 shadow-sm cursor-default";
-                    el.onclick = null;
-                }
-            };
-
-            applyBtnStyle(btn);
-            applyBtnStyle(btnAccount);
-        }
-
         function sendNotification(title, message, type = 'info') {
             showToast(title, message, type);
-            if (Notification.permission === "granted") {
-                try {
-                    const options = {
-                        body: message,
-                        icon: basePath + "/templates/ElvosolarLogo.png"
-                    };
-                    new Notification(title, options);
-                } catch (e) {}
+            if (Notification.permission === 'granted') {
+                try { new Notification(title, { body: message, icon: basePath + '/templates/ElvosolarLogo.png' }); } catch(e) {}
             }
         }
 
-        async function refreshDashboard() {
-            for (const id of deviceIds) {
-                try {
-                    const res = await fetch(basePath + `/api/device/${id}/telemetry`);
-                    if (!res.ok) throw new Error('Zlyhanie spojenia');
-                    const data = await res.json();
-                    
-                    const card = document.getElementById(`card-${id}`);
-                    const badge = document.getElementById(`badge-${id}`);
-                    const statusText = document.getElementById(`status-text-${id}`);
-                    const savedEl = document.getElementById(`saved-${id}`);
-                    const kwhEl = document.getElementById(`kwh-${id}`);
-                    const nameDisplay = document.getElementById(`name-display-${id}`);
-
-                    if (savedEl) savedEl.innerText = `${data.total_saved_eur.toFixed(2)} EUR`;
-                    if (kwhEl) kwhEl.innerText = `${data.total_kwh.toFixed(2)} kWh`;
-
-                    const name = nameDisplay ? nameDisplay.innerText : "CM5";
-
-                    const hasError = (data.has_errors || (data.active_errors && Object.keys(data.active_errors).length > 0));
-                    const lastState = deviceErrorStates[id] || 'ok';
-
-                    if (hasError) {
-                        if (card) card.classList.add('card-error');
-                        if (badge) badge.className = "h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse";
-                        if (statusText) {
-                            statusText.innerText = "Chyba zbernice";
-                            statusText.className = "text-[9px] font-bold text-rose-500 uppercase tracking-wider";
-                        }
-                        
-                        if (lastState === 'ok') {
-                            sendNotification("⚠️ Výpadok komunikácie", `Zariadenie "${name}" stratilo spojenie so zbernicou RS485!`, "error");
-                            deviceErrorStates[id] = 'error';
-                        }
-                    } else {
-                        if (card) card.classList.remove('card-error');
-                        if (badge) badge.className = "h-2.5 w-2.5 rounded-full bg-emerald-500";
-                        if (statusText) {
-                            statusText.innerText = "Online";
-                            statusText.className = "text-[9px] font-bold text-emerald-500 uppercase tracking-wider";
-                        }
-                        
-                        if (lastState === 'error') {
-                            sendNotification("✅ Komunikácia obnovená", `Zariadenie "${name}" opäť normálne komunikuje.`, "success");
-                            deviceErrorStates[id] = 'ok';
-                        }
-                    }
-                } catch (e) {
-                    const card = document.getElementById(`card-${id}`);
-                    const badge = document.getElementById(`badge-${id}`);
-                    const statusText = document.getElementById(`status-text-${id}`);
-                    const nameDisplay = document.getElementById(`name-display-${id}`);
-                    
-                    if (card) card.classList.add('card-error');
-                    if (badge) badge.className = "h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse";
-                    if (statusText) {
-                        statusText.innerText = "Odpojené";
-                        statusText.className = "text-[9px] font-bold text-rose-500 uppercase tracking-wider";
-                    }
-
-                    const name = nameDisplay ? nameDisplay.innerText : "CM5";
-                    const lastState = deviceErrorStates[id] || 'ok';
-                    if (lastState === 'ok') {
-                        sendNotification("⚠️ Riadiaca jednotka odpojená", `Stratilo sa sieťové spojenie s jednotkou "${name}".`, "error");
-                        deviceErrorStates[id] = 'error';
-                    }
-                }
-            }
-        }
-
+        // Rename
         function openRenameModal(btn) {
-            const id = btn.getAttribute('data-id');
-            const currentName = btn.getAttribute('data-name');
-
-            document.getElementById('rename-device-id').value = id;
-            document.getElementById('rename-device-input').value = currentName;
-            document.getElementById('rename-modal').classList.remove('hidden');
+            document.getElementById('rename-device-id').value = btn.getAttribute('data-id');
+            document.getElementById('rename-device-input').value = btn.getAttribute('data-name');
+            document.getElementById('rename-modal').classList.add('active');
         }
 
         function closeRenameModal() {
-            document.getElementById('rename-modal').classList.add('hidden');
+            document.getElementById('rename-modal').classList.remove('active');
         }
 
         async function saveRename() {
             const id = document.getElementById('rename-device-id').value;
             const newName = document.getElementById('rename-device-input').value.trim();
             if (!newName) return;
-
             try {
                 const res = await fetch(basePath + `/api/device/${id}/rename`, {
                     method: 'POST',
@@ -524,25 +906,235 @@
                 });
                 if (res.ok) {
                     document.getElementById(`name-display-${id}`).innerText = newName;
-                    const btn = document.querySelector(`button[data-id="${id}"]`);
-                    if (btn) btn.setAttribute('data-name', newName);
-
-                    sendNotification("Meno zmenené", `Zariadenie bolo premenované na: ${newName}`, "success");
+                    sendNotification('Hotovo', `Zariadenie premenované na: ${newName}`, 'success');
                     closeRenameModal();
-                } else {
-                    sendNotification("Chyba premenovania", "Nepodarilo sa uložiť nový názov.", "error");
                 }
-            } catch (e) {
-                console.error(e);
+            } catch(e) {}
+        }
+
+        // Live refresh
+        async function refreshDashboard() {
+            for (const id of deviceIds) {
+                try {
+                    const res = await fetch(basePath + `/api/device/${id}/telemetry`);
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+
+                    const savedEl = document.getElementById(`saved-${id}`);
+                    const kwhEl = document.getElementById(`kwh-${id}`);
+                    const badge = document.getElementById(`badge-${id}`);
+                    const statusText = document.getElementById(`status-text-${id}`);
+                    const card = document.getElementById(`card-${id}`);
+
+                    if (savedEl) savedEl.innerText = `${data.total_saved_eur.toFixed(2)} €`;
+                    if (kwhEl) kwhEl.innerText = `${data.total_kwh.toFixed(1)} kWh`;
+
+                    const hasError = data.has_errors || (data.active_errors && Object.keys(data.active_errors).length > 0);
+                    const lastState = deviceErrorStates[id] || 'ok';
+
+                    if (hasError) {
+                        card && card.classList.add('error');
+                        badge && (badge.className = 'status-dot error');
+                        statusText && (statusText.className = 'status-text error', statusText.innerText = 'Chyba zbernice');
+                        if (lastState === 'ok') {
+                            sendNotification('⚠️ Výpadok', `Stratilo sa spojenie so zbernicou!`, 'error');
+                            deviceErrorStates[id] = 'error';
+                        }
+                    } else {
+                        card && card.classList.remove('error');
+                        badge && (badge.className = 'status-dot online');
+                        statusText && (statusText.className = 'status-text online', statusText.innerText = 'Online');
+                        if (lastState === 'error') {
+                            sendNotification('✅ Online', 'Komunikácia obnovená.', 'success');
+                            deviceErrorStates[id] = 'ok';
+                        }
+                    }
+                } catch(e) {
+                    const badge = document.getElementById(`badge-${id}`);
+                    const statusText = document.getElementById(`status-text-${id}`);
+                    const card = document.getElementById(`card-${id}`);
+                    card && card.classList.add('error');
+                    badge && (badge.className = 'status-dot error');
+                    statusText && (statusText.className = 'status-text error', statusText.innerText = 'Odpojené');
+                    deviceErrorStates[id] = 'error';
+                }
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            updateNotificationButton();
+        // Click outside to close user menu
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('user-menu');
+            const userBtn = document.querySelector('.header-user');
+            if (menu && !menu.contains(e.target) && userBtn && !userBtn.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
         });
 
+        // Notification permission on load
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Personalized greeting
+        function getGreeting() {
+            const h = new Date().getHours();
+            const name = '<?php echo htmlspecialchars($_SESSION["username"] ?? "Používateľ"); ?>';
+            let emoji, greeting, mood;
+            if (h >= 5 && h < 9) { emoji = '🌅'; greeting = 'Dobré ráno'; mood = 'Slnko už svieti na vaše panely'; }
+            else if (h >= 9 && h < 12) { emoji = '☀️'; greeting = 'Dobré dopoludnie'; mood = 'FVE vyrába na plné obrátky'; }
+            else if (h >= 12 && h < 14) { emoji = '🌞'; greeting = 'Príjemné poludnie'; mood = 'Čas na obed a kontrolu panelov'; }
+            else if (h >= 14 && h < 17) { emoji = '🌤️'; greeting = 'Dobré popoludnie'; mood = 'Energia beží, batérie sa nabíjajú'; }
+            else if (h >= 17 && h < 20) { emoji = '🌇'; greeting = 'Dobrý večer'; mood = 'Slnko zapadá, prechod na batériu'; }
+            else if (h >= 20 && h < 23) { emoji = '🌙'; greeting = 'Príjemný večer'; mood = 'Batérie pokrývajú spotrebu domácnosti'; }
+            else { emoji = '🦉'; greeting = 'Dobrú noc'; mood = 'Systém spí a šetrí energiu'; }
+            document.getElementById('greeting-text').innerHTML = `${emoji} Ahoj ${name}, ${greeting}!`;
+            document.getElementById('greeting-sub').textContent = mood;
+
+            const day = new Date().toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
+            const time = new Date().toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+            const extra = document.getElementById('greeting-extra');
+            extra.innerHTML = `
+                <span style="padding:4px 12px;border-radius:8px;font-size:10px;font-weight:700;color:#64748b;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);font-family:'JetBrains Mono',monospace;">📅 ${day}</span>
+                <span style="padding:4px 12px;border-radius:8px;font-size:10px;font-weight:700;color:#3b82f6;background:rgba(59,130,246,0.08);border:1px solid rgba(99,102,241,0.15);font-family:'JetBrains Mono',monospace;">⏰ ${time}</span>
+            `;
+        }
+        getGreeting();
+        setInterval(getGreeting, 60000);
+
+        // Floating particles
+        function createParticles() {
+            const container = document.body;
+            for (let i = 0; i < 20; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                p.style.animationDelay = Math.random() * 10 + 's';
+                p.style.width = p.style.height = (Math.random() * 2 + 1) + 'px';
+                container.appendChild(p);
+            }
+        }
+        createParticles();
+
+        // Add shimmer effect to stat-cards and device-cards
+        document.querySelectorAll('.stat-card, .device-card').forEach(c => {
+            c.style.position = 'relative';
+            c.style.overflow = 'hidden';
+        });
+
+        // Animated counters on load
+        function animateCounters() {
+            document.querySelectorAll('.stat-value').forEach(el => {
+                const text = el.textContent;
+                const match = text.match(/([\d.,]+)/);
+                if (!match) return;
+                const target = parseFloat(match[1].replace(',', '.'));
+                if (isNaN(target) || target === 0) return;
+                const suffix = text.replace(match[1], '').trim();
+                const isFloat = text.includes('.');
+                let start = 0;
+                const duration = 1500;
+                const startTime = performance.now();
+
+                function update(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const current = start + (target - start) * eased;
+                    el.textContent = (isFloat ? current.toFixed(2) : Math.round(current)) + ' ' + suffix;
+                    if (progress < 1) requestAnimationFrame(update);
+                }
+                requestAnimationFrame(update);
+            });
+        }
+        setTimeout(animateCounters, 300);
+
+        // Smart Meter live data
+        async function refreshMeterWidget() {
+            const ids = deviceIds;
+            for (const id of ids) {
+                try {
+                    const res = await fetch(basePath + `/api/device/${id}/meter`);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (data.status !== 'success' || !data.meter) continue;
+                    const m = data.meter;
+                    const widget = document.getElementById('dashMeterWidget');
+                    if (widget) widget.style.display = 'block';
+                    const house = Math.round(m.house_consumption_w);
+                    const fve = Math.round(m.fve_production_w || 0);
+                    const imp = Math.round(m.grid_import_w);
+                    const exp = Math.round(m.grid_export_w);
+                    document.getElementById('dashMeterHouse').innerText = house + ' W';
+                    document.getElementById('dashMeterFve').innerText = fve + ' W';
+                    document.getElementById('dashMeterImport').innerText = imp + ' W';
+                    document.getElementById('dashMeterExport').innerText = exp + ' W';
+                    // Self-consumption percentage
+                    const selfPct = house > 0 ? Math.min(100, Math.round((Math.min(fve, house) / house) * 100)) : 0;
+                    document.getElementById('dashMeterSelfPercent').innerText = selfPct + '% samospotreba';
+                    document.getElementById('dashMeterSelfBar').style.width = selfPct + '%';
+                    document.getElementById('dashMeterImportBar').style.width = (100 - selfPct) + '%';
+                    if (fve > 0 && house > 0) {
+                        document.getElementById('dashMeterFvePercent').innerText = Math.round((fve / house) * 100) + '% pokrytia';
+                        document.getElementById('dashMeterFvePercent').style.color = fve >= house ? '#818cf8' : '#f59e0b';
+                    }
+                    if (house > 0) {
+                        document.getElementById('dashMeterHousePercent').innerText = '⏱️ ' + Math.round(m.avg_consumption_w) + ' W priemer';
+                    }
+                    break; // Stačí prvé zariadenie
+                } catch(e) {}
+            }
+        }
+
         setInterval(refreshDashboard, 5000);
+        setInterval(refreshMeterWidget, 8000);
         refreshDashboard();
+        refreshMeterWidget();
+
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+                console.log('SW registered:', reg.scope);
+            }).catch((err) => {
+                console.log('SW registration failed:', err);
+            });
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show custom install banner
+            const banner = document.createElement('div');
+            banner.id = 'pwa-install-banner';
+            banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:999;background:linear-gradient(135deg,#1e1b4b,#312e81);border-top:1px solid rgba(99,102,241,0.3);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -10px 40px rgba(0,0,0,0.4);';
+            banner.innerHTML = `
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <span style="font-size:18px;">⚡</span>
+                    </div>
+                    <div>
+                        <div style="font-size:13px;font-weight:800;color:#f8fafc;">Inštalovať ElvoControl</div>
+                        <div style="font-size:10px;color:#94a3b8;">Pridajte na plochu pre rýchly prístup</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="this.closest('#pwa-install-banner').remove()" style="padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;">Neskôr</button>
+                    <button id="pwa-install-btn" style="padding:8px 18px;border-radius:8px;font-size:11px;font-weight:800;border:none;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;cursor:pointer;">Inštalovať</button>
+                </div>
+            `;
+            document.body.appendChild(banner);
+            document.getElementById('pwa-install-btn').addEventListener('click', () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choice) => {
+                    if (choice.outcome === 'accepted') {
+                        banner.remove();
+                    }
+                    deferredPrompt = null;
+                });
+            });
+        });
     </script>
 </body>
 </html>

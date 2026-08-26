@@ -71,6 +71,34 @@
     <link rel="preconnect" href="https://images.unsplash.com">
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
 
+    <!-- Premium animácie -->
+    <style>
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); } 50% { box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.15); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .reveal-left { opacity: 0; transform: translateX(-30px); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .reveal-left.visible { opacity: 1; transform: translateX(0); }
+        .reveal-right { opacity: 0; transform: translateX(30px); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .reveal-right.visible { opacity: 1; transform: translateX(0); }
+        .card-premium { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-premium:hover { transform: translateY(-6px); box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); }
+        .btn-glow { position: relative; overflow: hidden; }
+        .btn-glow::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); transform: translateX(-100%); transition: transform 0.6s; }
+        .btn-glow:hover::after { transform: translateX(100%); }
+        .gradient-text { background: linear-gradient(135deg, #10b981, #06b6d4, #10b981); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer 3s linear infinite; }
+        .hero-badge-pulse { animation: pulse-glow 2s ease-in-out infinite; }
+        #back-to-top { opacity: 0; pointer-events: none; transition: all 0.3s; }
+        #back-to-top.show { opacity: 1; pointer-events: auto; }
+        .stat-card { transition: all 0.3s; }
+        .stat-card:hover { transform: scale(1.03); }
+    </style>
+
     <!-- Odložené načítanie Tailwind CSS pre elimináciu TBT -->
     <script src="https://cdn.tailwindcss.com" defer></script>
     <script>
@@ -189,16 +217,16 @@
     <!-- Hlavný obsah pre Agentic Browsing (3/3) -->
     <main id="main-content">
         <!-- Hero Sekcia -->
-        <section class="hero-section text-white py-20 lg:py-32 overflow-hidden">
+        <section class="hero-section text-white py-20 lg:py-32 overflow-hidden" id="hero">
             <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
             <div class="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-12 gap-12 items-center">
                 <div class="lg:col-span-7">
-                    <span class="text-xs font-bold uppercase tracking-widest text-brand-green mb-3 block" data-translate="hero.badge"></span>
+                    <!-- badge removed per request -->
                     <h1 class="text-4xl lg:text-6xl font-extrabold tracking-tight leading-none mb-6" data-translate="hero.title"></h1>
                     <p class="text-slate-300 text-base mb-6 leading-relaxed" data-translate="hero.description"></p>
                     <p class="text-slate-400 text-sm mb-8 italic border-l-2 border-brand-green pl-4" data-translate="hero.quote"></p>
                     <div class="flex flex-wrap gap-4">
-                        <a href="o-nás/index.html" class="bg-brand-green hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold transition-all inline-block" data-translate="hero.cta"></a>
+                        <a href="o-nás/index.html" class="bg-brand-green hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold transition-all inline-block btn-glow" data-translate="hero.cta"></a>
                     </div>
                 </div>
                 <div class="lg:col-span-5 relative">
@@ -250,12 +278,11 @@
                 <h2 class="text-3xl font-bold text-brand-dark" data-translate="renewable.title"></h2>
                 <p class="text-slate-500 mt-3 max-w-3xl text-sm leading-relaxed" data-translate="renewable.desc"></p>
             </div>
-            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <article class="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between">
-                    <div>
-                        <div class="card-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1613665813446-82a78c468a1d?auto=format&fit=crop&w=600&q=80" alt="Fotovoltické panely" class="card-img" width="240" height="160" loading="lazy" decoding="async">
-                        </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6">                    <article class="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between card-premium">
+                        <div>
+                            <div class="card-img-wrapper">
+                                <img src="https://images.unsplash.com/photo-1613665813446-82a78c468a1d?auto=format&fit=crop&w=600&q=80" alt="Fotovoltické panely" class="card-img" width="240" height="160" loading="lazy" decoding="async">
+                            </div>
                         <div class="p-5">
                             <h3 class="font-bold text-lg text-brand-dark mb-2" data-translate="renewable.card1_title"></h3>
                             <p class="text-slate-500 text-xs leading-relaxed" data-translate="renewable.card1_desc"></p>
@@ -596,11 +623,41 @@
         </div>
     </div>
 
+    <!-- Back to Top -->
+    <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 left-6 z-50 w-11 h-11 rounded-full bg-brand-dark hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all" aria-label="Späť hore">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+    </button>
+
     <!-- Pätička -->
-    <footer class="bg-slate-950 text-slate-500 py-8 text-xs border-t border-slate-900 mt-auto">
-        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p data-translate="footer.copyright"></p>
-            <p class="text-slate-600" data-translate="footer.tagline"></p>
+    <footer class="bg-slate-950 text-slate-500 py-10 text-xs border-t border-slate-900 mt-auto">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <img src="Png/download.png" alt="ELVOSOLAR" class="h-8 mb-3 opacity-80">
+                    <p class="text-slate-500 leading-relaxed" data-translate="footer.tagline"></p>
+                </div>
+                <div class="space-y-2">
+                    <h4 class="text-slate-300 font-bold text-xs uppercase tracking-wider">Rýchle odkazy</h4>
+                    <a href="o-nás/index.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.about"></a>
+                    <a href="smart-riesenia/index.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
+                    <a href="služby/index.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.services"></a>
+                    <a href="kontakt/index.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+                </div>
+                <div class="space-y-2">
+                    <h4 class="text-slate-300 font-bold text-xs uppercase tracking-wider">Kontakt</h4>
+                    <p class="text-slate-500">📞 +421 914 332 169</p>
+                    <p class="text-slate-500">✉️ info@elvosolar.sk</p>
+                    <p class="text-slate-500">🏢 Agátová 22, Bratislava</p>
+                </div>
+            </div>
+            <div class="border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p data-translate="footer.copyright"></p>
+                <div class="flex gap-4">
+                    <span class="text-slate-600 hover:text-brand-green transition-colors cursor-pointer">LinkedIn</span>
+                    <span class="text-slate-600 hover:text-brand-green transition-colors cursor-pointer">Facebook</span>
+                    <span class="text-slate-600 hover:text-brand-green transition-colors cursor-pointer">Instagram</span>
+                </div>
+            </div>
         </div>
     </footer>
 
@@ -1248,6 +1305,52 @@
         };
 
         const localFallbackTranslations = {};
+    </script>
+
+    <!-- Scroll Reveal + Back to Top + Animated Counters -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Scroll Reveal - Intersection Observer
+            const revealElements = document.querySelectorAll('section, article, .stat-card, [class*="hero"] > div > div');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry, i) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => entry.target.classList.add('visible'), i * 100);
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            revealElements.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'all 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
+                revealObserver.observe(el);
+            });
+
+            // Back to Top button
+            const backToTop = document.getElementById('back-to-top');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 500) {
+                    backToTop.classList.add('show');
+                } else {
+                    backToTop.classList.remove('show');
+                }
+            });
+
+            // Animate hero elements on load
+            setTimeout(() => {
+                document.querySelectorAll('.hero-section [class*="lg:col-span"] > *').forEach((el, i) => {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(20px)';
+                    el.style.transition = `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${i * 0.15}s`;
+                    setTimeout(() => {
+                        el.style.opacity = '1';
+                        el.style.transform = 'translateY(0)';
+                    }, 100);
+                });
+            }, 200);
+        });
     </script>
 
 </body>
