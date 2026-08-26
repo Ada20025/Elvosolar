@@ -412,7 +412,18 @@ if ($path === '/' || $path === '') {
         exit;
     }
     $devices = get_user_devices($pdo, $_SESSION['user_id']);
-    if (count($devices) === 0) {
+    
+    // Check if admin
+    $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user_row = $stmt->fetch();
+    $is_admin = ($user_row && ($user_row['role'] ?? '') === 'admin');
+    
+    if ($is_admin) {
+        // Admin: show ALL devices from DB
+        $all_devices = $pdo->query("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.id DESC")->fetchAll();
+        render_template('admin.html', ['devices' => $all_devices, 'all_devices' => $all_devices]);
+    } elseif (count($devices) === 0) {
         render_template('no_devices.html');
     } else {
         header("Location: " . $base_path . "/dashboard");
