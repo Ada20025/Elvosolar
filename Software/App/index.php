@@ -748,10 +748,6 @@ elseif ($path === '/api/devices/list' && $method === 'GET') {
     ]);
 }
 
-elseif ($path === '/eshop' && $method === 'GET') {
-    render_template('eshop.html');
-}
-
 elseif ($path === '/forgot-password' && $method === 'GET') {
     $_SESSION['reset_step'] = 1;
     render_template('forgot-password.html');
