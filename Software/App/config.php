@@ -5,26 +5,14 @@
 // === RAILWAY (env premenné) ===
 // Railway používa tieto premenne: MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQL_PASSWORD, MYSQL_DATABASE
 // Tiež podporuje: DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT
-function get_env_val($keys, $default = '') {
-    foreach ($keys as $key) {
-        // Skús všetky zdroje: $_ENV, getenv, $_SERVER
-        $val = null;
-        if (isset($_ENV[$key]) && $_ENV[$key] !== '') $val = $_ENV[$key];
-        elseif (($g = @getenv($key)) !== false && $g !== '') $val = $g;
-        elseif (isset($_SERVER[$key]) && $_SERVER[$key] !== '') $val = $_SERVER[$key];
-        if ($val !== null && $val !== '') return $val;
-    }
-    return $default;
-}
+// Priame čítanie - najspoľahlivejšie pre Docker/Railway
+$railway_host = getenv('MYSQLHOST') ?: '';
+$railway_db   = getenv('MYSQL_DATABASE') ?: '';
+$railway_user = getenv('MYSQLUSER') ?: '';
+$railway_pass = getenv('MYSQL_ROOT_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: getenv('MYSQL_PASSWORD') ?: '';
+$railway_port = getenv('MYSQLPORT') ?: '3306';
 
-$railway_host = get_env_val(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST', 'DATABASE_HOST'], '');
-$railway_db   = get_env_val(['MYSQL_DATABASE', 'MYSQLDATABASE', 'DB_NAME', 'DATABASE_NAME'], '');
-$railway_user = get_env_val(['MYSQLUSER', 'MYSQL_USER', 'DB_USER', 'DATABASE_USER'], '');
-$railway_pass = get_env_val(['MYSQL_ROOT_PASSWORD', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'DB_PASS', 'DATABASE_PASSWORD'], '');
-$railway_port = get_env_val(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT', 'DATABASE_PORT'], '3306');
-
-// Debug — zapíše do logu
-error_log("DB CONFIG: host=$railway_host port=$railway_port db=$railway_db user=$railway_user pass_len=" . strlen($railway_pass));
+error_log("DB: host=$railway_host port=$railway_port db=$railway_db user=$railway_user pass_len=" . strlen($railway_pass));
 
 // === ALWAYSDATA (fallback) ===
 $alwaysdata_host = 'mysql-adamdz.alwaysdata.net';

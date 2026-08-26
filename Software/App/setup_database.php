@@ -7,25 +7,12 @@
  * PO SPUSTENÍ VYMAŽ TENTO SÚBOR!
  */
 
-// Načítanie config - robustné pre Railway + alwaysdata + lokálne
-if (!function_exists('get_env_val')) {
-    function get_env_val($keys, $default = '') {
-        foreach ($keys as $key) {
-            $val = null;
-            if (isset($_ENV[$key]) && $_ENV[$key] !== '') $val = $_ENV[$key];
-            elseif (($g = @getenv($key)) !== false && $g !== '') $val = $g;
-            elseif (isset($_SERVER[$key]) && $_SERVER[$key] !== '') $val = $_SERVER[$key];
-            if ($val !== null && $val !== '') return $val;
-        }
-        return $default;
-    }
-}
-
-$db_host = get_env_val(['MYSQLHOST', 'DB_HOST', 'DATABASE_HOST', 'MYSQL_HOST'], 'localhost');
-$db_name = get_env_val(['MYSQL_DATABASE', 'DB_NAME', 'DATABASE_NAME', 'MYSQL_DB'], 'railway');
-$db_user = get_env_val(['MYSQLUSER', 'DB_USER', 'DATABASE_USER', 'MYSQL_USER'], 'root');
-$db_pass = get_env_val(['MYSQL_PASSWORD', 'DB_PASS', 'DATABASE_PASSWORD', 'MYSQL_PASS'], '');
-$db_port = get_env_val(['MYSQLPORT', 'DB_PORT', 'DATABASE_PORT', 'MYSQL_PORT'], '3306');
+// Priame čítanie - najspoľahlivejšie
+$db_host = getenv('MYSQLHOST') ?: 'localhost';
+$db_name = getenv('MYSQL_DATABASE') ?: 'railway';
+$db_user = getenv('MYSQLUSER') ?: 'root';
+$db_pass = getenv('MYSQL_ROOT_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: getenv('MYSQL_PASSWORD') ?: '';
+$db_port = getenv('MYSQLPORT') ?: '3306';
 
 $charset = 'utf8mb4';
 $dsn = "mysql:host=$db_host;port=$db_port;dbname=$db_name;charset=$charset";
