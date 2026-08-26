@@ -516,45 +516,7 @@
 
             let discoveredSlaves = [];
 
-            if (selectedTransport === 'SERIAL' && activeSerialPort) {
-                try {
-                    const encoder = new TextEncoder();
-                    const writer = activeSerialPort.writable.getWriter();
-                    await writer.write(encoder.encode('{"action": "discover_rs485"}\n'));
-                    writer.releaseLock();
-
-                    const decoder = new TextDecoder();
-                    const reader = activeSerialPort.readable.getReader();
-                    let receivedData = "";
-                    
-                    const timeoutPromise = new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 3000));
-                    const readPromise = async () => {
-                        while (true) {
-                            const { value, done } = await reader.read();
-                            if (done) break;
-                            receivedData += decoder.decode(value);
-                            if (receivedData.includes("\n")) break;
-                        }
-                    };
-
-                    await Promise.race([readPromise(), timeoutPromise]);
-                    reader.releaseLock();
-
-                    const parsed = JSON.parse(receivedData.trim());
-                    discoveredSlaves = parsed.slaves || [];
-                } catch (e) {
-                    discoveredSlaves = [1];
-                }
-            } else {
-                try {
-                    const res = await fetch(`${localGatewayIP}/api/system/discover`);
-                    const data = await res.json();
-                    discoveredSlaves = data.slaves || [];
-                } catch (e) {
-                    discoveredSlaves = [1]; 
-                }
-            }
-
+            // Skenuj kazdu adresu 1-32 jednotlivo, aby sme nasli VSETKY zariadenia na zbernici
             for (let i = 1; i <= 32; i++) {
                 const cell = document.getElementById(`modbus-${i}`);
                 const label = document.getElementById(`state-${i}`);
@@ -563,9 +525,48 @@
                 cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-amber-950/40 border border-amber-500 text-amber-400 scale-105 transition-all text-center";
                 label.innerText = "TX 📡";
 
-                await new Promise(r => setTimeout(r, 60)); 
+                let found = false;
 
-                if (discoveredSlaves.includes(i)) {
+                if (selectedTransport === 'SERIAL' && activeSerialPort) {
+                    try {
+                        const encoder = new TextEncoder();
+                        const writer = activeSerialPort.writable.getWriter();
+                        await writer.write(encoder.encode(JSON.stringify({action: 'ping_modbus', slave_id: i}) + '\n'));
+                        writer.releaseLock();
+
+                        const decoder = new TextDecoder();
+                        const reader = activeSerialPort.readable.getReader();
+                        let receivedData = '';
+                        const timeoutPromise = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 2000));
+                        const readPromise = async () => {
+                            while (true) {
+                                const { value, done } = await reader.read();
+                                if (done) break;
+                                receivedData += decoder.decode(value);
+                                if (receivedData.includes('\n')) break;
+                            }
+                        };
+                        await Promise.race([readPromise(), timeoutPromise]);
+                        reader.releaseLock();
+                        const parsed = JSON.parse(receivedData.trim());
+                        found = parsed.alive === true || parsed.response === true || parsed.ok === true;
+                    } catch(e) {
+                        found = false;
+                    }
+                } else {
+                    try {
+                        const res = await fetch(`${localGatewayIP}/api/system/discover?slave_id=${i}`, { signal: AbortSignal.timeout(1500) });
+                        const data = await res.json();
+                        found = data.alive === true || data.found === true || (data.slaves && data.slaves.includes(i));
+                    } catch(e) {
+                        found = false;
+                    }
+                }
+
+                await new Promise(r => setTimeout(r, 60));
+
+                if (found) {
+                    discoveredSlaves.push(i);
                     cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-emerald-950/40 border border-emerald-500 text-emerald-400 font-bold text-center";
                     label.innerText = "RX ✓";
                 } else {
