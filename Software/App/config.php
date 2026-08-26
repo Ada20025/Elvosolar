@@ -7,17 +7,24 @@
 // Tiež podporuje: DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT
 function get_env_val($keys, $default = '') {
     foreach ($keys as $key) {
-        $val = $_ENV[$key] ?? getenv($key) ?: '';
-        if ($val !== '' && $val !== false) return $val;
+        // Skús všetky zdroje: $_ENV, getenv, $_SERVER
+        $val = null;
+        if (isset($_ENV[$key]) && $_ENV[$key] !== '') $val = $_ENV[$key];
+        elseif (($g = @getenv($key)) !== false && $g !== '') $val = $g;
+        elseif (isset($_SERVER[$key]) && $_SERVER[$key] !== '') $val = $_SERVER[$key];
+        if ($val !== null && $val !== '') return $val;
     }
     return $default;
 }
 
-$railway_host = get_env_val(['MYSQLHOST', 'DB_HOST', 'DATABASE_HOST'], '');
-$railway_db   = get_env_val(['MYSQL_DATABASE', 'DB_NAME', 'DATABASE_NAME'], '');
-$railway_user = get_env_val(['MYSQLUSER', 'DB_USER', 'DATABASE_USER'], '');
-$railway_pass = get_env_val(['MYSQL_PASSWORD', 'DB_PASS', 'DATABASE_PASSWORD'], '');
-$railway_port = get_env_val(['MYSQLPORT', 'DB_PORT', 'DATABASE_PORT'], '3306');
+$railway_host = get_env_val(['MYSQLHOST', 'MYSQL_HOST', 'DB_HOST', 'DATABASE_HOST'], '');
+$railway_db   = get_env_val(['MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME', 'DATABASE_NAME'], '');
+$railway_user = get_env_val(['MYSQLUSER', 'MYSQL_USER', 'DB_USER', 'DATABASE_USER'], '');
+$railway_pass = get_env_val(['MYSQLPASSWORD', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'DB_PASS', 'DATABASE_PASSWORD'], '');
+$railway_port = get_env_val(['MYSQLPORT', 'MYSQL_PORT', 'DB_PORT', 'DATABASE_PORT'], '3306');
+
+// Debug — zapíše do logu
+error_log("DB CONFIG: host=$railway_host port=$railway_port db=$railway_db user=$railway_user pass_len=" . strlen($railway_pass));
 
 // === ALWAYSDATA (fallback) ===
 $alwaysdata_host = 'mysql-adamdz.alwaysdata.net';

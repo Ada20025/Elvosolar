@@ -852,6 +852,44 @@ elseif ($path === '/verify-reset-code' && $method === 'POST') {
     exit;
 }
 
+elseif ($path === '/debug-env' && $method === 'GET') {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "=== ENV DEBUG ===
+";
+    echo "MYSQLHOST: " . ($_ENV['MYSQLHOST'] ?? getenv('MYSQLHOST') ?: 'NOT SET') . "
+";
+    echo "MYSQLPORT: " . ($_ENV['MYSQLPORT'] ?? getenv('MYSQLPORT') ?: 'NOT SET') . "
+";
+    echo "MYSQLUSER: " . ($_ENV['MYSQLUSER'] ?? getenv('MYSQLUSER') ?: 'NOT SET') . "
+";
+    echo "MYSQLPASSWORD: " . (isset($_ENV['MYSQLPASSWORD']) || getenv('MYSQLPASSWORD') ? 'SET (hidden)' : 'NOT SET') . "
+";
+    echo "MYSQLDATABASE: " . ($_ENV['MYSQLDATABASE'] ?? getenv('MYSQLDATABASE') ?: 'NOT SET') . "
+";
+    echo "MYSQL_DATABASE: " . ($_ENV['MYSQL_DATABASE'] ?? getenv('MYSQL_DATABASE') ?: 'NOT SET') . "
+";
+    echo "MYSQL_ROOT_PASSWORD: " . (isset($_ENV['MYSQL_ROOT_PASSWORD']) || getenv('MYSQL_ROOT_PASSWORD') ? 'SET (hidden)' : 'NOT SET') . "
+";
+    echo "
+=== \$_ENV dump ===
+";
+    foreach ($_ENV as $k => $v) {
+        if (strpos($k, 'MYSQL') === 0) {
+            echo "$k = " . (strpos($k, 'PASSWORD') !== false ? '***' : $v) . "
+";
+        }
+    }
+    echo "
+=== getenv dump ===
+";
+    foreach (['MYSQLHOST','MYSQLPORT','MYSQLUSER','MYSQLPASSWORD','MYSQLDATABASE'] as $k) {
+        $v = @getenv($k);
+        echo "$k = " . ($v !== false ? (strpos($k, 'PASSWORD') !== false ? '***' : $v) : 'NOT SET') . "
+";
+    }
+    exit;
+}
+
 elseif ($path === '/setup_database' && $method === 'GET') {
     // Database setup - spustiť len raz!
     error_reporting(E_ALL);
