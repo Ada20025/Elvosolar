@@ -8,13 +8,17 @@
  */
 
 // Načítanie config - robustné pre Railway + alwaysdata + lokálne
-function get_env_val($keys, $default = '') {
-    foreach ($keys as $key) {
-        // Skús $_ENV, potom getenv(), potom $_SERVER
-        $val = $_ENV[$key] ?? (@getenv($key)) ?: ($_SERVER[$key] ?? '');
-        if ($val !== '' && $val !== false && $val !== null) return $val;
+if (!function_exists('get_env_val')) {
+    function get_env_val($keys, $default = '') {
+        foreach ($keys as $key) {
+            $val = null;
+            if (isset($_ENV[$key]) && $_ENV[$key] !== '') $val = $_ENV[$key];
+            elseif (($g = @getenv($key)) !== false && $g !== '') $val = $g;
+            elseif (isset($_SERVER[$key]) && $_SERVER[$key] !== '') $val = $_SERVER[$key];
+            if ($val !== null && $val !== '') return $val;
+        }
+        return $default;
     }
-    return $default;
 }
 
 $db_host = get_env_val(['MYSQLHOST', 'DB_HOST', 'DATABASE_HOST', 'MYSQL_HOST'], 'localhost');
