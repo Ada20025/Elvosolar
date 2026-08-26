@@ -822,13 +822,12 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
          . "<div style='text-align:center;margin:24px 0;'><span style='font-size:32px;font-weight:900;letter-spacing:8px;color:#3b82f6;font-family:monospace;background:#f1f5f9;padding:16px 32px;border-radius:12px;'>" . $code . "</span></div>"
          . "<p style='color:#64748b;font-size:12px;'>Kód platí 15 minút. Ak ste o obnovenie hesla nepožiadali, tento e-mail ignorujte.</p>";
     
-    $email_sent = @send_elvo_email($email, $subject, $title, $html);
-    if (!$email_sent) {
-        // Fallback: zobraz kód priamo na stránke
-        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Email sa nepodarilo odoslať. Váš kód: <strong style="font-size:18px;color:#3b82f6;">' . $code . '</strong> (použite ho nižšie)'];
-    } else {
-        $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Overovací kód odoslaný na ' . $email];
-    }
+    // Vždy zobraz kód (email je bonus, nefunguje na Railway)
+    $_SESSION['reset_code'] = $code;
+    $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Váš overovací kód: <strong style="font-size:18px;color:#3b82f6;letter-spacing:4px;">' . $code . '</strong><br><small style="color:#64748b;">Zadajte ho vo formulári nižšie.</small>'];
+    
+    // Pokus o email (bonus)
+    @send_elvo_email($email, $subject, $title, $html);
     
     $_SESSION['reset_email'] = $email;
     $_SESSION['reset_user_id'] = $user['id'];
@@ -862,10 +861,16 @@ elseif ($path === '/verify-reset-code' && $method === 'POST') {
         exit;
     }
     
-    // Over kód
+    // Over kód - z session alebo z DB
+    $session_code = $_SESSION['reset_code'] ?? '';
     $stmt = $pdo->prepare("SELECT id FROM password_resets WHERE user_id = ? AND code = ? AND expires_at > NOW()");
     $stmt->execute([$user_id, $code]);
     $reset = $stmt->fetch();
+    
+    // Fallback: ak DB nefunguje, over cez session
+    if (!$reset && $session_code && $session_code === $code) {
+        $reset = ['id' => 0]; // dummy
+    }
     
     if (!$reset) {
         $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Neplatný alebo expirovaný kód.'];

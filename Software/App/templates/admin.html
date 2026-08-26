@@ -49,7 +49,7 @@
     <nav class="bg-white border-b border-slate-200/80 px-6 py-4 flex justify-between items-center">
         <div class="flex items-center gap-6">
             <a href="index.html" class="flex items-center">
-                <img src="Png/download.png" alt="ELVOSOLAR a.s." class="h-10 w-auto object-contain">
+                <img src="/templates/ElvosolarLogo.png" alt="ELVOSOLAR a.s." class="h-10 w-auto object-contain">
             </a>
             <span class="text-slate-300">|</span>
             <span class="text-xs font-black text-brandDark tracking-widest uppercase font-mono flex items-center gap-1.5">
@@ -60,7 +60,7 @@
         <div class="flex items-center gap-4 text-xs font-semibold">
             <div class="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200/60">
                 <span class="text-brandGreen">👤</span>
-                <span id="activeUserName" class="text-slate-800 font-bold"><?php echo htmlspecialchars($username ?? 'Daniela'); ?></span>
+                <span id="activeUserName" class="text-slate-800 font-bold"><?php echo htmlspecialchars($_SESSION['username'] ?? 'admin'); ?></span>
             </div>
             <a href="<?php echo $base_path; ?>/logout" class="text-rose-500 hover:text-rose-600 transition font-bold border border-rose-500/20 px-3.5 py-2 rounded-xl bg-rose-500/5 uppercase font-mono tracking-wider">Odhlásiť</a>
         </div>
@@ -168,6 +168,9 @@
                     <i data-lucide="layout-grid" class="w-4 h-4 text-brandGreen"></i> Pripojené riadiace uzly
                 </h3>
                 <span class="text-[9px] text-slate-400 font-bold">KLIKNUTÍM NA NÁZOV OTVORÍTE DETAIL STANICE</span>
+                <a href="/setup" class="ml-4 inline-flex items-center gap-1.5 px-3 py-1.5 bg-brandGreen text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-emerald-600 transition">
+                    + Pridať zariadenie
+                </a>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse">
@@ -185,7 +188,14 @@
                     </thead>
                     <tbody id="adminTableBody" class="text-xs text-slate-600">
                         <tr>
-                            <td colspan="8" class="text-center p-8 text-slate-400 italic">Načítavam zoznam pripojených zariadení...</td>
+                            <td colspan="8" class="text-center p-12 text-slate-400">
+                            <div class="text-4xl mb-4">📡</div>
+                            <div class="text-sm font-bold mb-2">Žiadne zariadenie</div>
+                            <div class="text-xs mb-4">Pripojte svoju riadiacu jednotku CM5 cez setup wizard.</div>
+                            <a href="/setup" class="inline-flex items-center gap-1.5 px-4 py-2 bg-brandGreen text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-600 transition">
+                                + Pridať prvé zariadenie
+                            </a>
+                        </td>
                         </tr>
                     </tbody>
                 </table>

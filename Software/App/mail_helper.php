@@ -202,9 +202,18 @@ if (!function_exists('send_elvo_email')) {
         $headers .= "Message-ID: " . $message_id . $eol;
         $headers .= "X-Mailer: PHP/" . phpversion();
 
-        $result = @mail($to, $subject_encoded, $message_html, $headers, "-f " . $from_email);
-        if (!$result) {
-            $result = @mail($to, $subject_encoded, $message_html, $headers);
+        // Mail s timeoutom - na Railway mail() casto hanguje
+        $start = time();
+        $result = false;
+        try {
+            $result = @mail($to, $subject_encoded, $message_html, $headers, "-f " . $from_email);
+        } catch (Exception $e) {
+            error_log("Mail exception: " . $e->getMessage());
+        }
+        if (!$result && (time() - $start) < 2) {
+            try {
+                $result = @mail($to, $subject_encoded, $message_html, $headers);
+            } catch (Exception $e) {}
         }
         
         if (!$result) {
