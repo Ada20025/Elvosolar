@@ -516,63 +516,66 @@
 
             let discoveredSlaves = [];
 
-            // Skenuj kazdu adresu 1-32 jednotlivo, aby sme nasli VSETKY zariadenia na zbernici
+            // VOLAME DISCOVER 1x PRE VSETKY ID
+            if (selectedTransport === 'SERIAL' && activeSerialPort) {
+                try {
+                    const encoder = new TextEncoder();
+                    const writer = activeSerialPort.writable.getWriter();
+                    await writer.write(encoder.encode(JSON.stringify({action: 'discover_rs485'}) + '\n'));
+                    writer.releaseLock();
+                    const decoder = new TextDecoder();
+                    const reader = activeSerialPort.readable.getReader();
+                    let receivedData = '';
+                    const timeoutPromise = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 30000));
+                    const readPromise = async () => {
+                        while (true) {
+                            const { value, done } = await reader.read();
+                            if (done) break;
+                            receivedData += decoder.decode(value);
+                            if (receivedData.includes('\n')) break;
+                        }
+                    };
+                    await Promise.race([readPromise(), timeoutPromise]);
+                    reader.releaseLock();
+                    const parsed = JSON.parse(receivedData.trim());
+                    discoveredSlaves = parsed.slaves || [];
+                } catch(e) {
+                    discoveredSlaves = [];
+                }
+            } else {
+                // VOLAME /api/system/discover 1x - cloud/CM5 scanne vsetky ID a vrati slaves
+                const bId = document.getElementById('brandSelect').value;
+                const cId = document.getElementById('categorySelect').value;
+                const mId = document.getElementById('modelSelect').value;
+                try {
+                    status.innerText = "Otváram RS485 port a skenujem zbernicu (~10s)...";
+                    const res = await fetch(`${localGatewayIP}/api/system/discover?brand=${bId}&category=${cId}&model=${mId}`, { signal: AbortSignal.timeout(45000) });
+                    const data = await res.json();
+                    if (data.status === 'error') {
+                        status.innerText = 'Chyba: ' + (data.message || 'Neznáma chyba');
+                        status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';
+                    }
+                    discoveredSlaves = data.slaves || [];
+                } catch(e) {
+                    status.innerText = 'Chyba komunikácie: ' + e.message;
+                    status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';
+                    discoveredSlaves = [];
+                }
+            }
+
+            // ANIMUJ GRID podla vysledkov
             for (let i = 1; i <= 32; i++) {
                 const cell = document.getElementById(`modbus-${i}`);
                 const label = document.getElementById(`state-${i}`);
-
-                status.innerText = `Testujem adresu ${i} z 32...`;
-                cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-amber-950/40 border border-amber-500 text-amber-400 scale-105 transition-all text-center";
-                label.innerText = "TX 📡";
-
-                let found = false;
-
-                if (selectedTransport === 'SERIAL' && activeSerialPort) {
-                    try {
-                        const encoder = new TextEncoder();
-                        const writer = activeSerialPort.writable.getWriter();
-                        await writer.write(encoder.encode(JSON.stringify({action: 'ping_modbus', slave_id: i}) + '\n'));
-                        writer.releaseLock();
-
-                        const decoder = new TextDecoder();
-                        const reader = activeSerialPort.readable.getReader();
-                        let receivedData = '';
-                        const timeoutPromise = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 2000));
-                        const readPromise = async () => {
-                            while (true) {
-                                const { value, done } = await reader.read();
-                                if (done) break;
-                                receivedData += decoder.decode(value);
-                                if (receivedData.includes('\n')) break;
-                            }
-                        };
-                        await Promise.race([readPromise(), timeoutPromise]);
-                        reader.releaseLock();
-                        const parsed = JSON.parse(receivedData.trim());
-                        found = parsed.alive === true || parsed.response === true || parsed.ok === true;
-                    } catch(e) {
-                        found = false;
-                    }
-                } else {
-                    try {
-                        const res = await fetch(`${localGatewayIP}/api/system/discover?slave_id=${i}`, { signal: AbortSignal.timeout(1500) });
-                        const data = await res.json();
-                        found = data.alive === true || data.found === true || (data.slaves && data.slaves.includes(i));
-                    } catch(e) {
-                        found = false;
-                    }
-                }
-
-                await new Promise(r => setTimeout(r, 60));
-
-                if (found) {
-                    discoveredSlaves.push(i);
+                status.innerText = `Kontrolujem adresu ${i} z 32...`;
+                if (discoveredSlaves.includes(i)) {
                     cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-emerald-950/40 border border-emerald-500 text-emerald-400 font-bold text-center";
-                    label.innerText = "RX ✓";
+                    label.innerText = "RX \u2713";
                 } else {
                     cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-slate-950/20 border border-slate-900 text-slate-600 opacity-40 text-center";
                     label.innerText = "NO RESP";
                 }
+                await new Promise(r => setTimeout(r, 30));
             }
 
             discoveredSlaveIds = discoveredSlaves;
@@ -583,7 +586,7 @@
             if (discoveredSlaves.length > 0) {
                 slavesSpan.innerText = `Zistené aktívne ID: ${discoveredSlaves.join(', ')}`;
                 slavesSpan.className = "text-emerald-400 font-bold";
-                status.innerText = "Diagnostika úspešne dokončená. Zariadenia komunikujú.";
+                status.innerText = "Diagnostika úsešne dokončená. Zariadenia komunikujú.";
                 status.className = "p-4 bg-emerald-950/20 border border-emerald-900/30 rounded-xl text-xs text-center font-bold text-emerald-400";
             } else {
                 slavesSpan.innerText = "Žiadne zariadenie neodpovedalo.";
