@@ -49,3 +49,7 @@ try {
 } catch (PDOException $e) {
     die("Chyba pripojenia k databáze: " . $e->getMessage());
 }
+
+// Vytvor cm5_config tabuľku ak neexistuje
+require_once __DIR__ . '/cm5_config_table.php';
+ensure_cm5_config_table($pdo);

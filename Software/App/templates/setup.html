@@ -238,7 +238,6 @@
 
                         <div class="button-group pt-2 space-y-2">
                             <button onclick="submitStep3()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition uppercase tracking-wider">POKRAČOVAŤ NA REŽIM ➔</button>
-                            <button onclick="goToSlide(4)" class="w-full bg-slate-900 hover:bg-slate-850 text-slate-400 font-bold text-[11px] py-2.5 rounded-xl transition border border-slate-850 font-mono uppercase tracking-wider">Preskočiť nastavenie Wi-Fi ➔</button>
                         </div>
                     </div>
 
@@ -279,7 +278,7 @@
                             </div>
                         </div>
                         <div class="button-group flex gap-2 pt-2">
-                            <button onclick="goToSlide(3)" class="w-1/3 bg-slate-800 text-slate-300 font-bold text-xs py-4 rounded-xl transition">Späť</button>
+                            <button onclick="goToSlide(2)" class="w-1/3 bg-slate-800 text-slate-300 font-bold text-xs py-4 rounded-xl transition">Späť</button>
                             <button onclick="executeFinalSetupAndSend()" class="w-2/3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition uppercase tracking-wider">ODOSLAŤ DO BOXU ➔</button>
                         </div>
                     </div>
@@ -467,22 +466,15 @@
                     writer.releaseLock();
                 } 
                 else {
-                    await fetch(`${localGatewayIP}/api/admin/claim`, {
+                    // Posleme claim + claim-device PARALELNE s timeoutom (max 5s)
+                    const claimPromise = fetch(`${localGatewayIP}/api/admin/claim`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(configPayload)
-                    });
-                    
-                    const netType = document.querySelector('input[name="netType"]:checked').value;
-                    if (netType === 'wifi' && ssid && ssid !== "ACTIVE_CURRENT_WIFI") {
-                        await fetch(`${localGatewayIP}/api/system/wifi/connect`, {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ ssid: ssid, password: pass })
-                        });
-                    }
+                        body: JSON.stringify(configPayload),
+                        signal: AbortSignal.timeout(5000)
+                    }).catch(e => console.warn('claim:', e.message));
 
-                    await fetch(`${localGatewayIP}/api/user/claim-device`, {
+                    const devicePromise = fetch(`${localGatewayIP}/api/user/claim-device`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
@@ -492,8 +484,11 @@
                             slave_id: 1,
                             admin_username: "admin",
                             has_battery: has_battery
-                        })
-                    });
+                        }),
+                        signal: AbortSignal.timeout(5000)
+                    }).catch(e => console.warn('claim-device:', e.message));
+
+                    await Promise.all([claimPromise, devicePromise]);
                 }
                 
                 statusModal.classList.add("hidden");
@@ -636,7 +631,7 @@
         }
 
         function handleTransitionToStep3() {
-            goToSlide(3);
+            goToSlide(4); // Preskocime WiFi, ideme priamo na rezim
             const wifiRadio = document.getElementById('netTypeWifi');
             if (wifiRadio && wifiRadio.checked) {
                 scanWifiNetworks();

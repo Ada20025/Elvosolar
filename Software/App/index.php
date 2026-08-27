@@ -1148,6 +1148,167 @@ SMTP AUTH FAILED
     fclose($socket);
 }
 
+// =============================================================================
+// CM5 PROXY ENDPOINTY - Setup wizard posiela config na CM5 cez cloud
+// =============================================================================
+
+// --- CM5: Nahlásenie IP adresy ---
+elseif ($path === '/api/report-ip' && $method === 'POST') {
+    $data = get_json_input();
+    $ip = trim($data['ip'] ?? '');
+    $serial = trim($data['serial'] ?? '');
+    if ($ip && $serial) {
+        $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'online') ON DUPLICATE KEY UPDATE updated_at = NOW()");
+        $stmt->execute([$serial, json_encode(['ip' => $ip])]);
+    }
+    send_json(['status' => 'success']);
+}
+
+// --- CM5: Stiahni pending config ---
+elseif ($path === '/api/cm5/poll' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = trim($data['serial'] ?? '');
+    if (!$serial) {
+        send_json(['status' => 'error', 'message' => 'Chýba serial_number'], 400);
+    }
+    $stmt = $pdo->prepare("SELECT id, config_json FROM cm5_config WHERE serial_number = ? AND status = 'pending' ORDER BY created_at ASC LIMIT 1");
+    $stmt->execute([$serial]);
+    $row = $stmt->fetch();
+    if ($row) {
+        $stmt2 = $pdo->prepare("UPDATE cm5_config SET status = 'applied' WHERE id = ?");
+        $stmt2->execute([$row['id']]);
+        send_json(['status' => 'success', 'config' => json_decode($row['config_json'], true), 'command_id' => $row['id']]);
+    } else {
+        send_json(['status' => 'no_pending']);
+    }
+}
+
+// --- CM5: Odosli vysledok scanu ---
+elseif ($path === '/api/cm5/result' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = trim($data['serial'] ?? '');
+    $command_id = intval($data['command_id'] ?? 0);
+    $result = $data['result'] ?? [];
+    if ($command_id) {
+        $stmt = $pdo->prepare("UPDATE cm5_config SET result_json = ?, status = 'applied' WHERE id = ?");
+        $stmt->execute([json_encode($result), $command_id]);
+    }
+    send_json(['status' => 'success']);
+}
+
+// --- Frontend: Čakaj na výsledok z CM5 ---
+elseif ($path === '/api/cm5/wait-result' && $method === 'GET') {
+    $serial = $_GET['serial'] ?? '';
+    $timeout = min(intval($_GET['timeout'] ?? 30), 60);
+    if (!$serial) {
+        send_json(['status' => 'error', 'message' => 'Chýba serial'], 400);
+    }
+    $start = time();
+    while (time() - $start < $timeout) {
+        $stmt = $pdo->prepare("SELECT result_json, status FROM cm5_config WHERE serial_number = ? AND result_json IS NOT NULL ORDER BY updated_at DESC LIMIT 1");
+        $stmt->execute([$serial]);
+        $row = $stmt->fetch();
+        if ($row && $row['result_json']) {
+            send_json(['status' => 'success', 'result' => json_decode($row['result_json'], true)]);
+            return;
+        }
+        usleep(500000); // 0.5s
+    }
+    send_json(['status' => 'timeout']);
+}
+
+// --- ADMIN CLAIM (cloud verzia) ---
+elseif ($path === '/api/admin/claim' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = 'CM5-' . ($_SERVER['HTTP_HOST'] ?? 'cloud');
+    $config = [
+        'action' => 'claim',
+        'admin_username' => $data['admin_username'] ?? 'admin',
+        'admin_password' => $data['admin_password'] ?? '',
+        'comm_mode' => $data['comm_mode'] ?? 'LOCAL_MODBUS',
+        'cloud_username' => $data['cloud_username'] ?? '',
+        'cloud_password' => $data['cloud_password'] ?? '',
+    ];
+    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
+    $stmt->execute([$serial, json_encode($config)]);
+    send_json(['status' => 'success', 'message' => 'Config uložený, CM5 ho stiahne pri ďalšom pripojení.']);
+}
+
+// --- USER CLAIM DEVICE (cloud verzia) ---
+elseif ($path === '/api/user/claim-device' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = 'CM5-' . ($_SERVER['HTTP_HOST'] ?? 'cloud');
+    $config = [
+        'action' => 'claim_device',
+        'brand_id' => $data['brand_id'] ?? '',
+        'category_id' => $data['category_id'] ?? '',
+        'model_id' => $data['model_id'] ?? '',
+        'slave_id' => intval($data['slave_id'] ?? 1),
+        'has_battery' => boolval($data['has_battery'] ?? true),
+        'name' => $data['name'] ?? '',
+    ];
+    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
+    $stmt->execute([$serial, json_encode($config)]);
+    send_json(['status' => 'success']);
+}
+
+// --- SYSTEM DISCOVER (cloud verzia - caka na CM5 scan) ---
+elseif ($path === '/api/system/discover' && $method === 'GET') {
+    $brand = $_GET['brand'] ?? '';
+    $category = $_GET['category'] ?? '';
+    $model = $_GET['model'] ?? '';
+    $serial = 'CM5-' . ($_SERVER['HTTP_HOST'] ?? 'cloud');
+    
+    // Uloz prikaz na scan
+    $config = [
+        'action' => 'discover',
+        'brand_id' => $brand,
+        'category_id' => $category,
+        'model_id' => $model,
+    ];
+    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
+    $stmt->execute([$serial, json_encode($config)]);
+    $cmd_id = $pdo->lastInsertId();
+    
+    // Cakaj na vysledok max 45s
+    $start = time();
+    while (time() - $start < 45) {
+        $stmt2 = $pdo->prepare("SELECT result_json FROM cm5_config WHERE id = ?");
+        $stmt2->execute([$cmd_id]);
+        $row = $stmt2->fetch();
+        if ($row && $row['result_json']) {
+            send_json(json_decode($row['result_json'], true));
+            return;
+        }
+        usleep(500000);
+    }
+    send_json(['status' => 'error', 'message' => 'CM5 neodpovedalo. Skontrolujte či je zariadenie online.', 'slaves' => [], 'discovered_count' => 0]);
+}
+
+// --- SYSTEM STATUS (cloud verzia) ---
+elseif ($path === '/api/system/status' && $method === 'GET') {
+    send_json([
+        'status' => 'success',
+        'is_claimed' => isset($_SESSION['user_id']),
+        'internet' => true,
+        'modbus' => 'CLOUD_MODE'
+    ]);
+}
+
+// --- WIFI CONNECT (cloud verzia - ulozi pre CM5) ---
+elseif ($path === '/api/system/wifi/connect' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = 'CM5-' . ($_SERVER['HTTP_HOST'] ?? 'cloud');
+    $config = [
+        'action' => 'wifi_connect',
+        'ssid' => $data['ssid'] ?? '',
+        'password' => $data['password'] ?? '',
+    ];
+    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
+    $stmt->execute([$serial, json_encode($config)]);
+    send_json(['status' => 'success']);
+}
+
 // --- 404 HANDLER ---
 else {
     http_response_code(404);
