@@ -823,48 +823,69 @@ def _get_serial_number():
     return "CM5-DEFAULT"
 
 def _auto_detect_rs485_port():
-    """Automaticky najde funkcny RS485 port pri spusteni."""
+    """Automaticky najde funkcny RS485 port pri spusteni pomocou pymodbus."""
     import glob as glob_mod
+    try:
+        from pymodbus.client import ModbusSerialClient
+    except ImportError:
+        log_message("[AUTO-DETECT] pymodbus nie je nainštalovaný, skusam pip install")
+        try:
+            import subprocess
+            subprocess.run(["pip3", "install", "pymodbus"], timeout=30, capture_output=True)
+            from pymodbus.client import ModbusSerialClient
+        except Exception:
+            log_message("[AUTO-DETECT] Nepodarilo sa nainstalovat pymodbus")
+            return "/dev/ttyAMA4"
+    
     all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
     if not all_ports:
         all_ports = ['/dev/ttyAMA4']
+    
+    log_message(f"[AUTO-DETECT] Skusam porty: {all_ports}")
     
     for port in all_ports:
         if not os.path.exists(port):
             continue
         for baud in [9600, 19200]:
-            for parity_mode in [serial.PARITY_NONE, serial.PARITY_EVEN]:
+            client = ModbusSerialClient(port=port, baudrate=baud, parity='N', stopbits=1, bytesize=8, timeout=0.3)
+            if not client.connect():
+                continue
+            
+            found_ids = []
+            for sid in range(1, 33):
                 try:
-                    s = serial.Serial(port, baud, parity=parity_mode, timeout=0.5)
-                    for sid in range(1, 5):
-                        frame = bytes([sid, 3, 0, 0, 0, 1])
-                        crc = 0xFFFF
-                        for b in frame:
-                            crc ^= b
-                            for _ in range(8):
-                                crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
-                        frame += bytes([crc & 0xFF, (crc >> 8) & 0xFF])
-                        s.reset_input_buffer()
-                        s.write(frame)
-                        resp = s.read(10)
-                        if resp:
-                            par_name = 'EVEN' if parity_mode == serial.PARITY_EVEN else 'NONE'
-                            log_message(f"[AUTO-DETECT] NAYDENE! Port={port} Baud={baud} Parity={par_name} ID={sid}")
-                            s.close()
-                            # Uloz do DB
-                            try:
-                                conn = get_db_connection()
-                                cursor = conn.cursor()
-                                cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_active_port'")
-                                cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (port,))
-                                cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_parity'")
-                                cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_parity', ?)", (par_name,))
-                                conn.commit()
-                                conn.close()
-                            except: pass
-                            return port
-                    s.close()
+                    result = client.read_holding_registers(address=0, count=1, slave=sid)
+                    if not result.isError():
+                        found_ids.append(sid)
+                        log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} ID={sid} (HOLDING)")
+                    else:
+                        result2 = client.read_input_registers(address=0, count=1, slave=sid)
+                        if not result2.isError():
+                            found_ids.append(sid)
+                            log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} ID={sid} (INPUT)")
+                        else:
+                            # Aj error odpoved = zariadenie existuje
+                            if hasattr(result, 'exception_code'):
+                                found_ids.append(sid)
+                                log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} ID={sid} (ERROR={result.exception_code})")
+                except Exception:
+                    pass
+            
+            client.close()
+            
+            if found_ids:
+                log_message(f"[AUTO-DETECT] NAYDENE na {port}: {found_ids}")
+                try:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_active_port'")
+                    cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (port,))
+                    cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_parity'")
+                    cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_parity', 'N')")
+                    conn.commit()
+                    conn.close()
                 except: pass
+                return port
     
     log_message("[AUTO-DETECT] Ziadny RS485 port nenajdeny")
     return "/dev/ttyAMA4"

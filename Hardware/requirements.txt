@@ -3,3 +3,4 @@ uvicorn>=0.20.0
 pyserial>=3.5
 requests>=2.28.0
 cryptography>=40.0.0
+pymodbus>=3.0.0
