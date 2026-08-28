@@ -1018,6 +1018,7 @@ def cloud_sync_loop():
                                     
                                     if port_found:
                                         discovered_slaves = port_found
+                                        discovered_port = port
                                         log_message(f'[DISCOVER] NAYDENE na {port}: {discovered_slaves}')
                                         break
                                 except Exception:
