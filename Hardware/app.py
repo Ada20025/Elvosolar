@@ -26,6 +26,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from database import init_db, get_db_connection, verify_password
 from solar_service import SolarBackgroundService
 from system_service import SystemService
+from led_service import LedService
 from Config import DEVICE_DB, PORT, WEB_PORT
 
 CLOUD_SERVER_URL = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
@@ -843,6 +844,8 @@ def cloud_sync_loop():
             log_message(f"[CLOUD SYNC] Prikaz: {action} (cmd_id={command_id})")
             result = {"status": "error", "message": "Neznama akcia"}
 
+            led.anim_cloud_connecting()
+
             if action == "claim":
                 conn = get_db_connection()
                 cursor = conn.cursor()
@@ -880,6 +883,7 @@ def cloud_sync_loop():
                 result = {"status": "success", "message": f"Zariadenie ulozene (slave_id={slave_id})"}
 
             elif action == "discover":
+                led.anim_scanning()
                 brand_id = config.get("brand_id", "5")
                 cat_id = config.get("category_id", "1")
                 model_id = config.get("model_id", "1")
@@ -949,6 +953,10 @@ def cloud_sync_loop():
                     cursor.execute("INSERT INTO system_settings (key, value) VALUES ('is_claimed', '1')")
                     conn.commit()
                     conn.close()
+                if discovered_slaves:
+                    led.anim_ok()
+                else:
+                    led.anim_fault()
                 result = {
                     "status": "success" if discovered_slaves else "error",
                     "slaves": discovered_slaves,
@@ -958,6 +966,7 @@ def cloud_sync_loop():
                 }
 
             elif action == "wifi_connect":
+                led.anim_connecting()
                 ssid = config.get("ssid", "")
                 password = config.get("password", "")
                 if ssid and ssid != "ACTIVE_CURRENT_WIFI":
@@ -978,9 +987,14 @@ def cloud_sync_loop():
         except Exception as e:
             log_message(f"[CLOUD SYNC] Chyba: {e}")
 
+# ─── LED SERVICE START ────────────────────────────────
+led = LedService()
+led.anim_boot()  # Modra - system sa spusta
+
 cloud_thread = threading.Thread(target=cloud_sync_loop, daemon=True)
 cloud_thread.start()
 log_message("[CLOUD SYNC] Background thread spusteny")
+led.anim_ok()  # Zelena - vsetko OK
 
 
 if __name__ == "__main__":
