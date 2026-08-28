@@ -875,7 +875,7 @@
         async function completeSetup() {
             const finishBtn = document.getElementById("finishBtn");
             finishBtn.disabled = true;
-            finishBtn.innerText = "REGISTRUJEM V CLOUDU...";
+            finishBtn.innerText = "DOKONCUJEM...";
             finishBtn.className = "w-full bg-slate-700 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
 
             try {
@@ -887,68 +887,53 @@
                 const model = models[model_id] ? models[model_id].meno : 'SUN2000';
                 const name = brand + ' ' + model;
 
-                // Získaj sériové číslo z CM5 zariadenia
-                let serial = '';
+                let serial = 'CM5-DEFAULT';
                 try {
-                    const statusRes = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(3000) });
+                    const statusRes = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(5000) });
                     const statusData = await statusRes.json();
-                    serial = statusData.serial_number || statusData.serial || '';
+                    serial = statusData.serial_number || statusData.serial || 'CM5-DEFAULT';
                 } catch(e) {}
 
-                // Ak nemáme sériové číslo z CM5, vygeneruj z MAC alebo náhodné
-                if (!serial) {
-                    try {
-                        const infoRes = await fetch(`${localGatewayIP}/api/system/info`, { signal: AbortSignal.timeout(3000) });
-                        const infoData = await infoRes.json();
-                        serial = infoData.serial_number || infoData.serial || infoData.mac || '';
-                    } catch(e) {}
-                }
-                if (!serial) {
-                    serial = 'CM5-' + Date.now().toString(36).toUpperCase();
-                }
-
-                // Zaregistruj zariadenie na serveri
-                const regRes = await fetch('/api/devices/register', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        serial_number: serial,
-                        name: name,
-                        brand: brand,
-                        model: model
-                    })
-                });
-                const regData = await regRes.json();
-
-                if (regData.status !== 'success' && regRes.status !== 409) {
-                    // 409 = už existuje, to je OK
-                    throw new Error(regData.message || 'Registrácia zlyhala');
-                }
-
-                // Ak sme našli Modbus ID, pošli update do CM5
-                if (discoveredSlaveIds.length > 0 && selectedTransport !== 'BLE') {
+                // Claim na CM5 - ulozi zariadenie
+                if (selectedTransport !== 'BLE') {
                     try {
                         await fetch(`${localGatewayIP}/api/admin/claim`, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({
-                                slave_id: discoveredSlaveIds[0],
-                                serial_number: serial
-                            })
+                                admin_username: 'admin', admin_password: '',
+                                comm_mode: selectedMode,
+                                brand_id: brand_id, category_id: cat_id, model_id: model_id,
+                                slave_id: discoveredSlaveIds.length > 0 ? discoveredSlaveIds[0] : 1,
+                                name: name,
+                                has_battery: document.getElementById('wizardHasBattery').checked
+                            }),
+                            signal: AbortSignal.timeout(10000)
                         });
-                    } catch(e) {}
+                    } catch(e) { console.log('Claim:', e); }
                 }
 
-                finishBtn.innerText = "DOKONČENÉ ✓";
+                // Cloud registracia - nepovinne
+                try {
+                    await fetch('/api/devices/register', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ serial_number: serial, name: name, brand: brand, model: model }),
+                        signal: AbortSignal.timeout(5000)
+                    });
+                } catch(e) {}
+
+                finishBtn.innerText = "DOKONCENE ✓";
                 finishBtn.className = "w-full bg-emerald-600 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
                 finishBtn.onclick = () => { location.href = '/'; };
             } catch(err) {
                 finishBtn.disabled = false;
-                finishBtn.innerText = "DOKONČIŤ NASTAVENIE";
+                finishBtn.innerText = "DOKONCIT NASTAVENIE";
                 finishBtn.className = "w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
-                showValidationError('Chyba registrácie: ' + err.message + '. Kliknite znova alebo dokončite manuálne.');
+                showValidationError('Chyba: ' + err.message);
             }
+        }
         }
     </script>
 </body>
