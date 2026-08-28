@@ -903,6 +903,8 @@ def cloud_sync_loop():
                             try: bg_service.ser.close()
                             except: pass
                         for parity in [serial.PARITY_NONE, serial.PARITY_EVEN]:
+                            par_name = 'EVEN' if parity == serial.PARITY_EVEN else 'NONE'
+                            log_message(f'[DISCOVER] Testujem port={target_port} baud={baud_rate} parity={par_name}')
                             try:
                                 ser = serial.Serial(port=target_port, baudrate=baud_rate, parity=parity, timeout=0.3)
                                 for sid in range(1, 33):
@@ -915,10 +917,13 @@ def cloud_sync_loop():
                                             found = bg_service.ping_slave_fc(ser, sid, reg_soc, 4)
                                     if found:
                                         discovered_slaves.append(sid)
+                                        log_message(f'[DISCOVER] ✅ NAYDENE slave ID={sid} parity={par_name}')
                                 ser.close()
+                                log_message(f'[DISCOVER] Scan dokonceny parity={par_name} nasiel={discovered_slaves}')
                                 if discovered_slaves:
                                     break
-                            except: pass
+                            except Exception as e:
+                                log_message(f'[DISCOVER] CHYBA parity={par_name}: {e}')
                 bg_service.paused = False
                 winning_parity = "N"
                 if discovered_slaves:

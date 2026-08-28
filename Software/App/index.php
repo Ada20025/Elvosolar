@@ -1270,14 +1270,17 @@ elseif ($path === '/api/system/discover' && $method === 'GET') {
     $stmt->execute([$serial, json_encode($config)]);
     $cmd_id = $pdo->lastInsertId();
     
-    // Cakaj na vysledok max 45s
+    // Cakaj na vysledok max 90s
     $start = time();
-    while (time() - $start < 45) {
+    error_log("[DISCOVER] Cakam na vysledok z CM5 (cmd_id=$cmd_id)");
+    while (time() - $start < 90) {
         $stmt2 = $pdo->prepare("SELECT result_json FROM cm5_config WHERE id = ?");
         $stmt2->execute([$cmd_id]);
         $row = $stmt2->fetch();
         if ($row && $row['result_json']) {
-            send_json(json_decode($row['result_json'], true));
+            $result = json_decode($row['result_json'], true);
+            error_log("[DISCOVER] Vysledok: " . json_encode($result));
+            send_json($result);
             return;
         }
         usleep(500000);
