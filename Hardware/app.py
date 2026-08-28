@@ -28,6 +28,7 @@ from database import init_db, get_db_connection, verify_password
 from solar_service import SolarBackgroundService
 from system_service import SystemService
 from led_service import LedService
+from smart_meter_service import get_smart_meter_service
 logging.getLogger("LED").addHandler(logging.StreamHandler())
 logging.getLogger("LED").setLevel(logging.INFO)
 from Config import DEVICE_DB, PORT, WEB_PORT
@@ -1089,6 +1090,9 @@ def cloud_sync_loop():
 led = LedService()
 led.anim_boot()  # cervena - system sa spusta
 
+# Smart meter init
+smart_meter = get_smart_meter_service(bg_service)
+
 # Auto-detect RS485 port
 detected_port = _auto_detect_rs485_port()
 log_message(f"[STARTUP] RS485 port: {detected_port}")
@@ -1135,6 +1139,73 @@ def api_discover_direct():
             results.append({"parity": par_name, "error": str(e)})
     
     return {"status": "success", "results": results}
+
+
+@app.get("/api/smart-meter/config")
+def api_smart_meter_config():
+    return smart_meter.get_config()
+
+@app.post("/api/smart-meter/config")
+def api_smart_meter_config_post(data: dict):
+    smart_meter.save_config(data)
+    return {"status": "success"}
+
+@app.get("/api/smart-meter/live")
+def api_smart_meter_live():
+    return smart_meter.get_live_data()
+
+@app.post("/api/smart-meter/auto-detect")
+def api_smart_meter_auto_detect():
+    """Auto-detect smart meter na RS485 bus."""
+    import glob as glob_mod
+    try:
+        from pymodbus.client import ModbusSerialClient
+    except ImportError:
+        return {"status": "error", "message": "pymodbus nie je dostupny"}
+    
+    all_ports = sorted(glob_mod.glob('/dev/ttyAMA*'))
+    results = []
+    
+    # Známe Smart Meter slave IDs a registre
+    meter_profiles = [
+        {"name": "Landis+Gyr E360", "slave_id": 1, "regs": {"import_wh": 0, "import_w": 10, "export_w": 12}},
+        {"name": "Kaifa MA309", "slave_id": 1, "regs": {"import_wh": 0, "import_w": 10, "export_w": 12}},
+        {"name": "Iskraemeco MT175", "slave_id": 1, "regs": {"import_wh": 0, "import_w": 10, "export_w": 12}},
+        {"name": "Generic Import/Export", "slave_id": 1, "regs": {"import_wh": 0, "export_w": 2}},
+    ]
+    
+    for port in all_ports:
+        if not os.path.exists(port):
+            continue
+        for baud in [9600, 19200]:
+            try:
+                client = ModbusSerialClient(port=port, baudrate=baud, parity='N', stopbits=1, bytesize=8, timeout=0.5)
+                if not client.connect():
+                    continue
+                
+                # Skus slave ID 1 (standardne pre smart meter)
+                for profile in meter_profiles:
+                    try:
+                        # Test import Wh register
+                        result = client.read_holding_registers(address=profile['regs']['import_wh'], count=2, slave=profile['slave_id'])
+                        if not result.isError() and result.registers:
+                            wh_val = (result.registers[0] << 16) | result.registers[1] if len(result.registers) >= 2 else result.registers[0]
+                            if wh_val > 0:
+                                results.append({
+                                    "port": port, "baud": baud, "slave_id": profile['slave_id'],
+                                    "name": profile['name'], "import_wh": wh_val,
+                                    "registers": profile['regs']
+                                })
+                    except Exception:
+                        pass
+                
+                client.close()
+            except Exception:
+                pass
+    
+    if results:
+        return {"status": "success", "meters": results}
+    return {"status": "error", "message": "Ziadne smart meter nenajdene na RS485"}
 
 
 if __name__ == "__main__":
