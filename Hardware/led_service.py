@@ -44,82 +44,95 @@ class LedService:
         self._current_color = COLOR_OFF
         self._animation_thread = None
         self._stop_event = threading.Event()
-        self._pwm_duty = {"RED": 0, "GRN": 0, "BLU": 0, "WHT": 0}
-        self._pwm_period = 0.005
         self._gpio_ok = False
+        self._use_sysfs = False
         self._init_gpio()
 
     def _init_gpio(self):
         try:
             import gpiod
-            for chip_name in ["gpiochip4", "gpiochip0"]:
+            chip_paths = [
+                "/dev/gpiochip4", "/dev/gpiochip3", "/dev/gpiochip0",
+                "gpiochip4", "gpiochip3", "gpiochip0",
+            ]
+            for chip_path in chip_paths:
                 try:
-                    self._chip = gpiod.Chip(chip_name)
+                    self._chip = gpiod.Chip(chip_path)
+                    logger.info("gpiod chip otvoreny: %s", chip_path)
                     break
                 except Exception:
                     continue
-            if self._chip is None:
-                logger.warning("gpiod chip nenajduty")
+
+            if self._chip is not None:
+                for name, pin in [("12V", PIN_12V), ("RED", PIN_RED),
+                                  ("GRN", PIN_GRN), ("BLU", PIN_BLU), ("WHT", PIN_WHT)]:
+                    try:
+                        line = self._chip.get_line(pin)
+                        line.request(consumer="led_" + name, type=gpiod.LINE_REQ_DIR_OUT)
+                        self._lines[name] = line
+                        line.set_value(0)
+                        self._gpio_ok = True
+                        logger.info("GPIO %d (%s) OK", pin, name)
+                    except Exception as e:
+                        logger.warning("GPIO %d (%s) chyba: %s", pin, name, e)
                 return
         except ImportError:
-            logger.warning("gpiod nie je dostupne - LED nefunkcne")
-            return
+            pass
 
+        logger.info("Skusam sysfs fallback pre GPIO")
+        self._use_sysfs = True
+        import os
+        import subprocess
         for name, pin in [("12V", PIN_12V), ("RED", PIN_RED),
                           ("GRN", PIN_GRN), ("BLU", PIN_BLU), ("WHT", PIN_WHT)]:
             try:
-                line = self._chip.get_line(pin)
-                line.request(consumer="led_" + name, type=gpiod.LINE_REQ_DIR_OUT)
-                self._lines[name] = line
-                line.set_value(0)
+                if not os.path.exists(f"/sys/class/gpio/gpio{pin}"):
+                    subprocess.run(["sudo", "bash", "-c",
+                                   f"echo {pin} > /sys/class/gpio/export"],
+                                   timeout=2, capture_output=True)
+                    subprocess.run(["sudo", "bash", "-c",
+                                   f"echo out > /sys/class/gpio/gpio{pin}/direction"],
+                                   timeout=2, capture_output=True)
+                self._lines[name] = pin
+                self._write_sysfs(pin, 0)
                 self._gpio_ok = True
-                logger.info("GPIO %d (%s) OK", pin, name)
+                logger.info("SYSFS GPIO %d (%s) OK", pin, name)
             except Exception as e:
-                logger.warning("GPIO %d (%s) chyba: %s", pin, name, e)
+                logger.warning("SYSFS GPIO %d (%s) chyba: %s", pin, name, e)
 
-        if self._gpio_ok:
-            t = threading.Thread(target=self._pwm_loop, daemon=True)
-            t.start()
+        if not self._gpio_ok:
+            logger.warning("Ziadne GPIO nedisponuje - LED nefunkcne")
 
-    def _pwm_loop(self):
-        while True:
-            for name in ["RED", "GRN", "BLU", "WHT"]:
-                duty = self._pwm_duty.get(name, 0)
-                line = self._lines.get(name)
-                if line is None:
-                    continue
-                try:
-                    line.set_value(1 if duty > 0 else 0)
-                except Exception:
-                    pass
-            max_duty = max(self._pwm_duty.values()) if self._pwm_duty else 0
-            if max_duty > 0:
-                on = (max_duty / 255.0) * self._pwm_period
-                time.sleep(max(on, 0.0001))
-                for name in ["RED", "GRN", "BLU", "WHT"]:
-                    line = self._lines.get(name)
-                    if line:
-                        try:
-                            line.set_value(0)
-                        except Exception:
-                            pass
-                off = self._pwm_period - on
-                if off > 0:
-                    time.sleep(max(off, 0.0001))
+    def _write_sysfs(self, pin, value):
+        try:
+            import subprocess
+            subprocess.run(["sudo", "bash", "-c",
+                           f"echo {value} > /sys/class/gpio/gpio{pin}/value"],
+                           timeout=1, capture_output=True)
+        except Exception:
+            pass
+
+    def _write_pin(self, name, value):
+        pin = self._lines.get(name)
+        if pin is None:
+            return
+        try:
+            if self._use_sysfs:
+                self._write_sysfs(pin, value)
             else:
-                time.sleep(self._pwm_period)
+                pin.set_value(value)
+        except Exception:
+            pass
 
     def set_color(self, r=0, g=0, b=0, w=0):
         if not self._gpio_ok:
             return
-        self._pwm_duty = {"RED": r, "GRN": g, "BLU": b, "WHT": w}
         self._current_color = (r, g, b, w)
-        pin_12v = self._lines.get("12V")
-        if pin_12v:
-            try:
-                pin_12v.set_value(1 if (r + g + b + w) > 0 else 0)
-            except Exception:
-                pass
+        self._write_pin("12V", 1 if (r + g + b + w) > 0 else 0)
+        self._write_pin("RED", 1 if r > 0 else 0)
+        self._write_pin("GRN", 1 if g > 0 else 0)
+        self._write_pin("BLU", 1 if b > 0 else 0)
+        self._write_pin("WHT", 1 if w > 0 else 0)
 
     def set_color_smooth(self, target, duration=0.3, steps=20):
         start = self._current_color
@@ -149,7 +162,7 @@ class LedService:
         self._animation_thread.start()
 
     def anim_boot(self):
-        logger.info("LED: Boot (red - not setup yet)")
+        logger.info("LED: Boot (red)")
         self.stop_animation()
         self.set_color(r=255)
 
@@ -227,9 +240,15 @@ class LedService:
     def cleanup(self):
         self.stop_animation()
         self.off()
-        for name, line in self._lines.items():
+        for name, pin in self._lines.items():
             try:
-                line.release()
+                if self._use_sysfs:
+                    import subprocess
+                    subprocess.run(["sudo", "bash", "-c",
+                                   f"echo {pin} > /sys/class/gpio/unexport"],
+                                   timeout=1, capture_output=True)
+                else:
+                    pin.release()
             except Exception:
                 pass
         if self._chip:
