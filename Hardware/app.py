@@ -896,7 +896,15 @@ def cloud_sync_loop():
                 baud_rate = cfg.get('baud', 9600) if cfg else 9600
                 discovered_slaves = []
                 bg_service.paused = True
-                time.sleep(2)  # Pockat kym background thread skonci aktualne citanie
+                # Cakat kym bg thread uplne skonci + uvolni port
+                for _wait in range(10):
+                    time.sleep(0.5)
+                    if bg_service.ser is None or not bg_service.ser.is_open:
+                        break
+                    try:
+                        bg_service.ser.close()
+                    except: pass
+                time.sleep(1)
                 brand_config = DEVICE_DB.get(brand_id, {})
                 target_port = brand_config.get('port', '/dev/ttyAMA4')
                 if not os.path.exists(target_port):
@@ -905,11 +913,6 @@ def cloud_sync_loop():
                             target_port = fp
                             break
                 if os.path.exists(target_port):
-                    # Bez locku - len zatvorime ser a otvorime vlastny
-                    try:
-                        if bg_service.ser and bg_service.ser.is_open:
-                            bg_service.ser.close()
-                    except: pass
                     with bg_service.lock:
                         if bg_service.ser and bg_service.ser.is_open:
                             try: bg_service.ser.close()
@@ -1003,6 +1006,47 @@ cloud_thread = threading.Thread(target=cloud_sync_loop, daemon=True)
 cloud_thread.start()
 log_message("[CLOUD SYNC] Background thread spusteny")
 led.anim_ok()  # Zelena - vsetko OK
+
+
+@app.get("/api/system/discover-direct")
+def api_discover_direct():
+    """Priamy discover - obide cloud sync, testuje RS485 lokálne."""
+    import serial as ser_mod
+    target_port = "/dev/ttyAMA4"
+    if not os.path.exists(target_port):
+        for fp in ['/dev/ttyAMA4', '/dev/serial0', '/dev/ttyAMA0', '/dev/ttyUSB0']:
+            if os.path.exists(fp):
+                target_port = fp
+                break
+    
+    results = []
+    for parity in [ser_mod.PARITY_NONE, ser_mod.PARITY_EVEN]:
+        par_name = 'EVEN' if parity == ser_mod.PARITY_EVEN else 'NONE'
+        try:
+            s = ser_mod.Serial(port=target_port, baudrate=9600, parity=parity, timeout=1.0)
+            found = []
+            for sid in range(1, 33):
+                # Test register 0 FC3 (co fungovalo v manualnom teste)
+                frame = bytes([sid, 3, 0, 0, 0, 1])
+                crc = 0xFFFF
+                for b in frame:
+                    crc ^= b
+                    for _ in range(8):
+                        crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+                frame += bytes([crc & 0xFF, (crc >> 8) & 0xFF])
+                
+                s.reset_input_buffer()
+                s.write(frame)
+                s.flush()
+                resp = s.read(10)
+                if resp:
+                    found.append({"id": sid, "response": resp.hex(), "parity": par_name})
+            s.close()
+            results.append({"parity": par_name, "found": found})
+        except Exception as e:
+            results.append({"parity": par_name, "error": str(e)})
+    
+    return {"status": "success", "results": results}
 
 
 if __name__ == "__main__":
