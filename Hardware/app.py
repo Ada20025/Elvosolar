@@ -354,7 +354,7 @@ def api_system_discover(brand: str = "", category: str = "", model: str = ""):
             
             for parity in parities_to_test:
                 try:
-                    ser = serial.Serial(port=target_port, baudrate=baud_rate, parity=parity, timeout=0.3)
+                    ser = serial.Serial(port=target_port, baudrate=baud_rate, parity=parity, timeout=1.0)
                     parity_label = "EVEN" if parity == serial.PARITY_EVEN else "NONE"
                     bg_service.log_to_terminal(f"Autodetekcia: Testujem parity={parity_label}...")
                     
@@ -913,7 +913,7 @@ def cloud_sync_loop():
                             par_name = 'EVEN' if parity == serial.PARITY_EVEN else 'NONE'
                             log_message(f'[DISCOVER] Testujem port={target_port} baud={baud_rate} parity={par_name}')
                             try:
-                                ser = serial.Serial(port=target_port, baudrate=baud_rate, parity=parity, timeout=0.3)
+                                ser = serial.Serial(port=target_port, baudrate=baud_rate, parity=parity, timeout=1.0)
                                 for sid in range(1, 33):
                                     # Test 1: Brand-specific register (FC3 + FC4)
                                     found = bg_service.ping_slave_fc(ser, sid, test_reg, 3)
