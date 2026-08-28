@@ -831,7 +831,7 @@ def cloud_sync_loop():
             except: pass
 
             resp = requests.post(CLOUD_SERVER_URL + "/api/cm5/poll",
-                json={"serial": serial_num}, timeout=10, verify=False)
+                json={"serial": serial_num}, timeout=30, verify=False)
             if resp.status_code != 200:
                 continue
             data = resp.json()
