@@ -2,7 +2,7 @@
 import os
 
 
-PORT = '/dev/ttyAMA4'  # Predvolený hardvérový port pre integrovanú zbernicu CM5 (svorky CH1)
+PORT = '/dev/ttyAMA3'  # Predvolený hardvérový port pre integrovanú zbernicu CM5 (svorky CH1)
 TZ_SK = "Europe/Bratislava"
 OKTE_URL = "https://isot.okte.sk/api/v1/dam/results"
 WEB_PORT = 80

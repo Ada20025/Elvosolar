@@ -901,15 +901,15 @@ def cloud_sync_loop():
                 model_id = config.get("model_id", "1")
                 discovered_slaves = []
                 
-                # Jednoduchy discover - presne ako manualny test co fungoval
-                target_port = "/dev/ttyAMA4"
-                if not os.path.exists(target_port):
-                    for fp in ['/dev/ttyAMA4', '/dev/serial0', '/dev/ttyAMA0', '/dev/ttyUSB0']:
-                        if os.path.exists(fp):
-                            target_port = fp
-                            break
+                # Discover - skusa vsetky dostupne porty
+                import glob as glob_mod
+                all_ports = glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*')
+                if not all_ports:
+                    all_ports = ['/dev/ttyAMA4']
                 
-                if os.path.exists(target_port):
+                for target_port in all_ports:
+                    if not os.path.exists(target_port):
+                        continue
                     for parity in [serial.PARITY_NONE, serial.PARITY_EVEN]:
                         par_name = 'EVEN' if parity == serial.PARITY_EVEN else 'NONE'
                         log_message(f'[DISCOVER] Testujem port={target_port} baud=9600 parity={par_name}')
@@ -1013,12 +1013,9 @@ led.anim_ok()  # Zelena - vsetko OK
 def api_discover_direct():
     """Priamy discover - obide cloud sync, testuje RS485 lokálne."""
     import serial as ser_mod
-    target_port = "/dev/ttyAMA4"
-    if not os.path.exists(target_port):
-        for fp in ['/dev/ttyAMA4', '/dev/serial0', '/dev/ttyAMA0', '/dev/ttyUSB0']:
-            if os.path.exists(fp):
-                target_port = fp
-                break
+    import glob as glob_mod
+    target_port = "/dev/ttyAMA3"
+    all_ports = glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*')
     
     results = []
     for parity in [ser_mod.PARITY_NONE, ser_mod.PARITY_EVEN]:
