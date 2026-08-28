@@ -13,6 +13,7 @@ PIN_RED = 26
 PIN_GRN = 22
 PIN_BLU = 18
 PIN_WHT = 17
+ALL_PINS = [PIN_12V, PIN_RED, PIN_GRN, PIN_BLU, PIN_WHT]
 
 COLOR_OFF    = (0, 0, 0, 0)
 COLOR_RED    = (255, 0, 0, 0)
@@ -22,6 +23,10 @@ COLOR_WHITE  = (0, 0, 0, 255)
 COLOR_CYAN   = (0, 255, 255, 0)
 COLOR_YELLOW = (255, 255, 0, 0)
 COLOR_PURPLE = (150, 0, 255, 0)
+
+# Map pin names to offsets
+PIN_MAP = {"12V": PIN_12V, "RED": PIN_RED, "GRN": PIN_GRN, "BLU": PIN_BLU, "WHT": PIN_WHT}
+PIN_NAMES = {v: k for k, v in PIN_MAP.items()}
 
 
 class LedService:
@@ -39,8 +44,8 @@ class LedService:
         if self._initialized:
             return
         self._initialized = True
+        self._request = None  # gpiod v2 request object
         self._chip = None
-        self._lines = {}
         self._current_color = COLOR_OFF
         self._animation_thread = None
         self._stop_event = threading.Event()
@@ -49,6 +54,7 @@ class LedService:
         self._init_gpio()
 
     def _init_gpio(self):
+        # --- Try gpiod v2.x ---
         try:
             import gpiod
             chip_paths = [
@@ -58,69 +64,108 @@ class LedService:
             for chip_path in chip_paths:
                 try:
                     self._chip = gpiod.Chip(chip_path)
-                    logger.info("gpiod chip otvoreny: %s", chip_path)
+                    logger.info("gpiod chip: %s", chip_path)
                     break
                 except Exception:
                     continue
 
             if self._chip is not None:
-                for name, pin in [("12V", PIN_12V), ("RED", PIN_RED),
-                                  ("GRN", PIN_GRN), ("BLU", PIN_BLU), ("WHT", PIN_WHT)]:
-                    try:
-                        line = self._chip.get_line(pin)
-                        line.request(consumer="led_" + name, type=gpiod.LINE_REQ_DIR_OUT)
-                        self._lines[name] = line
-                        line.set_value(0)
-                        self._gpio_ok = True
-                        logger.info("GPIO %d (%s) OK", pin, name)
-                    except Exception as e:
-                        logger.warning("GPIO %d (%s) chyba: %s", pin, name, e)
-                return
-        except ImportError:
-            pass
+                try:
+                    # gpiod v2: request_lines with settings dict
+                    settings = gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)
+                    self._request = self._chip.request_lines(
+                        consumer="led_strip",
+                        config={pin: settings for pin in ALL_PINS}
+                    )
+                    # Start with all off
+                    for pin in ALL_PINS:
+                        self._request.set_value(pin, gpiod.line.Value.INACTIVE)
+                    self._gpio_ok = True
+                    logger.info("gpiod v2 OK - vsetkych 5 pinov")
+                    return
+                except Exception as e:
+                    logger.warning("gpiod v2 request failed: %s", e)
 
-        logger.info("Skusam sysfs fallback pre GPIO")
+                # Fallback: try gpiod v1 style
+                try:
+                    lines_ok = 0
+                    self._v1_lines = {}
+                    for name, pin in PIN_MAP.items():
+                        try:
+                            line = self._chip.get_line(pin)
+                            line.request(consumer="led_" + name, type=gpiod.LINE_REQ_DIR_OUT)
+                            line.set_value(0)
+                            self._v1_lines[name] = line
+                            lines_ok += 1
+                            logger.info("gpiod v1 GPIO %d (%s) OK", pin, name)
+                        except Exception as e:
+                            logger.warning("gpiod v1 GPIO %d (%s): %s", pin, name, e)
+                    if lines_ok > 0:
+                        self._gpio_ok = True
+                        self._use_v1 = True
+                        return
+                except Exception:
+                    pass
+        except ImportError:
+            logger.warning("gpiod nie je dostupne")
+
+        # --- Fallback: sysfs ---
+        logger.info("Skusam sysfs fallback")
         self._use_sysfs = True
-        import os
-        import subprocess
-        for name, pin in [("12V", PIN_12V), ("RED", PIN_RED),
-                          ("GRN", PIN_GRN), ("BLU", PIN_BLU), ("WHT", PIN_WHT)]:
-            try:
-                if not os.path.exists(f"/sys/class/gpio/gpio{pin}"):
-                    subprocess.run(["sudo", "bash", "-c",
-                                   f"echo {pin} > /sys/class/gpio/export"],
-                                   timeout=2, capture_output=True)
-                    subprocess.run(["sudo", "bash", "-c",
-                                   f"echo out > /sys/class/gpio/gpio{pin}/direction"],
-                                   timeout=2, capture_output=True)
-                self._lines[name] = pin
-                self._write_sysfs(pin, 0)
-                self._gpio_ok = True
-                logger.info("SYSFS GPIO %d (%s) OK", pin, name)
-            except Exception as e:
-                logger.warning("SYSFS GPIO %d (%s) chyba: %s", pin, name, e)
+        try:
+            import os
+            import subprocess
+            for name, pin in PIN_MAP.items():
+                try:
+                    if not os.path.exists(f"/sys/class/gpio/gpio{pin}"):
+                        subprocess.run(
+                            ["sudo", "bash", "-c", f"echo {pin} > /sys/class/gpio/export"],
+                            timeout=2, capture_output=True
+                        )
+                        subprocess.run(
+                            ["sudo", "bash", "-c", f"echo out > /sys/class/gpio/gpio{pin}/direction"],
+                            timeout=2, capture_output=True
+                        )
+                    self._write_sysfs(pin, 0)
+                    self._gpio_ok = True
+                    logger.info("SYSFS GPIO %d (%s) OK", pin, name)
+                except Exception as e:
+                    logger.warning("SYSFS GPIO %d (%s): %s", pin, name, e)
+        except Exception as e:
+            logger.warning("Sysfs failed: %s", e)
 
         if not self._gpio_ok:
-            logger.warning("Ziadne GPIO nedisponuje - LED nefunkcne")
+            logger.warning("Ziadne GPIO - LED nefunkcne")
+
+    def _write_pin_raw(self, pin, value):
+        """Write 0 or 1 to a GPIO pin."""
+        if self._request is not None:
+            # gpiod v2
+            try:
+                import gpiod
+                val = gpiod.line.Value.ACTIVE if value else gpiod.line.Value.INACTIVE
+                self._request.set_value(pin, val)
+            except Exception:
+                pass
+        elif hasattr(self, '_v1_lines'):
+            # gpiod v1
+            name = PIN_NAMES.get(pin, "")
+            line = self._v1_lines.get(name)
+            if line:
+                try:
+                    line.set_value(value)
+                except Exception:
+                    pass
+        elif self._use_sysfs:
+            self._write_sysfs(pin, value)
 
     def _write_sysfs(self, pin, value):
         try:
             import subprocess
-            subprocess.run(["sudo", "bash", "-c",
-                           f"echo {value} > /sys/class/gpio/gpio{pin}/value"],
-                           timeout=1, capture_output=True)
-        except Exception:
-            pass
-
-    def _write_pin(self, name, value):
-        pin = self._lines.get(name)
-        if pin is None:
-            return
-        try:
-            if self._use_sysfs:
-                self._write_sysfs(pin, value)
-            else:
-                pin.set_value(value)
+            subprocess.run(
+                ["sudo", "bash", "-c", f"echo {value} > /sys/class/gpio/gpio{pin}/value"],
+                timeout=1, capture_output=True
+            )
         except Exception:
             pass
 
@@ -128,11 +173,11 @@ class LedService:
         if not self._gpio_ok:
             return
         self._current_color = (r, g, b, w)
-        self._write_pin("12V", 1 if (r + g + b + w) > 0 else 0)
-        self._write_pin("RED", 1 if r > 0 else 0)
-        self._write_pin("GRN", 1 if g > 0 else 0)
-        self._write_pin("BLU", 1 if b > 0 else 0)
-        self._write_pin("WHT", 1 if w > 0 else 0)
+        self._write_pin_raw(PIN_12V, 1 if (r + g + b + w) > 0 else 0)
+        self._write_pin_raw(PIN_RED, 1 if r > 0 else 0)
+        self._write_pin_raw(PIN_GRN, 1 if g > 0 else 0)
+        self._write_pin_raw(PIN_BLU, 1 if b > 0 else 0)
+        self._write_pin_raw(PIN_WHT, 1 if w > 0 else 0)
 
     def set_color_smooth(self, target, duration=0.3, steps=20):
         start = self._current_color
@@ -240,15 +285,25 @@ class LedService:
     def cleanup(self):
         self.stop_animation()
         self.off()
-        for name, pin in self._lines.items():
+        if self._request is not None:
             try:
-                if self._use_sysfs:
-                    import subprocess
-                    subprocess.run(["sudo", "bash", "-c",
-                                   f"echo {pin} > /sys/class/gpio/unexport"],
-                                   timeout=1, capture_output=True)
-                else:
-                    pin.release()
+                self._request.close()
+            except Exception:
+                pass
+        if hasattr(self, '_v1_lines'):
+            for line in self._v1_lines.values():
+                try:
+                    line.release()
+                except Exception:
+                    pass
+        if self._use_sysfs:
+            try:
+                import subprocess
+                for pin in ALL_PINS:
+                    subprocess.run(
+                        ["sudo", "bash", "-c", f"echo {pin} > /sys/class/gpio/unexport"],
+                        timeout=1, capture_output=True
+                    )
             except Exception:
                 pass
         if self._chip:
@@ -256,7 +311,7 @@ class LedService:
                 self._chip.close()
             except Exception:
                 pass
-        logger.info("LED: Cleanup hotovy")
+        logger.info("LED: Cleanup")
 
     def __del__(self):
         try:
