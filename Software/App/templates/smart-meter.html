@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="sk" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Meter | ElvoSolar</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-lg bg-slate-900/75 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-5 mb-5">
+        <div>
+            <h1 class="text-lg font-extrabold text-white">Smart Meter</h1>
+            <p class="text-xs text-slate-400">Nastavenie meradla spotreby</p>
+        </div>
+        <a href="/" class="text-xs text-cyan-400 hover:underline">Späť</a>
+    </div>
+
+    <!-- Auto-detect -->
+    <div class="mb-5">
+        <button onclick="autoDetect()" id="detectBtn" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-3 rounded-xl transition">
+            🔍 AUTO-DETECT SMART METER
+        </button>
+        <div id="detectResult" class="hidden mt-3 p-3 rounded-xl text-xs"></div>
+    </div>
+
+    <!-- Meter Mode -->
+    <div class="space-y-4">
+        <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Typ meradla</label>
+            <select id="meterMode" onchange="toggleMeterFields()" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-3 outline-none">
+                <option value="NONE">Bez meradla (odhad)</option>
+                <option value="MODBUS_RTU">Modbus RTU (RS485)</option>
+                <option value="S0_PULSE">S0 pulse (GPIO)</option>
+                <option value="CLOUD_API">Cloud API (Shelly/Tasmota)</option>
+            </select>
+        </div>
+
+        <!-- Modbus RTU -->
+        <div id="modbusFields" class="hidden space-y-3">
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Slave ID</label>
+                    <input type="number" id="meterSlaveId" value="1" min="1" max="247" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Baud</label>
+                    <select id="meterBaud" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none">
+                        <option value="9600">9600</option>
+                        <option value="19200">19200</option>
+                        <option value="4800">4800</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Parity</label>
+                    <select id="meterParity" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none">
+                        <option value="N">None</option>
+                        <option value="E">Even</option>
+                        <option value="O">Odd</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Register import Wh</label>
+                    <input type="number" id="regImportWh" placeholder="napr. 0" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Register export Wh</label>
+                    <input type="number" id="regExportWh" placeholder="napr. 2" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Register import W</label>
+                    <input type="number" id="regImportW" placeholder="napr. 10" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Register export W</label>
+                    <input type="number" id="regExportW" placeholder="napr. 12" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none">
+                </div>
+            </div>
+        </div>
+
+        <!-- Cloud API -->
+        <div id="cloudFields" class="hidden space-y-3">
+            <input type="text" id="cloudApiUrl" placeholder="http://192.168.1.100/api/meter" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-3 outline-none">
+            <p class="text-[10px] text-slate-500">Podporované: Shelly EM, Tasmota, vlastné API</p>
+        </div>
+
+        <!-- Riadiaci režim -->
+        <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Riadiaci režim FVE</label>
+            <select id="controlMode" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-3 outline-none">
+                <option value="UNLIMITED">Bez obmedzenia (max výkon)</option>
+                <option value="SELF_CONSUMPTION">Self-consumption (pre dom)</option>
+                <option value="SMART" selected>Smart (cena + spotreba)</option>
+                <option value="ZERO">Nula (presne pokryť spotrebu)</option>
+                <option value="PLUS">Plus (prebytok → batéria)</option>
+                <option value="CUSTOM">Vlastný režim</option>
+            </select>
+        </div>
+
+        <!-- Live data -->
+        <div id="liveData" class="hidden p-4 bg-slate-950/50 border border-slate-800 rounded-xl space-y-2">
+            <h3 class="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Aktuálne hodnoty</h3>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>Spotreba: <strong id="liveConsumption">-</strong> W</div>
+                <div>Import: <strong id="liveImport">-</strong> W</div>
+                <div>Export: <strong id="liveExport">-</strong> W</div>
+                <div>FVE: <strong id="liveFve">-</strong> W</div>
+                <div>Min: <strong id="liveMin">-</strong> W</div>
+                <div>Max: <strong id="liveMax">-</strong> W</div>
+                <div>Priemer: <strong id="liveAvg">-</strong> W</div>
+                <div>Dnes: <strong id="liveKwh">-</strong> kWh</div>
+            </div>
+        </div>
+
+        <button onclick="saveConfig()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl transition">
+            💾 ULOŽIŤ NASTAVENIA
+        </button>
+        <div id="saveResult" class="hidden text-center text-xs mt-2"></div>
+    </div>
+</div>
+
+<script>
+    const deviceId = new URLSearchParams(window.location.search).get('id') || '1';
+    const apiBase = `/api/device/${deviceId}/meter`;
+
+    async function loadConfig() {
+        try {
+            const res = await fetch(apiBase + '/config');
+            const data = await res.json();
+            const cfg = data.config || {};
+            
+            document.getElementById('meterMode').value = cfg.meter_mode || 'NONE';
+            document.getElementById('meterSlaveId').value = cfg.meter_slave_id || 1;
+            document.getElementById('meterBaud').value = cfg.meter_baudrate || 9600;
+            document.getElementById('meterParity').value = cfg.meter_parity || 'N';
+            document.getElementById('regImportWh').value = cfg.reg_import_wh || '';
+            document.getElementById('regExportWh').value = cfg.reg_export_wh || '';
+            document.getElementById('regImportW').value = cfg.reg_import_w || '';
+            document.getElementById('regExportW').value = cfg.reg_export_w || '';
+            document.getElementById('cloudApiUrl').value = cfg.cloud_api_url || '';
+            document.getElementById('controlMode').value = cfg.meter_control_mode || 'SMART';
+            
+            toggleMeterFields();
+            if (cfg.meter_mode !== 'NONE') loadLiveData();
+        } catch(e) {}
+    }
+
+    function toggleMeterFields() {
+        const mode = document.getElementById('meterMode').value;
+        document.getElementById('modbusFields').classList.toggle('hidden', mode !== 'MODBUS_RTU');
+        document.getElementById('cloudFields').classList.toggle('hidden', mode !== 'CLOUD_API');
+    }
+
+    async function autoDetect() {
+        const btn = document.getElementById('detectBtn');
+        const result = document.getElementById('detectResult');
+        btn.disabled = true;
+        btn.innerText = '🔍 Skenujem...';
+        result.classList.add('hidden');
+        
+        try {
+            const res = await fetch('/api/smart-meter/auto-detect', { method: 'POST' });
+            const data = await res.json();
+            result.classList.remove('hidden');
+            
+            if (data.status === 'success' && data.meters && data.meters.length > 0) {
+                result.className = 'mt-3 p-3 rounded-xl text-xs bg-emerald-950/30 border border-emerald-500/30 text-emerald-400';
+                result.innerHTML = data.meters.map(m => 
+                    `✅ <strong>${m.name}</strong> na ${m.port} (baud=${m.baud}, ID=${m.slave_id})<br>Import Wh: ${m.import_wh}`
+                ).join('<br>');
+                
+                // Auto-fill
+                const m = data.meters[0];
+                document.getElementById('meterMode').value = 'MODBUS_RTU';
+                document.getElementById('meterSlaveId').value = m.slave_id;
+                document.getElementById('meterBaud').value = m.baud;
+                document.getElementById('regImportWh').value = m.registers.import_wh || '';
+                document.getElementById('regExportWh').value = m.registers.export_w || '';
+                toggleMeterFields();
+            } else {
+                result.className = 'mt-3 p-3 rounded-xl text-xs bg-rose-950/30 border border-rose-500/30 text-rose-400';
+                result.innerText = '❌ ' + (data.message || 'Smart meter nenajdene');
+            }
+        } catch(e) {
+            result.classList.remove('hidden');
+            result.className = 'mt-3 p-3 rounded-xl text-xs bg-rose-950/30 border border-rose-500/30 text-rose-400';
+            result.innerText = '❌ Chyba: ' + e.message;
+        }
+        
+        btn.disabled = false;
+        btn.innerText = '🔍 AUTO-DETECT SMART METER';
+    }
+
+    async function saveConfig() {
+        const cfg = {
+            meter_mode: document.getElementById('meterMode').value,
+            meter_slave_id: parseInt(document.getElementById('meterSlaveId').value) || 1,
+            meter_baudrate: parseInt(document.getElementById('meterBaud').value) || 9600,
+            meter_parity: document.getElementById('meterParity').value,
+            reg_import_wh: document.getElementById('regImportWh').value,
+            reg_export_wh: document.getElementById('regExportWh').value,
+            reg_import_w: document.getElementById('regImportW').value,
+            reg_export_w: document.getElementById('regExportW').value,
+            cloud_api_url: document.getElementById('cloudApiUrl').value,
+            meter_control_mode: document.getElementById('controlMode').value,
+        };
+        
+        try {
+            const res = await fetch(apiBase + '/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(cfg)
+            });
+            const data = await res.json();
+            const result = document.getElementById('saveResult');
+            result.classList.remove('hidden');
+            result.className = 'text-center text-xs mt-2 text-emerald-400';
+            result.innerText = '✅ Uložené!';
+            setTimeout(() => result.classList.add('hidden'), 3000);
+        } catch(e) {
+            alert('Chyba: ' + e.message);
+        }
+    }
+
+    async function loadLiveData() {
+        try {
+            const res = await fetch('/api/smart-meter/live');
+            const data = await res.json();
+            document.getElementById('liveData').classList.remove('hidden');
+            document.getElementById('liveConsumption').innerText = data.house_consumption_w || 0;
+            document.getElementById('liveImport').innerText = data.grid_import_w || 0;
+            document.getElementById('liveExport').innerText = data.grid_export_w || 0;
+            document.getElementById('liveFve').innerText = data.fve_production_w || 0;
+            document.getElementById('liveMin').innerText = data.min_consumption_w || 0;
+            document.getElementById('liveMax').innerText = data.peak_consumption_w || 0;
+            document.getElementById('liveAvg').innerText = data.avg_consumption_w || 0;
+            document.getElementById('liveKwh').innerText = data.house_consumption_kwh_today || 0;
+        } catch(e) {}
+    }
+
+    loadConfig();
+    setInterval(loadLiveData, 5000);
+</script>
+</body>
+</html>
