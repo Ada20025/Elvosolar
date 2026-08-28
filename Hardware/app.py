@@ -890,60 +890,46 @@ def cloud_sync_loop():
                 brand_id = config.get("brand_id", "5")
                 cat_id = config.get("category_id", "1")
                 model_id = config.get("model_id", "1")
-                cfg = DEVICE_DB.get(brand_id, {}).get('kategorie', {}).get(cat_id, {}).get('modely', {}).get(model_id)
-                test_reg = cfg.get('reg_p_ac', 32080) if cfg else 32080
-                reg_soc = cfg.get('reg_soc', 37760) if cfg else 37760
-                baud_rate = cfg.get('baud', 9600) if cfg else 9600
                 discovered_slaves = []
-                bg_service.paused = True
-                # Cakat kym bg thread uplne skonci + uvolni port
-                for _wait in range(10):
-                    time.sleep(0.5)
-                    if bg_service.ser is None or not bg_service.ser.is_open:
-                        break
-                    try:
-                        bg_service.ser.close()
-                    except: pass
-                time.sleep(1)
-                brand_config = DEVICE_DB.get(brand_id, {})
-                target_port = brand_config.get('port', '/dev/ttyAMA4')
+                
+                # Jednoduchy discover - presne ako manualny test co fungoval
+                target_port = "/dev/ttyAMA4"
                 if not os.path.exists(target_port):
                     for fp in ['/dev/ttyAMA4', '/dev/serial0', '/dev/ttyAMA0', '/dev/ttyUSB0']:
                         if os.path.exists(fp):
                             target_port = fp
                             break
+                
                 if os.path.exists(target_port):
-                    with bg_service.lock:
-                        if bg_service.ser and bg_service.ser.is_open:
-                            try: bg_service.ser.close()
-                            except: pass
-                        for parity in [serial.PARITY_NONE, serial.PARITY_EVEN]:
-                            par_name = 'EVEN' if parity == serial.PARITY_EVEN else 'NONE'
-                            log_message(f'[DISCOVER] Testujem port={target_port} baud={baud_rate} parity={par_name}')
-                            try:
-                                ser = serial.Serial(port=target_port, baudrate=baud_rate, parity=parity, timeout=1.0)
-                                for sid in range(1, 33):
-                                    # Test 1: Brand-specific register (FC3 + FC4)
-                                    found = bg_service.ping_slave_fc(ser, sid, test_reg, 3)
-                                    if not found:
-                                        found = bg_service.ping_slave_fc(ser, sid, test_reg, 4)
-                                    # Test 2: SoC register (FC3 + FC4)
-                                    if not found and reg_soc:
-                                        found = bg_service.ping_slave_fc(ser, sid, reg_soc, 3)
-                                        if not found:
-                                            found = bg_service.ping_slave_fc(ser, sid, reg_soc, 4)
-                                    # Test 3: Universal register 0 (FC3) - fallback pre Huawei
-                                    if not found:
-                                        found = bg_service.ping_slave_fc(ser, sid, 0, 3)
-                                    if found:
+                    for parity in [serial.PARITY_NONE, serial.PARITY_EVEN]:
+                        par_name = 'EVEN' if parity == serial.PARITY_EVEN else 'NONE'
+                        log_message(f'[DISCOVER] Testujem port={target_port} baud=9600 parity={par_name}')
+                        try:
+                            ser = serial.Serial(port=target_port, baudrate=9600, parity=parity, timeout=0.5)
+                            for sid in range(1, 33):
+                                try:
+                                    frame = bytes([sid, 3, 0, 0, 0, 1])
+                                    crc = 0xFFFF
+                                    for b in frame:
+                                        crc ^= b
+                                        for _ in range(8):
+                                            crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+                                    frame += bytes([crc & 0xFF, (crc >> 8) & 0xFF])
+                                    ser.reset_input_buffer()
+                                    ser.write(frame)
+                                    ser.flush()
+                                    resp = ser.read(10)
+                                    if resp:
                                         discovered_slaves.append(sid)
-                                        log_message(f'[DISCOVER] ✅ NAYDENE slave ID={sid} parity={par_name}')
-                                ser.close()
-                                log_message(f'[DISCOVER] Scan dokonceny parity={par_name} nasiel={discovered_slaves}')
-                                if discovered_slaves:
-                                    break
-                            except Exception as e:
-                                log_message(f'[DISCOVER] CHYBA parity={par_name}: {e}')
+                                        log_message(f'[DISCOVER] ✅ NAYDENE slave ID={sid} parity={par_name} resp={resp.hex()}')
+                                except Exception:
+                                    pass
+                            ser.close()
+                            log_message(f'[DISCOVER] Scan dokonceny parity={par_name} nasiel={discovered_slaves}')
+                            if discovered_slaves:
+                                break
+                        except Exception as e:
+                            log_message(f'[DISCOVER] CHYBA parity={par_name}: {e}')
                 bg_service.paused = False
                 winning_parity = "N"
                 if discovered_slaves:
