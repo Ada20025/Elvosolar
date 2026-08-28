@@ -908,13 +908,18 @@ def cloud_sync_loop():
                             try:
                                 ser = serial.Serial(port=target_port, baudrate=baud_rate, parity=parity, timeout=0.3)
                                 for sid in range(1, 33):
+                                    # Test 1: Brand-specific register (FC3 + FC4)
                                     found = bg_service.ping_slave_fc(ser, sid, test_reg, 3)
                                     if not found:
                                         found = bg_service.ping_slave_fc(ser, sid, test_reg, 4)
+                                    # Test 2: SoC register (FC3 + FC4)
                                     if not found and reg_soc:
                                         found = bg_service.ping_slave_fc(ser, sid, reg_soc, 3)
                                         if not found:
                                             found = bg_service.ping_slave_fc(ser, sid, reg_soc, 4)
+                                    # Test 3: Universal register 0 (FC3) - fallback pre Huawei
+                                    if not found:
+                                        found = bg_service.ping_slave_fc(ser, sid, 0, 3)
                                     if found:
                                         discovered_slaves.append(sid)
                                         log_message(f'[DISCOVER] ✅ NAYDENE slave ID={sid} parity={par_name}')
