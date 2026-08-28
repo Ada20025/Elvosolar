@@ -816,8 +816,7 @@ def _get_local_ip():
         return "unknown"
 
 def _get_serial_number():
-    mac = SystemService.get_mac_suffix()
-    return f"CM5-{mac}"
+    return "CM5-DEFAULT"
 
 def cloud_sync_loop():
     serial_num = _get_serial_number()
@@ -958,7 +957,7 @@ def cloud_sync_loop():
 
             try:
                 requests.post(CLOUD_SERVER_URL + "/api/cm5/result",
-                    json={"serial": serial, "command_id": command_id, "result": result},
+                    json={"serial": serial_num, "command_id": command_id, "result": result},
                     timeout=5, verify=False)
                 log_message(f"[CLOUD SYNC] Vysledok odoslany: {result.get('status')}")
             except Exception as e:

@@ -1220,7 +1220,7 @@ elseif ($path === '/api/cm5/wait-result' && $method === 'GET') {
 // --- ADMIN CLAIM (cloud verzia) ---
 elseif ($path === '/api/admin/claim' && $method === 'POST') {
     $data = get_json_input();
-    $serial = 'CM5-' . ($_SERVER['HTTP_HOST'] ?? 'cloud');
+    $serial = 'CM5-DEFAULT';
     $config = [
         'action' => 'claim',
         'admin_username' => $data['admin_username'] ?? 'admin',
@@ -1237,7 +1237,7 @@ elseif ($path === '/api/admin/claim' && $method === 'POST') {
 // --- USER CLAIM DEVICE (cloud verzia) ---
 elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $data = get_json_input();
-    $serial = 'CM5-' . ($_SERVER['HTTP_HOST'] ?? 'cloud');
+    $serial = 'CM5-DEFAULT';
     $config = [
         'action' => 'claim_device',
         'brand_id' => $data['brand_id'] ?? '',
@@ -1257,7 +1257,7 @@ elseif ($path === '/api/system/discover' && $method === 'GET') {
     $brand = $_GET['brand'] ?? '';
     $category = $_GET['category'] ?? '';
     $model = $_GET['model'] ?? '';
-    $serial = 'CM5-' . ($_SERVER['HTTP_HOST'] ?? 'cloud');
+    $serial = 'CM5-DEFAULT';
     
     // Uloz prikaz na scan
     $config = [
@@ -1298,7 +1298,7 @@ elseif ($path === '/api/system/status' && $method === 'GET') {
 // --- WIFI CONNECT (cloud verzia - ulozi pre CM5) ---
 elseif ($path === '/api/system/wifi/connect' && $method === 'POST') {
     $data = get_json_input();
-    $serial = 'CM5-' . ($_SERVER['HTTP_HOST'] ?? 'cloud');
+    $serial = 'CM5-DEFAULT';
     $config = [
         'action' => 'wifi_connect',
         'ssid' => $data['ssid'] ?? '',
