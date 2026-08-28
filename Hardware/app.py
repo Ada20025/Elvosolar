@@ -830,12 +830,21 @@ def cloud_sync_loop():
             local_ip = _get_local_ip()
             try:
                 requests.post(CLOUD_SERVER_URL + "/api/report-ip",
-                    json={"ip": local_ip, "serial": serial_num}, timeout=5, verify=False)
+                    json={"ip": local_ip, "serial": serial_num}, timeout=10, verify=False)
             except: pass
 
-            resp = requests.post(CLOUD_SERVER_URL + "/api/cm5/poll",
-                json={"serial": serial_num}, timeout=30, verify=False)
-            if resp.status_code != 200:
+            resp = None
+            for _retry in range(3):
+                try:
+                    resp = requests.post(CLOUD_SERVER_URL + "/api/cm5/poll",
+                        json={"serial": serial_num}, timeout=60, verify=False)
+                    if resp.status_code == 200:
+                        break
+                except Exception:
+                    if _retry < 2:
+                        time.sleep(5)
+                    continue
+            if resp is None or resp.status_code != 200:
                 continue
             data = resp.json()
             if data.get("status") != "success":
@@ -972,9 +981,15 @@ def cloud_sync_loop():
                     result = {"status": "success", "message": "WiFi preskocene"}
 
             try:
-                requests.post(CLOUD_SERVER_URL + "/api/cm5/result",
-                    json={"serial": serial_num, "command_id": command_id, "result": result},
-                    timeout=5, verify=False)
+                for _retry in range(3):
+                    try:
+                        requests.post(CLOUD_SERVER_URL + "/api/cm5/result",
+                            json={"serial": serial_num, "command_id": command_id, "result": result},
+                            timeout=15, verify=False)
+                        break
+                    except Exception:
+                        if _retry < 2:
+                            time.sleep(3)
                 log_message(f"[CLOUD SYNC] Vysledok odoslany: {result.get('status')}")
             except Exception as e:
                 log_message(f"[CLOUD SYNC] Chyba pri odosielani vysledku: {e}")
