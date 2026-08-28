@@ -970,44 +970,61 @@ def cloud_sync_loop():
                 model_id = config.get("model_id", "1")
                 discovered_slaves = []
                 
-                # Discover - skusa vsetky dostupne porty
-                import glob as glob_mod
-                all_ports = glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*')
-                if not all_ports:
-                    all_ports = ['/dev/ttyAMA4']
+                try:
+                    from pymodbus.client import ModbusSerialClient
+                except ImportError:
+                    try:
+                        import subprocess
+                        subprocess.run(["pip3", "install", "pymodbus"], timeout=30, capture_output=True)
+                        from pymodbus.client import ModbusSerialClient
+                    except Exception:
+                        ModbusSerialClient = None
                 
-                for target_port in all_ports:
-                    if not os.path.exists(target_port):
-                        continue
-                    for parity in [serial.PARITY_NONE, serial.PARITY_EVEN]:
-                        par_name = 'EVEN' if parity == serial.PARITY_EVEN else 'NONE'
-                        log_message(f'[DISCOVER] Testujem port={target_port} baud=9600 parity={par_name}')
-                        try:
-                            ser = serial.Serial(port=target_port, baudrate=9600, parity=parity, timeout=0.5)
-                            for sid in range(1, 33):
+                if ModbusSerialClient:
+                    import glob as glob_mod
+                    all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
+                    log_message(f'[DISCOVER] Skusam porty: {all_ports}')
+                    
+                    for port in all_ports:
+                        if not os.path.exists(port):
+                            continue
+                        for baud in [9600, 19200]:
+                            for par in ['N', 'E']:
                                 try:
-                                    frame = bytes([sid, 3, 0, 0, 0, 1])
-                                    crc = 0xFFFF
-                                    for b in frame:
-                                        crc ^= b
-                                        for _ in range(8):
-                                            crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
-                                    frame += bytes([crc & 0xFF, (crc >> 8) & 0xFF])
-                                    ser.reset_input_buffer()
-                                    ser.write(frame)
-                                    ser.flush()
-                                    resp = ser.read(10)
-                                    if resp:
-                                        discovered_slaves.append(sid)
-                                        log_message(f'[DISCOVER] ✅ NAYDENE slave ID={sid} parity={par_name} resp={resp.hex()}')
+                                    client = ModbusSerialClient(port=port, baudrate=baud, parity=par, stopbits=1, bytesize=8, timeout=0.3)
+                                    if not client.connect():
+                                        continue
+                                    
+                                    port_found = []
+                                    for sid in range(1, 33):
+                                        try:
+                                            result = client.read_holding_registers(address=0, count=1, slave=sid)
+                                            if not result.isError():
+                                                port_found.append(sid)
+                                                log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par} ID={sid}')
+                                            else:
+                                                result2 = client.read_input_registers(address=0, count=1, slave=sid)
+                                                if not result2.isError():
+                                                    port_found.append(sid)
+                                                    log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par} ID={sid} INPUT')
+                                                elif hasattr(result, 'exception_code') and result.exception_code is not None:
+                                                    port_found.append(sid)
+                                                    log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par} ID={sid} ERROR={result.exception_code}')
+                                        except Exception:
+                                            pass
+                                    
+                                    client.close()
+                                    
+                                    if port_found:
+                                        discovered_slaves = port_found
+                                        log_message(f'[DISCOVER] NAYDENE na {port}: {discovered_slaves}')
+                                        break
                                 except Exception:
                                     pass
-                            ser.close()
-                            log_message(f'[DISCOVER] Scan dokonceny parity={par_name} nasiel={discovered_slaves}')
                             if discovered_slaves:
                                 break
-                        except Exception as e:
-                            log_message(f'[DISCOVER] CHYBA parity={par_name}: {e}')
+                        if discovered_slaves:
+                            break
                 bg_service.paused = False
                 winning_parity = "N"
                 if discovered_slaves:
