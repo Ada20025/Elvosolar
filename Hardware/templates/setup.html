@@ -544,7 +544,7 @@
                 const mId = document.getElementById('modelSelect').value;
                 try {
                     status.innerText = "Otváram RS485 port a skenujem zbernicu (~10s)...";
-                    const res = await fetch(`${localGatewayIP}/api/system/discover?brand=${bId}&category=${cId}&model=${mId}`, { signal: AbortSignal.timeout(45000) });
+                    const res = await fetch(`${localGatewayIP}/api/system/discover?brand=${bId}&category=${cId}&model=${mId}`, { signal: AbortSignal.timeout(120000) });
                     const data = await res.json();
                     if (data.status === 'error') {
                         status.innerText = 'Chyba: ' + (data.message || 'Neznáma chyba');
