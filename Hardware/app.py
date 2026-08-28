@@ -820,18 +820,18 @@ def _get_serial_number():
     return f"CM5-{mac}"
 
 def cloud_sync_loop():
-    serial = _get_serial_number()
+    serial_num = _get_serial_number()
     while True:
         time.sleep(5)
         try:
             local_ip = _get_local_ip()
             try:
                 requests.post(CLOUD_SERVER_URL + "/api/report-ip",
-                    json={"ip": local_ip, "serial": serial}, timeout=5, verify=False)
+                    json={"ip": local_ip, "serial": serial_num}, timeout=5, verify=False)
             except: pass
 
             resp = requests.post(CLOUD_SERVER_URL + "/api/cm5/poll",
-                json={"serial": serial}, timeout=10, verify=False)
+                json={"serial": serial_num}, timeout=10, verify=False)
             if resp.status_code != 200:
                 continue
             data = resp.json()
