@@ -822,6 +822,54 @@ def _get_local_ip():
 def _get_serial_number():
     return "CM5-DEFAULT"
 
+def _auto_detect_rs485_port():
+    """Automaticky najde funkcny RS485 port pri spusteni."""
+    import glob as glob_mod
+    all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
+    if not all_ports:
+        all_ports = ['/dev/ttyAMA4']
+    
+    for port in all_ports:
+        if not os.path.exists(port):
+            continue
+        for baud in [9600, 19200]:
+            for parity_mode in [serial.PARITY_NONE, serial.PARITY_EVEN]:
+                try:
+                    s = serial.Serial(port, baud, parity=parity_mode, timeout=0.5)
+                    for sid in range(1, 5):
+                        frame = bytes([sid, 3, 0, 0, 0, 1])
+                        crc = 0xFFFF
+                        for b in frame:
+                            crc ^= b
+                            for _ in range(8):
+                                crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+                        frame += bytes([crc & 0xFF, (crc >> 8) & 0xFF])
+                        s.reset_input_buffer()
+                        s.write(frame)
+                        resp = s.read(10)
+                        if resp:
+                            par_name = 'EVEN' if parity_mode == serial.PARITY_EVEN else 'NONE'
+                            log_message(f"[AUTO-DETECT] NAYDENE! Port={port} Baud={baud} Parity={par_name} ID={sid}")
+                            s.close()
+                            # Uloz do DB
+                            try:
+                                conn = get_db_connection()
+                                cursor = conn.cursor()
+                                cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_active_port'")
+                                cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (port,))
+                                cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_parity'")
+                                cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_parity', ?)", (par_name,))
+                                conn.commit()
+                                conn.close()
+                            except: pass
+                            return port
+                    s.close()
+                except: pass
+    
+    log_message("[AUTO-DETECT] Ziadny RS485 port nenajdeny")
+    return "/dev/ttyAMA4"
+
+
 def cloud_sync_loop():
     serial_num = _get_serial_number()
     while True:
@@ -1001,7 +1049,11 @@ def cloud_sync_loop():
 
 # ─── LED SERVICE START ────────────────────────────────
 led = LedService()
-led.anim_boot()  # Modra - system sa spusta
+led.anim_boot()  # cervena - system sa spusta
+
+# Auto-detect RS485 port
+detected_port = _auto_detect_rs485_port()
+log_message(f"[STARTUP] RS485 port: {detected_port}")
 
 cloud_thread = threading.Thread(target=cloud_sync_loop, daemon=True)
 cloud_thread.start()
