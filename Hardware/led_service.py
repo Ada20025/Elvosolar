@@ -173,11 +173,12 @@ class LedService:
         if not self._gpio_ok:
             return
         self._current_color = (r, g, b, w)
+        # 12V = HIGH to power strip, RGB = LOW to sink to GND
         self._write_pin_raw(PIN_12V, 1 if (r + g + b + w) > 0 else 0)
-        self._write_pin_raw(PIN_RED, 1 if r > 0 else 0)
-        self._write_pin_raw(PIN_GRN, 1 if g > 0 else 0)
-        self._write_pin_raw(PIN_BLU, 1 if b > 0 else 0)
-        self._write_pin_raw(PIN_WHT, 1 if w > 0 else 0)
+        self._write_pin_raw(PIN_RED, 0 if r > 0 else 1)  # inverted
+        self._write_pin_raw(PIN_GRN, 0 if g > 0 else 1)  # inverted
+        self._write_pin_raw(PIN_BLU, 0 if b > 0 else 1)  # inverted
+        self._write_pin_raw(PIN_WHT, 0 if w > 0 else 1)  # inverted
 
     def set_color_smooth(self, target, duration=0.3, steps=20):
         start = self._current_color
