@@ -415,7 +415,7 @@ def api_system_discover(brand: str = "", category: str = "", model: str = ""):
             "status": "success", 
             "discovered_count": len(discovered_slaves), 
             "slaves": discovered_slaves,
-            "port": target_port,
+            "port": found_port if "discovered_port" in dir() else "unknown",
             "parity": "EVEN" if winning_parity == "E" else "NONE"
         }
     except Exception as e:
@@ -1055,7 +1055,7 @@ def cloud_sync_loop():
                     "status": "success" if discovered_slaves else "error",
                     "slaves": discovered_slaves,
                     "discovered_count": len(discovered_slaves),
-                    "port": target_port,
+                    "port": found_port if "discovered_port" in dir() else "unknown",
                     "message": f"Najdene: {discovered_slaves}" if discovered_slaves else "Zbernica neodpoveda"
                 }
 
