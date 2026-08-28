@@ -896,7 +896,7 @@ def cloud_sync_loop():
                 baud_rate = cfg.get('baud', 9600) if cfg else 9600
                 discovered_slaves = []
                 bg_service.paused = True
-                time.sleep(0.1)
+                time.sleep(2)  # Pockat kym background thread skonci aktualne citanie
                 brand_config = DEVICE_DB.get(brand_id, {})
                 target_port = brand_config.get('port', '/dev/ttyAMA4')
                 if not os.path.exists(target_port):
@@ -905,6 +905,11 @@ def cloud_sync_loop():
                             target_port = fp
                             break
                 if os.path.exists(target_port):
+                    # Bez locku - len zatvorime ser a otvorime vlastny
+                    try:
+                        if bg_service.ser and bg_service.ser.is_open:
+                            bg_service.ser.close()
+                    except: pass
                     with bg_service.lock:
                         if bg_service.ser and bg_service.ser.is_open:
                             try: bg_service.ser.close()
