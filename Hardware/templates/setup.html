@@ -1,0 +1,955 @@
+<!-- App/templates/setup.html -->
+<!DOCTYPE html>
+<html lang="sk" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provisioning CM5 | ElvoControl</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#020617">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .solar-bg {
+            background-image: url('/templates/Fotovoltika1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .indicator-step { height: 4px; transition: all 0.3s ease; }
+        .slider-viewport { overflow: hidden; width: 100%; position: relative; }
+        .slider-container { display: flex; width: 600%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .slide { width: 16.6666%; flex-shrink: 0; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" onload="initWizard()">
+
+    <div class="absolute inset-0 solar-bg pointer-events-none"></div>
+    <div class="absolute inset-0 bg-slate-950/85 backdrop-blur-sm pointer-events-none"></div>
+
+    <!-- STATUS MODAL -->
+    <div id="statusModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md flex justify-center items-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <div id="modalLoader" class="mx-auto border-4 border-slate-800 border-t-cyan-500 rounded-full w-12 h-12 animate-spin mb-4"></div>
+            <span id="modalIcon" class="hidden text-5xl mb-4 block text-cyan-400">✓</span>
+            <span id="modalErrorIcon" class="hidden text-5xl mb-4 block text-rose-500">✕</span>
+            
+            <h3 id="modalTitle" class="text-lg font-black text-white mb-2">Vyhľadávanie</h3>
+            <p id="modalDesc" class="text-xs text-slate-400 leading-relaxed mb-6">Nadväzujem spojenie...</p>
+            
+            <button id="modalCloseBtn" onclick="closeModal()" class="hidden w-full bg-slate-800 hover:bg-slate-600 text-white font-bold text-xs py-3 rounded-xl transition border border-slate-700">
+                Zatvoriť
+            </button>
+        </div>
+    </div>
+
+    <!-- CENTRÁLNA KARTA -->
+    <div id="mainCard" class="relative w-full max-w-lg bg-slate-900/75 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl z-10">
+        <div id="wizardContent">
+            <!-- Hlavička -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-5 mb-5">
+                <div class="flex items-center gap-3">
+                    <img src="/templates/ElvosolarLogo1.png" class="h-10 w-auto object-contain" alt="ElvoSolar Logo" onerror="this.style.display='none'">
+                </div>
+                <a href="/logout" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-[10px] font-bold text-rose-400 transition font-mono uppercase tracking-wider">Odhlásiť sa</a>
+            </div>
+
+            <!-- Indikátory krokov -->
+            <div id="stepIndicators" class="grid grid-cols-5 gap-2 mb-6 transition-all duration-300">
+                <div id="ind1" class="indicator-step rounded-full bg-slate-800"></div>
+                <div id="ind2" class="indicator-step rounded-full bg-slate-800"></div>
+                <div id="ind3" class="indicator-step rounded-full bg-slate-800"></div>
+                <div id="ind4" class="indicator-step rounded-full bg-slate-800"></div>
+                <div id="ind5" class="indicator-step rounded-full bg-slate-800"></div>
+            </div>
+
+            <div id="validationError" class="hidden mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-400 leading-relaxed text-center"></div>
+
+            <!-- SLIDER VIEWPORT -->
+            <div class="slider-viewport">
+                <div id="sliderContainer" class="slider-container">
+
+                    <!-- SLIDE 0 -->
+                    <div class="slide space-y-5 text-center px-1">
+                        <div class="space-y-2">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Komunikačné rozhranie</span>
+                            <h2 class="text-xl font-extrabold text-white">Pripojenie k modulu</h2>
+                            <p class="text-xs text-slate-400 max-w-xs mx-auto">Zvoľte spôsob pripojenia k doske Waveshare.</p>
+                        </div>
+                        <div id="cableVerifyBox" class="p-3 bg-slate-950/50 border border-slate-850 rounded-xl flex items-center justify-center gap-2.5 text-xs">
+                            <span id="cablePulse" class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                            <span id="cableText" class="text-slate-300">Konfigurácia nie je dokončená...</span>
+                        </div>
+                        
+                        <div id="connectionMethodButtons" class="space-y-2.5 pt-2">
+                            <button onclick="startBluetoothScan(true)" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg hover:opacity-95">
+                                📡 BEZDRÔTOVO CEZ BLUETOOTH
+                            </button>
+                            <button onclick="showCableDeviceSelector()" class="w-full bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-xs py-3.5 rounded-xl transition border border-slate-750">
+                                🔌 PRIAME PRIPOJENIE KÁBLOM / LAN
+                            </button>
+                        </div>
+
+                        <div id="cableDeviceSelector" class="hidden text-left bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dostupné pripojenia</span>
+                                <button onclick="hideCableDeviceSelector()" class="text-xs text-slate-400 hover:text-white">Späť</button>
+                            </div>
+                            
+                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1" id="cableDevicesList"></div>
+
+                            <div class="flex gap-2 pt-1">
+                                <button onclick="scanForCableDevices()" id="btnScanCable" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] py-2.5 rounded-xl transition border border-slate-700">
+                                    🔄 Hľadať LAN
+                                </button>
+                                <button onclick="requestUsbSerialPort()" id="btnRequestSerial" class="flex-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 font-bold text-[11px] py-2.5 rounded-xl transition border border-cyan-500/20">
+                                    🔌 Pripojiť cez USB UART
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SLIDE 1 -->
+                    <div class="slide space-y-4 px-1">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 1 z 5</span>
+                            <h2 class="text-lg font-extrabold text-white">Pripojený striedač</h2>
+                            <p class="text-xs text-slate-400">Zvoľte značku striedača. Systém prispôsobí možnosti.</p>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Značka striedača</label>
+                                <select id="brandSelect" onchange="handleBrandChange()" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-3 py-3 outline-none"></select>
+                            </div>
+
+                            <div id="categoryContainer">
+                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Modelová rada / Kategória</label>
+                                <select id="categorySelect" onchange="handleCategoryChange()" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-3 py-3 outline-none"></select>
+                            </div>
+
+                            <div id="modelContainer">
+                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Model striedača</label>
+                                <select id="modelSelect" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-3 py-3 outline-none"></select>
+                            </div>
+
+                            <div id="huaweiNotice" class="hidden p-3 bg-slate-950/40 border border-slate-850 rounded-xl text-xs text-cyan-400 leading-relaxed"></div>
+
+                            <label class="flex items-center gap-3 bg-slate-950/40 p-4 rounded-xl border border-slate-800 cursor-pointer">
+                                <input id="wizardHasBattery" type="checkbox" checked class="accent-cyan-500">
+                                <span class="text-xs font-bold text-white">Mám pripojené batérie</span>
+                            </label>
+                        </div>
+                        <div class="button-group flex gap-2 pt-2">
+                            <button onclick="goToSlide(0)" class="w-1/3 bg-slate-800 text-slate-300 font-bold text-xs py-4 rounded-xl transition">Späť</button>
+                            <button onclick="submitStep1()" class="w-2/3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition">ULOŽIŤ MODEL ➔</button>
+                        </div>
+                    </div>
+
+                    <!-- SLIDE 2 -->
+                    <div class="slide space-y-4 px-1">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 2 z 5</span>
+                            <h2 class="text-lg font-extrabold text-white">Pripojenie kábla RS485</h2>
+                            <p class="text-xs text-slate-400">Zapojte komunikačné vodiče podľa schémy nižšie.</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="cable-opt cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-2 text-center text-xs" id="optCable2" onclick="selectCableType(2)"><strong>2-žilový</strong></div>
+                            <div class="cable-opt cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-2 text-center text-xs" id="optCable3" onclick="selectCableType(3)"><strong>3-žilový</strong></div>
+                            <div class="cable-opt cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-2 text-center text-xs" id="optCable8" onclick="selectCableType(8)"><strong>UTP / LAN</strong></div>
+                        </div>
+                        <div class="visual-wiring-diagram bg-slate-950/50 p-4 rounded-xl border border-slate-850 flex gap-4">
+                            <div class="wire-terminals text-xs space-y-2 flex-1">
+                                <div class="flex items-center gap-2"><div class="terminal-pin pin-a bg-amber-600 text-[10px] w-5 h-5 rounded flex items-center justify-center text-white font-bold">A</div><span>RS485 (+)</span></div>
+                                <div class="flex items-center gap-2"><div class="terminal-pin pin-b bg-blue-600 text-[10px] w-5 h-5 rounded flex items-center justify-center text-white font-bold">B</div><span>RS485 (-)</span></div>
+                                <div class="flex items-center gap-2" id="terminalGBlock" style="opacity:0.2;"><div class="terminal-pin pin-g bg-slate-600 text-[10px] w-5 h-5 rounded flex items-center justify-center text-white font-bold">G</div><span>GND</span></div>
+                            </div>
+                            <div class="flex-1 flex flex-col justify-center space-y-3">
+                                <div id="lineA" class="h-1 bg-amber-600 w-full rounded"></div>
+                                <div id="lineB" class="h-1 bg-blue-600 w-full rounded"></div>
+                                <div id="lineG" class="h-1 bg-slate-600 w-0 rounded opacity-0 transition-all"></div>
+                            </div>
+                        </div>
+                        <div id="dynamicCableInstructions" class="p-3 bg-slate-950/30 rounded-xl border border-slate-850 text-xs leading-relaxed"></div>
+                        <div id="wiringGuide" class="text-xs text-slate-400"></div>
+                        <div class="button-group flex gap-2 pt-2">
+                            <button onclick="goToSlide(1)" class="w-1/3 bg-slate-800 text-slate-300 font-bold text-xs py-4 rounded-xl transition">Späť</button>
+                            <button onclick="handleTransitionToStep3()" class="w-2/3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition">KÁBEL ZAPOJENÝ ➔</button>
+                        </div>
+                    </div>
+
+                    <!-- SLIDE 3 -->
+                    <div class="slide space-y-4 px-1">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 3 z 5</span>
+                            <h2 class="text-lg font-extrabold text-white">Pripojenie k lokálnej sieti</h2>
+                            <p class="text-xs text-slate-400">Zvoľte typ pripojenia pre jednotku CM5.</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-3 text-center block" id="lblEth">
+                                <input type="radio" name="netType" id="netTypeEth" value="eth" checked class="sr-only" onchange="toggleNetType('eth')">
+                                <span class="block text-xs font-bold text-white">Ethernet</span>
+                                <span class="text-[9px] text-slate-400 block mt-0.5">Kábel RJ45</span>
+                            </label>
+                            <label class="cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-3 text-center block" id="lblWifi">
+                                <input type="radio" name="netType" id="netTypeWifi" value="wifi" class="sr-only" onchange="toggleNetType('wifi')">
+                                <span class="block text-xs font-bold text-white">Wi-Fi</span>
+                                <span class="text-[9px] text-slate-400 block mt-0.5">Bezdrôtovo</span>
+                            </label>
+                            <label class="cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-3 text-center block" id="lblSim">
+                                <input type="radio" name="netType" id="netTypeSim" value="sim" class="sr-only" onchange="toggleNetType('sim')">
+                                <span class="block text-xs font-bold text-white">SIM karta</span>
+                                <span class="text-[9px] text-slate-400 block mt-0.5">LTE modem</span>
+                            </label>
+                        </div>
+                        
+                        <div id="wifiInputs" class="hidden space-y-3">
+                            <div class="bg-slate-950/20 p-3 rounded-xl border border-slate-850 space-y-3">
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-cyan-400 block">Pripojiť k domácej Wi-Fi</span>
+                                <div class="flex gap-2">
+                                    <button type="button" id="wifiScanBtn" onclick="scanWifiNetworks()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2 px-3 rounded-xl transition font-mono uppercase tracking-wider">🔍 Vyhľadať siete</button>
+                                    <button type="button" id="wifiManualToggleBtn" onclick="toggleManualWifi(true)" class="bg-slate-900 hover:bg-slate-850 text-slate-300 font-bold text-xs py-2 px-3 rounded-xl transition border border-slate-800 font-mono uppercase tracking-wider">✍️ Zadať manuálne</button>
+                                </div>
+                                <div id="wifiSelectContainer" class="space-y-1">
+                                    <select id="wifiSsidSelect" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-3 py-3 outline-none"></select>
+                                </div>
+                                <div id="wifiManualContainer" class="hidden space-y-1">
+                                    <input type="text" id="wifiSsidManual" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-4 py-3 outline-none font-mono" placeholder="Názov Wi-Fi (SSID)">
+                                    <button type="button" onclick="toggleManualWifi(false)" class="text-[10px] text-cyan-400 hover:underline block pt-1">Späť na výber</button>
+                                </div>
+                                
+                                <div class="relative">
+                                    <input type="password" id="wifiPass" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl pl-4 pr-10 py-3 outline-none" placeholder="Heslo k Wi-Fi sieti">
+                                    <button type="button" onclick="togglePasswordVisibility('wifiPass', 'eyeIcon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition">
+                                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="simInputs" class="hidden p-3 bg-slate-950/20 rounded-xl border border-slate-850 text-xs">
+                            <p class="text-slate-400 leading-relaxed font-semibold">Vložte SIM kartu bez PIN kódu do slotu.</p>
+                        </div>
+
+                        <div class="button-group pt-2 space-y-2">
+                            <button onclick="submitStep3()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition uppercase tracking-wider">POKRAČOVAŤ NA REŽIM ➔</button>
+                        </div>
+                    </div>
+
+                    <!-- SLIDE 4 -->
+                    <div class="slide space-y-4 px-1">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 4 z 5</span>
+                            <h2 class="text-lg font-extrabold text-white">Riadenie a správa</h2>
+                            <p class="text-xs text-slate-400">Zvoľte lokálny Modbus alebo prepojenie s cloudom.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div id="modeLocal" class="cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-4 text-center" onclick="setCommMode('LOCAL_MODBUS')">
+                                <strong class="text-xs block text-white font-mono uppercase">Local Modbus</strong>
+                                <span class="text-[9px] text-slate-400 block mt-1">Miestne bez cloudu</span>
+                            </div>
+                            <div id="modeCloud" class="cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-4 text-center" onclick="setCommMode('CLOUD')">
+                                <strong class="text-xs block text-white font-mono uppercase">Cloud Sync</strong>
+                                <span class="text-[9px] text-slate-400 block mt-1">Prepojenie Alwaysdata</span>
+                            </div>
+                        </div>
+                        
+                        <div id="cloudFields" class="hidden space-y-3 bg-slate-950/20 p-3 rounded-xl border border-slate-850">
+                            <label class="flex items-center gap-2 cursor-pointer pb-2 border-b border-slate-850/50">
+                                <input type="checkbox" id="useSessionAccount" checked onchange="toggleCloudAccountFields()" class="accent-cyan-500">
+                                <span class="text-xs text-slate-300 font-semibold font-mono">Použiť môj aktívne prihlásený účet</span>
+                            </label>
+                            <div id="customCloudAccountInputs" class="hidden space-y-3">
+                                <input type="email" id="cloudUser" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 outline-none font-mono" placeholder="Cloud E-mail">
+                                <div class="relative">
+                                    <input type="password" id="cloudPass" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-10 py-3 outline-none" placeholder="Heslo">
+                                    <button type="button" onclick="togglePasswordVisibility('cloudPass', 'eyeIconCloud')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition">
+                                        <svg id="eyeIconCloud" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="button-group flex gap-2 pt-2">
+                            <button onclick="goToSlide(2)" class="w-1/3 bg-slate-800 text-slate-300 font-bold text-xs py-4 rounded-xl transition">Späť</button>
+                            <button onclick="executeFinalSetupAndSend()" class="w-2/3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition uppercase tracking-wider">ODOSLAŤ DO BOXU ➔</button>
+                        </div>
+                    </div>
+
+                    <!-- SLIDE 5 -->
+                    <div class="slide space-y-4 px-1">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 5 z 5</span>
+                            <h2 class="text-lg font-extrabold text-white">Autodetekcia zbernice</h2>
+                            <p class="text-xs text-slate-400">Jednotka preverí odozvu pripojených zariadení.</p>
+                        </div>
+                        
+                        <div id="scanStatus" class="p-4 bg-slate-950/50 border border-slate-850 rounded-xl text-xs text-center font-bold text-amber-400 font-sans">Čakám na spustenie diagnostiky zbernice...</div>
+
+                        <div id="diagnosticGrid" class="hidden grid grid-cols-8 gap-1.5 p-3 bg-slate-950/60 rounded-2xl border border-slate-800/80 text-[10px] font-mono"></div>
+
+                        <div id="finalReport" class="hidden p-4 bg-slate-950/40 rounded-xl border border-slate-850 space-y-2 text-xs">
+                            <h4 class="text-cyan-400 font-bold mb-1">Diagnostický report:</h4>
+                            <div class="flex justify-between border-b border-slate-900 pb-1.5 font-semibold">
+                                <span class="text-slate-400">Spôsob prevádzky:</span>
+                                <strong id="repMode" class="text-white">Načítavam...</strong>
+                            </div>
+                            <div class="flex justify-between font-semibold">
+                                <span class="text-slate-400">Aktívne ID striedačov:</span>
+                                <strong id="repActiveSlaves" class="text-yellow-400 font-bold">Vyhľadávam...</strong>
+                            </div>
+                        </div>
+                        <div class="button-group flex gap-2 pt-2">
+                            <button id="finishBtn" onclick="completeSetup()" class="hidden w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider">DOKONČIŤ NASTAVENIE</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVICE_UUID = "12345678-1234-5678-1234-567812345678";
+        const CHARACTERISTIC_UUID = "87654321-4321-8765-4321-876543218765";
+        
+        let dbDevices = {};
+        let activeCableType = 2;
+        let selectedMode = 'LOCAL_MODBUS';
+        let currentStep = 0;
+        let hasActiveWifiConnection = false; 
+        let activeWifiSsidName = ""; 
+        let isManualWifi = false; 
+        
+        let selectedTransport = 'HTTP'; 
+        let setupCharacteristic = null; 
+        let activeSerialPort = null;
+        let discoveredSlaveIds = [];    
+
+        const isDevelopment = window.location.hostname.endsWith('alwaysdata.net') || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        let localGatewayIP = isDevelopment ? 'http://cm5.local' : '';
+
+        async function initWizard() {
+            try {
+                let res;
+                try {
+                    res = await fetch('/api/devices/list');
+                    if (!res.ok) throw new Error();
+                } catch (e) {
+                    res = await fetch('device_db.php');
+                }
+                dbDevices = await res.json();
+
+                loadBrands();
+                selectCableType(2);
+
+                const isAlwaysdata = window.location.hostname.includes('alwaysdata.net');
+                if (!isAlwaysdata && window.location.hostname !== '') {
+                    localGatewayIP = window.location.origin;
+                    selectedTransport = 'HTTP';
+                    goToSlide(1); 
+                } else {
+                    goToSlide(0); 
+                }
+
+                detectCableConnection();
+                checkWebSerialSupport();
+            } catch (err) {
+                showValidationError("Zlyhalo načítanie konfigurácií: " + err.message);
+            }
+        }
+
+        async function requestUsbSerialPort() {
+            if (!('serial' in navigator)) {
+                showValidationError("Web Serial nie je podporovaný vaším prehliadačom.");
+                return;
+            }
+            try {
+                activeSerialPort = await navigator.serial.requestPort();
+                await activeSerialPort.open({ baudRate: 115200 });
+                selectedTransport = 'SERIAL';
+                
+                const pulse = document.getElementById('cablePulse');
+                const txt = document.getElementById('cableText');
+                pulse.className = "h-2 w-2 rounded-full bg-cyan-500 animate-pulse";
+                txt.innerText = "Pripojené k Waveshare USB TO UART.";
+                goToSlide(1);
+            } catch (err) {
+                showValidationError("Zlyhalo otvorenie portu: " + err.message);
+            }
+        }
+
+        async function startBluetoothScan(bypassFilters = true) {
+            const modal = document.getElementById("statusModal");
+            modal.classList.remove("hidden");
+            showValidationError(null);
+            try {
+                let options = bypassFilters 
+                    ? { acceptAllDevices: true, optionalServices: [SERVICE_UUID] } 
+                    : { filters: [{ namePrefix: 'CM5-' }], optionalServices: [SERVICE_UUID] };
+
+                let matchedDevice = await navigator.bluetooth.requestDevice(options);
+                const server = await matchedDevice.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                setupCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+                
+                selectedTransport = 'BLE';
+                modal.classList.add("hidden");
+                goToSlide(1); 
+            } catch (err) {
+                modal.classList.add("hidden");
+                showValidationError("Bluetooth pripojenie zlyhalo: " + err.message);
+            }
+        }
+
+        async function executeFinalSetupAndSend() {
+            showValidationError(null);
+            const ssid = isManualWifi ? document.getElementById('wifiSsidManual').value.trim() : document.getElementById('wifiSsidSelect').value;
+            const pass = document.getElementById('wifiPass').value;
+            const brand_id = document.getElementById('brandSelect').value;
+            const category_id = document.getElementById('categorySelect').value;
+            const model_id = document.getElementById('modelSelect').value;
+            const has_battery = document.getElementById('wizardHasBattery').checked;
+
+            let cloudUser = "spravca@elvosolar.sk";
+            let cloudPass = "overene_priamo_cez_session_alwaysdata";
+            if (selectedMode === 'CLOUD' && !document.getElementById("useSessionAccount").checked) {
+                cloudUser = document.getElementById('cloudUser').value.trim();
+                cloudPass = document.getElementById('cloudPass').value;
+            }
+
+            const configPayload = {
+                admin_key: "",
+                comm_mode: selectedMode,
+                cloud_username: cloudUser,
+                cloud_password: cloudPass,
+                admin_username: "admin",
+                admin_password: cloudPass || "admin_fallback_pass",
+                ssid: ssid,
+                password: pass,
+                brand_id: brand_id,
+                category_id: category_id,
+                model_id: model_id,
+                slave_id: 1,
+                has_battery: has_battery,
+                active_cable_cores: activeCableType
+            };
+
+            const payloadString = JSON.stringify(configPayload);
+            const statusModal = document.getElementById("statusModal");
+            document.getElementById("modalTitle").innerText = "Zápis konfigurácie";
+            document.getElementById("modalDesc").innerText = "Odosielam parametre do CM5...";
+            statusModal.classList.remove("hidden");
+
+            try {
+                if (selectedTransport === 'BLE' && setupCharacteristic) {
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(payloadString);
+                    const chunkSize = 20;
+                    for (let i = 0; i < data.length; i += chunkSize) {
+                        const chunk = data.slice(i, i + chunkSize);
+                        await setupCharacteristic.writeValue(chunk);
+                        await new Promise(r => setTimeout(r, 60)); 
+                    }
+                } 
+                else if (selectedTransport === 'SERIAL' && activeSerialPort) {
+                    const encoder = new TextEncoder();
+                    const writer = activeSerialPort.writable.getWriter();
+                    await writer.write(encoder.encode(payloadString + "\n"));
+                    writer.releaseLock();
+                } 
+                else {
+                    // Posleme claim + claim-device PARALELNE s timeoutom (max 5s)
+                    const claimPromise = fetch(`${localGatewayIP}/api/admin/claim`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(configPayload),
+                        signal: AbortSignal.timeout(5000)
+                    }).catch(e => console.warn('claim:', e.message));
+
+                    const devicePromise = fetch(`${localGatewayIP}/api/user/claim-device`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            brand_id: brand_id,
+                            category_id: category_id,
+                            model_id: model_id,
+                            slave_id: 1,
+                            admin_username: "admin",
+                            has_battery: has_battery
+                        }),
+                        signal: AbortSignal.timeout(5000)
+                    }).catch(e => console.warn('claim-device:', e.message));
+
+                    await Promise.all([claimPromise, devicePromise]);
+                }
+                
+                statusModal.classList.add("hidden");
+                goToSlide(5);
+                runLocalDiscoveryOnDevice();
+            } catch (err) {
+                statusModal.classList.add("hidden");
+                showValidationError("Prenos zlyhal: " + err.message);
+            }
+        }
+
+        async function runLocalDiscoveryOnDevice() {
+            const status = document.getElementById("scanStatus");
+            const grid = document.getElementById("diagnosticGrid");
+            grid.classList.remove("hidden");
+            generateDiagnosticGrid();
+
+            status.innerText = "Spúšťam autodetekciu striedačov na zbernici RS485...";
+            status.className = "p-4 bg-slate-950/50 border border-slate-850 rounded-xl text-xs text-center font-bold text-cyan-400";
+
+            let discoveredSlaves = [];
+
+            // VOLAME DISCOVER 1x PRE VSETKY ID
+            if (selectedTransport === 'SERIAL' && activeSerialPort) {
+                try {
+                    const encoder = new TextEncoder();
+                    const writer = activeSerialPort.writable.getWriter();
+                    await writer.write(encoder.encode(JSON.stringify({action: 'discover_rs485'}) + '\n'));
+                    writer.releaseLock();
+                    const decoder = new TextDecoder();
+                    const reader = activeSerialPort.readable.getReader();
+                    let receivedData = '';
+                    const timeoutPromise = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 30000));
+                    const readPromise = async () => {
+                        while (true) {
+                            const { value, done } = await reader.read();
+                            if (done) break;
+                            receivedData += decoder.decode(value);
+                            if (receivedData.includes('\n')) break;
+                        }
+                    };
+                    await Promise.race([readPromise(), timeoutPromise]);
+                    reader.releaseLock();
+                    const parsed = JSON.parse(receivedData.trim());
+                    discoveredSlaves = parsed.slaves || [];
+                } catch(e) {
+                    discoveredSlaves = [];
+                }
+            } else {
+                // VOLAME /api/system/discover 1x - cloud/CM5 scanne vsetky ID a vrati slaves
+                const bId = document.getElementById('brandSelect').value;
+                const cId = document.getElementById('categorySelect').value;
+                const mId = document.getElementById('modelSelect').value;
+                try {
+                    status.innerText = "Otváram RS485 port a skenujem zbernicu (~10s)...";
+                    const res = await fetch(`${localGatewayIP}/api/system/discover?brand=${bId}&category=${cId}&model=${mId}`, { signal: AbortSignal.timeout(45000) });
+                    const data = await res.json();
+                    if (data.status === 'error') {
+                        status.innerText = 'Chyba: ' + (data.message || 'Neznáma chyba');
+                        status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';
+                    }
+                    discoveredSlaves = data.slaves || [];
+                } catch(e) {
+                    status.innerText = 'Chyba komunikácie: ' + e.message;
+                    status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';
+                    discoveredSlaves = [];
+                }
+            }
+
+            // ANIMUJ GRID podla vysledkov
+            for (let i = 1; i <= 32; i++) {
+                const cell = document.getElementById(`modbus-${i}`);
+                const label = document.getElementById(`state-${i}`);
+                status.innerText = `Kontrolujem adresu ${i} z 32...`;
+                if (discoveredSlaves.includes(i)) {
+                    cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-emerald-950/40 border border-emerald-500 text-emerald-400 font-bold text-center";
+                    label.innerText = "RX \u2713";
+                } else {
+                    cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-slate-950/20 border border-slate-900 text-slate-600 opacity-40 text-center";
+                    label.innerText = "NO RESP";
+                }
+                await new Promise(r => setTimeout(r, 30));
+            }
+
+            discoveredSlaveIds = discoveredSlaves;
+            document.getElementById("finalReport").classList.remove("hidden");
+            document.getElementById("repMode").innerText = selectedMode;
+            
+            const slavesSpan = document.getElementById("repActiveSlaves");
+            if (discoveredSlaves.length > 0) {
+                slavesSpan.innerText = `Zistené aktívne ID: ${discoveredSlaves.join(', ')}`;
+                slavesSpan.className = "text-emerald-400 font-bold";
+                status.innerText = "Diagnostika úsešne dokončená. Zariadenia komunikujú.";
+                status.className = "p-4 bg-emerald-950/20 border border-emerald-900/30 rounded-xl text-xs text-center font-bold text-emerald-400";
+            } else {
+                slavesSpan.innerText = "Žiadne zariadenie neodpovedalo.";
+                slavesSpan.className = "text-rose-500 font-bold";
+                status.innerText = "Varovanie: Fyzická zbernica neodpovedá. Skontrolujte napojenie A(+) a B(-).";
+                status.className = "p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400";
+            }
+
+            document.getElementById("finishBtn").classList.remove("hidden");
+        }
+
+        function showValidationError(msg) {
+            const errBox = document.getElementById("validationError");
+            if (msg) {
+                errBox.innerText = msg;
+                errBox.classList.remove("hidden");
+            } else {
+                errBox.classList.add("hidden");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById("statusModal").classList.add("hidden");
+        }
+
+        function goToSlide(slideIndex) {
+            currentStep = slideIndex;
+            showValidationError(null);
+            const slider = document.getElementById("sliderContainer");
+            const translatePercent = slideIndex * (100 / 6);
+            slider.style.transform = `translateX(-${translatePercent}%)`;
+
+            const indicators = document.getElementById("stepIndicators");
+            if (slideIndex === 0) {
+                indicators.classList.add("hidden");
+            } else {
+                indicators.classList.remove("hidden");
+                for (let i = 1; i <= 5; i++) {
+                    const ind = document.getElementById(`ind${i}`);
+                    if (i <= slideIndex) {
+                        ind.className = "indicator-step rounded-full bg-cyan-500 shadow-md shadow-cyan-500/50";
+                    } else {
+                        ind.className = "indicator-step rounded-full bg-slate-800";
+                    }
+                }
+            }
+        }
+
+        function handleTransitionToStep3() {
+            goToSlide(4); // Preskocime WiFi, ideme priamo na rezim
+            const wifiRadio = document.getElementById('netTypeWifi');
+            if (wifiRadio && wifiRadio.checked) {
+                scanWifiNetworks();
+            }
+        }
+
+        async function detectCableConnection() {
+            try {
+                const res = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(1000) });
+                const data = await res.json();
+                const pulse = document.getElementById('cablePulse');
+                const txt = document.getElementById('cableText');
+                const badge = document.getElementById('cableVerifyBox');
+
+                if (data.internet) {
+                    pulse.className = "h-2 w-2 rounded-full bg-emerald-500 animate-pulse";
+                    txt.innerText = "Lokálne pripojenie k bráne (LAN/Wi-Fi) je aktívne.";
+                    badge.className = "p-3 bg-emerald-950/10 border border-emerald-900/30 rounded-xl flex items-center justify-center gap-2.5 text-xs text-emerald-400";
+                    document.getElementById('netTypeEth').checked = true;
+                    toggleNetType('eth');
+                    hasActiveWifiConnection = false;
+                } else {
+                    pulse.className = "h-2 w-2 rounded-full bg-amber-500";
+                    txt.innerText = "Brána na lokálnej sieti nebola automaticky detegovaná.";
+                    badge.className = "p-3 bg-slate-950/50 border border-slate-850 rounded-xl flex items-center justify-center gap-2.5 text-xs text-slate-400";
+                    if (data.active_wifi_ssid) {
+                        hasActiveWifiConnection = true;
+                        activeWifiSsidName = data.active_wifi_ssid;
+                    }
+                }
+            } catch (err) {}
+        }
+
+        function checkWebSerialSupport() {
+            const btn = document.getElementById('btnRequestSerial');
+            if (!btn) return;
+            if (!('serial' in navigator)) {
+                btn.classList.add("opacity-50", "pointer-events-none");
+                btn.innerText = "USB UART nepodporované";
+            }
+        }
+
+        function showCableDeviceSelector() {
+            document.getElementById("connectionMethodButtons").classList.add("hidden");
+            document.getElementById("cableDeviceSelector").classList.remove("hidden");
+            scanForCableDevices();
+        }
+
+        function hideCableDeviceSelector() {
+            document.getElementById("cableDeviceSelector").classList.add("hidden");
+            document.getElementById("connectionMethodButtons").classList.remove("hidden");
+        }
+
+        async function scanForCableDevices() {
+            const listContainer = document.getElementById("cableDevicesList");
+            listContainer.innerHTML = `<div class="text-center py-4 text-xs text-slate-400 flex flex-col items-center gap-2"><div class="border-2 border-slate-800 border-t-cyan-500 rounded-full w-5 h-5 animate-spin"></div><span>Prehľadávam komunikačné kanály...</span></div>`;
+            let devices = [];
+            try {
+                const res = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(1200) });
+                if (res.ok) {
+                    devices.push({ id: "lan_active", name: "CM5 Lokálna brána (cm5.local)", details: "Sietové ethernetové rozhranie", target: localGatewayIP, type: "network", icon: "🔌" });
+                }
+            } catch (e) {}
+
+            listContainer.innerHTML = "";
+            if (devices.length === 0) {
+                listContainer.innerHTML = `<div class="text-center py-3 text-xs text-slate-500">Neboli nájdené žiadne sieťové zariadenia.</div>`;
+            }
+
+            devices.forEach(dev => {
+                const devCard = document.createElement("div");
+                devCard.className = "flex items-center justify-between p-3 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl cursor-pointer transition";
+                devCard.onclick = () => selectCableDevice(dev);
+                devCard.innerHTML = `<div class="flex items-center gap-2.5"><span class="text-base">${dev.icon}</span><div class="flex flex-col"><span class="text-xs font-bold text-white">${dev.name}</span><span class="text-[9px] text-slate-400">${dev.details}</span></div></div><span class="text-[10px] bg-slate-800 text-cyan-400 font-bold px-2.5 py-1 rounded-lg">Pripojiť</span>`;
+                listContainer.appendChild(devCard);
+            });
+        }
+
+        function selectCableDevice(dev) {
+            if (dev.type === "network") {
+                localGatewayIP = dev.target;
+                selectedTransport = 'HTTP';
+                const pulse = document.getElementById('cablePulse');
+                const txt = document.getElementById('cableText');
+                pulse.className = "h-2 w-2 rounded-full bg-emerald-500";
+                txt.innerText = `Komunikácia cez IP: ${dev.name}`;
+            }
+            goToSlide(1);
+        }
+
+        function submitStep1() {
+            const brand_id = document.getElementById('brandSelect').value;
+            const brand = dbDevices[brand_id];
+            document.getElementById('wiringGuide').innerHTML = `<h3>Metodika zapojenia pre ${brand.znacka}:</h3><p>${brand.zapojenie}</p>`;
+            goToSlide(2); 
+        }
+
+        function toggleNetType(type) {
+            document.getElementById("wifiInputs").classList.toggle("hidden", type !== "wifi");
+            document.getElementById("lblEth").className = type === 'eth' ? "cursor-pointer bg-blue-950/30 border-2 border-cyan-500 rounded-xl p-3 text-center block" : "cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-3 text-center block";
+            document.getElementById("lblWifi").className = type === 'wifi' ? "cursor-pointer bg-blue-950/30 border-2 border-cyan-500 rounded-xl p-3 text-center block" : "cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-3 text-center block";
+            document.getElementById("lblSim").className = type === 'sim' ? "cursor-pointer bg-blue-950/30 border-2 border-cyan-500 rounded-xl p-3 text-center block" : "cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-3 text-center block";
+            if (type === 'wifi') scanWifiNetworks();
+        }
+
+        function toggleManualWifi(manual) {
+            isManualWifi = manual;
+            document.getElementById('wifiSelectContainer').classList.toggle('hidden', manual);
+            document.getElementById('wifiManualContainer').classList.toggle('hidden', !manual);
+            document.getElementById('wifiManualToggleBtn').classList.toggle('hidden', manual);
+        }
+
+        function togglePasswordVisibility(inputId, buttonIconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(buttonIconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M21 21l-1.89-1.89m0 0A10.511 10.511 0 0 0 22.066 12C20.774 7.662 16.756 4.5 12 4.5c-1.323 0-2.583.242-3.744.685M12 9a3 3 0 1 0 3 3" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />`;
+            } else {
+                input.type = "password";
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />`;
+            }
+        }
+
+        async function scanWifiNetworks() {
+            const select = document.getElementById('wifiSsidSelect');
+            select.innerHTML = '<option value="">🔍 Skenujem bezdrôtové siete...</option>';
+            try {
+                const res = await fetch(`${localGatewayIP}/api/system/wifi/scan`);
+                let nets = await res.json();
+                select.innerHTML = '';
+                if (hasActiveWifiConnection && activeWifiSsidName) {
+                    select.innerHTML += `<option value="ACTIVE_CURRENT_WIFI" selected>✨ ${activeWifiSsidName} (Aktuálne)</option>`;
+                } else {
+                    select.innerHTML += '<option value="">-- Vyberte sieť --</option>';
+                }
+                if (Array.isArray(nets) && nets.length > 0) {
+                    nets.forEach(n => {
+                        let ind = n.signal >= 80 ? "🟢" : "🟡";
+                        select.innerHTML += `<option value="${n.ssid}">${n.ssid} (${ind} ${n.signal}%)</option>`;
+                    });
+                } else {
+                    toggleManualWifi(true);
+                }
+            } catch(e) {
+                select.innerHTML = '<option value="">(Skenovanie nedostupné)</option>';
+                const mockNets = [{ssid: "ElvoSolar_Internal_AP", signal: 95}];
+                mockNets.forEach(n => { select.innerHTML += `<option value="${n.ssid}">${n.ssid} (🟢 ${n.signal}%)</option>`; });
+            }
+        }
+
+        function setCommMode(mode) {
+            selectedMode = mode;
+            document.getElementById('modeLocal').className = mode === 'LOCAL_MODBUS' ? "cursor-pointer bg-blue-950/30 border-2 border-cyan-500 rounded-xl p-4 text-center" : "cursor-pointer bg-slate-950/40 border-2 border-slate-800/40 text-center";
+            document.getElementById('modeCloud').className = mode === 'CLOUD' ? "cursor-pointer bg-blue-950/30 border-2 border-cyan-500 rounded-xl p-4 text-center" : "cursor-pointer bg-slate-950/40 border-2 border-slate-800/40 text-center";
+            document.getElementById('cloudFields').classList.toggle('hidden', mode !== 'CLOUD');
+        }
+
+        function toggleCloudAccountFields() {
+            const checkbox = document.getElementById("useSessionAccount");
+            document.getElementById("customCloudAccountInputs").classList.toggle("hidden", checkbox.checked);
+        }
+
+        function loadBrands() {
+            const select = document.getElementById('brandSelect');
+            select.innerHTML = '';
+            for (let key in dbDevices) { select.innerHTML += `<option value="${key}">${dbDevices[key].znacka}</option>`; }
+            handleBrandChange();
+        }
+
+        function handleBrandChange() {
+            const brand_id = document.getElementById('brandSelect').value;
+            const catContainer = document.getElementById('categoryContainer');
+            if (!brand_id || !dbDevices[brand_id]) return;
+            const categories = dbDevices[brand_id].kategorie;
+            const catKeys = Object.keys(categories);
+            const catSelect = document.getElementById('categorySelect');
+            catSelect.innerHTML = '';
+            if (catKeys.length > 1) {
+                catContainer.classList.remove('hidden');
+                for (let catKey in categories) { catSelect.innerHTML += `<option value="${catKey}">${categories[catKey].meno}</option>`; }
+            } else {
+                catContainer.classList.add('hidden');
+                catSelect.innerHTML = `<option value="${catKeys[0]}" selected>${categories[catKeys[0]].meno}</option>`;
+            }
+            handleCategoryChange();
+        }
+
+        function handleCategoryChange() {
+            const brand_id = document.getElementById('brandSelect').value;
+            const cat_id = document.getElementById('categorySelect').value;
+            const modelContainer = document.getElementById('modelContainer');
+            const huaweiNotice = document.getElementById('huaweiNotice');
+            const modelSelect = document.getElementById('modelSelect');
+            modelSelect.innerHTML = '';
+            if (!brand_id || !cat_id || !dbDevices[brand_id] || !dbDevices[brand_id].kategorie[cat_id]) return;
+            const models = dbDevices[brand_id].kategorie[cat_id].modely;
+            const modelKeys = Object.keys(models);
+            if (modelKeys.length > 1) {
+                modelContainer.classList.remove('hidden');
+                huaweiNotice.classList.add('hidden');
+                for (let modKey in models) { modelSelect.innerHTML += `<option value="${modKey}">${models[modKey].meno}</option>`; }
+            } else {
+                modelContainer.classList.add('hidden');
+                modelSelect.innerHTML = `<option value="${modelKeys[0]}" selected>${models[modelKeys[0]].meno}</option>`;
+                huaweiNotice.innerHTML = `💡 Automaticky nakonfigurovaný model <strong>${models[modelKeys[0]].meno}</strong>.`;
+                huaweiNotice.classList.remove('hidden');
+            }
+        }
+
+        function selectCableType(cores) {
+            activeCableType = cores;
+            document.querySelectorAll('.cable-opt').forEach(opt => { opt.className = "cable-opt cursor-pointer bg-slate-950/40 border-2 border-slate-800 rounded-xl p-2 text-center text-xs"; });
+            document.getElementById(`optCable${cores}`).className = "cable-opt cursor-pointer bg-blue-950/30 border-2 border-cyan-500 rounded-xl p-2 text-center text-xs";
+            const termG = document.getElementById('terminalGBlock');
+            const lineG = document.getElementById('lineG');
+            if (cores === 2) {
+                termG.style.opacity = "0.2"; lineG.style.opacity = "0"; lineG.style.width = "0%";
+                document.getElementById('dynamicCableInstructions').innerHTML = `<p>Zapojte A na pin A (TX+/RX+) striedača a B na pin B (TX-/RX-).</p>`;
+            } else if (cores === 3) {
+                termG.style.opacity = "1"; lineG.style.opacity = "1"; lineG.style.width = "100%";
+                document.getElementById('dynamicCableInstructions').innerHTML = `<p>Prepojte piny A a B. Tretí vodič zapojte do zeme G (GND).</p>`;
+            } else {
+                termG.style.opacity = "1"; lineG.style.opacity = "1"; lineG.style.width = "100%";
+                document.getElementById('dynamicCableInstructions').innerHTML = `<p>Modrý vodič na A, Modro-biely na B, Hnedý na zem G (GND).</p>`;
+            }
+        }
+
+        function generateDiagnosticGrid() {
+            const grid = document.getElementById('diagnosticGrid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 32; i++) {
+                grid.innerHTML += `<div id="modbus-${i}" class="flex flex-col items-center justify-center p-1 rounded-lg bg-slate-900 border border-slate-800/40 text-slate-500 text-center"><span class="font-bold text-[9px]">${i}</span><span id="state-${i}" class="text-[6px] uppercase mt-0.5">IDLE</span></div>`;
+            }
+        }
+
+        function submitStep3() {
+            goToSlide(4);
+        }
+
+        async function completeSetup() {
+            const finishBtn = document.getElementById("finishBtn");
+            finishBtn.disabled = true;
+            finishBtn.innerText = "REGISTRUJEM V CLOUDU...";
+            finishBtn.className = "w-full bg-slate-700 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
+
+            try {
+                const brand_id = document.getElementById('brandSelect').value;
+                const cat_id = document.getElementById('categorySelect').value;
+                const model_id = document.getElementById('modelSelect').value;
+                const brand = dbDevices[brand_id] ? dbDevices[brand_id].znacka : 'Huawei';
+                const models = dbDevices[brand_id] && dbDevices[brand_id].kategorie[cat_id] ? dbDevices[brand_id].kategorie[cat_id].modely : {};
+                const model = models[model_id] ? models[model_id].meno : 'SUN2000';
+                const name = brand + ' ' + model;
+
+                // Získaj sériové číslo z CM5 zariadenia
+                let serial = '';
+                try {
+                    const statusRes = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(3000) });
+                    const statusData = await statusRes.json();
+                    serial = statusData.serial_number || statusData.serial || '';
+                } catch(e) {}
+
+                // Ak nemáme sériové číslo z CM5, vygeneruj z MAC alebo náhodné
+                if (!serial) {
+                    try {
+                        const infoRes = await fetch(`${localGatewayIP}/api/system/info`, { signal: AbortSignal.timeout(3000) });
+                        const infoData = await infoRes.json();
+                        serial = infoData.serial_number || infoData.serial || infoData.mac || '';
+                    } catch(e) {}
+                }
+                if (!serial) {
+                    serial = 'CM5-' + Date.now().toString(36).toUpperCase();
+                }
+
+                // Zaregistruj zariadenie na serveri
+                const regRes = await fetch('/api/devices/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        serial_number: serial,
+                        name: name,
+                        brand: brand,
+                        model: model
+                    })
+                });
+                const regData = await regRes.json();
+
+                if (regData.status !== 'success' && regRes.status !== 409) {
+                    // 409 = už existuje, to je OK
+                    throw new Error(regData.message || 'Registrácia zlyhala');
+                }
+
+                // Ak sme našli Modbus ID, pošli update do CM5
+                if (discoveredSlaveIds.length > 0 && selectedTransport !== 'BLE') {
+                    try {
+                        await fetch(`${localGatewayIP}/api/admin/claim`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                slave_id: discoveredSlaveIds[0],
+                                serial_number: serial
+                            })
+                        });
+                    } catch(e) {}
+                }
+
+                finishBtn.innerText = "DOKONČENÉ ✓";
+                finishBtn.className = "w-full bg-emerald-600 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
+                finishBtn.onclick = () => { location.href = '/'; };
+            } catch(err) {
+                finishBtn.disabled = false;
+                finishBtn.innerText = "DOKONČIŤ NASTAVENIE";
+                finishBtn.className = "w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
+                showValidationError('Chyba registrácie: ' + err.message + '. Kliknite znova alebo dokončite manuálne.');
+            }
+        }
+    </script>
+</body>
+</html>
