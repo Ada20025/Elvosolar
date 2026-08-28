@@ -1,3 +1,4 @@
+import logging
 # =============================================================================
 # app.py
 # Industrial IoT Core Web Server & Gateway (Waveshare CM5 / Raspberry Pi 5)
@@ -27,6 +28,8 @@ from database import init_db, get_db_connection, verify_password
 from solar_service import SolarBackgroundService
 from system_service import SystemService
 from led_service import LedService
+logging.getLogger("LED").addHandler(logging.StreamHandler())
+logging.getLogger("LED").setLevel(logging.INFO)
 from Config import DEVICE_DB, PORT, WEB_PORT
 
 CLOUD_SERVER_URL = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")

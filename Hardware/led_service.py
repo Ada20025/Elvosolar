@@ -81,7 +81,7 @@ class LedService:
                     for pin in ALL_PINS:
                         self._request.set_value(pin, gpiod.line.Value.INACTIVE)
                     self._gpio_ok = True
-                    logger.info("gpiod v2 OK - vsetkych 5 pinov")
+                    logger.info("[LED] gpiod v2 OK - vsetkych 5 pinov na gpiochip4")
                     return
                 except Exception as e:
                     logger.warning("gpiod v2 request failed: %s", e)
@@ -135,7 +135,7 @@ class LedService:
             logger.warning("Sysfs failed: %s", e)
 
         if not self._gpio_ok:
-            logger.warning("Ziadne GPIO - LED nefunkcne")
+            logger.warning("[LED] Ziadne GPIO nedisponuje - LED nefunkcne")
 
     def _write_pin_raw(self, pin, value):
         """Write 0 or 1 to a GPIO pin."""
@@ -207,7 +207,8 @@ class LedService:
         self._animation_thread.start()
 
     def anim_boot(self):
-        logger.info("LED: Boot (red)")
+        logger.info("[LED] anim_boot - cervena (r=255)")
+        logger.info("[LED] gpio_ok=%s, use_sysfs=%s", self._gpio_ok, self._use_sysfs)
         self.stop_animation()
         self.set_color(r=255)
 
@@ -287,7 +288,7 @@ class LedService:
         self.off()
         if self._request is not None:
             try:
-                self._request.close()
+                del self._request
             except Exception:
                 pass
         if hasattr(self, '_v1_lines'):
