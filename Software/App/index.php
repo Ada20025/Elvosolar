@@ -626,13 +626,7 @@ elseif (preg_match('#^/api/device/([0-9]+)/meter$#', $path, $matches)) {
 
 // --- SMART METER: KONFIGURÁCIA ---
 elseif (preg_match('#^/api/device/([0-9]+)/meter/config$#', $path, $matches)) {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
     $device_id = $matches[1];
-    
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    if (!$device) send_json(['error' => 'Device not found'], 404);
 
     if ($method === 'GET') {
         $ai_state = get_device_ai_state_php($device_id);
