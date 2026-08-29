@@ -1158,16 +1158,16 @@ reset_thread = threading.Thread(target=_daily_reset, daemon=True)
 reset_thread.start()
 log_message("[AUTO-RESET] 24h timer spusteny")
 
-# Cloud sync - 20s po starte, potom kazdych 5s
+# Cloud sync - 3s po starte, potom kazdych 5s
 def _delayed_cloud_start():
-    time.sleep(20)
-    log_message("[STARTUP] Cloud sync spusteny (20s po boot)")
+    time.sleep(3)  # Kratke oneskorenie kym sa system ustali
+    log_message("[STARTUP] Cloud sync spusteny (3s po boot)")
     led.anim_ok()  # Zelena - vsetko OK
     cloud_sync_loop()
 
 cloud_thread = threading.Thread(target=_delayed_cloud_start, daemon=True)
 cloud_thread.start()
-log_message("[CLOUD SYNC] Background thread (20s delay, 5s poll)")
+log_message("[CLOUD SYNC] Background thread (3s delay, 5s poll)")
 
 
 
