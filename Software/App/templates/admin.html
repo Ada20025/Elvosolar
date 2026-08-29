@@ -520,11 +520,11 @@
                     </tr>
                 `;
 
-                const kwVal = deviceState === 'ONLINE' ? `${(g.capacity * 0.45).toFixed(2)} kW` : "0.00 kW";
-                const socVal = deviceState === 'ONLINE' ? "86 %" : "0 %";
-                const tempVal = deviceState === 'ONLINE' ? "34.5 °C" : "0.0 °C";
-                const freqVal = deviceState === 'ONLINE' ? "50.02 Hz" : "0.00 Hz";
-                const pvVal = deviceState === 'ONLINE' ? "480.0 V / 4.15 A" : "-- V / -- A";
+                const kwVal = dev.power_ac ? `${(dev.power_ac / 1000).toFixed(2)} kW` : '0.00 kW';
+                const socVal = dev.battery_soc ? `${dev.battery_soc.toFixed(0)} %` : '0 %';
+                const tempVal = dev.temp ? `${dev.temp.toFixed(1)} °C` : '0.0 °C';
+                const freqVal = dev.freq ? `${dev.freq.toFixed(2)} Hz` : '0.00 Hz';
+                const pvVal = dev.power_ac > 0 ? 'Aktívne' : '--';
                 const timeStr = new Date(dev.last_seen * 1000).toLocaleTimeString('sk-SK');
 
                 telemTbody.innerHTML += `
@@ -561,33 +561,82 @@
 
         async function fetchAdminData() {
             try {
-                // Lokálny prenos hodnôt
-                const mockGroups = [
-                    { id: 1, name: "Stanica Dom (CM5)", capacity: 10.0 }
-                ];
-                const mockGrouped = {
-                    1: [{ id: 1, hostname: "SN-CM5-9921", brand_id: "HUAWEI", model_id: "SUN2000", slave_id: 1, total_saved_eur: 42.15, total_kwh: 145.2, last_seen: Math.floor(Date.now() / 1000), ip_address: "192.168.1.150" }]
-                };
+                const res = await fetch(basePath + '/api/admin/devices');
+                const data = await res.json();
+                
+                if (data.status !== 'success' || !data.devices) {
+                    console.error('API error:', data);
+                    return;
+                }
 
-                document.getElementById('totalDevicesCount').innerText = "1";
-                document.getElementById('onlineCountLabel').innerText = "1 Online";
-                document.getElementById('errorCountLabel').innerText = "0 Porucha";
-                document.getElementById('offlineCountLabel').innerText = "0 Odpojené";
+                const devices = data.devices;
+                const now = Math.floor(Date.now() / 1000);
+                
+                let onlineCount = 0;
+                let errorCount = 0;
+                let offlineCount = 0;
+                let totalPower = 0;
+                let totalKwh = 0;
+                let totalSaved = 0;
 
-                document.getElementById('gaugeNormalCircle').setAttribute("stroke-dashoffset", "0");
-                document.getElementById('gaugeAlarmCircle').setAttribute("stroke-dashoffset", "201");
+                const groups = [];
+                const grouped = {};
 
-                globalRawGroups = mockGroups;
-                globalRawGroupedDevices = mockGrouped;
+                devices.forEach(dev => {
+                    const isOnline = dev.is_online;
+                    const hasError = dev.status_msg && dev.status_msg.includes('ERROR');
+                    
+                    if (isOnline) {
+                        onlineCount++;
+                        totalPower += dev.power_ac;
+                    } else {
+                        offlineCount++;
+                    }
+                    if (hasError) errorCount++;
+                    
+                    totalKwh += dev.total_kwh;
+                    totalSaved += dev.total_saved_eur;
+                    
+                    groups.push({ id: dev.id, name: dev.name, capacity: 10 });
+                    grouped[dev.id] = [{
+                        id: dev.id,
+                        hostname: dev.serial_number,
+                        brand_id: dev.brand_id,
+                        model_id: dev.model_id,
+                        slave_id: dev.slave_id,
+                        total_saved_eur: dev.total_saved_eur,
+                        total_kwh: dev.total_kwh,
+                        last_seen: dev.last_seen,
+                        ip_address: '',
+                        power_ac: dev.power_ac,
+                        battery_soc: dev.battery_soc,
+                        temp: dev.temp,
+                        freq: dev.freq,
+                        status_msg: dev.status_msg,
+                    }];
+                });
+
+                const totalCount = devices.length;
+                document.getElementById('totalDevicesCount').innerText = totalCount;
+                document.getElementById('onlineCountLabel').innerText = onlineCount + ' Online';
+                document.getElementById('errorCountLabel').innerText = errorCount + ' Porucha';
+                document.getElementById('offlineCountLabel').innerText = offlineCount + ' Odpojené';
+
+                const normalOffset = totalCount > 0 ? 201 - (onlineCount / totalCount * 201) : 201;
+                document.getElementById('gaugeNormalCircle').setAttribute('stroke-dashoffset', normalOffset);
+                document.getElementById('gaugeAlarmCircle').setAttribute('stroke-dashoffset', 201 - (errorCount / Math.max(totalCount, 1) * 201));
+
+                globalRawGroups = groups;
+                globalRawGroupedDevices = grouped;
                 renderTables();
 
-                document.getElementById('livePowerSum').innerText = "4.50 kW";
-                document.getElementById('yieldTodayVal').innerText = "7.26 kWh";
-                document.getElementById('revenueTodayVal').innerText = "2.10 €";
-                document.getElementById('yieldTotalVal').innerText = "0.1452 MWh";
+                document.getElementById('livePowerSum').innerText = (totalPower / 1000).toFixed(2) + ' kW';
+                document.getElementById('yieldTodayVal').innerText = totalKwh.toFixed(2) + ' kWh';
+                document.getElementById('revenueTodayVal').innerText = totalSaved.toFixed(2) + ' EUR';
+                document.getElementById('yieldTotalVal').innerText = (totalKwh / 1000).toFixed(4) + ' MWh';
 
             } catch (e) {
-                console.error(e);
+                console.error('Admin fetch error:', e);
             }
         }
 

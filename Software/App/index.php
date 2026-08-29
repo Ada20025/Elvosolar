@@ -1258,6 +1258,54 @@ elseif ($path === '/api/cm5/wait-result' && $method === 'GET') {
     }
 }
 
+// --- ADMIN PANEL DATA ---
+elseif ($path === '/api/admin/devices' && $method === 'GET') {
+    // Vrati vsetky zariadenia s live datami pre admin panel
+    $stmt = $pdo->query("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.id DESC");
+    $devices = $stmt->fetchAll();
+    
+    $result = [];
+    foreach ($devices as $dev) {
+        $device_id = $dev['id'];
+        
+        // Telemetry
+        $stmt = $pdo->prepare("SELECT power_ac, battery_soc, temp, freq, status_msg, timestamp FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$device_id]);
+        $telemetry = $stmt->fetch();
+        
+        // AI state
+        $ai_state = get_device_ai_state_php($device_id);
+        
+        // Last seen
+        $last_seen = strtotime($dev['last_seen'] ?? '2000-01-01');
+        $now = time();
+        $is_online = ($now - $last_seen) < 90;
+        
+        $result[] = [
+            'id' => $dev['id'],
+            'name' => $dev['name'] ?? 'Zariadenie',
+            'serial_number' => $dev['serial_number'] ?? '',
+            'brand_id' => $dev['brand_id'] ?? '',
+            'model_id' => $dev['model_id'] ?? '',
+            'slave_id' => $dev['slave_id'] ?? 0,
+            'user_id' => $dev['user_id'] ?? 0,
+            'username' => $dev['username'] ?? '',
+            'total_saved_eur' => (float)($dev['total_saved_eur'] ?? 0),
+            'total_kwh' => (float)($dev['total_kwh'] ?? 0),
+            'last_seen' => $last_seen,
+            'is_online' => $is_online,
+            'power_ac' => $telemetry ? (float)$telemetry['power_ac'] : 0,
+            'battery_soc' => $telemetry ? (float)$telemetry['battery_soc'] : 0,
+            'temp' => $telemetry ? (float)$telemetry['temp'] : 0,
+            'freq' => $telemetry ? (float)$telemetry['freq'] : 0,
+            'status_msg' => $telemetry ? $telemetry['status_msg'] : '',
+            'telemetry_time' => $telemetry ? $telemetry['timestamp'] : '',
+        ];
+    }
+    
+    send_json(['status' => 'success', 'devices' => $result]);
+}
+
 // --- ADMIN CLAIM (cloud verzia) ---
 elseif ($path === '/api/admin/claim' && $method === 'POST') {
     $data = get_json_input();
