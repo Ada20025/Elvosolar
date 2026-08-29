@@ -122,8 +122,8 @@
                     <div class="slide space-y-4 px-1">
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 1 z 5</span>
-                            <h2 class="text-lg font-extrabold text-white">Pripojený striedač</h2>
-                            <p class="text-xs text-slate-400">Zvoľte značku striedača. Systém prispôsobí možnosti.</p>
+                            <h2 class="text-lg font-extrabold text-white">\u26A1 Pripojené zariadenie</h2>
+                            <p class="text-xs text-slate-400">Zvoľte značku a typ zariadenia. Systém prispôsobí komunikačné parametre.</p>
                         </div>
                         <div class="space-y-3">
                             <div>
@@ -866,12 +866,11 @@
             select.innerHTML = '<option value="">-- Vyberte znacku --</option>';
             for (let key in dbDevices) {
                 const brand = dbDevices[key];
-                // Zisti ci znacka ma mix typov (striedac + smartlogger)
                 const cats = brand.kategorie || {};
                 const types = [...new Set(Object.values(cats).map(c => c.typ || 'striedac'))];
                 const hasMixed = types.length > 1;
-                const label = hasMixed ? `\u2699\uFE0F ${brand.znacka}` : brand.znacka;
-                select.innerHTML += `<option value="${key}">${label}</option>`;
+                const icon = brand.icon || (hasMixed ? '\u2699\uFE0F' : '\u26A1');
+                select.innerHTML += `<option value="${key}">${icon} ${brand.znacka}</option>`;
             }
             handleBrandChange();
         }
@@ -890,12 +889,14 @@
             const allSameType = types.length === 1;
 
             if (catKeys.length > 1 && !allSameType) {
-                // Znacka ma rozne typy (napr. strieldc + smartlogger) - ukaz vyber
+                // Znacka ma rozne typy (napr. strieldc + smartlogger) - ukaz vyber s popisom
                 catContainer.classList.remove('hidden');
                 for (let catKey in categories) {
-                    const typ = categories[catKey].typ || 'striedac';
+                    const cat = categories[catKey];
+                    const typ = cat.typ || 'striedac';
                     const typIcon = typ === 'smartlogger' ? '\u{1F4E1}' : '\u26A1';
-                    catSelect.innerHTML += `<option value="${catKey}">${typIcon} ${categories[catKey].meno}</option>`;
+                    const popis = cat.popis ? ` - ${cat.popis}` : '';
+                    catSelect.innerHTML += `<option value="${catKey}">${typIcon} ${cat.meno}${popis}</option>`;
                 }
             } else {
                 // Vsetky rovnakeho typu alebo len 1 kategoria - preskoc
