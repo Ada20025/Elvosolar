@@ -805,8 +805,45 @@ elseif (preg_match('#^/api/device/([0-9]+)/telemetry$#', $path, $matches) && $me
 
 elseif ($path === '/api/devices/list' && $method === 'GET') {
     send_json([
-        "huawei" => ["znacka" => "Huawei", "zapojenie" => "Modul CH1: R/A(+) a T/B(-).", "kategorie" => ["sun2000" => ["meno" => "SUN2000", "modely" => ["1" => ["meno" => "Jednofázové aj Trojfázové SUN2000"]]]]],
-        "solax" => ["znacka" => "SolaX", "zapojenie" => "Modrá na A(+), Modrobiela na B(-).", "kategorie" => ["g4" => ["meno" => "X3-Hybrid G4", "modely" => ["1" => ["meno" => "Všetky modely G4"]]]]]
+        '1' => ['znacka' => 'HUAWEI', 'zapojenie' => 'Modul CH1: R/A(+) a T/B(-).', 'kategorie' => [
+            '1' => ['meno' => 'HUAWEI STRIEDACE (SUN2000)', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky modely SUN2000']]]]],
+        '2' => ['znacka' => 'FRONIUS', 'zapojenie' => 'D+ na A(+), D- na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Rezidencne (Galvo/Symo/Primo)', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky Fronius modely']]]]],
+        '3' => ['znacka' => 'GOODWE', 'zapojenie' => 'Pin A na A(+), Pin B na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Domace aj Komerne (XS/DNS/EH/ET)', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky GoodWe modely']]]]],
+        '4' => ['znacka' => 'SOLAX', 'zapojenie' => 'RJ45 pin 4 na A(+), pin 5 na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Jedno aj Trojfazove (X1/X3)', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky SolaX modely']]]]],
+        '5' => ['znacka' => 'VICTRON ENERGY', 'zapojenie' => 'USB-RS485: Oranzovy=A(+), Zlty=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'MultiPlus / Quattro', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky Victron modely']]]]],
+        '6' => ['znacka' => 'GROWATT', 'zapojenie' => 'SYS COM: pin 3=A(+), pin 4=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'MIN-XE / MOD / SPH', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky Growatt modely']]]]],
+        '7' => ['znacka' => 'SOFAR SOLAR', 'zapojenie' => 'Pin 1=A(+), Pin 2=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Trojfazove hybridy HYD', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky Sofar modely']]]]],
+        '8' => ['znacka' => 'DEYE', 'zapojenie' => 'RS485 port: pin 7=A(+), pin 8=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Nizkonapätove hybridy SG04LP3', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky Deye modely']]]]],
+        '9' => ['znacka' => 'VIESSMANN', 'zapojenie' => 'RS485 A na A(+), B na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Vitovolt 300', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vitovolt 300 M300']]]]],
+        '10' => ['znacka' => 'SUNGROW', 'zapojenie' => 'A2 na A(+), B2 na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'SH-RT / SG-RT', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky Sungrow modely']]]]],
+        '11' => ['znacka' => 'SOLIS', 'zapojenie' => 'COM: pin 1=A(+), pin 2=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'S6-EH3P / S5-GR3P', 'typ' => 'striedac', 'modely' => [
+                '1' => ['meno' => 'Vsetky Solis modely']]]]],
+        '12' => ['znacka' => 'HUAWEI SMARTLOGGER', 'zapojenie' => 'COM port: +(A) a -(B).', 'kategorie' => [
+            '1' => ['meno' => 'SmartLogger 1000/3000', 'typ' => 'smartlogger', 'modely' => [
+                '1' => ['meno' => 'SmartLogger 3000A/1000']]]]],
+        '13' => ['znacka' => 'GOODWE EZLOGGER', 'zapojenie' => 'RS485: A a B svorky.', 'kategorie' => [
+            '1' => ['meno' => 'EzLogger Pro / 3000C', 'typ' => 'smartlogger', 'modely' => [
+                '1' => ['meno' => 'EzLogger Pro / 3000C']]]]],
     ]);
 }
 

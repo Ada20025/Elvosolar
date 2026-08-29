@@ -863,8 +863,16 @@
 
         function loadBrands() {
             const select = document.getElementById('brandSelect');
-            select.innerHTML = '';
-            for (let key in dbDevices) { select.innerHTML += `<option value="${key}">${dbDevices[key].znacka}</option>`; }
+            select.innerHTML = '<option value="">-- Vyberte znacku --</option>';
+            for (let key in dbDevices) {
+                const brand = dbDevices[key];
+                // Zisti ci znacka ma mix typov (striedac + smartlogger)
+                const cats = brand.kategorie || {};
+                const types = [...new Set(Object.values(cats).map(c => c.typ || 'striedac'))];
+                const hasMixed = types.length > 1;
+                const label = hasMixed ? `\u2699\uFE0F ${brand.znacka}` : brand.znacka;
+                select.innerHTML += `<option value="${key}">${label}</option>`;
+            }
             handleBrandChange();
         }
 
@@ -876,10 +884,21 @@
             const catKeys = Object.keys(categories);
             const catSelect = document.getElementById('categorySelect');
             catSelect.innerHTML = '';
-            if (catKeys.length > 1) {
+
+            // Smart logika: ak maju vsetky kategorie rovnaky 'typ', preskocime vyber
+            const types = [...new Set(catKeys.map(k => categories[k].typ || 'striedac'))];
+            const allSameType = types.length === 1;
+
+            if (catKeys.length > 1 && !allSameType) {
+                // Znacka ma rozne typy (napr. strieldc + smartlogger) - ukaz vyber
                 catContainer.classList.remove('hidden');
-                for (let catKey in categories) { catSelect.innerHTML += `<option value="${catKey}">${categories[catKey].meno}</option>`; }
+                for (let catKey in categories) {
+                    const typ = categories[catKey].typ || 'striedac';
+                    const typIcon = typ === 'smartlogger' ? '\u{1F4E1}' : '\u26A1';
+                    catSelect.innerHTML += `<option value="${catKey}">${typIcon} ${categories[catKey].meno}</option>`;
+                }
             } else {
+                // Vsetky rovnakeho typu alebo len 1 kategoria - preskoc
                 catContainer.classList.add('hidden');
                 catSelect.innerHTML = `<option value="${catKeys[0]}" selected>${categories[catKeys[0]].meno}</option>`;
             }
