@@ -559,19 +559,53 @@
                     discoveredSlaves = [];
                 }
             } else {
-                // Cloud mode: jeden discover request, cloud caka na CM5 odpoved (120s)
+                // Cloud mode: non-blocking - odozle prikaz, potom polluj
                 try {
-                    status.innerText = "Cakam na odpoved CM5 (max 120s)...";
+                    status.innerText = "Odosielam prikaz na CM5...";
                     status.className = "p-4 bg-slate-950/50 border border-cyan-800 rounded-xl text-xs text-center font-bold text-cyan-400";
-                    const res = await fetch(`${localGatewayIP}/api/system/discover?brand=${bId}&category=${cId}&model=${mId}`, {
-                        signal: AbortSignal.timeout(130000)
-                    });
-                    const data = await res.json();
-                    if (data.status === 'error') {
-                        status.innerText = data.message || 'Zbernica neodpoveda';
+                    
+                    // 1. Odozle prikaz (okamzite vrat cmd_id)
+                    const queueRes = await fetch(`${localGatewayIP}/api/system/discover?brand=${bId}&category=${cId}&model=${mId}`);
+                    const queueData = await queueRes.json();
+                    
+                    if (!queueData.command_id) {
+                        status.innerText = 'Nepodarilo sa odoslat prikaz na CM5';
                         status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';
+                    } else {
+                        // 2. Polluj kazde 2s kym pride vysledok (max 120s)
+                        const cmdId = queueData.command_id;
+                        let pollCount = 0;
+                        const maxPolls = 60; // 60 * 2s = 120s
+                        
+                        while (pollCount < maxPolls) {
+                            pollCount++;
+                            const sec = pollCount * 2;
+                            status.innerText = `Cakam na CM5... (${sec}s / 120s)`;
+                            
+                            await new Promise(r => setTimeout(r, 2000));
+                            
+                            try {
+                                const pollRes = await fetch(`${localGatewayIP}/api/cm5/poll-result?command_id=${cmdId}`);
+                                const pollData = await pollRes.json();
+                                
+                                if (pollData.status === 'success' || pollData.slaves) {
+                                    // Mame vysledok!
+                                    discoveredSlaves = pollData.slaves || [];
+                                    if (pollData.status === 'error') {
+                                        status.innerText = pollData.message || 'Zbernica neodpoveda';
+                                        status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';
+                                    }
+                                    break;
+                                }
+                                // Este pending - pokracuj v pollingu
+                            } catch(e) { /* ignore poll error, retry */ }
+                        }
+                        
+                        if (pollCount >= maxPolls && discoveredSlaves.length === 0) {
+                            status.innerText = 'CM5 neodpovedalo. Skontrolujte ci je online.';
+                            status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';
+                        }
                     }
-                    discoveredSlaves = data.slaves || [];
                 } catch(e) {
                     status.innerText = 'Chyba komunikacie: ' + e.message;
                     status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';

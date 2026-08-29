@@ -1205,25 +1205,28 @@ elseif ($path === '/api/cm5/result' && $method === 'POST') {
     send_json(['status' => 'success']);
 }
 
-// --- Frontend: Čakaj na výsledok z CM5 ---
+// --- Frontend: Čakaj na výsledok z CM5 (NON-BLOCKING) ---
 elseif ($path === '/api/cm5/wait-result' && $method === 'GET') {
     $serial = $_GET['serial'] ?? '';
-    $timeout = min(intval($_GET['timeout'] ?? 30), 60);
-    if (!$serial) {
-        send_json(['status' => 'error', 'message' => 'Chýba serial'], 400);
+    $cmd_id = intval($_GET['command_id'] ?? 0);
+    if (!$serial && !$cmd_id) {
+        send_json(['status' => 'error', 'message' => 'Chýba serial alebo command_id'], 400);
     }
-    $start = time();
-    while (time() - $start < $timeout) {
+    // Jednorazovy check - ziadne blokovanie
+    if ($cmd_id) {
+        $stmt = $pdo->prepare("SELECT result_json, status FROM cm5_config WHERE id = ?");
+        $stmt->execute([$cmd_id]);
+        $row = $stmt->fetch();
+    } else {
         $stmt = $pdo->prepare("SELECT result_json, status FROM cm5_config WHERE serial_number = ? AND result_json IS NOT NULL ORDER BY updated_at DESC LIMIT 1");
         $stmt->execute([$serial]);
         $row = $stmt->fetch();
-        if ($row && $row['result_json']) {
-            send_json(['status' => 'success', 'result' => json_decode($row['result_json'], true)]);
-            return;
-        }
-        usleep(500000); // 0.5s
     }
-    send_json(['status' => 'timeout']);
+    if ($row && $row['result_json']) {
+        send_json(['status' => 'success', 'result' => json_decode($row['result_json'], true)]);
+    } else {
+        send_json(['status' => 'pending']);
+    }
 }
 
 // --- ADMIN CLAIM (cloud verzia) ---
@@ -1271,7 +1274,12 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     send_json(['status' => 'success']);
 }
 
-// --- SYSTEM DISCOVER (cloud verzia - caka na CM5 scan) ---
+// --- HEALTHCHECK (pre Railway - NIKDY NEBLOKUJE) ---
+elseif ($path === '/healthcheck' || $path === '/health') {
+    send_json(['status' => 'ok', 'time' => date('c')]);
+}
+
+// --- SYSTEM DISCOVER (cloud verzia - NON-BLOCKING) ---
 elseif ($path === '/api/system/discover' && $method === 'GET') {
     $brand = $_GET['brand'] ?? '';
     $category = $_GET['category'] ?? '';
@@ -1300,22 +1308,28 @@ elseif ($path === '/api/system/discover' && $method === 'GET') {
     $stmt->execute([$serial, json_encode($config)]);
     $cmd_id = $pdo->lastInsertId();
     
-    // Cakaj na vysledok max 120s (CM5 moze skenovat vsetky porty)
-    $start = time();
-    error_log("[DISCOVER] Cakam na vysledok z CM5 (cmd_id=$cmd_id, serial=$serial)");
-    while (time() - $start < 120) {
-        $stmt2 = $pdo->prepare("SELECT result_json FROM cm5_config WHERE id = ?");
-        $stmt2->execute([$cmd_id]);
-        $row = $stmt2->fetch();
-        if ($row && $row['result_json']) {
-            $result = json_decode($row['result_json'], true);
-            error_log("[DISCOVER] Vysledok: " . json_encode($result));
-            send_json($result);
-            return;
-        }
-        usleep(500000);
+    error_log("[DISCOVER] Prikaz ulozeny (cmd_id=$cmd_id, serial=$serial) - vraciam okamzite");
+    
+    // OKAMZITE vrat cmd_id - frontend bude polluj cez /api/cm5/poll-result
+    send_json(['status' => 'queued', 'command_id' => $cmd_id, 'message' => 'Discover prikaz odoslany na CM5. Cakajte na vysledok.', 'serial' => $serial]);
+}
+
+// --- FRONTEND: Poll pre vysledok discover (NON-BLOCKING) ---
+elseif ($path === '/api/cm5/poll-result' && $method === 'GET') {
+    $cmd_id = intval($_GET['command_id'] ?? 0);
+    if (!$cmd_id) {
+        send_json(['status' => 'error', 'message' => 'Chybne command_id'], 400);
     }
-    send_json(['status' => 'error', 'message' => 'CM5 neodpovedalo. Skontrolujte ci je zariadenie online.', 'slaves' => [], 'discovered_count' => 0]);
+    $stmt = $pdo->prepare("SELECT result_json, status FROM cm5_config WHERE id = ?");
+    $stmt->execute([$cmd_id]);
+    $row = $stmt->fetch();
+    if ($row && $row['result_json']) {
+        $result = json_decode($row['result_json'], true);
+        error_log("[DISCOVER] Vysledok pre cmd_id=$cmd_id: " . json_encode($result));
+        send_json($result);
+    } else {
+        send_json(['status' => 'pending', 'command_id' => $cmd_id]);
+    }
 }
 
 // --- SYSTEM STATUS (cloud verzia) ---
