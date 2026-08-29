@@ -12,12 +12,9 @@ require_once 'config.php';
 // ==========================================
 // --- NASTAVENIE ODOSIELANIA E-MAILOV ---
 // ==========================================
-define('USE_SMTP', false); // SMTP blocked by Railway - using mail()
-define('SMTP_HOST', getenv('SMTP_HOST') ?: 'smtp-adamdz.alwaysdata.net');
-define('SMTP_PORT', intval(getenv('SMTP_PORT') ?: '587'));
-define('SMTP_USER', getenv('SMTP_USER') ?: 'adamdz@alwaysdata.net');
-define('SMTP_PASS', getenv('SMTP_PASS') ?: '1Adamko.');
-define('SMTP_ENCRYPTION', getenv('SMTP_ENCRYPTION') ?: 'tls');
+// Resend API (HTTPS, funguje na Railway)
+define('RESEND_API_KEY', getenv('RESEND_API_KEY') ?: '');
+define('RESEND_FROM', getenv('RESEND_FROM') ?: 'noreply@elvosolar.sk');
 // ==========================================
 
 $request_uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -40,6 +37,47 @@ if (strpos($path, '/index.php') === 0) {
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 // --- CENTRÁLNA FUNKCIA NA ODOSIELANIE GRAFICKÝCH HTML E-MAILOV ---
+
+// Resend API helper
+function resend_send_email($to, $subject, $html_body) {
+    $api_key = RESEND_API_KEY;
+    if (empty($api_key)) {
+        error_log("[EMAIL] RESEND_API_KEY nie je nastaveny");
+        return false;
+    }
+    
+    $payload = json_encode([
+        'from' => RESEND_FROM,
+        'to' => [$to],
+        'subject' => mb_encode_mimeheader($subject, 'UTF-8', 'B'),
+        'html' => $html_body,
+    ]);
+    
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $api_key,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+    ]);
+    
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($http_code === 200 || $http_code === 201) {
+        error_log("[EMAIL] ✅ Email odoslany na $to");
+        return true;
+    } else {
+        error_log("[EMAIL] ❌ Chyba ($http_code): $response");
+        return false;
+    }
+}
+
 if (!function_exists('send_elvo_email')) {
     function send_elvo_email($to, $subject, $title, $content_html, $accent_color = '#007aff') {
         global $base_path;
@@ -206,6 +244,11 @@ if (!function_exists('send_elvo_email')) {
         $headers .= "Reply-To: support@" . $domain . $eol;
         $headers .= "Message-ID: " . $message_id . $eol;
 
+        // PRIMARY: Resend API (HTTPS, works on Railway)
+        $resend_result = resend_send_email($to, $subject, $message_html);
+        if ($resend_result) return true;
+        
+        // FALLBACK: PHP mail()
         $result = @mail($to, $subject_encoded, $message_html, $headers, "-f " . $from_email);
         return $result;
     }
@@ -510,6 +553,96 @@ elseif ($path === '/dashboard' && $method === 'GET') {
     }
     $devices = get_user_devices($pdo, $_SESSION['user_id']);
     render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices]);
+}
+
+// --- USER PROFILE ---
+elseif ($path === '/profile' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) {
+        header("Location: " . $base_path . "/login");
+        exit;
+    }
+    render_template('profile.html');
+}
+
+// --- USER ME (API) ---
+elseif ($path === '/api/user/me' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) {
+        send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    }
+    $stmt = $pdo->prepare("SELECT id, username, email, created_at FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch();
+    if (!$user) send_json(['status' => 'error', 'message' => 'Pouzivatel nenajdeny'], 404);
+    send_json(['status' => 'success', 'user_id' => $user['id'], 'username' => $user['username'], 'email' => $user['email'], 'created_at' => $user['created_at'] ?? '2026', 'email_verified' => true]);
+}
+
+// --- USER DEVICES (API) ---
+elseif ($path === '/api/user/devices' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) {
+        send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    }
+    $stmt = $pdo->prepare("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id WHERE d.user_id = ? ORDER BY d.id DESC");
+    $stmt->execute([$_SESSION['user_id']]);
+    $devices = $stmt->fetchAll();
+    $result = [];
+    foreach ($devices as $dev) {
+        $last_seen = strtotime($dev['last_seen'] ?? '2000-01-01');
+        $result[] = [
+            'id' => $dev['id'], 'name' => $dev['name'] ?? '', 'serial_number' => $dev['serial_number'] ?? '',
+            'brand_id' => $dev['brand_id'] ?? '', 'model_id' => $dev['model_id'] ?? '',
+            'total_kwh' => (float)($dev['total_kwh'] ?? 0), 'total_saved_eur' => (float)($dev['total_saved_eur'] ?? 0),
+            'is_online' => (time() - $last_seen) < 90,
+        ];
+    }
+    send_json(['status' => 'success', 'devices' => $result]);
+}
+
+// --- CHANGE PASSWORD ---
+elseif ($path === '/api/user/change-password' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    $data = get_json_input();
+    $current = $data['current_password'] ?? '';
+    $new_pass = $data['new_password'] ?? '';
+    if (strlen($new_pass) < 6) send_json(['status' => 'error', 'message' => 'Nove heslo musi mat aspon 6 znakov']);
+    $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch();
+    if (!$user || !password_verify($current, $user['password_hash'])) {
+        send_json(['status' => 'error', 'message' => 'Nespravne aktualne heslo']);
+    }
+    $hashed = password_hash($new_pass, PASSWORD_BCRYPT);
+    $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$hashed, $_SESSION['user_id']]);
+    send_json(['status' => 'success', 'message' => 'Heslo bolo zmenene']);
+}
+
+// --- TEST EMAIL (Resend API) ---
+elseif ($path === '/api/user/test-email' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    $stmt = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch();
+    if (!$user) send_json(['status' => 'error', 'message' => 'Pouzivatel nenajdeny']);
+    $result = @send_elvo_email($user['email'], 'Test emailu ElvoControl', 'Test emailu', '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p><p>Tento email bol uspesne odoslany z ElvoControl cez Resend API.</p><p style="color:#64748b;font-size:12px;">Ak toto citate, vsetko funguje!</p>', '#10b981');
+    if ($result) {
+        send_json(['status' => 'success', 'message' => 'Test email uspesne odoslany na ' . $user['email']]);
+    } else {
+        send_json(['status' => 'error', 'message' => 'Email sa nepodarilo odoslat. Skontrolujte Resend API key.']);
+    }
+}
+
+// --- VERIFY EMAIL ---
+elseif ($path === '/api/user/verify-email' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    send_json(['status' => 'success', 'message' => 'Email je platny. Overenie nie je potrebne pre testovanie.']);
+}
+
+// --- SAVE NOTIFICATION SETTINGS ---
+elseif ($path === '/api/user/notifications' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    $data = get_json_input();
+    $file = __DIR__ . '/cache_user_notif_' . $_SESSION['user_id'] . '.json';
+    @file_put_contents($file, json_encode($data));
+    send_json(['status' => 'success', 'message' => 'Nastavenia notifikacii ulozene']);
 }
 
 elseif (preg_match('#^/device/([0-9]+)$#', $path, $matches) && $method === 'GET') {

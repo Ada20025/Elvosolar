@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="sk" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Môj profil | ElvoControl</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(51, 65, 85, 0.4); }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950">
+
+    <!-- NAV -->
+    <nav class="glass border-b border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-4">
+            <a href="/dashboard" class="flex items-center gap-2 text-slate-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                <span class="text-xs font-bold">Dashboard</span>
+            </a>
+            <span class="text-slate-700">|</span>
+            <h1 class="text-sm font-bold text-white">Môj profil</h1>
+        </div>
+        <a href="/logout" class="text-xs font-bold text-rose-400 hover:text-rose-300 border border-rose-500/30 px-4 py-2 rounded-xl transition">Odhlásiť sa</a>
+    </nav>
+
+    <div class="max-w-4xl mx-auto p-6 space-y-6">
+
+        <!-- HLAVICKA PROFILU -->
+        <div class="glass rounded-2xl p-6 flex items-center gap-6">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-2xl font-black text-white" id="avatarLetter">A</div>
+            <div>
+                <h2 class="text-lg font-bold text-white" id="profileName">Načítavam...</h2>
+                <p class="text-sm text-slate-400" id="profileEmail">...</p>
+                <p class="text-xs text-slate-500 mt-1">Člen od <span id="memberSince">...</span></p>
+            </div>
+        </div>
+
+        <!-- ZARIADENIA -->
+        <div class="glass rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span class="text-cyan-400">⚡</span> Moje zariadenia
+                </h3>
+                <a href="/setup" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5">
+                    <span>+</span> Pridať zariadenie
+                </a>
+            </div>
+            <div id="devicesList" class="space-y-3">
+                <p class="text-slate-500 text-xs">Načítavam zariadenia...</p>
+            </div>
+        </div>
+
+        <!-- NASTAVENIA NOTIFIKACII -->
+        <div class="glass rounded-2xl p-6">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
+                <span class="text-amber-400">📧</span> Email notifikácie
+            </h3>
+            <div class="space-y-4">
+                <label class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl cursor-pointer hover:bg-slate-800/50 transition">
+                    <div>
+                        <span class="text-sm font-semibold text-white">Nové zariadenie</span>
+                        <p class="text-xs text-slate-500">Oznamenie keď sa pridá nové zariadenie</p>
+                    </div>
+                    <input type="checkbox" id="notifNewDevice" checked class="w-5 h-5 accent-cyan-500 rounded">
+                </label>
+                <label class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl cursor-pointer hover:bg-slate-800/50 transition">
+                    <div>
+                        <span class="text-sm font-semibold text-white">Porucha zariadenia</span>
+                        <p class="text-xs text-slate-500">Upozornenie pri chybe alebo offline stave</p>
+                    </div>
+                    <input type="checkbox" id="notifError" checked class="w-5 h-5 accent-cyan-500 rounded">
+                </label>
+                <label class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl cursor-pointer hover:bg-slate-800/50 transition">
+                    <div>
+                        <span class="text-sm font-semibold text-white">Denný report</span>
+                        <p class="text-xs text-slate-500">Súhrn výroby a spotreby za deň</p>
+                    </div>
+                    <input type="checkbox" id="notifDaily" class="w-5 h-5 accent-cyan-500 rounded">
+                </label>
+                <label class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl cursor-pointer hover:bg-slate-800/50 transition">
+                    <div>
+                        <span class="text-sm font-semibold text-white">Negatívna cena OKTE</span>
+                        <p class="text-xs text-slate-500">Upozornenie keď je cena elektriny záporná</p>
+                    </div>
+                    <input type="checkbox" id="notifNegPrice" checked class="w-5 h-5 accent-cyan-500 rounded">
+                </label>
+                <button onclick="saveNotifications()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm rounded-xl transition mt-2">
+                    Uložiť nastavenia
+                </button>
+            </div>
+        </div>
+
+        <!-- ZMENA HESLA -->
+        <div class="glass rounded-2xl p-6">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
+                <span class="text-emerald-400">🔒</span> Zmena hesla
+            </h3>
+            <div class="space-y-3">
+                <input type="password" id="currentPassword" placeholder="Aktuálne heslo" class="w-full bg-slate-900/50 border border-slate-800 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-cyan-500 transition">
+                <input type="password" id="newPassword" placeholder="Nové heslo (min. 6 znakov)" class="w-full bg-slate-900/50 border border-slate-800 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-cyan-500 transition">
+                <input type="password" id="confirmPassword" placeholder="Zopakujte nové heslo" class="w-full bg-slate-900/50 border border-slate-800 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-cyan-500 transition">
+                <button onclick="changePassword()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl transition">
+                    Zmeniť heslo
+                </button>
+            </div>
+            <div id="passwordMsg" class="hidden mt-3 text-xs font-bold text-center rounded-xl p-3"></div>
+        </div>
+
+        <!-- OVERenie EMAILU -->
+        <div class="glass rounded-2xl p-6">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
+                <span class="text-blue-400">✉️</span> Overenie emailu
+            </h3>
+            <p class="text-xs text-slate-400 mb-3" id="emailStatus">Overujem...</p>
+            <button onclick="verifyEmail()" id="verifyBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition">
+                Poslať overovací email
+            </button>
+            <div id="verifyMsg" class="hidden mt-3 text-xs font-bold text-center rounded-xl p-3"></div>
+        </div>
+
+        <!-- TEST EMAILU -->
+        <div class="glass rounded-2xl p-6">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
+                <span class="text-purple-400">🧪</span> Test emailu
+            </h3>
+            <p class="text-xs text-slate-400 mb-3">Odošle testovací email na tvoju adresu cez Resend API.</p>
+            <button onclick="testEmail()" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition">
+                Odoslať test email
+            </button>
+            <div id="testEmailMsg" class="hidden mt-3 text-xs font-bold text-center rounded-xl p-3"></div>
+        </div>
+
+    </div>
+
+    <script>
+        let userProfile = {};
+
+        async function loadProfile() {
+            try {
+                const res = await fetch('/api/user/me', { credentials: 'same-origin' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    userProfile = data;
+                    document.getElementById('profileName').textContent = data.username || 'Používateľ';
+                    document.getElementById('profileEmail').textContent = data.email || '';
+                    document.getElementById('avatarLetter').textContent = (data.username || 'U')[0].toUpperCase();
+                    document.getElementById('memberSince').textContent = data.created_at || '2026';
+                    document.getElementById('emailStatus').innerHTML = data.email_verified
+                        ? '<span class="text-emerald-400">✅ Email overený</span>'
+                        : '<span class="text-amber-400">⚠️ Email neoverený</span>';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadDevices() {
+            try {
+                const res = await fetch('/api/user/devices', { credentials: 'same-origin' });
+                const data = await res.json();
+                const list = document.getElementById('devicesList');
+                if (data.status === 'success' && data.devices.length > 0) {
+                    list.innerHTML = data.devices.map(d => {
+                        const isOnline = d.is_online;
+                        const statusColor = isOnline ? 'bg-emerald-500' : 'bg-slate-600';
+                        const statusText = isOnline ? 'Online' : 'Offline';
+                        return `
+                        <div class="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl hover:bg-slate-800/50 transition">
+                            <div class="flex items-center gap-3">
+                                <span class="status-dot ${statusColor}"></span>
+                                <div>
+                                    <a href="/device/${d.id}" class="text-sm font-bold text-white hover:text-cyan-400 transition">${d.name}</a>
+                                    <p class="text-xs text-slate-500">${d.serial_number} • ${d.brand_id || ''} ${d.model_id || ''}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold ${isOnline ? 'text-emerald-400' : 'text-slate-500'}">${statusText}</span>
+                                <p class="text-[10px] text-slate-600">${d.total_kwh ? d.total_kwh.toFixed(1) + ' kWh' : ''}</p>
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    list.innerHTML = `
+                        <div class="text-center py-8">
+                            <p class="text-slate-500 text-sm mb-3">Žiadne zariadenia</p>
+                            <a href="/setup" class="inline-flex items-center gap-1.5 px-4 py-2 bg-cyan-600 text-white text-xs font-bold rounded-xl hover:bg-cyan-500 transition">
+                                + Pridať prvé zariadenie
+                            </a>
+                        </div>`;
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function saveNotifications() {
+            const settings = {
+                new_device: document.getElementById('notifNewDevice').checked,
+                error: document.getElementById('notifError').checked,
+                daily_report: document.getElementById('notifDaily').checked,
+                negative_price: document.getElementById('notifNegPrice').checked,
+            };
+            try {
+                await fetch('/api/user/notifications', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'same-origin',
+                    body: JSON.stringify(settings)
+                });
+                alert('Nastavenia uložené!');
+            } catch(e) { alert('Chyba: ' + e.message); }
+        }
+
+        async function changePassword() {
+            const cur = document.getElementById('currentPassword').value;
+            const newP = document.getElementById('newPassword').value;
+            const conf = document.getElementById('confirmPassword').value;
+            const msg = document.getElementById('passwordMsg');
+            if (newP !== conf) { msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 bg-rose-500/10 text-rose-400'; msg.textContent = 'Heslá sa nezhodujú'; msg.classList.remove('hidden'); return; }
+            if (newP.length < 6) { msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 bg-rose-500/10 text-rose-400'; msg.textContent = 'Heslo musí mať aspoň 6 znakov'; msg.classList.remove('hidden'); return; }
+            try {
+                const res = await fetch('/api/user/change-password', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin',
+                    body: JSON.stringify({ current_password: cur, new_password: newP })
+                });
+                const data = await res.json();
+                msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 ' + (data.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400');
+                msg.textContent = data.message;
+                msg.classList.remove('hidden');
+            } catch(e) { alert('Chyba: ' + e.message); }
+        }
+
+        async function verifyEmail() {
+            const msg = document.getElementById('verifyMsg');
+            try {
+                const res = await fetch('/api/user/verify-email', { method: 'POST', credentials: 'same-origin' });
+                const data = await res.json();
+                msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 ' + (data.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400');
+                msg.textContent = data.message;
+                msg.classList.remove('hidden');
+            } catch(e) { alert('Chyba: ' + e.message); }
+        }
+
+        async function testEmail() {
+            const msg = document.getElementById('testEmailMsg');
+            try {
+                const res = await fetch('/api/user/test-email', { method: 'POST', credentials: 'same-origin' });
+                const data = await res.json();
+                msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 ' + (data.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400');
+                msg.textContent = data.message;
+                msg.classList.remove('hidden');
+            } catch(e) { alert('Chyba: ' + e.message); }
+        }
+
+        loadProfile();
+        loadDevices();
+    </script>
+</body>
+</html>

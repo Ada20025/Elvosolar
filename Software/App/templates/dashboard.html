@@ -697,6 +697,9 @@
 
             <!-- User dropdown -->
             <div id="user-menu" class="hidden" style="position: absolute; top: 56px; right: 24px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 8px; min-width: 180px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 60;">
+                <a href="<?php echo $base_path; ?>/profile" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #e2e8f0; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+                    <i data-lucide="settings" style="width: 14px; height: 14px;"></i> Nastavenia profilu
+                </a>
                 <a href="<?php echo $base_path; ?>/logout" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #f43f5e; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='rgba(244,63,94,0.1)'" onmouseout="this.style.background='transparent'">
                     <i data-lucide="log-out" style="width: 14px; height: 14px;"></i> Odhlásiť sa
                 </a>
