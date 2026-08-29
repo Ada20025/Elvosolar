@@ -982,25 +982,7 @@ def cloud_sync_loop():
                 model_id = config.get("model_id", "1")
                 discovered_slaves = []
                 discovered_port = "unknown"
-                
-                # Spusti auto-detect ak este nemame port
-                known_port = None
-                try:
-                    conn_check = get_db_connection()
-                    cursor_check = conn_check.cursor()
-                    cursor_check.execute("SELECT value FROM system_settings WHERE key = 'rs485_active_port'")
-                    row_check = cursor_check.fetchone()
-                    conn_check.close()
-                    if row_check and row_check[0]:
-                        known_port = row_check[0]
-                except: pass
-                
-                if not known_port or not os.path.exists(known_port):
-                    log_message('[DISCOVER] Port nenajdeny - spustam auto-detect...')
-                    known_port = _auto_detect_rs485_port()
-                    log_message(f'[DISCOVER] Auto-detect nasiel: {known_port}')
 
-                # RAW serial discover - presne ten co fungoval v manualnom teste
                 def _modbus_crc(data):
                     crc = 0xFFFF
                     for b in data:
@@ -1010,8 +992,15 @@ def cloud_sync_loop():
                     return bytes([crc & 0xFF, (crc >> 8) & 0xFF])
 
                 import glob as glob_mod
-                
-                # NAJPRV pouzijeme port z auto-detectu (rychle)
+
+                # Zisti brand-specific info
+                brand_cfg = DEVICE_DB.get(str(brand_id), {}).get('kategorie', {}).get(str(cat_id), {}).get('modely', {}).get(str(model_id), {})
+                test_reg = brand_cfg.get('reg_p_ac', 0)
+                test_baud = brand_cfg.get('baud', 9600)
+                znacka = DEVICE_DB.get(str(brand_id), {}).get('znacka', 'Unknown')
+                log_message(f'[DISCOVER] Znacka: {znacka} (brand_id={brand_id}) register: {test_reg} baud: {test_baud}')
+
+                # 1) Zisti port: najprv z DB, potom auto-detect
                 known_port = None
                 try:
                     conn_check = get_db_connection()
@@ -1019,10 +1008,16 @@ def cloud_sync_loop():
                     cursor_check.execute("SELECT value FROM system_settings WHERE key = 'rs485_active_port'")
                     row_check = cursor_check.fetchone()
                     conn_check.close()
-                    if row_check and row_check[0]:
+                    if row_check and row_check[0] and os.path.exists(row_check[0]):
                         known_port = row_check[0]
                 except: pass
-                
+
+                if not known_port:
+                    log_message('[DISCOVER] Port nenajdeny v DB - spustam auto-detect...')
+                    known_port = _auto_detect_rs485_port()
+                    log_message(f'[DISCOVER] Auto-detect vysledok: {known_port}')
+
+                # 2) Zostav zoznam portov na skenovanie
                 if known_port and os.path.exists(known_port):
                     all_ports = [known_port]
                     log_message(f'[DISCOVER] Pouzivam port: {known_port}')
@@ -1030,46 +1025,41 @@ def cloud_sync_loop():
                     all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
                     log_message(f'[DISCOVER] Skusam vsetky porty: {all_ports}')
 
-                # Zisti brand-specific registre
-                brand_cfg = DEVICE_DB.get(brand_id, {}).get('kategorie', {}).get(cat_id, {}).get('modely', {}).get(model_id, {})
-                test_reg = brand_cfg.get('reg_p_ac', 0)
-                test_baud = brand_cfg.get('baud', 9600)
-                znacka = DEVICE_DB.get(brand_id, {}).get('znacka', 'Unknown')
-                log_message(f'[DISCOVER] Znacka: {znacka}, register: {test_reg}, baud: {test_baud}')
-
+                # 3) Skenuj: brand-specific register + register 0 (univerzalny fallback)
+                registers_to_try = [test_reg, 0] if test_reg != 0 else [0]
                 for port in all_ports:
                     if not os.path.exists(port):
                         continue
-                    for baud in [test_baud, 9600, 19200]:
-                        for parity_flag in [serial.PARITY_NONE, serial.PARITY_EVEN]:
-                            par_name = 'EVEN' if parity_flag == serial.PARITY_EVEN else 'NONE'
-                            try:
-                                ser = serial.Serial(port=port, baudrate=baud, parity=parity_flag, timeout=0.5)
-                                port_found = []
-                                for sid in range(1, 33):
-                                    try:
-                                        # Modbus FC3 - brand-specific register
-                                        frame = bytes([sid, 3, (test_reg >> 8) & 0xFF, test_reg & 0xFF, 0, 1])
-                                        frame += _modbus_crc(frame)
-                                        ser.reset_input_buffer()
-                                        ser.write(frame)
-                                        ser.flush()
-                                        resp = ser.read(10)
-                                        if resp and len(resp) >= 3:
-                                            port_found.append(sid)
-                                            log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par_name} ID={sid} reg={test_reg} resp={resp.hex()}')
-                                    except Exception:
-                                        pass
-                                ser.close()
-                                if port_found:
-                                    discovered_slaves = port_found
-                                    discovered_port = port
-                                    log_message(f'[DISCOVER] NAYDENE na {port}: {discovered_slaves}')
-                                    log_message(f'[DISCOVER] Znacka: {znacka} | Register: {test_reg} | Baud: {test_baud}')
-                                    log_message(f'[DISCOVER] Cloud kod: brand_id={brand_id} cat={cat_id} model={model_id}')
-                                    break
-                            except Exception as e:
-                                log_message(f'[DISCOVER] {port} baud={baud} par={par_name}: {e}')
+                    for reg in registers_to_try:
+                        for baud in [test_baud, 9600]:
+                            for parity_flag in [serial.PARITY_NONE, serial.PARITY_EVEN]:
+                                par_name = 'EVEN' if parity_flag == serial.PARITY_EVEN else 'NONE'
+                                try:
+                                    ser = serial.Serial(port=port, baudrate=baud, parity=parity_flag, timeout=0.5)
+                                    port_found = []
+                                    for sid in range(1, 33):
+                                        try:
+                                            frame = bytes([sid, 3, (reg >> 8) & 0xFF, reg & 0xFF, 0, 1])
+                                            frame += _modbus_crc(frame)
+                                            ser.reset_input_buffer()
+                                            ser.write(frame)
+                                            ser.flush()
+                                            resp = ser.read(10)
+                                            if resp and len(resp) >= 3:
+                                                port_found.append(sid)
+                                                log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par_name} ID={sid} reg={reg} resp={resp.hex()}')
+                                        except Exception:
+                                            pass
+                                    ser.close()
+                                    if port_found:
+                                        discovered_slaves = port_found
+                                        discovered_port = port
+                                        log_message(f'[DISCOVER] NAYDENE na {port}: {discovered_slaves}')
+                                        log_message(f'[DISCOVER] Znacka: {znacka} | Register: {reg} | Baud: {baud}')
+                                        log_message(f'[DISCOVER] Cloud kod: brand_id={brand_id} cat={cat_id} model={model_id}')
+                                        break
+                                except Exception as e:
+                                    log_message(f'[DISCOVER] {port} baud={baud} par={par_name} reg={reg}: {e}')
                         if discovered_slaves:
                             break
                     if discovered_slaves:

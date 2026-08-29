@@ -1174,9 +1174,15 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
     if (!$serial) {
         send_json(['status' => 'error', 'message' => 'Chýba serial_number'], 400);
     }
+    // Najprv hladaj prikaz pre tento specific serial, potom CM5-DEFAULT (fallback)
     $stmt = $pdo->prepare("SELECT id, config_json FROM cm5_config WHERE serial_number = ? AND status = 'pending' ORDER BY created_at ASC LIMIT 1");
     $stmt->execute([$serial]);
     $row = $stmt->fetch();
+    if (!$row) {
+        $stmt = $pdo->prepare("SELECT id, config_json FROM cm5_config WHERE serial_number = 'CM5-DEFAULT' AND status = 'pending' ORDER BY created_at ASC LIMIT 1");
+        $stmt->execute();
+        $row = $stmt->fetch();
+    }
     if ($row) {
         $stmt2 = $pdo->prepare("UPDATE cm5_config SET status = 'applied' WHERE id = ?");
         $stmt2->execute([$row['id']]);
@@ -1272,6 +1278,17 @@ elseif ($path === '/api/system/discover' && $method === 'GET') {
     $model = $_GET['model'] ?? '';
     $serial = 'CM5-DEFAULT';
     
+    // Skus najst skutocne CM5 serial z DB
+    try {
+        $stmt_cm5 = $pdo->prepare("SELECT serial_number FROM devices WHERE serial_number LIKE 'SN-CM5-%' ORDER BY last_seen DESC LIMIT 1");
+        $stmt_cm5->execute();
+        $cm5_row = $stmt_cm5->fetch();
+        if ($cm5_row) {
+            $serial = $cm5_row['serial_number'];
+            error_log("[DISCOVER] Pouzivam CM5 serial: $serial");
+        }
+    } catch (Exception $e) {}
+    
     // Uloz prikaz na scan
     $config = [
         'action' => 'discover',
@@ -1283,10 +1300,10 @@ elseif ($path === '/api/system/discover' && $method === 'GET') {
     $stmt->execute([$serial, json_encode($config)]);
     $cmd_id = $pdo->lastInsertId();
     
-    // Cakaj na vysledok max 90s
+    // Cakaj na vysledok max 120s (CM5 moze skenovat vsetky porty)
     $start = time();
-    error_log("[DISCOVER] Cakam na vysledok z CM5 (cmd_id=$cmd_id)");
-    while (time() - $start < 90) {
+    error_log("[DISCOVER] Cakam na vysledok z CM5 (cmd_id=$cmd_id, serial=$serial)");
+    while (time() - $start < 120) {
         $stmt2 = $pdo->prepare("SELECT result_json FROM cm5_config WHERE id = ?");
         $stmt2->execute([$cmd_id]);
         $row = $stmt2->fetch();
@@ -1298,7 +1315,7 @@ elseif ($path === '/api/system/discover' && $method === 'GET') {
         }
         usleep(500000);
     }
-    send_json(['status' => 'error', 'message' => 'CM5 neodpovedalo. Skontrolujte či je zariadenie online.', 'slaves' => [], 'discovered_count' => 0]);
+    send_json(['status' => 'error', 'message' => 'CM5 neodpovedalo. Skontrolujte ci je zariadenie online.', 'slaves' => [], 'discovered_count' => 0]);
 }
 
 // --- SYSTEM STATUS (cloud verzia) ---
