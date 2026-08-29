@@ -823,7 +823,7 @@ def _get_serial_number():
     return "CM5-DEFAULT"
 
 def _auto_detect_rs485_port():
-    """Automaticky najde funkcny RS485 port - raw serial."""
+    """Automaticky najde RS485 port - NAJPRV rychly test, potom full scan."""
     import glob as glob_mod
     
     def _crc(data):
@@ -834,53 +834,73 @@ def _auto_detect_rs485_port():
                 crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
         return bytes([crc & 0xFF, (crc >> 8) & 0xFF])
     
+    def _quick_scan(port, baud, parity_flag, sid_range=range(1, 33)):
+        """Rychly test - 16 sekund na port."""
+        par_name = 'EVEN' if parity_flag == serial.PARITY_EVEN else 'NONE'
+        try:
+            ser = serial.Serial(port=port, baudrate=baud, parity=parity_flag, timeout=0.5)
+            found_ids = []
+            for sid in sid_range:
+                try:
+                    frame = bytes([sid, 3, 0, 0, 0, 1])
+                    frame += _crc(frame)
+                    ser.reset_input_buffer()
+                    ser.write(frame)
+                    ser.flush()
+                    resp = ser.read(10)
+                    if resp and len(resp) >= 3:
+                        found_ids.append(sid)
+                        log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} par={par_name} ID={sid}")
+                except Exception:
+                    pass
+            ser.close()
+            return found_ids
+        except Exception:
+            return []
+    
     all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
     if not all_ports:
         all_ports = ['/dev/ttyAMA4']
     
-    log_message(f"[AUTO-DETECT] Skusam porty: {all_ports}")
+    # FAZA 1: Rychly test - ttyAMA4, 9600, NONE (16 sekund)
+    log_message(f"[AUTO-DETECT] Faza 1 - rychly test: {all_ports}")
+    for port in all_ports:
+        if not os.path.exists(port):
+            continue
+        found = _quick_scan(port, 9600, serial.PARITY_NONE)
+        if found:
+            log_message(f"[AUTO-DETECT] ✅ Faza 1 NAYDENE na {port}: {found}")
+            _save_port(port, 'N')
+            return port
     
+    # FAZA 2: Full scan - vsetky porty, baudy, parity (max 5 min)
+    log_message(f"[AUTO-DETECT] Faza 2 - full scan")
     for port in all_ports:
         if not os.path.exists(port):
             continue
         for baud in [9600, 19200]:
             for parity_flag in [serial.PARITY_NONE, serial.PARITY_EVEN]:
                 par_name = 'EVEN' if parity_flag == serial.PARITY_EVEN else 'NONE'
-                try:
-                    ser = serial.Serial(port=port, baudrate=baud, parity=parity_flag, timeout=0.5)
-                    found_ids = []
-                    for sid in range(1, 33):
-                        try:
-                            frame = bytes([sid, 3, 0, 0, 0, 1])
-                            frame += _crc(frame)
-                            ser.reset_input_buffer()
-                            ser.write(frame)
-                            ser.flush()
-                            resp = ser.read(10)
-                            if resp and len(resp) >= 3:
-                                found_ids.append(sid)
-                                log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} par={par_name} ID={sid}")
-                        except Exception:
-                            pass
-                    ser.close()
-                    if found_ids:
-                        log_message(f"[AUTO-DETECT] NAYDENE na {port}: {found_ids}")
-                        try:
-                            conn = get_db_connection()
-                            cursor = conn.cursor()
-                            cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_active_port'")
-                            cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (port,))
-                            cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_parity'")
-                            cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_parity', ?)", (par_name,))
-                            conn.commit()
-                            conn.close()
-                        except: pass
-                        return port
-                except Exception:
-                    pass
+                found = _quick_scan(port, baud, parity_flag)
+                if found:
+                    log_message(f"[AUTO-DETECT] ✅ Faza 2 NAYDENE na {port}: {found}")
+                    _save_port(port, par_name)
+                    return port
     
     log_message("[AUTO-DETECT] Ziadny RS485 port nenajdeny")
     return "/dev/ttyAMA4"
+
+def _save_port(port, parity):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_active_port'")
+        cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (port,))
+        cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_parity'")
+        cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_parity', ?)", (parity,))
+        conn.commit()
+        conn.close()
+    except: pass
 
 
 def cloud_sync_loop():
