@@ -894,7 +894,7 @@ def _auto_detect_rs485_port():
 def cloud_sync_loop():
     serial_num = _get_serial_number()
     while True:
-        time.sleep(5)
+        time.sleep(5)  # kazdych 5 sekund poll
         try:
             local_ip = _get_local_ip()
             try:
@@ -906,12 +906,12 @@ def cloud_sync_loop():
             for _retry in range(3):
                 try:
                     resp = requests.post(CLOUD_SERVER_URL + "/api/cm5/poll",
-                        json={"serial": serial_num}, timeout=60, verify=False)
+                        json={"serial": serial_num}, timeout=15, verify=False)
                     if resp.status_code == 200:
                         break
                 except Exception:
                     if _retry < 2:
-                        time.sleep(5)
+                        time.sleep(3)
                     continue
             if resp is None or resp.status_code != 200:
                 continue
@@ -1100,16 +1100,16 @@ smart_meter = get_smart_meter_service(bg_service)
 detected_port = _auto_detect_rs485_port()
 log_message(f"[STARTUP] RS485 port: {detected_port}")
 
-# Cloud sync - 10s po starte
+# Cloud sync - 20s po starte, potom kazdych 5s
 def _delayed_cloud_start():
-    time.sleep(10)
-    log_message("[STARTUP] Cloud sync spusteny (10s po boot)")
+    time.sleep(20)
+    log_message("[STARTUP] Cloud sync spusteny (20s po boot)")
     led.anim_ok()  # Zelena - vsetko OK
     cloud_sync_loop()
 
 cloud_thread = threading.Thread(target=_delayed_cloud_start, daemon=True)
 cloud_thread.start()
-log_message("[CLOUD SYNC] Background thread (10s delay)")
+log_message("[CLOUD SYNC] Background thread (20s delay, 5s poll)")
 
 
 
