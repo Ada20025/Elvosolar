@@ -1099,9 +1099,31 @@ led.anim_boot()  # cervena - system sa spusta
 # Smart meter init
 smart_meter = get_smart_meter_service(bg_service)
 
-# Auto-detect RS485 port
-detected_port = _auto_detect_rs485_port()
-log_message(f"[STARTUP] RS485 port: {detected_port}")
+# Auto-detect NEBEZI pri spusteni - spusta sa len cez web setup
+log_message("[STARTUP] Auto-detect preskoceny - caka na web setup")
+
+# 24-hodinovy auto-reset DB
+def _daily_reset():
+    """Po 24 hodinach vymaze DB a vrati sa do setup modu."""
+    time.sleep(86400)  # 24 hodin
+    log_message("[AUTO-RESET] 24h vypršalo - vymazavam DB...")
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM devices")
+        cursor.execute("DELETE FROM telemetry")
+        cursor.execute("DELETE FROM users WHERE role = 'admin'")
+        cursor.execute("DELETE FROM system_settings WHERE key = 'is_claimed'")
+        cursor.execute("INSERT INTO system_settings (key, value) VALUES ('is_claimed', '0')")
+        conn.commit()
+        conn.close()
+        log_message("[AUTO-RESET] DB vymazana - setup mod")
+    except Exception as e:
+        log_message(f"[AUTO-RESET] Chyba: {e}")
+
+reset_thread = threading.Thread(target=_daily_reset, daemon=True)
+reset_thread.start()
+log_message("[AUTO-RESET] 24h timer spusteny")
 
 # Cloud sync - 20s po starte, potom kazdych 5s
 def _delayed_cloud_start():
