@@ -23,6 +23,12 @@
         .slider-viewport { overflow: hidden; width: 100%; position: relative; }
         .slider-container { display: flex; width: 600%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .slide { width: 16.6666%; flex-shrink: 0; }
+        @keyframes scanPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(6,182,212,0.4); } 50% { box-shadow: 0 0 20px 4px rgba(6,182,212,0.2); } }
+        @keyframes foundGlow { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); } 50% { box-shadow: 0 0 25px 8px rgba(16,185,129,0.3); } 100% { box-shadow: 0 0 10px 2px rgba(16,185,129,0.1); } }
+        @keyframes successBounce { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
+        .scan-active { animation: scanPulse 1s infinite; }
+        .found-glow { animation: foundGlow 1.5s ease-out; }
+        .success-bounce { animation: successBounce 0.5s ease-out forwards; }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" onload="initWizard()">
@@ -613,19 +619,28 @@
                 }
             }
 
-            // ANIMUJ GRID podla vysledkov
+            // ANIMUJ GRID s scanning efektom
+            let scannedCount = 0;
             for (let i = 1; i <= 32; i++) {
                 const cell = document.getElementById(`modbus-${i}`);
                 const label = document.getElementById(`state-${i}`);
-                status.innerText = `Kontrolujem adresu ${i} z 32...`;
+                scannedCount++;
+                const pct = Math.round((scannedCount / 32) * 100);
+                status.innerHTML = `<div class="flex items-center justify-center gap-2"><span class="animate-pulse">🔍</span> Skenovanie adresy <span class="text-cyan-300 font-mono">${i}</span> / 32 <span class="text-slate-500">(${pct}%)</span></div>`;
+
                 if (discoveredSlaves.includes(i)) {
-                    cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-emerald-950/40 border border-emerald-500 text-emerald-400 font-bold text-center";
-                    label.innerText = "RX \u2713";
+                    // Scanning efekt na najdenom zariadeni
+                    cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-emerald-950/40 border-2 border-emerald-400 text-emerald-300 font-bold text-center scale-110 shadow-lg shadow-emerald-500/20 transition-all duration-300";
+                    label.innerHTML = "<span class='text-emerald-400'>RX</span> \u2713";
+                    // Flash efekt
+                    cell.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.4)';
+                    await new Promise(r => setTimeout(r, 120));
+                    cell.style.boxShadow = '';
                 } else {
-                    cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-slate-950/20 border border-slate-900 text-slate-600 opacity-40 text-center";
-                    label.innerText = "NO RESP";
+                    cell.className = "flex flex-col items-center justify-center p-1 rounded-lg bg-slate-950/20 border border-slate-800 text-slate-600 opacity-50 text-center transition-all duration-200";
+                    label.innerText = "-";
+                    await new Promise(r => setTimeout(r, 18));
                 }
-                await new Promise(r => setTimeout(r, 30));
             }
 
             discoveredSlaveIds = discoveredSlaves;
@@ -634,14 +649,12 @@
 
             const slavesSpan = document.getElementById("repActiveSlaves");
             if (discoveredSlaves.length > 0) {
-                slavesSpan.innerText = `Zistene aktivne ID: ${discoveredSlaves.join(', ')}`;
-                slavesSpan.className = "text-emerald-400 font-bold";
-                status.innerText = "Autodetekcia uspesna. Zariadenia komunikuju.";
-                status.className = "p-4 bg-emerald-950/20 border border-emerald-900/30 rounded-xl text-xs text-center font-bold text-emerald-400";
+                slavesSpan.innerHTML = `<span class="text-emerald-400 font-bold">\u2714 Zistene aktivne ID: ${discoveredSlaves.join(', ')}</span>`;
+                status.innerHTML = '<span class="text-emerald-400">\u2714 Autodetekcia uspesna!</span> Zariadenia komunikuju na zbernici RS485.';
+                status.className = "p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300";
             } else {
-                slavesSpan.innerText = "Ziadne zariadenie neodpovedalo.";
-                slavesSpan.className = "text-rose-500 font-bold";
-                status.innerText = "Zbernica neodpoveda. Skontrolujte napojenie A(+) a B(-).";
+                slavesSpan.innerHTML = '<span class="text-rose-500 font-bold">\u2718 Ziadne zariadenie neodpovedalo.</span>';
+                status.innerHTML = '<span class="text-rose-400">\u2718 Zbernica neodpoveda.</span> Skontrolujte zapojenie A(+) a B(-).';
                 status.className = "p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400";
             }
         }
@@ -917,7 +930,7 @@
             const grid = document.getElementById('diagnosticGrid');
             grid.innerHTML = '';
             for (let i = 1; i <= 32; i++) {
-                grid.innerHTML += `<div id="modbus-${i}" class="flex flex-col items-center justify-center p-1 rounded-lg bg-slate-900 border border-slate-800/40 text-slate-500 text-center"><span class="font-bold text-[9px]">${i}</span><span id="state-${i}" class="text-[6px] uppercase mt-0.5">IDLE</span></div>`;
+                grid.innerHTML += `<div id="modbus-${i}" class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-900/80 border border-slate-800/50 text-slate-500 text-center transition-all duration-300 hover:border-slate-700"><span class="font-bold text-[10px] text-slate-400">${i}</span><span id="state-${i}" class="text-[7px] uppercase mt-0.5 tracking-wider opacity-60">IDLE</span></div>`;
             }
         }
 
@@ -989,13 +1002,22 @@
                     });
                 } catch(e) {}
 
-                finishBtn.innerText = "DOKONCENE ✓";
-                finishBtn.className = "w-full bg-emerald-600 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
-                finishBtn.onclick = () => { location.href = '/'; };
+                // ✅ USPECH - odblokuj button, zmen na dashboard link
+                finishBtn.disabled = false;
+                finishBtn.innerText = "🚀 DOKONCENE - PREJST NA DASHBOARD";
+                finishBtn.className = "w-full bg-gradient-to-r from-emerald-500 to-green-400 text-white font-extrabold text-sm py-5 rounded-xl tracking-wide transition-all duration-300 shadow-lg shadow-emerald-500/30 uppercase tracking-wider hover:scale-[1.02] hover:shadow-emerald-400/50 active:scale-95 cursor-pointer";
+                finishBtn.onclick = () => { window.location.href = '/dashboard'; };
+
+                // Success hlasenie
+                const statusEl = document.getElementById('scanStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = '🎉 <span class="text-emerald-400">Nastavenie dokoncene!</span> Kliknite tlacidlo nižšie na prechod do dashboardu.';
+                    statusEl.className = 'p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300';
+                }
             } catch(err) {
                 finishBtn.disabled = false;
-                finishBtn.innerText = "DOKONCIT NASTAVENIE";
-                finishBtn.className = "w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider";
+                finishBtn.innerText = "\u274C OPATOVAT";
+                finishBtn.className = "w-full bg-gradient-to-r from-rose-600 to-red-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider hover:scale-[1.02] active:scale-95 cursor-pointer";
                 showValidationError('Chyba: ' + err.message);
             }
         }

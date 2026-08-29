@@ -20,8 +20,9 @@ WORKDIR /app
 # Copy only the app directory
 COPY Software/App/ .
 
-# Expose port
-EXPOSE 8080
+# Expose port (Railway pouziva PORT env var, default 8080)
+EXPOSE ${PORT:-8080}
 
 # Start PHP built-in server with error display
-CMD ["php", "-d", "display_errors=1", "-d", "error_reporting=E_ALL", "-S", "0.0.0.0:8080", "index.php"]
+# Railway nastavuje PORT env var, PHP server bude pocuvat na nom
+CMD php -d display_errors=1 -d error_reporting=E_ALL -S 0.0.0.0:${PORT:-8080} index.php
