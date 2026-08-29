@@ -418,11 +418,22 @@
             const model_id = document.getElementById('modelSelect').value;
             const has_battery = document.getElementById('wizardHasBattery').checked;
 
-            let cloudUser = "spravca@elvosolar.sk";
-            let cloudPass = "overene_priamo_cez_session_alwaysdata";
-            if (selectedMode === 'CLOUD' && !document.getElementById("useSessionAccount").checked) {
-                cloudUser = document.getElementById('cloudUser').value.trim();
-                cloudPass = document.getElementById('cloudPass').value;
+            let cloudUser = "";
+            let cloudPass = "";
+            if (selectedMode === 'CLOUD') {
+                if (document.getElementById("useSessionAccount").checked) {
+                    try {
+                        const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
+                        const meData = await meRes.json();
+                        if (meData.status === 'success' && meData.email) {
+                            cloudUser = meData.email;
+                            cloudPass = "session_auth";
+                        }
+                    } catch(e) {}
+                } else {
+                    cloudUser = document.getElementById('cloudUser').value.trim();
+                    cloudPass = document.getElementById('cloudPass').value;
+                }
             }
 
             const configPayload = {
@@ -913,13 +924,22 @@
                     } catch(e) { console.log('Claim:', e); }
                 }
 
-                // Cloud registracia - nepovinne
+                // Cloud registracia s user info
                 try {
+                    let userInfo = {};
+                    try {
+                        const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
+                        const meData = await meRes.json();
+                        if (meData.status === 'success') {
+                            userInfo = { user_id: meData.user_id, email: meData.email, username: meData.username };
+                        }
+                    } catch(e) {}
+                    
                     await fetch('/api/devices/register', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         credentials: 'same-origin',
-                        body: JSON.stringify({ serial_number: serial, name: name, brand: brand, model: model }),
+                        body: JSON.stringify({ serial_number: serial, name: name, brand: brand, model: model, ...userInfo }),
                         signal: AbortSignal.timeout(5000)
                     });
                 } catch(e) {}

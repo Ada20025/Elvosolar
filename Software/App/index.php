@@ -812,14 +812,23 @@ elseif ($path === '/api/devices/list' && $method === 'GET') {
 
 // --- REGISTRÁCIA ZARIADENIA ---
 elseif ($path === '/api/devices/register' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) {
-        send_json(['status' => 'error', 'message' => 'Nie ste prihlásený'], 401);
-    }
     $data = get_json_input();
     $serial = trim($data['serial_number'] ?? '');
     $name = trim($data['name'] ?? 'Moje zariadenie');
     $brand = trim($data['brand'] ?? 'Huawei');
     $model = trim($data['model'] ?? 'SUN2000');
+    
+    // User ID - bud zo session alebo z requestu
+    $user_id = $_SESSION['user_id'] ?? null;
+    if (!$user_id && isset($data['user_id'])) {
+        $user_id = intval($data['user_id']);
+    }
+    if (!$user_id && isset($data['email'])) {
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$data['email']]);
+        $row = $stmt->fetch();
+        if ($row) $user_id = $row['id'];
+    }
     
     if (!$serial) {
         send_json(['status' => 'error', 'message' => 'Sériové číslo je povinné'], 400);
@@ -834,12 +843,12 @@ elseif ($path === '/api/devices/register' && $method === 'POST') {
     
     try {
         $stmt = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
-        $stmt->execute([$_SESSION['user_id'], $name, $serial, $brand, $model]);
+        $stmt->execute([$user_id, $name, $serial, $brand, $model]);
         $device_id = $pdo->lastInsertId();
         
         // Email notifikácia o pridaní zariadenia
         $user_email = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
-        $user_email->execute([$_SESSION['user_id']]);
+        $user_email->execute([$user_id]);
         $u = $user_email->fetch();
         if ($u) {
             @send_elvo_email($u['email'], 'Nové zariadenie v ElvoControl', 'Zariadenie bolo pridané',
@@ -1243,6 +1252,16 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     ];
     $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
     $stmt->execute([$serial, json_encode($config)]);
+    
+    // Uloz zariadenie do DB aj s user_id
+    if (isset($_SESSION['user_id'])) {
+        $brand = $data['brand_id'] ?? '';
+        $model = $data['model_id'] ?? '';
+        $name = $data['name'] ?? 'Striedac';
+        $stmt2 = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
+        $stmt2->execute([$_SESSION['user_id'], $name, $serial, $brand, $model]);
+    }
+    
     send_json(['status' => 'success']);
 }
 
@@ -1290,6 +1309,21 @@ elseif ($path === '/api/system/status' && $method === 'GET') {
         'internet' => true,
         'modbus' => 'CLOUD_MODE'
     ]);
+}
+
+// --- AKTUALNY UZIVATEL ---
+elseif ($path === '/api/user/me' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) {
+        send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny']);
+    }
+    $stmt = $pdo->prepare('SELECT id, username, email FROM users WHERE id = ?');
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch();
+    if ($user) {
+        send_json(['status' => 'success', 'user_id' => $user['id'], 'username' => $user['username'], 'email' => $user['email']]);
+    } else {
+        send_json(['status' => 'error', 'message' => 'Pouzivatel nenajdeny']);
+    }
 }
 
 // --- WIFI CONNECT (cloud verzia - ulozi pre CM5) ---
