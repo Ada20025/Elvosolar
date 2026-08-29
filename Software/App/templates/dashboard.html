@@ -846,6 +846,15 @@
     <script>
         lucide.createIcons();
 
+        // Push notification registration
+        if ('serviceWorker' in navigator && 'Notification' in window) {
+            navigator.serviceWorker.register('/templates/sw.js').then(reg => {
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            }).catch(() => {});
+        }
+
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
         const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids')) : [];

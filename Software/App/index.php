@@ -1391,6 +1391,122 @@ elseif ($path === '/api/cm5/wait-result' && $method === 'GET') {
     }
 }
 
+// --- ADMIN DEVICE DETAIL ---
+elseif (preg_match('#^/admin/device/(\d+)$#', $path, $matches) && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
+    render_template('admin-device.html', ['device_id' => $matches[1]]);
+}
+
+// --- ADMIN: UPDATE DEVICE ---
+elseif (preg_match('#^/api/admin/device/(\d+)$#', $path, $matches) && $method === 'POST') {
+    $device_id = $matches[1];
+    $data = get_json_input();
+    $name = trim($data['name'] ?? '');
+    $mode = trim($data['operation_mode'] ?? 'AUTO');
+    $sleep = intval($data['night_sleep'] ?? 0);
+    
+    if ($name) {
+        $pdo->prepare("UPDATE devices SET name = ? WHERE id = ?")->execute([$name, $device_id]);
+    }
+    
+    // Send settings to CM5
+    $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
+    $stmt->execute([$device_id]);
+    $dev = $stmt->fetch();
+    if ($dev) {
+        $config = ['action' => 'set_mode', 'mode' => $mode, 'night_sleep' => $sleep];
+        $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')")->execute([$dev['serial_number'], json_encode($config)]);
+    }
+    
+    send_json(['status' => 'success', 'message' => 'Nastavenia uložené']);
+}
+
+// --- ADMIN: DELETE DEVICE ---
+elseif (preg_match('#^/api/admin/device/(\d+)$#', $path, $matches) && $method === 'DELETE') {
+    $device_id = $matches[1];
+    $pdo->prepare("DELETE FROM devices WHERE id = ?")->execute([$device_id]);
+    $pdo->prepare("DELETE FROM telemetry WHERE device_id = ?")->execute([$device_id]);
+    send_json(['status' => 'success', 'message' => 'Zariadenie odstránené']);
+}
+
+// --- ADMIN: DEVICE LOGS ---
+elseif (preg_match('#^/api/admin/device/(\d+)/logs$#', $path, $matches) && $method === 'GET') {
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT timestamp, power_ac, battery_soc, temp, freq, status_msg FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 50");
+    $stmt->execute([$device_id]);
+    send_json(['status' => 'success', 'logs' => $stmt->fetchAll()]);
+}
+
+// --- PUSH NOTIFICATION SUBSCRIBE ---
+elseif ($path === '/api/user/push-subscribe' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Not logged in'], 401);
+    $data = get_json_input();
+    $endpoint = $data['endpoint'] ?? '';
+    $keys = $data['keys'] ?? [];
+    if ($endpoint) {
+        $file = __DIR__ . '/cache_push_subscriptions.json';
+        $subs = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+        $subs[] = ['user_id' => $_SESSION['user_id'], 'endpoint' => $endpoint, 'keys' => $keys, 'created' => date('c')];
+        file_put_contents($file, json_encode($subs, JSON_PRETTY_PRINT));
+    }
+    send_json(['status' => 'success', 'message' => 'Push subscription uložená']);
+}
+
+// --- SN AUTO-REGISTRATION ---
+elseif ($path === '/api/cm5/register' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = trim($data['serial_number'] ?? '');
+    $brand = trim($data['brand'] ?? '');
+    $model = trim($data['model'] ?? '');
+    $slave_id = intval($data['slave_id'] ?? 1);
+    $user_id = intval($data['user_id'] ?? 0);
+    
+    if (!$serial) send_json(['status' => 'error', 'message' => 'Chýba serial_number'], 400);
+    
+    // Check if already exists
+    $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ?");
+    $stmt->execute([$serial]);
+    if ($stmt->fetch()) {
+        // Update last_seen
+        $pdo->prepare("UPDATE devices SET last_seen = NOW() WHERE serial_number = ?")->execute([$serial]);
+        send_json(['status' => 'success', 'message' => 'Zariadenie aktualizované', 'action' => 'updated']);
+        return;
+    }
+    
+    // Auto-register with user_id if provided
+    if (!$user_id) {
+        // Find first admin user
+        $stmt = $pdo->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+        $admin = $stmt->fetch();
+        $user_id = $admin ? $admin['id'] : 1;
+    }
+    
+    $name = ($brand ?: 'Zariadenie') . ' (' . $serial . ')';
+    $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, slave_id, last_seen) VALUES (?, ?, ?, ?, ?, ?, NOW())")
+        ->execute([$user_id, $name, $serial, $brand, $model, $slave_id]);
+    
+    $device_id = $pdo->lastInsertId();
+    
+    // Send push notification to user
+    $stmt = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
+    $stmt->execute([$user_id]);
+    $user = $stmt->fetch();
+    if ($user) {
+        @send_elvo_email($user['email'], 'Nové zariadenie pripojené', 'Nové zariadenie',
+            '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
+            . '<p>Pripojilo sa nové zariadenie:</p>'
+            . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
+            . '<p>📦 Názov: <strong>' . htmlspecialchars($name) . '</strong></p>'
+            . '<p>🔢 SN: <strong>' . htmlspecialchars($serial) . '</strong></p>'
+            . '<p>🏭 Značka: <strong>' . htmlspecialchars($brand) . '</strong></p>'
+            . '</div>'
+            . '<p style="color:#64748b;font-size:12px;">Zariadenie bolo automaticky zaregistrované.</p>'
+        );
+    }
+    
+    send_json(['status' => 'success', 'device_id' => $device_id, 'message' => 'Zariadenie zaregistrované', 'action' => 'registered']);
+}
+
 // --- ADMIN PANEL DATA ---
 elseif ($path === '/api/admin/devices' && $method === 'GET') {
     // Vrati vsetky zariadenia s live datami pre admin panel
