@@ -1030,10 +1030,17 @@ def cloud_sync_loop():
                     all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
                     log_message(f'[DISCOVER] Skusam vsetky porty: {all_ports}')
 
+                # Zisti brand-specific registre
+                brand_cfg = DEVICE_DB.get(brand_id, {}).get('kategorie', {}).get(cat_id, {}).get('modely', {}).get(model_id, {})
+                test_reg = brand_cfg.get('reg_p_ac', 0)
+                test_baud = brand_cfg.get('baud', 9600)
+                znacka = DEVICE_DB.get(brand_id, {}).get('znacka', 'Unknown')
+                log_message(f'[DISCOVER] Znacka: {znacka}, register: {test_reg}, baud: {test_baud}')
+
                 for port in all_ports:
                     if not os.path.exists(port):
                         continue
-                    for baud in [9600, 19200]:
+                    for baud in [test_baud, 9600, 19200]:
                         for parity_flag in [serial.PARITY_NONE, serial.PARITY_EVEN]:
                             par_name = 'EVEN' if parity_flag == serial.PARITY_EVEN else 'NONE'
                             try:
@@ -1041,8 +1048,8 @@ def cloud_sync_loop():
                                 port_found = []
                                 for sid in range(1, 33):
                                     try:
-                                        # Modbus FC3 - citaj register 0
-                                        frame = bytes([sid, 3, 0, 0, 0, 1])
+                                        # Modbus FC3 - brand-specific register
+                                        frame = bytes([sid, 3, (test_reg >> 8) & 0xFF, test_reg & 0xFF, 0, 1])
                                         frame += _modbus_crc(frame)
                                         ser.reset_input_buffer()
                                         ser.write(frame)
@@ -1050,7 +1057,7 @@ def cloud_sync_loop():
                                         resp = ser.read(10)
                                         if resp and len(resp) >= 3:
                                             port_found.append(sid)
-                                            log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par_name} ID={sid} resp={resp.hex()}')
+                                            log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par_name} ID={sid} reg={test_reg} resp={resp.hex()}')
                                     except Exception:
                                         pass
                                 ser.close()
