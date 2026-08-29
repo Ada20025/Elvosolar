@@ -7,11 +7,19 @@ echo "=================================================="
 VENV_PYTHON="/home/pi/Hardware/venv/bin/python3"
 APP_DIR="/home/pi/Hardware"
 
-# Ak venv neexistuje, použijeme system python3
+# Ak venv neexistuje, vytvorime ho
 if [ ! -f "$VENV_PYTHON" ]; then
-    echo "[UPDATER] ⚠️ venv nenájdený, používam system python3"
-    VENV_PYTHON="python3"
+    echo "[SETUP] Vytváram venv..."
+    python3 -m venv /home/pi/Hardware/venv
+    $VENV_PYTHON -m pip install --quiet fastapi uvicorn pyserial pymodbus requests gpiod
+    echo "[SETUP] Závislosti nainštalované."
 fi
+
+# Over ze fastapi je nainštalované
+$VENV_PYTHON -c "import fastapi" 2>/dev/null || {
+    echo "[SETUP] Inštalujem chýbajúce závislosti..."
+    $VENV_PYTHON -m pip install --quiet fastapi uvicorn pyserial pymodbus requests gpiod
+}
 
 # 1. NEKONEČNÝ BEH AKTUALIZÁCIÍ (každú hodinu)
 run_updater() {

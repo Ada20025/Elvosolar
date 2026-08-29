@@ -15,7 +15,10 @@ UPDATE_FILES = {
     "system_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/system_service.py",
     "database.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/database.py",
     "ai_engine.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/ai_engine.py",
-    "ble_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/ble_service.py",
+    "led_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/led_service.py",
+    "smart_meter_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/smart_meter_service.py",
+    "update_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/update_service.py",
+    "start.sh": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/start.sh",
     "templates/setup.html": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/templates/setup.html",
 }
 

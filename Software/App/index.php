@@ -1306,6 +1306,50 @@ elseif ($path === '/api/admin/devices' && $method === 'GET') {
     send_json(['status' => 'success', 'devices' => $result]);
 }
 
+// --- ADMIN: SEND COMMAND TO DEVICE ---
+elseif ($path === '/api/admin/command' && $method === 'POST') {
+    $data = get_json_input();
+    $device_id = intval($data['device_id'] ?? 0);
+    $action = trim($data['action'] ?? '');
+    $params = $data['params'] ?? [];
+    
+    if (!$device_id || !$action) {
+        send_json(['status' => 'error', 'message' => 'Chýba device_id alebo action'], 400);
+    }
+    
+    // Zisti serial number zariadenia
+    $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
+    $stmt->execute([$device_id]);
+    $dev = $stmt->fetch();
+    if (!$dev) send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
+    
+    $serial = $dev['serial_number'];
+    $config = array_merge(['action' => $action], $params);
+    
+    // Uloz prikaz do cm5_config
+    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
+    $stmt->execute([$serial, json_encode($config)]);
+    $cmd_id = $pdo->lastInsertId();
+    
+    send_json(['status' => 'success', 'command_id' => $cmd_id, 'message' => "Prikaz '$action' odoslany na $serial"]);
+}
+
+// --- ADMIN: DEVICE LOGS ---
+elseif (preg_match('#^/api/admin/device/(\d+)/logs$#', $path, $matches) && $method === 'GET') {
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
+    $stmt->execute([$device_id]);
+    $dev = $stmt->fetch();
+    if (!$dev) send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
+    
+    // Vrati telemetry history
+    $stmt = $pdo->prepare("SELECT timestamp, power_ac, battery_soc, temp, freq, status_msg FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 50");
+    $stmt->execute([$device_id]);
+    $rows = $stmt->fetchAll();
+    
+    send_json(['status' => 'success', 'logs' => $rows]);
+}
+
 // --- ADMIN CLAIM (cloud verzia) ---
 elseif ($path === '/api/admin/claim' && $method === 'POST') {
     $data = get_json_input();
