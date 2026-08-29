@@ -1099,8 +1099,9 @@ led.anim_boot()  # cervena - system sa spusta
 # Smart meter init
 smart_meter = get_smart_meter_service(bg_service)
 
-# Auto-detect NEBEZI pri spusteni - spusta sa len cez web setup
-log_message("[STARTUP] Auto-detect preskoceny - caka na web setup")
+# Auto-detect RS485 port - RYCHLY test pri boot (16s)
+detected_port = _auto_detect_rs485_port()
+log_message(f"[STARTUP] RS485 port: {detected_port}")
 
 # 24-hodinovy auto-reset DB
 def _daily_reset():
