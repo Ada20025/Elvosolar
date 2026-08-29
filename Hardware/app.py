@@ -823,19 +823,16 @@ def _get_serial_number():
     return "CM5-DEFAULT"
 
 def _auto_detect_rs485_port():
-    """Automaticky najde funkcny RS485 port pri spusteni pomocou pymodbus."""
+    """Automaticky najde funkcny RS485 port - raw serial."""
     import glob as glob_mod
-    try:
-        from pymodbus.client import ModbusSerialClient
-    except ImportError:
-        log_message("[AUTO-DETECT] pymodbus nie je nainštalovaný, skusam pip install")
-        try:
-            import subprocess
-            subprocess.run(["pip3", "install", "pymodbus"], timeout=30, capture_output=True)
-            from pymodbus.client import ModbusSerialClient
-        except Exception:
-            log_message("[AUTO-DETECT] Nepodarilo sa nainstalovat pymodbus")
-            return "/dev/ttyAMA4"
+    
+    def _crc(data):
+        crc = 0xFFFF
+        for b in data:
+            crc ^= b
+            for _ in range(8):
+                crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+        return bytes([crc & 0xFF, (crc >> 8) & 0xFF])
     
     all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
     if not all_ports:
@@ -847,45 +844,40 @@ def _auto_detect_rs485_port():
         if not os.path.exists(port):
             continue
         for baud in [9600, 19200]:
-            client = ModbusSerialClient(port=port, baudrate=baud, parity='N', stopbits=1, bytesize=8, timeout=0.3)
-            if not client.connect():
-                continue
-            
-            found_ids = []
-            for sid in range(1, 33):
+            for parity_flag in [serial.PARITY_NONE, serial.PARITY_EVEN]:
+                par_name = 'EVEN' if parity_flag == serial.PARITY_EVEN else 'NONE'
                 try:
-                    result = client.read_holding_registers(address=0, count=1, slave=sid)
-                    if not result.isError():
-                        found_ids.append(sid)
-                        log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} ID={sid} (HOLDING)")
-                    else:
-                        result2 = client.read_input_registers(address=0, count=1, slave=sid)
-                        if not result2.isError():
-                            found_ids.append(sid)
-                            log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} ID={sid} (INPUT)")
-                        else:
-                            # Aj error odpoved = zariadenie existuje
-                            if hasattr(result, 'exception_code'):
+                    ser = serial.Serial(port=port, baudrate=baud, parity=parity_flag, timeout=0.5)
+                    found_ids = []
+                    for sid in range(1, 33):
+                        try:
+                            frame = bytes([sid, 3, 0, 0, 0, 1])
+                            frame += _crc(frame)
+                            ser.reset_input_buffer()
+                            ser.write(frame)
+                            ser.flush()
+                            resp = ser.read(10)
+                            if resp and len(resp) >= 3:
                                 found_ids.append(sid)
-                                log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} ID={sid} (ERROR={result.exception_code})")
+                                log_message(f"[AUTO-DETECT] ✅ Port={port} Baud={baud} par={par_name} ID={sid}")
+                        except Exception:
+                            pass
+                    ser.close()
+                    if found_ids:
+                        log_message(f"[AUTO-DETECT] NAYDENE na {port}: {found_ids}")
+                        try:
+                            conn = get_db_connection()
+                            cursor = conn.cursor()
+                            cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_active_port'")
+                            cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (port,))
+                            cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_parity'")
+                            cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_parity', ?)", (par_name,))
+                            conn.commit()
+                            conn.close()
+                        except: pass
+                        return port
                 except Exception:
                     pass
-            
-            client.close()
-            
-            if found_ids:
-                log_message(f"[AUTO-DETECT] NAYDENE na {port}: {found_ids}")
-                try:
-                    conn = get_db_connection()
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_active_port'")
-                    cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (port,))
-                    cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_parity'")
-                    cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_parity', 'N')")
-                    conn.commit()
-                    conn.close()
-                except: pass
-                return port
     
     log_message("[AUTO-DETECT] Ziadny RS485 port nenajdeny")
     return "/dev/ttyAMA4"
@@ -970,61 +962,51 @@ def cloud_sync_loop():
                 model_id = config.get("model_id", "1")
                 discovered_slaves = []
                 discovered_port = "unknown"
-                
-                try:
-                    from pymodbus.client import ModbusSerialClient
-                except ImportError:
-                    try:
-                        import subprocess
-                        subprocess.run(["pip3", "install", "pymodbus"], timeout=30, capture_output=True)
-                        from pymodbus.client import ModbusSerialClient
-                    except Exception:
-                        ModbusSerialClient = None
-                
-                if ModbusSerialClient:
-                    import glob as glob_mod
-                    all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
-                    log_message(f'[DISCOVER] Skusam porty: {all_ports}')
-                    
-                    for port in all_ports:
-                        if not os.path.exists(port):
-                            continue
-                        for baud in [9600, 19200]:
-                            for par in ['N', 'E']:
-                                try:
-                                    client = ModbusSerialClient(port=port, baudrate=baud, parity=par, stopbits=1, bytesize=8, timeout=0.3)
-                                    if not client.connect():
-                                        continue
-                                    
-                                    port_found = []
-                                    for sid in range(1, 33):
-                                        try:
-                                            result = client.read_holding_registers(address=0, count=1, slave=sid)
-                                            if not result.isError():
-                                                port_found.append(sid)
-                                                log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par} ID={sid}')
-                                            else:
-                                                result2 = client.read_input_registers(address=0, count=1, slave=sid)
-                                                if not result2.isError():
-                                                    port_found.append(sid)
-                                                    log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par} ID={sid} INPUT')
-                                                elif hasattr(result, 'exception_code') and result.exception_code is not None:
-                                                    port_found.append(sid)
-                                                    log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par} ID={sid} ERROR={result.exception_code}')
-                                        except Exception:
-                                            pass
-                                    client.close()
-                                    if port_found:
-                                        discovered_slaves = port_found
-                                        discovered_port = port
-                                        log_message(f'[DISCOVER] NAYDENE na {port}: {discovered_slaves}')
-                                        break
-                                except Exception:
-                                    pass
-                                if discovered_slaves:
+
+                # RAW serial discover - presne ten co fungoval v manualnom teste
+                def _modbus_crc(data):
+                    crc = 0xFFFF
+                    for b in data:
+                        crc ^= b
+                        for _ in range(8):
+                            crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+                    return bytes([crc & 0xFF, (crc >> 8) & 0xFF])
+
+                import glob as glob_mod
+                all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
+                log_message(f'[DISCOVER] Skusam porty: {all_ports}')
+
+                for port in all_ports:
+                    if not os.path.exists(port):
+                        continue
+                    for baud in [9600, 19200]:
+                        for parity_flag in [serial.PARITY_NONE, serial.PARITY_EVEN]:
+                            par_name = 'EVEN' if parity_flag == serial.PARITY_EVEN else 'NONE'
+                            try:
+                                ser = serial.Serial(port=port, baudrate=baud, parity=parity_flag, timeout=0.5)
+                                port_found = []
+                                for sid in range(1, 33):
+                                    try:
+                                        # Modbus FC3 - citaj register 0
+                                        frame = bytes([sid, 3, 0, 0, 0, 1])
+                                        frame += _modbus_crc(frame)
+                                        ser.reset_input_buffer()
+                                        ser.write(frame)
+                                        ser.flush()
+                                        resp = ser.read(10)
+                                        if resp and len(resp) >= 3:
+                                            port_found.append(sid)
+                                            log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par_name} ID={sid} resp={resp.hex()}')
+                                    except Exception:
+                                        pass
+                                ser.close()
+                                if port_found:
+                                    discovered_slaves = port_found
+                                    discovered_port = port
+                                    log_message(f'[DISCOVER] NAYDENE na {port}: {discovered_slaves}')
                                     break
-                            if discovered_slaves:
-                                break
+                            except Exception as e:
+                                log_message(f'[DISCOVER] {port} baud={baud} par={par_name}: {e}')
                         if discovered_slaves:
                             break
                     if discovered_slaves:
