@@ -1,6 +1,8 @@
 # Hardware/led_service.py
 # RGB LED Strip for Pi5 / CM5
-# 27=12V, 26=Red, 22=Green, 18=Blue, 17=White
+# 12V je z AC adaptera (vzdy zapnuty)
+# 26=Red, 22=Green, 18=Blue, 17=White
+# GPIO piny su ACTIVE LOW (LOW=svieti, HIGH=zhasne)
 
 import time
 import threading
@@ -8,12 +10,12 @@ import logging
 
 logger = logging.getLogger("LED")
 
-PIN_12V = 27
+# 12V pin ODSTRANENY - napajanie z AC adaptera
 PIN_RED = 26
 PIN_GRN = 22
 PIN_BLU = 18
 PIN_WHT = 17
-ALL_PINS = [PIN_12V, PIN_RED, PIN_GRN, PIN_BLU, PIN_WHT]
+ALL_PINS = [PIN_RED, PIN_GRN, PIN_BLU, PIN_WHT]
 
 COLOR_OFF    = (0, 0, 0, 0)
 COLOR_RED    = (255, 0, 0, 0)
@@ -25,7 +27,7 @@ COLOR_YELLOW = (255, 255, 0, 0)
 COLOR_PURPLE = (150, 0, 255, 0)
 
 # Map pin names to offsets
-PIN_MAP = {"12V": PIN_12V, "RED": PIN_RED, "GRN": PIN_GRN, "BLU": PIN_BLU, "WHT": PIN_WHT}
+PIN_MAP = {"RED": PIN_RED, "GRN": PIN_GRN, "BLU": PIN_BLU, "WHT": PIN_WHT}
 PIN_NAMES = {v: k for k, v in PIN_MAP.items()}
 
 
@@ -173,8 +175,8 @@ class LedService:
         if not self._gpio_ok:
             return
         self._current_color = (r, g, b, w)
-        # 12V = HIGH to power strip, RGB = LOW to sink to GND
-        self._write_pin_raw(PIN_12V, 1 if (r + g + b + w) > 0 else 0)
+        # 12V z AC - vzdy zapnute, netreba GPIO
+        # RGB = ACTIVE LOW (LOW=svieti, HIGH=zhasne)
         self._write_pin_raw(PIN_RED, 0 if r > 0 else 1)  # inverted
         self._write_pin_raw(PIN_GRN, 0 if g > 0 else 1)  # inverted
         self._write_pin_raw(PIN_BLU, 0 if b > 0 else 1)  # inverted
