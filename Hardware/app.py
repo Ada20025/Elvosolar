@@ -969,6 +969,7 @@ def cloud_sync_loop():
                 cat_id = config.get("category_id", "1")
                 model_id = config.get("model_id", "1")
                 discovered_slaves = []
+                discovered_port = "unknown"
                 
                 try:
                     from pymodbus.client import ModbusSerialClient
