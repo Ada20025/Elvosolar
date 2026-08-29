@@ -993,8 +993,25 @@ def cloud_sync_loop():
                     return bytes([crc & 0xFF, (crc >> 8) & 0xFF])
 
                 import glob as glob_mod
-                all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
-                log_message(f'[DISCOVER] Skusam porty: {all_ports}')
+                
+                # NAJPRV pouzijeme port z auto-detectu (rychle)
+                known_port = None
+                try:
+                    conn_check = get_db_connection()
+                    cursor_check = conn_check.cursor()
+                    cursor_check.execute("SELECT value FROM system_settings WHERE key = 'rs485_active_port'")
+                    row_check = cursor_check.fetchone()
+                    conn_check.close()
+                    if row_check and row_check[0]:
+                        known_port = row_check[0]
+                except: pass
+                
+                if known_port and os.path.exists(known_port):
+                    all_ports = [known_port]
+                    log_message(f'[DISCOVER] Pouzivam znamy port: {known_port}')
+                else:
+                    all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
+                    log_message(f'[DISCOVER] Skusam porty: {all_ports}')
 
                 for port in all_ports:
                     if not os.path.exists(port):
