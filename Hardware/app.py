@@ -410,12 +410,11 @@ def api_system_discover(brand: str = "", category: str = "", model: str = ""):
         cursor.execute("INSERT INTO system_settings (key, value) VALUES ('is_claimed', '1')")
         conn.commit()
         conn.close()
-        
         return {
             "status": "success", 
             "discovered_count": len(discovered_slaves), 
             "slaves": discovered_slaves,
-            "port": found_port if "discovered_port" in dir() else "unknown",
+            "port": target_port,
             "parity": "EVEN" if winning_parity == "E" else "NONE"
         }
     except Exception as e:
@@ -1013,9 +1012,7 @@ def cloud_sync_loop():
                                                     log_message(f'[DISCOVER] ✅ {port} baud={baud} par={par} ID={sid} ERROR={result.exception_code}')
                                         except Exception:
                                             pass
-                                    
                                     client.close()
-                                    
                                     if port_found:
                                         discovered_slaves = port_found
                                         discovered_port = port
@@ -1023,17 +1020,22 @@ def cloud_sync_loop():
                                         break
                                 except Exception:
                                     pass
+                                if discovered_slaves:
+                                    break
                             if discovered_slaves:
                                 break
                         if discovered_slaves:
                             break
+                    if discovered_slaves:
+                        break
+
                 bg_service.paused = False
                 winning_parity = "N"
                 if discovered_slaves:
                     conn = get_db_connection()
                     cursor = conn.cursor()
                     cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_active_port'")
-                    cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (target_port,))
+                    cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_active_port', ?)", (discovered_port,))
                     cursor.execute("DELETE FROM system_settings WHERE key = 'rs485_parity'")
                     cursor.execute("INSERT INTO system_settings (key, value) VALUES ('rs485_parity', ?)", (winning_parity,))
                     mac_suffix = SystemService.get_mac_suffix()
@@ -1055,7 +1057,7 @@ def cloud_sync_loop():
                     "status": "success" if discovered_slaves else "error",
                     "slaves": discovered_slaves,
                     "discovered_count": len(discovered_slaves),
-                    "port": found_port if "discovered_port" in dir() else "unknown",
+                    "port": discovered_port if discovered_port else "unknown",
                     "message": f"Najdene: {discovered_slaves}" if discovered_slaves else "Zbernica neodpoveda"
                 }
 
@@ -1098,10 +1100,17 @@ smart_meter = get_smart_meter_service(bg_service)
 detected_port = _auto_detect_rs485_port()
 log_message(f"[STARTUP] RS485 port: {detected_port}")
 
-cloud_thread = threading.Thread(target=cloud_sync_loop, daemon=True)
+# Cloud sync - 10s po starte
+def _delayed_cloud_start():
+    time.sleep(10)
+    log_message("[STARTUP] Cloud sync spusteny (10s po boot)")
+    led.anim_ok()  # Zelena - vsetko OK
+    cloud_sync_loop()
+
+cloud_thread = threading.Thread(target=_delayed_cloud_start, daemon=True)
 cloud_thread.start()
-log_message("[CLOUD SYNC] Background thread spusteny")
-led.anim_ok()  # Zelena - vsetko OK
+log_message("[CLOUD SYNC] Background thread (10s delay)")
+
 
 
 @app.get("/api/system/discover-direct")
