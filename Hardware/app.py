@@ -1065,6 +1065,8 @@ def cloud_sync_loop():
                                     discovered_slaves = port_found
                                     discovered_port = port
                                     log_message(f'[DISCOVER] NAYDENE na {port}: {discovered_slaves}')
+                                    log_message(f'[DISCOVER] Znacka: {znacka} | Register: {test_reg} | Baud: {test_baud}')
+                                    log_message(f'[DISCOVER] Cloud kod: brand_id={brand_id} cat={cat_id} model={model_id}')
                                     break
                             except Exception as e:
                                 log_message(f'[DISCOVER] {port} baud={baud} par={par_name}: {e}')
