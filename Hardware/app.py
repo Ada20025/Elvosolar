@@ -982,6 +982,23 @@ def cloud_sync_loop():
                 model_id = config.get("model_id", "1")
                 discovered_slaves = []
                 discovered_port = "unknown"
+                
+                # Spusti auto-detect ak este nemame port
+                known_port = None
+                try:
+                    conn_check = get_db_connection()
+                    cursor_check = conn_check.cursor()
+                    cursor_check.execute("SELECT value FROM system_settings WHERE key = 'rs485_active_port'")
+                    row_check = cursor_check.fetchone()
+                    conn_check.close()
+                    if row_check and row_check[0]:
+                        known_port = row_check[0]
+                except: pass
+                
+                if not known_port or not os.path.exists(known_port):
+                    log_message('[DISCOVER] Port nenajdeny - spustam auto-detect...')
+                    known_port = _auto_detect_rs485_port()
+                    log_message(f'[DISCOVER] Auto-detect nasiel: {known_port}')
 
                 # RAW serial discover - presne ten co fungoval v manualnom teste
                 def _modbus_crc(data):
@@ -1008,10 +1025,10 @@ def cloud_sync_loop():
                 
                 if known_port and os.path.exists(known_port):
                     all_ports = [known_port]
-                    log_message(f'[DISCOVER] Pouzivam znamy port: {known_port}')
+                    log_message(f'[DISCOVER] Pouzivam port: {known_port}')
                 else:
                     all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
-                    log_message(f'[DISCOVER] Skusam porty: {all_ports}')
+                    log_message(f'[DISCOVER] Skusam vsetky porty: {all_ports}')
 
                 for port in all_ports:
                     if not os.path.exists(port):
@@ -1116,9 +1133,8 @@ led.anim_boot()  # cervena - system sa spusta
 # Smart meter init
 smart_meter = get_smart_meter_service(bg_service)
 
-# Auto-detect RS485 port - RYCHLY test pri boot (16s)
-detected_port = _auto_detect_rs485_port()
-log_message(f"[STARTUP] RS485 port: {detected_port}")
+# Auto-detect NEBEZI pri boot - caka na prikaz z cloudu
+log_message("[STARTUP] Auto-detect preskoceny - caka na prikaz z cloudu")
 
 # 24-hodinovy auto-reset DB
 def _daily_reset():
