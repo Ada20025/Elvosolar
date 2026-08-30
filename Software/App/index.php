@@ -46,37 +46,57 @@ function resend_send_email($to, $subject, $html_body) {
         return false;
     }
     
-    // Resend API expects plain string subject (not MIME encoded)
-    $payload = json_encode([
-        'from' => RESEND_FROM,
-        'to' => [$to],
-        'subject' => $subject,
-        'html' => $html_body,
-    ]);
+    error_log("[EMAIL] API key dlzka: " . strlen($api_key) . " znakov");
+    error_log("[EMAIL] From: " . RESEND_FROM);
+    error_log("[EMAIL] To: $to");
     
-    $ch = curl_init('https://api.resend.com/emails');
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . $api_key,
-            'Content-Type: application/json',
-        ],
-        CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 15,
-    ]);
+    // Resend API - skusime najprv s overenou domenou, potom fallback
+    $from_addresses = [RESEND_FROM, 'onboarding@resend.dev'];
     
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    
-    if ($http_code === 200 || $http_code === 201) {
-        error_log("[EMAIL] ✅ Email odoslany na $to");
-        return true;
-    } else {
+    foreach ($from_addresses as $from) {
+        $payload = json_encode([
+            'from' => $from,
+            'to' => [$to],
+            'subject' => $subject,
+            'html' => $html_body,
+        ]);
+        
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $api_key,
+                'Content-Type: application/json',
+            ],
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+        ]);
+        
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        error_log("[EMAIL] Response ($http_code) from $from: $response");
+        
+        if ($http_code === 200 || $http_code === 201) {
+            error_log("[EMAIL] ✅ Email odoslany na $to z $from");
+            return true;
+        }
+        
+        // Ak chyba 403 (domena neoverena), skusime dalsiu
+        if ($http_code === 403) {
+            error_log("[EMAIL] Domena $from neoverena, skusam fallback...");
+            continue;
+        }
+        
+        // Ina chyba - koncime
         error_log("[EMAIL] ❌ Chyba ($http_code): $response");
         return false;
     }
+    
+    error_log("[EMAIL] ❌ Vsetky from adresy zlyhali");
+    return false;
 }
 
 if (!function_exists('send_elvo_email')) {
@@ -1276,6 +1296,33 @@ elseif ($path === '/verify-reset-code' && $method === 'POST') {
     
     $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Heslo bolo úspešne zmenené! Môžete sa prihlásiť.'];
     header('Location: ' . $base_path . '/login');
+    exit;
+}
+
+elseif ($path === '/debug-resend' && $method === 'GET') {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "=== RESEND DEBUG ===
+";
+    echo "API KEY: " . (RESEND_API_KEY ? 'SET (' . strlen(RESEND_API_KEY) . ' chars)' : 'NOT SET') . "
+";
+    echo "FROM: " . RESEND_FROM . "
+";
+    
+    // Test curl
+    if (RESEND_API_KEY) {
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . RESEND_API_KEY, 'Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => json_encode(['from' => 'onboarding@resend.dev', 'to' => ['test@test.com'], 'subject' => 'Test', 'html' => '<p>Test</p>']),
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10,
+        ]);
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        echo "TEST RESPONSE ($http_code): $response
+";
+    }
     exit;
 }
 
