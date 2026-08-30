@@ -138,7 +138,7 @@
                             </div>
 
                             <div id="categoryContainer" class="hidden">
-                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Modelová rada</label>
+                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Typ zariadenia</label>
                                 <select id="categorySelect" onchange="handleCategoryChange()" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-3 py-3 outline-none"></select>
                             </div>
 
@@ -967,6 +967,7 @@
         function handleBrandChange() {
             const brand_id = document.getElementById('brandSelect').value;
             const catContainer = document.getElementById('categoryContainer');
+            const catLabel = document.querySelector('#categoryContainer label');
             if (!brand_id || !dbDevices[brand_id]) return;
             const categories = dbDevices[brand_id].kategorie;
             const catKeys = Object.keys(categories);
@@ -974,12 +975,17 @@
             catSelect.innerHTML = '';
 
             if (catKeys.length > 1) {
-                // Viac kategorii - ukaz vyber
+                // Viac kategorii - ukaz vyber s typom
                 catContainer.classList.remove('hidden');
+                // Zisti ci su rozne typy (striedac vs smartlogger)
+                const types = [...new Set(catKeys.map(k => categories[k].typ || 'striedac'))];
+                const hasMixed = types.length > 1;
+                if (catLabel) catLabel.textContent = hasMixed ? 'Typ zariadenia' : 'Modelová rada';
                 for (let catKey in categories) {
                     const cat = categories[catKey];
+                    const typ = cat.typ === 'smartlogger' ? '📡 ' : '⚡ ';
                     const popis = cat.popis ? ` - ${cat.popis}` : '';
-                    catSelect.innerHTML += `<option value="${catKey}">${cat.meno}${popis}</option>`;
+                    catSelect.innerHTML += `<option value="${catKey}">${typ}${cat.meno}${popis}</option>`;
                 }
             } else {
                 // Len 1 kategoria - preskoc
