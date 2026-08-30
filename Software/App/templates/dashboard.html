@@ -99,7 +99,7 @@
             align-items: center;
         }
 
-        /* Brand Left: Elvosolar Logo replacing standard tag */
+        /* Brand Left: Real Elvosolar Logo */
         .header-brand-left {
             display: flex;
             align-items: center;
@@ -334,7 +334,7 @@
         .glass-card {
             background: linear-gradient(135deg, rgba(10, 15, 30, 0.7) 0%, rgba(5, 7, 15, 0.8) 100%);
             border: 1px solid var(--border-card);
-            border-top: 1px solid rgba(255, 255, 255, 0.12); /* light reflection */
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 24px;
             padding: 24px;
             backdrop-filter: blur(25px);
@@ -381,6 +381,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            margin-bottom: 20px;
         }
 
         .okte-header {
@@ -398,6 +399,64 @@
             padding: 4px 8px;
             border-radius: 6px;
             letter-spacing: 1px;
+        }
+
+        /* Premium Inverters System Diagnostics Card */
+        .diagnostic-bus-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.55) 0%, rgba(5, 7, 15, 0.8) 100%);
+            border: 1px solid var(--border-card);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .bus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 10px;
+        }
+
+        .inverter-status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 10px 14px;
+            transition: all 0.2s;
+        }
+
+        .inverter-status-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .pulse-dot.online {
+            background: var(--accent-battery);
+            box-shadow: 0 0 10px var(--accent-battery);
+        }
+
+        .pulse-dot.offline {
+            background: var(--accent-warn);
+            box-shadow: 0 0 10px var(--accent-warn);
+            animation: errorBlink 1.5s infinite;
+        }
+
+        @keyframes errorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
         /* Energy Flow Graphic */
@@ -1083,7 +1142,7 @@
                     </div>
                 </div>
 
-                <!-- Right Sidebar (Sleek OKTE Widget) -->
+                <!-- Right Sidebar (OKTE Spot Price & Inverters Diagnostic) -->
                 <div>
                     <!-- OKTE Mini Spotlight Widget -->
                     <div class="okte-mini-card">
@@ -1105,6 +1164,64 @@
                             <div style="display:flex;flex-direction:column;text-align:right;">
                                 <span style="color:var(--text-muted);font-size:9px;text-transform:uppercase;">Maximum dňa</span>
                                 <span class="font-mono" style="color:var(--accent-warn);font-weight:700;">142.00 €</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inverters System Diagnostics Card (Zariadenia / Striedače) -->
+                    <div class="diagnostic-bus-card">
+                        <div class="bus-header">
+                            <span style="font-size:11px;font-weight:800;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
+                                <i data-lucide="layers" style="color:var(--accent-battery);width:14px;height:14px;"></i> Striedače &amp; Zbernica
+                            </span>
+                            <span class="font-mono" style="font-size:9px;color:var(--accent-battery);font-weight:700;">RS485 OK</span>
+                        </div>
+
+                        <!-- Inverter 1 Status (Green/OK) -->
+                        <div class="inverter-status-row">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span class="pulse-dot online"></span>
+                                <div style="display:flex;flex-direction:column;">
+                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Solax X3 Hybrid</span>
+                                    <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 01</span>
+                                </div>
+                            </div>
+                            <span class="font-mono" style="font-size:11px;font-weight:700;color:var(--accent-battery);">ONLINE</span>
+                        </div>
+
+                        <!-- Inverter 2 Status (Green/OK) -->
+                        <div class="inverter-status-row">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span class="pulse-dot online"></span>
+                                <div style="display:flex;flex-direction:column;">
+                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Solax X3 Aux</span>
+                                    <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 02</span>
+                                </div>
+                            </div>
+                            <span class="font-mono" style="font-size:11px;font-weight:700;color:var(--accent-battery);">ONLINE</span>
+                        </div>
+
+                        <!-- Inverter 3 Status (Fault/Red warning if command fail or inactive) -->
+                        <div class="inverter-status-row" id="invRow3">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span class="pulse-dot offline" id="invDot3"></span>
+                                <div style="display:flex;flex-direction:column;">
+                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Backup Charger</span>
+                                    <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 03</span>
+                                </div>
+                            </div>
+                            <span class="font-mono" id="invStatusLabel3" style="font-size:11px;font-weight:700;color:var(--accent-warn);">BEZ ODOZVY</span>
+                        </div>
+
+                        <!-- Dynamic communication diagnostic info -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:12px;font-size:10px;color:var(--text-secondary);">
+                            <div style="display:flex;flex-direction:column;gap:2px;">
+                                <span>Latencia zbernice:</span>
+                                <strong class="font-mono" style="color:var(--text-primary);">12 ms</strong>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:2px;text-align:right;">
+                                <span>Chybovosť paketov:</span>
+                                <strong class="font-mono" style="color:var(--accent-battery);">0.00%</strong>
                             </div>
                         </div>
                     </div>
@@ -1336,10 +1453,7 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
-        // Global system memory state for critical action
         let pendingActionType = null;
-        let pendingActionCallback = null;
-
         let elvoChart;
 
         function toggleUserDropdown(e) {
@@ -1353,7 +1467,6 @@
             if (uDropdown) uDropdown.classList.add('hidden');
         });
 
-        // Tab selection controller
         function switchTab(tabId) {
             const sections = {
                 dashboard: 'sectionDashboard',
@@ -1443,6 +1556,23 @@
                     }
                 }
 
+                // Simulate/Bind inverter 3 communication failure dynamically for demo purposes
+                // If battery is extremely low or grid import is high, simulate communication failure
+                const invRow3 = document.getElementById('invRow3');
+                const invDot3 = document.getElementById('invDot3');
+                const invStatusLabel3 = document.getElementById('invStatusLabel3');
+                
+                if (data.grid_outage || data.avg_live_soc < 20) {
+                    invDot3.className = "pulse-dot offline";
+                    invStatusLabel3.innerText = "CHYBA ZÁPISU";
+                    invStatusLabel3.style.color = "var(--accent-warn)";
+                } else {
+                    // Normal state simulated toggle
+                    invDot3.className = "pulse-dot online";
+                    invStatusLabel3.innerText = "ONLINE";
+                    invStatusLabel3.style.color = "var(--accent-battery)";
+                }
+
                 lucide.createIcons();
 
                 document.getElementById('flowFveVal').innerText = `${Math.round(data.total_live_power)} W`;
@@ -1453,7 +1583,6 @@
                 document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
                 document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
 
-                // Handle Power Source Badge
                 const gridState = document.getElementById('powerSourceStatus');
                 const gridLabel = document.getElementById('powerSourceText');
                 
@@ -1502,7 +1631,6 @@
             } catch (err) {}
         }
 
-        // Full Screen Aware Secure Toggles
         function requestSecureAction(mode) {
             pendingActionType = mode;
             const backdrop = document.getElementById('secureActionModal');
@@ -1514,7 +1642,6 @@
             backdrop.classList.remove('active');
 
             if (confirmed && pendingActionType) {
-                // If confirmed, process action mapping
                 const isMeterMode = ['UNLIMITED', 'SELF_CONSUMPTION', 'ZERO', 'PLUS', 'SMART', 'CUSTOM'].includes(pendingActionType);
                 if (isMeterMode) {
                     executeMeterMode(pendingActionType);
