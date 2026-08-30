@@ -73,6 +73,7 @@ class ClaimDeviceRequest(BaseModel):
     slave_id: int = 1
     has_battery: bool = True
     active_cable_cores: int = 2
+    name: str = "ElvoControll"
 
 class InverterSetupRequest(BaseModel):
     brand_id: str = ""
@@ -602,6 +603,11 @@ def claim_device(data: ClaimDeviceRequest):
     cursor.execute("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'admin')", (data.admin_username, data.admin_username, secured_password))
     cursor.execute("DELETE FROM system_settings WHERE key = 'comm_mode'")
     cursor.execute("INSERT INTO system_settings (key, value) VALUES ('comm_mode', ?)", (data.comm_mode,))
+    # Uloz meno zariadenia
+    device_name = getattr(data, 'name', '') or 'ElvoControll'
+    cursor.execute("DELETE FROM system_settings WHERE key = 'device_name'")
+    cursor.execute("INSERT INTO system_settings (key, value) VALUES ('device_name', ?)", (device_name,))
+    log_message(f"[CLAIM] Nazov zariadenia: {device_name}")
     conn.commit()
     conn.close()
     

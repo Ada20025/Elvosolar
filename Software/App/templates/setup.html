@@ -564,6 +564,7 @@
                         signal: AbortSignal.timeout(5000)
                     }).catch(e => console.warn('claim:', e.message));
 
+                    const deviceName = document.getElementById('deviceName').value.trim() || 'ElvoControll';
                     const devicePromise = fetch(`${localGatewayIP}/api/user/claim-device`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -573,7 +574,8 @@
                             model_id: model_id,
                             slave_id: 1,
                             admin_username: "admin",
-                            has_battery: has_battery
+                            has_battery: has_battery,
+                            name: deviceName
                         }),
                         signal: AbortSignal.timeout(5000)
                     }).catch(e => console.warn('claim-device:', e.message));
