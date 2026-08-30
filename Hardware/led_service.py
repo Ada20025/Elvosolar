@@ -274,6 +274,19 @@ class LedService:
                     self.set_color(g=brightness, b=brightness)
         self._run_animation(_cloud)
 
+    def anim_wifi_ap(self):
+        """AP mode - rychly cyan puls"""
+        def _ap():
+            logger.info("LED: WiFi AP mode (fast cyan pulse)")
+            while not self._stop_event.is_set():
+                for brightness in range(255, 20, -12):
+                    if self._stop_event.wait(0.008): return
+                    self.set_color(g=brightness, b=brightness)
+                for brightness in range(20, 256, 12):
+                    if self._stop_event.wait(0.008): return
+                    self.set_color(g=brightness, b=brightness)
+        self._run_animation(_ap)
+
     def anim_startup(self):
         def _startup():
             logger.info("LED: Startup sequence")

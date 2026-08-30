@@ -46,10 +46,11 @@ function resend_send_email($to, $subject, $html_body) {
         return false;
     }
     
+    // Resend API expects plain string subject (not MIME encoded)
     $payload = json_encode([
         'from' => RESEND_FROM,
         'to' => [$to],
-        'subject' => mb_encode_mimeheader($subject, 'UTF-8', 'B'),
+        'subject' => $subject,
         'html' => $html_body,
     ]);
     

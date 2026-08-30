@@ -905,6 +905,18 @@ def _save_port(port, parity):
 
 def cloud_sync_loop():
     serial_num = _get_serial_number()
+    
+    # Kontrola WiFi - ak nie je nakonfigurovane, spusti AP mode
+    if not SystemService.check_wifi_configured():
+        log_message("[WIFI] WiFi nie je nakonfigurovane - spustam AP hotspot")
+        ap_result = SystemService.start_ap_mode()
+        if ap_result.get('status') == 'success':
+            log_message(f"[WIFI] AP hotspot: {ap_result.get('ssid')} / {ap_result.get('password')}")
+            log_message(f"[WIFI] Pripojte sa na WiFi a otvorte http://192.168.4.1/setup")
+            led.anim_wifi_ap()  # Cyan puls - AP mode
+        else:
+            log_message(f"[WIFI] AP hotspot zlyhal: {ap_result.get('message')}")
+    
     while True:
         time.sleep(5)  # kazdych 5 sekund poll
         try:

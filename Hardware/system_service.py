@@ -93,6 +93,61 @@ class SystemService:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
+    def start_ap_mode(ssid: str = "ElvoControl-Setup", password: str = "elvo1234") -> dict:
+        """Vytvori WiFi hotspot pre pocatecne nastavenie zariadenia."""
+        if not shutil.which("nmcli"):
+            return {"status": "error", "message": "nmcli nie je dostupny."}
+        try:
+            # Vytvor AP hotspot
+            res = subprocess.run([
+                "nmcli", "device", "wifi", "hotspot", 
+                "ifname", "wlan0", 
+                "ssid", ssid, 
+                "password", password
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
+            
+            if res.returncode == 0:
+                return {
+                    "status": "success", 
+                    "message": f"AP hotspot vytvoreny: {ssid}",
+                    "ssid": ssid,
+                    "password": password,
+                    "ip": "192.168.4.1"
+                }
+            return {"status": "error", "message": f"AP vytvorenie zlyhalo: {res.stderr}"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    @staticmethod
+    def stop_ap_mode() -> dict:
+        """Zastavi AP hotspot."""
+        if not shutil.which("nmcli"):
+            return {"status": "error", "message": "nmcli nie je dostupny."}
+        try:
+            subprocess.run(["nmcli", "connection", "delete", "Hotspot"], 
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+            return {"status": "success", "message": "AP hotspot zastaveny"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    @staticmethod
+    def check_wifi_configured() -> bool:
+        """Skontroluje ci je WiFi nakonfigurovane."""
+        if not shutil.which("nmcli"):
+            return False
+        try:
+            res = subprocess.run([
+                "nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5)
+            # Ak je aspon jedno WiFi pripojenie okrem Hotspotu
+            for line in res.stdout.strip().split('\n'):
+                if '802-11-wireless' in line and 'Hotspot' not in line:
+                    return True
+            return False
+        except:
+            return False
+
+    @staticmethod
     def configure_cellular(apn: str) -> dict:
         if not shutil.which("nmcli"):
             return {"status": "error", "message": "nmcli nedostupný."}
