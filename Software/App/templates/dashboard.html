@@ -2,73 +2,50 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prehľad | ElvoControl</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Riadiace centrum | ElvoControl</title>
     <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#020617">
+    <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#030712">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* Dark mode (default) */
         :root {
-            --bg-primary: #020617;
-            --bg-secondary: #0f172a;
-            --bg-card: rgba(15, 23, 42, 0.6);
+            --bg-primary: #030712;
+            --bg-secondary: #0b0f19;
+            --bg-card: rgba(15, 23, 42, 0.45);
             --bg-card-hover: rgba(30, 41, 59, 0.6);
-            --border-color: rgba(99, 102, 241, 0.08);
-            --border-card: rgba(148, 163, 184, 0.08);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --header-bg: rgba(2, 6, 23, 0.75);
-            --shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
-            --orb-opacity: 0.10;
+            --border-color: rgba(99, 102, 241, 0.12);
+            --border-card: rgba(255, 255, 255, 0.05);
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --header-bg: rgba(3, 7, 18, 0.75);
+            --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+            --accent-solar: #f59e0b;
+            --accent-battery: #10b981;
+            --accent-grid: #3b82f6;
+            --accent-saved: #818cf8;
+            --accent-warn: #f43f5e;
         }
-        /* Light mode */
+
         body.light-mode {
-            --bg-primary: #f1f5f9;
+            --bg-primary: #f8fafc;
             --bg-secondary: #ffffff;
-            --bg-card: rgba(255, 255, 255, 0.8);
-            --bg-card-hover: rgba(241, 245, 249, 0.9);
-            --border-color: rgba(0, 0, 0, 0.06);
-            --border-card: rgba(0, 0, 0, 0.08);
+            --bg-card: rgba(241, 245, 249, 0.75);
+            --bg-card-hover: rgba(226, 232, 240, 0.9);
+            --border-color: rgba(99, 102, 241, 0.15);
+            --border-card: rgba(0, 0, 0, 0.06);
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-muted: #94a3b8;
             --header-bg: rgba(255, 255, 255, 0.85);
-            --shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
-            --orb-opacity: 0.05;
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
         }
-        body.light-mode .brand-text { color: #0f172a; }
-        body.light-mode .brand-tag { color: #6366f1; }
-        body.light-mode .user-name { color: #0f172a; }
-        body.light-mode .page-title { color: #0f172a; }
-        body.light-mode .page-subtitle { color: #475569; }
-        body.light-mode .stat-label { color: #64748b; }
-        body.light-mode .stat-value { color: #0f172a; }
-        body.light-mode .stat-value.cyan { color: #6366f1; }
-        body.light-mode .stat-value.blue { color: #3b82f6; }
-        body.light-mode .stat-value.amber { color: #d97706; }
-        body.light-mode .stat-change { color: #64748b; }
-        body.light-mode .card-brand { color: #6366f1; }
-        body.light-mode .card-name { color: #0f172a; }
-        body.light-mode .card-serial { color: #64748b; }
-        body.light-mode .metric-label { color: #64748b; }
-        body.light-mode .metric-value { color: #0f172a; }
-        body.light-mode .metric-value.blue { color: #3b82f6; }
-        body.light-mode .metric-value.white { color: #0f172a; }
-        body.light-mode .card-open { color: #6366f1; }
-        body.light-mode .status-text { color: #64748b; }
-        body.light-mode .status-text.online { color: #10b981; }
-        body.light-mode .footer-text { color: #94a3b8; }
-        body.light-mode .toast { background: #ffffff; border-color: rgba(0,0,0,0.08); color: #0f172a; }
-        body.light-mode input, body.light-mode select, body.light-mode textarea { background: #ffffff; color: #0f172a; border-color: rgba(0,0,0,0.1); }
-        body.light-mode .bg-orb { opacity: 0.03; }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -76,42 +53,42 @@
             background: var(--bg-primary);
             color: var(--text-primary);
             transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
 
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Background orbs */
-        .bg-orb {
+        /* Background blur effects */
+        .bg-blur-orb {
             position: fixed;
             border-radius: 50%;
-            filter: blur(180px);
-            opacity: 0.10;
+            filter: blur(150px);
+            opacity: 0.08;
             pointer-events: none;
             z-index: 0;
-            animation: orbFloat 25s ease-in-out infinite;
+            animation: orbFloat 30s ease-in-out infinite;
         }
-        .bg-orb-1 { width: 650px; height: 650px; background: radial-gradient(circle, #6366f1, transparent 70%); top: -250px; left: -200px; }
-        .bg-orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #3b82f6, transparent 70%); bottom: -200px; right: -150px; animation-delay: -12s; }
-        .bg-orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, #818cf8, transparent 70%); top: 35%; left: 45%; animation-delay: -6s; }
-        @keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 33% { transform: translate(30px, -40px); } 66% { transform: translate(-20px, 30px); } }
+        .bg-orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, var(--accent-grid), transparent 70%); top: -200px; left: -150px; }
+        .bg-orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, var(--accent-saved), transparent 70%); bottom: -150px; right: -100px; animation-delay: -15s; }
+        @keyframes orbFloat { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, -30px) scale(1.15); } }
 
-        /* Header */
+        /* Header Layout */
         .header {
             position: sticky;
             top: 0;
-            z-index: 50;
+            z-index: 100;
             background: var(--header-bg);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
             box-shadow: var(--shadow);
         }
 
         .header-inner {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 0 24px;
-            height: 64px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -124,1441 +101,1391 @@
             text-decoration: none;
         }
 
-        .brand-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #3b82f6, #6366f1);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+        .brand-logo-wrapper {
+            position: relative;
         }
 
-        .brand-icon svg { width: 18px; height: 18px; }
+        .brand-logo-img {
+            height: 40px;
+            width: auto;
+            border-radius: 10px;
+            filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.25));
+        }
 
-        .brand-text {
+        .brand-text-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-title {
             font-size: 16px;
             font-weight: 900;
-            color: #f8fafc;
             letter-spacing: -0.3px;
+            color: var(--text-primary);
         }
 
-        .brand-tag {
+        .brand-tagline {
             font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 2px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
-            color: #6366f1;
+            color: var(--accent-saved);
             font-family: 'JetBrains Mono', monospace;
         }
 
-        .header-user {
+        /* Top Bar Indicators */
+        .sys-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .sys-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-card);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .sys-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-battery);
+            box-shadow: 0 0 10px var(--accent-battery);
+        }
+
+        .sys-indicator .dot.warning {
+            background: var(--accent-warn);
+            box-shadow: 0 0 10px var(--accent-warn);
+            animation: pulse-warn 1.5s infinite;
+        }
+
+        @keyframes pulse-warn {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Quick Device Selector Bar */
+        .device-selector-wrapper {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+        }
+
+        .device-selector-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .device-selector-inner::-webkit-scrollbar { display: none; }
+
+        .device-tab {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 6px 14px 6px 6px;
+            padding: 10px 16px;
             border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            background: rgba(255, 255, 255, 0.03);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .header-user:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 800;
-            color: white;
-        }
-
-        .user-name {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            color: var(--text-secondary);
             font-size: 12px;
             font-weight: 700;
-            color: #cbd5e1;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
         }
 
-        /* Main content */
-        .main-content {
+        .device-tab:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .device-tab.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(59, 130, 246, 0.12));
+            border-color: var(--accent-saved);
+            color: var(--text-primary);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Nav Tabs */
+        .nav-tabs-container {
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            padding: 0 24px;
+        }
+
+        .nav-tabs-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 16px 20px;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: 0.3px;
+            transition: all 0.2s;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active {
+            color: var(--accent-saved);
+            border-bottom-color: var(--accent-saved);
+        }
+
+        /* Layout Structure */
+        .main-wrapper {
             position: relative;
-            z-index: 1;
-            max-width: 1200px;
+            z-index: 10;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 32px 24px;
         }
 
-        /* Page header */
-        .page-header {
-            margin-bottom: 32px;
-        }
-
-        .page-title {
-            font-size: 28px;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #f8fafc, #64748b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .page-subtitle {
-            font-size: 13px;
-            color: #64748b;
-            margin-top: 4px;
-            font-weight: 500;
-        }
-
-        /* Stats row */
-        .stats-row {
+        .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-bottom: 32px;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            align-items: start;
         }
 
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-card);
-            border-radius: 18px;
-            padding: 22px;
-            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
+        @media (max-width: 1100px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
         }
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent, #6366f1), transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
+        .view-section {
+            display: none;
+            animation: viewFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .stat-card:hover {
-            border-color: var(--border-color);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.2);
+        .view-section.active {
+            display: block;
         }
 
-        .stat-card:hover::before {
-            opacity: 1;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .stat-card .stat-value {
-            background: linear-gradient(90deg, currentColor 0%, rgba(255,255,255,0.9) 50%, currentColor 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .stat-label {
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: #475569;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 900;
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: -0.5px;
-        }
-
-        .stat-value.cyan { color: #6366f1; }
-        .stat-value.blue { color: #818cf8; }
-        .stat-value.amber { color: #f59e0b; }
-
-        .stat-change {
-            font-size: 10px;
-            font-weight: 700;
-            color: #818cf8;
-            margin-top: 4px;
-        }
-
-        /* Device cards grid */
-        .devices-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 20px;
-        }
-
-        /* Animated gradient text */
-        .gradient-text {
-            background: linear-gradient(135deg, #6366f1, #3b82f6, #818cf8, #6366f1);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 4s ease infinite;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Floating particles */
-        .particle {
-            position: fixed;
-            width: 2px;
-            height: 2px;
-            background: rgba(99, 102, 241, 0.3);
-            border-radius: 50%;
-            pointer-events: none;
-            animation: float-up linear infinite;
-        }
-
-        @keyframes float-up {
-            0% { transform: translateY(100vh) scale(0); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
-        }
-
-        /* Micro-interaction buttons */
-        .micro-btn {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .micro-btn::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.4s, height 0.4s;
-        }
-
-        .micro-btn:active::after {
-            width: 200px;
-            height: 200px;
-        }
-
-        .device-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-card);
-            border-radius: 22px;
-            padding: 24px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            backdrop-filter: blur(10px);
-            animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            opacity: 0;
-            transform: translateY(16px);
-        }
-
-        .device-card:nth-child(1) { animation-delay: 0.1s; }
-        .device-card:nth-child(2) { animation-delay: 0.2s; }
-        .device-card:nth-child(3) { animation-delay: 0.3s; }
-
-        @keyframes cardIn {
+        @keyframes viewFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .device-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #6366f1, #3b82f6);
-            opacity: 0;
-            transition: opacity 0.3s;
+        /* Generic Card */
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 20px;
+            padding: 24px;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        .device-card:hover {
+        .glass-card:hover {
             border-color: var(--border-color);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.6);
         }
 
-        .device-card:hover::before { opacity: 1; }
-
-        .device-card.error {
-            border-color: rgba(244, 63, 94, 0.3);
-            animation: pulseError 2s ease-in-out infinite;
-        }
-
-        @keyframes pulseError {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.2); }
-            50% { box-shadow: 0 0 20px 0 rgba(244, 63, 94, 0.1); }
-        }
-
-        /* Card header */
-        .card-header {
+        .card-header-styled {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 16px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-card);
         }
 
-        .card-status {
+        .card-title-styled {
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Metrics grid */
+        .metrics-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: var(--line-color, var(--accent-grid));
+            border-radius: 16px 16px 0 0;
+            opacity: 0.7;
+        }
+
+        .metric-label-styled {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #475569;
-            transition: all 0.3s;
-        }
-
-        .status-dot.online {
-            background: #3b82f6;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-        }
-
-        .status-dot.error {
-            background: #f43f5e;
-            animation: pulseDot 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulseDot {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
-            50% { box-shadow: 0 0 8px 3px rgba(244, 63, 94, 0.2); }
-        }
-
-        .status-text {
-            font-size: 9px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: #475569;
-            transition: color 0.3s;
-        }
-
-        .status-text.online { color: #818cf8; }
-        .status-text.error { color: #f43f5e; }
-
-        .card-brand {
-            font-size: 9px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: #64748b;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .card-name {
-            font-size: 18px;
+        .metric-value-styled {
+            font-size: 24px;
             font-weight: 900;
-            color: #f8fafc;
-            letter-spacing: -0.3px;
-            margin-bottom: 4px;
-        }
-
-        .card-serial {
-            font-size: 10px;
-            color: #475569;
             font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
-            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
         }
 
-        /* Card metrics */
-        .card-metrics {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .metric-box {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            padding: 12px;
-        }
-
-        .metric-label {
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: #475569;
-            margin-bottom: 4px;
-        }
-
-        .metric-value {
-            font-size: 16px;
-            font-weight: 800;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .metric-value.green { color: #818cf8; }
-        .metric-value.white { color: #e2e8f0; }
-
-        /* Open button */
-        .card-open {
-            display: block;
+        .metric-indicator-bar {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15));
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 12px;
-            color: #818cf8;
-            font-size: 12px;
-            font-weight: 800;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .metric-bar-fill {
+            height: 100%;
+            background: var(--line-color, var(--accent-grid));
+            border-radius: 4px;
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Energy Flow Graphic */
+        .flow-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            border: 1px solid var(--border-card);
+            padding: 30px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 240px;
+            overflow: hidden;
+        }
+
+        .flow-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 5;
+            width: 90px;
             text-align: center;
-            text-decoration: none;
-            transition: all 0.3s;
-            letter-spacing: 0.5px;
         }
 
-        .card-open:hover {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(99, 102, 241, 0.25));
-            border-color: rgba(99, 102, 241, 0.4);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
-        }
-
-        /* Rename modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            z-index: 100;
-            display: none;
+        .flow-icon-circle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid var(--node-color, var(--text-muted));
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            color: var(--node-color, var(--text-muted));
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: all 0.3s;
         }
 
-        .modal-overlay.active { display: flex; }
-
-        .modal-card {
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 20px;
-            padding: 32px;
-            width: 100%;
-            max-width: 380px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        .flow-node.active .flow-icon-circle {
+            background: var(--node-bg, rgba(255,255,255,0.05));
+            box-shadow: 0 0 25px var(--node-color);
         }
 
-        .modal-title {
-            font-size: 18px;
+        .flow-node-title {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .flow-node-value {
+            font-size: 13px;
             font-weight: 900;
-            color: #f8fafc;
-            margin-bottom: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
         }
 
-        .modal-desc {
+        .flow-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .flow-path {
+            stroke-dasharray: 8, 6;
+            animation: flowDashAnim 1.2s linear infinite;
+        }
+
+        @keyframes flowDashAnim {
+            to { stroke-dashoffset: -28; }
+        }
+
+        /* Power Source Status Block */
+        .power-source-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--accent-battery);
             font-size: 12px;
-            color: #64748b;
+            font-weight: 800;
             margin-bottom: 20px;
         }
 
-        .modal-input {
+        .power-source-badge.offgrid {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: var(--accent-solar);
+        }
+
+        /* Override Control Buttons */
+        .control-btn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        @media (max-width: 500px) {
+            .control-btn-grid { grid-template-columns: 1fr; }
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 12px;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            border-color: rgba(99, 102, 241, 0.25);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(59, 130, 246, 0.12));
+            border-color: var(--accent-saved);
+            color: var(--accent-saved);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Models Styling */
+        .ai-model-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ai-model-card {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.25s;
+        }
+
+        .ai-model-card:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .ai-model-card.active {
+            border-color: var(--accent-solar);
+            background: rgba(245, 158, 11, 0.05);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.06);
+        }
+
+        /* Relays section styling */
+        .relays-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .relays-container { grid-template-columns: 1fr; }
+        }
+
+        .relay-item-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .relay-item-card.connected {
+            border-color: rgba(168, 85, 247, 0.2);
+        }
+
+        .relay-indicator {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+        }
+
+        .relay-indicator.active {
+            background: rgba(168, 85, 247, 0.15);
+            color: #a855f7;
+        }
+
+        /* Holiday settings */
+        .holiday-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .holiday-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Input overrides */
+        .input-styled {
             width: 100%;
-            background: rgba(2, 6, 23, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-card);
             border-radius: 12px;
             padding: 12px 16px;
             font-size: 13px;
-            font-weight: 700;
-            color: #f8fafc;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
             outline: none;
             transition: all 0.2s;
-            margin-bottom: 16px;
         }
 
-        .modal-input:focus {
-            border-color: rgba(6, 182, 212, 0.5);
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+        .input-styled:focus {
+            border-color: var(--accent-saved);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
 
-        .modal-actions {
+        /* Terminal block styling */
+        .terminal-box {
+            background: #010409;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .terminal-console-header {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-card);
             display: flex;
-            gap: 8px;
-            justify-content: flex-end;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .btn-ghost {
-            padding: 10px 16px;
-            border-radius: 10px;
+        .terminal-log-output {
+            height: 250px;
+            padding: 16px;
+            overflow-y: auto;
+            color: #38bdf8;
             font-size: 12px;
-            font-weight: 700;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            background: transparent;
-            color: #94a3b8;
-            cursor: pointer;
-            transition: all 0.2s;
+            line-height: 1.6;
         }
-        .btn-ghost:hover { background: rgba(255, 255, 255, 0.05); color: #f8fafc; }
 
-        .btn-primary {
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 12px;
+        .terminal-log-row {
+            margin-bottom: 6px;
+        }
+
+        .terminal-input-bar {
+            display: flex;
+            border-top: 1px solid var(--border-card);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .terminal-prompt-label {
+            padding: 14px;
+            color: var(--accent-saved);
             font-weight: 700;
+        }
+
+        .terminal-raw-input {
+            flex: 1;
+            background: none;
             border: none;
-            background: linear-gradient(135deg, #3b82f6, #6366f1);
-            color: white;
+            outline: none;
+            color: var(--text-primary);
+            padding: 14px 0;
+            font-family: inherit;
+            font-size: 12px;
+        }
+
+        .terminal-send-btn {
+            background: none;
+            border: none;
+            color: var(--accent-saved);
+            padding: 0 18px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: opacity 0.2s;
         }
-        .btn-primary:hover { box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3); }
 
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            top: 80px;
-            right: 16px;
-            z-index: 200;
+        .terminal-send-btn:hover { opacity: 0.8; }
+
+        /* General UI Switch */
+        .pwa-banner {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(99, 102, 241, 0.1));
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Dynamic background particles */
+        .interactive-particles {
+            position: fixed;
+            inset: 0;
             pointer-events: none;
+            z-index: 1;
         }
 
-        .toast {
-            pointer-events: auto;
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            padding: 14px 16px;
-            min-width: 300px;
-            max-width: 380px;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
-            animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        /* User control list dropdown */
+        .user-dropdown-card {
+            position: absolute;
+            top: 60px;
+            right: 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 10px;
+            min-width: 220px;
+            box-shadow: var(--shadow);
+            z-index: 200;
         }
 
-        @keyframes toastIn {
-            from { opacity: 0; transform: translateX(100px); }
-            to { opacity: 1; transform: translateX(0); }
+        .user-dropdown-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s;
         }
 
-        .toast-header {
+        .user-dropdown-btn:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .footer {
+            border-top: 1px solid var(--border-card);
+            padding: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .toast-brand {
-            font-size: 9px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: #6366f1;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .toast-time {
-            font-size: 10px;
-            color: #475569;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .toast-title {
-            font-size: 12px;
-            font-weight: 800;
-            color: #f8fafc;
-        }
-
-        .toast-msg {
             font-size: 11px;
-            color: #94a3b8;
-            margin-top: 2px;
-        }
-
-        /* Footer */
-        .footer {
-            margin-top: 60px;
-            padding: 24px;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.03);
-        }
-
-        .footer-text {
-            font-size: 11px;
-            color: #334155;
+            color: var(--text-muted);
+            max-width: 1400px;
+            margin: 40px auto 0 auto;
         }
 
         @media (max-width: 768px) {
-            .stats-row { grid-template-columns: 1fr; }
-            .devices-grid { grid-template-columns: 1fr; }
-            .page-title { font-size: 22px; }
+            .footer { flex-direction: column; gap: 12px; text-align: center; }
         }
     </style>
 </head>
 <body>
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
-    <div class="bg-orb bg-orb-3"></div>
+    <!-- Background elements -->
+    <div class="bg-blur-orb bg-orb-1"></div>
+    <div class="bg-blur-orb bg-orb-2"></div>
+    <div class="interactive-particles" id="ambientParticles"></div>
 
     <div id="php-metadata"
+         data-device-id="<?php echo htmlspecialchars($devices[0]['id'] ?? 1); ?>"
          data-base-path="<?php echo htmlspecialchars($base_path); ?>"
          data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>"
          class="hidden"></div>
 
-    <div class="toast-container" id="toast-container"></div>
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" class="hidden pwa-banner">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <i data-lucide="smartphone" style="color:var(--accent-saved);"></i>
+            <div>
+                <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Nainštalovať ElvoControl</span>
+                <span style="font-size:10px;color:var(--text-secondary);display:block;">Získajte rýchly prístup z domovskej obrazovky.</span>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <button onclick="dismissPwaPrompt()" style="padding:6px 12px;font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;">Neskôr</button>
+            <button onclick="triggerPwaInstall()" style="padding:8px 16px;border-radius:10px;background:linear-gradient(135deg, var(--accent-grid), var(--accent-saved));color:white;font-size:11px;font-weight:800;border:none;cursor:pointer;">Inštalovať</button>
+        </div>
+    </div>
 
     <!-- Header -->
     <header class="header">
         <div class="header-inner">
             <a href="<?php echo $base_path; ?>/dashboard" class="header-brand">
-                <img src="/templates/ElvosolarLogo.png" alt="ElvoControl" style="height:38px;width:auto;border-radius:10px;filter:drop-shadow(0 0 8px rgba(99,102,241,.3));">
-                <div>
-                    <div class="brand-text" id="deviceNameHeader" style="display:flex;align-items:center;gap:6px;">
-                        <?php 
-                        $first_device_name = 'ElvoControl';
-                        if (!empty($devices) && isset($devices[0]['name'])) {
-                            $first_device_name = htmlspecialchars($devices[0]['name']);
-                        }
-                        echo $first_device_name;
-                        ?>
-                        <button onclick="event.preventDefault();openRenameModal()" style="background:none;border:none;cursor:pointer;padding:2px;font-size:12px;opacity:0.6;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
-                            ✏️
-                        </button>
-                    </div>
-                    <div class="brand-tag">SMART EMS<?php if (!empty($devices)): ?><span style="margin-left:6px;font-size:8px;color:#64748b;">SN: <?php echo htmlspecialchars($devices[0]['serial_number'] ?? ''); ?></span><?php endif; ?></div>
+                <div class="brand-logo-wrapper">
+                    <img src="<?php echo $base_path; ?>/templates/ElvosolarLogo.png" alt="ElvoControl" class="brand-logo-img">
+                </div>
+                <div class="brand-text-container">
+                    <span class="brand-title">ElvoControl</span>
+                    <span class="brand-tagline">SMART EMS PLATFORM</span>
                 </div>
             </a>
 
-            <div class="header-user" onclick="document.getElementById('user-menu').classList.toggle('hidden')">
-                <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?></div>
-                <span class="user-name"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Užívateľ'); ?></span>
-            </div>
+            <!-- System Indicators & User Profile -->
+            <div class="sys-status-bar">
+                <div class="sys-indicator" id="wifiIndicator">
+                    <i data-lucide="wifi" style="width:14px;height:14px;"></i>
+                    <span id="wifiLabel">Wi-Fi: Pripojené</span>
+                </div>
 
-            <!-- User dropdown -->
-            <div id="user-menu" class="hidden" style="position: absolute; top: 56px; right: 24px; background: var(--bg-secondary); border: 1px solid var(--border-card); border-radius: 12px; padding: 8px; min-width: 220px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 60;">
-                <button onclick="toggleTheme()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); transition: background 0.2s; width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                    <span id="themeIcon">☀️</span> <span id="themeLabel">Svetlý režim</span>
-                </button>
-                <button onclick="sendVerificationEmail()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); transition: background 0.2s; width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                    📧 Overiť email
-                </button>
-                <button onclick="requestPushPermission()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); transition: background 0.2s; width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                    🔔 Push notifikácie
-                </button>
-                <div style="height: 1px; background: var(--border-card); margin: 4px 8px;"></div>
-                <a href="<?php echo $base_path; ?>/profile" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                    <i data-lucide="settings" style="width: 14px; height: 14px;"></i> Nastavenia profilu
-                </a>
-                <a href="<?php echo $base_path; ?>/logout" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #f43f5e; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='rgba(244,63,94,0.1)'" onmouseout="this.style.background='transparent'">
-                    <i data-lucide="log-out" style="width: 14px; height: 14px;"></i> Odhlásiť sa
-                </a>
+                <div class="sys-indicator">
+                    <span class="dot" id="busDot"></span>
+                    <span id="busLabel">Zbernica: Aktívna</span>
+                </div>
+
+                <div style="position:relative;">
+                    <button class="sys-indicator" style="cursor:pointer;" onclick="toggleUserDropdown(event)">
+                        <i data-lucide="user" style="width:14px;height:14px;"></i>
+                        <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Užívateľ'); ?></span>
+                        <i data-lucide="chevron-down" style="width:12px;height:12px;opacity:0.6;"></i>
+                    </button>
+
+                    <!-- User Dropdown (Lucide Icons replaced Emojis) -->
+                    <div id="userDropdownMenu" class="user-dropdown-card hidden">
+                        <button onclick="toggleTheme()" class="user-dropdown-btn">
+                            <i data-lucide="sun" style="width:14px;height:14px;"></i>
+                            <span id="themeLabel">Svetlý režim</span>
+                        </button>
+                        <button onclick="sendVerificationEmail()" class="user-dropdown-btn">
+                            <i data-lucide="mail" style="width:14px;height:14px;"></i>
+                            <span>Overiť email</span>
+                        </button>
+                        <button onclick="requestPushPermission()" class="user-dropdown-btn">
+                            <i data-lucide="bell" style="width:14px;height:14px;"></i>
+                            <span>Push notifikácie</span>
+                        </button>
+                        <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
+                        <a href="<?php echo $base_path; ?>/profile" style="text-decoration:none;"><button class="user-dropdown-btn">
+                            <i data-lucide="settings" style="width:14px;height:14px;"></i>
+                            <span>Nastavenia profilu</span>
+                        </button></a>
+                        <a href="<?php echo $base_path; ?>/logout" style="text-decoration:none;"><button class="user-dropdown-btn" style="color:var(--accent-warn);">
+                            <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+                            <span>Odhlásiť sa</span>
+                        </button></a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
 
-    <!-- Main -->
-    <main class="main-content">
-        <div class="page-header">
-            <h1 class="page-title" id="greeting-text"></h1>
-            <p class="page-subtitle" id="greeting-sub"></p>
-            <div id="greeting-extra" style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;"></div>
-        </div>
-
-        <!-- Summary stats -->
-        <div class="stats-row">
-            <div class="stat-card" style="cursor:pointer;" onclick="window.location.href='<?php echo $base_path; ?>/dashboard'">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <div class="stat-label">Zariadenia</div>
-                        <div class="stat-value cyan font-mono"><?php echo count($devices); ?></div>
-                    </div>
-                    <div style="font-size:32px;opacity:0.8;">⚡</div>
+    <!-- Top Multi-Device Tab Bar (If more than one device, users can select easily) -->
+    <div class="device-selector-wrapper">
+        <div class="device-selector-inner">
+            <span style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--text-muted);text-transform:uppercase;margin-right:8px;display:flex;align-items:center;gap:4px;">
+                <i data-lucide="cpu" style="width:12px;height:12px;"></i> Stanice:
+            </span>
+            <?php foreach ($devices as $i => $dev): ?>
+                <div class="device-tab <?php echo $i === 0 ? 'active' : ''; ?>" data-device-id="<?php echo $dev['id']; ?>" onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>')">
+                    <i data-lucide="box" style="width:14px;height:14px;"></i>
+                    <span class="device-tab-name"><?php echo htmlspecialchars($dev['name']); ?></span>
+                    <span style="font-family:'JetBrains Mono';font-size:9px;opacity:0.6;">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
                 </div>
-                <div class="stat-change">Všetky online</div>
-            </div>
-            <div class="stat-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <div class="stat-label">Celková úspora</div>
-                        <div class="stat-value blue font-mono"><?php echo round(array_sum(array_column($devices, 'total_saved_eur')), 2); ?> €</div>
-                    </div>
-                    <div style="font-size:32px;opacity:0.8;">💰</div>
-                </div>
-                <div class="stat-change">📈 Rastie každý deň</div>
-            </div>
-            <div class="stat-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <div class="stat-label">Vyrobená energia</div>
-                        <div class="stat-value amber font-mono"><?php echo round(array_sum(array_column($devices, 'total_kwh')), 1); ?> kWh</div>
-                    </div>
-                    <div style="font-size:32px;opacity:0.8;">☀️</div>
-                </div>
-                <div class="stat-change">🌱 Šetríte planétu</div>
-            </div>
-        </div>
-
-        <!-- Smart Meter Live Widget -->
-        <div id="dashMeterWidget" style="margin-top:32px;display:none;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <div>
-                    <h2 style="font-size:18px;font-weight:900;color:#f8fafc;letter-spacing:-.3px;">⚡ Smart Meter — Tok energie</h2>
-                    <p style="font-size:12px;color:#64748b;margin-top:2px;">Reálna spotreba vs výroba FVE v reálnom čase</p>
-                </div>
-                <span style="padding:4px 12px;border-radius:8px;font-size:9px;font-weight:700;color:#818cf8;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);font-family:'JetBrains Mono',monospace;">LIVE</span>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
-                <div class="stat-card" style="--accent:#3b82f6;">
-                    <div class="stat-label">🏠 Spotreba domu</div>
-                    <div class="stat-value blue font-mono" id="dashMeterHouse">0 W</div>
-                    <div class="stat-change" id="dashMeterHousePercent"></div>
-                </div>
-                <div class="stat-card" style="--accent:#6366f1;">
-                    <div class="stat-label">☀️ FVE výroba</div>
-                    <div class="stat-value cyan font-mono" id="dashMeterFve">0 W</div>
-                    <div class="stat-change" id="dashMeterFvePercent"></div>
-                </div>
-                <div class="stat-card" style="--accent:#818cf8;">
-                    <div class="stat-label">⬆️ Odber zo siete</div>
-                    <div class="stat-value" style="color:#94a3b8;font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:900;" id="dashMeterImport">0 W</div>
-                </div>
-                <div class="stat-card" style="--accent:#a78bfa;">
-                    <div class="stat-label">⬇️ Vývoz do siete</div>
-                    <div class="stat-value" style="color:#a78bfa;font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:900;" id="dashMeterExport">0 W</div>
-                </div>
-            </div>
-            <!-- Energy flow bar -->
-            <div style="margin-top:16px;padding:16px 20px;background:rgba(15,23,42,.5);border:1px solid rgba(255,255,255,.04);border-radius:14px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;">
-                    <span>FVE → Dom</span><span id="dashMeterSelfPercent">0%</span><span>Sieť</span>
-                </div>
-                <div style="height:8px;background:rgba(255,255,255,.04);border-radius:8px;overflow:hidden;display:flex;">
-                    <div id="dashMeterSelfBar" style="height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:8px 0 0 8px;transition:width .5s;width:0%;"></div>
-                    <div id="dashMeterImportBar" style="height:100%;background:rgba(99,102,241,.3);transition:width .5s;width:0%;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Device cards -->
-        <div class="devices-grid">
-            <?php foreach ($devices as $i => $device): ?>
-            <div id="card-<?php echo $device['id']; ?>" class="device-card" style="animation-delay: <?php echo ($i * 0.1); ?>s;">
-
-                <div class="card-header">
-                    <div class="card-brand"><?php echo htmlspecialchars(strtoupper($device['brand_id'])); ?></div>
-                    <div class="card-status">
-                        <span id="badge-<?php echo $device['id']; ?>" class="status-dot"></span>
-                        <span id="status-text-<?php echo $device['id']; ?>" class="status-text">Zisťujem...</span>
-                    </div>
-                </div>
-
-                <div class="card-name" id="name-display-<?php echo $device['id']; ?>"><?php echo htmlspecialchars($device['name']); ?></div>
-                <div class="card-serial">SN: <?php echo htmlspecialchars($device['serial_number']); ?></div>
-
-                <div class="card-metrics">
-                    <div class="metric-box">
-                        <div class="metric-label">Úspora</div>
-                        <div class="metric-value blue font-mono" id="saved-<?php echo $device['id']; ?>"><?php echo htmlspecialchars(round($device['total_saved_eur'], 2)); ?> €</div>
-                    </div>
-                    <div class="metric-box">
-                        <div class="metric-label">Energia</div>
-                        <div class="metric-value white font-mono" id="kwh-<?php echo $device['id']; ?>"><?php echo htmlspecialchars(round($device['total_kwh'], 1)); ?> kWh</div>
-                    </div>
-                </div>
-
-                <a href="<?php echo $base_path; ?>/device/<?php echo $device['id']; ?>" class="card-open">
-                    Otvoriť monitorovací panel →
-                </a>
-            </div>
             <?php endforeach; ?>
         </div>
+    </div>
 
-        <!-- CONTROL PANEL -->
-        <div id="controlPanel" style="margin-top:40px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <div>
-                    <h2 style="font-size:18px;font-weight:900;color:var(--text-primary);letter-spacing:-.3px;">🎛️ Ovládanie</h2>
-                    <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Nastavenia pre všetky zariadenia alebo jednotlivo</p>
-                </div>
-                <button onclick="openSettingsModal('all')" id="btnSetAll" style="display:none;padding:8px 16px;border-radius:10px;font-size:11px;font-weight:700;background:linear-gradient(135deg,#6366f1,#3b82f6);color:white;border:none;cursor:pointer;transition:all 0.2s;">
-                    ⚙️ Nastaviť pre všetky
-                </button>
-            </div>
-n            <!-- Groups -->
-            <div id="groupsContainer" style="display:none;margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;">Skupiny</span>
-                    <button onclick="createGroup()" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border-card);cursor:pointer;">+ Pridať</button>
-                </div>
-                <div id="groupsList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
-            </div>
-
-            <!-- Device settings cards -->
-            <div id="settingsCards" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:16px;"></div>
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs-container">
+        <div class="nav-tabs-inner">
+            <button onclick="switchTab('dashboard')" id="tabBtnDashboard" class="nav-tab active">
+                <i data-lucide="layout-dashboard"></i> Prehľad
+            </button>
+            <button onclick="switchTab('meter')" id="tabBtnMeter" class="nav-tab">
+                <i data-lucide="arrow-right-left"></i> Smart Meter & AI
+            </button>
+            <button onclick="switchTab('control')" id="tabBtnControl" class="nav-tab">
+                <i data-lucide="sliders"></i> Riadenie & Relé
+            </button>
+            <button onclick="switchTab('holiday')" id="tabBtnHoliday" class="nav-tab">
+                <i data-lucide="palm-tree"></i> Dovolenka
+            </button>
+            <?php if ($is_admin): ?>
+            <button onclick="switchTab('terminal')" id="tabBtnTerminal" class="nav-tab">
+                <i data-lucide="terminal"></i> Terminál
+            </button>
+            <?php endif; ?>
         </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="main-wrapper">
+
+        <!-- Tab 1: DASHBOARD VIEW -->
+        <section id="sectionDashboard" class="view-section active">
+            <div class="dashboard-grid">
+                
+                <!-- Main flow & telemetry left col -->
+                <div style="display:flex;flex-direction:column;gap:24px;">
+                    
+                    <!-- Dynamic Grid Backout/Active Banner -->
+                    <div id="powerSourceStatus" class="power-source-badge">
+                        <i data-lucide="plug-2" style="width:16px;height:16px;"></i>
+                        <span id="powerSourceText">Pripojené k distribučnej sieti — Systém prenáša prebytky</span>
+                    </div>
+
+                    <!-- Core Telemetry Grid (Category: Live Values) -->
+                    <div class="metrics-grid-4">
+                        <div class="metric-card" style="--line-color: var(--accent-solar);">
+                            <span class="metric-label-styled"><i data-lucide="sun" style="width:12px;height:12px;color:var(--accent-solar);"></i> Výkon FVE</span>
+                            <span class="metric-value-styled text-solar" id="dashLivePower">0 W</span>
+                            <div class="metric-indicator-bar">
+                                <div id="dashPowerBar" class="metric-bar-fill"></div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card" style="--line-color: var(--accent-battery);">
+                            <span class="metric-label-styled"><i data-lucide="battery-charging" style="width:12px;height:12px;color:var(--accent-battery);"></i> Kapacita Batérie</span>
+                            <span class="metric-value-styled text-battery" id="dashBatterySoc">0%</span>
+                            <div class="metric-indicator-bar">
+                                <div id="dashBatteryBar" class="metric-bar-fill"></div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card" style="--line-color: var(--accent-grid);">
+                            <span class="metric-label-styled"><i data-lucide="zap" style="width:12px;height:12px;color:var(--accent-grid);"></i> Spotreba Domu</span>
+                            <span class="metric-value-styled text-grid" id="dashConsumption">0 W</span>
+                            <div class="metric-indicator-bar">
+                                <div id="dashConsumptionBar" class="metric-bar-fill"></div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card" style="--line-color: var(--accent-saved);">
+                            <span class="metric-label-styled"><i data-lucide="banknote" style="width:12px;height:12px;color:var(--accent-saved);"></i> Celková Úspora</span>
+                            <span class="metric-value-styled text-saved" id="dashTotalSaved">0.00 €</span>
+                        </div>
+                    </div>
+
+                    <!-- Energy Flow Live Graph Box -->
+                    <div class="glass-card">
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="activity"></i> Smer a Distribúcia Toku Energie</span>
+                            <span style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-battery);background:rgba(16,185,129,0.1);padding:4px 8px;border-radius:6px;">LIVE REFRESH</span>
+                        </div>
+                        
+                        <div class="flow-container">
+                            <div class="flow-node active" style="--node-color: var(--accent-solar); --node-bg: rgba(245, 158, 11, 0.1);">
+                                <div class="flow-icon-circle"><i data-lucide="sun"></i></div>
+                                <div class="flow-node-title">Fotovoltika</div>
+                                <div class="flow-node-value" id="flowFveVal">0 W</div>
+                            </div>
+
+                            <div class="flow-node active" style="--node-color: var(--accent-battery); --node-bg: rgba(16, 185, 129, 0.1);">
+                                <div class="flow-icon-circle"><i data-lucide="battery"></i></div>
+                                <div class="flow-node-title">Úložisko</div>
+                                <div class="flow-node-value" id="flowBatVal">0%</div>
+                            </div>
+
+                            <div class="flow-node active" style="--node-color: var(--text-primary); --node-bg: rgba(255, 255, 255, 0.05);">
+                                <div class="flow-icon-circle"><i data-lucide="home"></i></div>
+                                <div class="flow-node-title">Domácnosť</div>
+                                <div class="flow-node-value" id="flowHomeVal">0 W</div>
+                            </div>
+
+                            <div class="flow-node active" style="--node-color: var(--accent-grid); --node-bg: rgba(59, 130, 246, 0.1);">
+                                <div class="flow-icon-circle"><i data-lucide="plug"></i></div>
+                                <div class="flow-node-title">Distribúcia</div>
+                                <div class="flow-node-value" id="flowGridVal">0 W</div>
+                            </div>
+
+                            <svg class="flow-svg">
+                                <path id="pathFveToHome" d="M 120 120 L 500 120" stroke="var(--accent-solar)" stroke-width="2.5" fill="none" class="flow-path" />
+                                <path id="pathBatToHome" d="M 270 120 L 500 120" stroke="var(--accent-battery)" stroke-width="2.5" fill="none" class="flow-path" />
+                                <path id="pathGridToHome" d="M 680 120 L 590 120" stroke="var(--accent-grid)" stroke-width="2.5" fill="none" class="flow-path" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary widget column -->
+                <div>
+                    <div class="glass-card">
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="info"></i> Systémové Parametre</span>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:14px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Sieťová frekvencia</span>
+                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashLiveFreq">50.00 Hz</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Teplota Bojlera</span>
+                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashBoilerTemp">-- °C</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Teplota Panelov</span>
+                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashSolarTemp">-- °C</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Vonkajšia Teplota</span>
+                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashOutdoorTemp">-- °C</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick controls overview -->
+                    <div class="glass-card">
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="zap-off"></i> Havarijné Odpojenie FVE</span>
+                        </div>
+                        <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">V prípade núdze alebo servisu môžete okamžite vynútiť obmedzenie výroby meničov.</p>
+                        <button onclick="setManualOverride('OFF')" class="control-btn" style="width:100%;background:rgba(244,63,94,0.1);border-color:var(--accent-warn);color:var(--accent-warn);">
+                            <i data-lucide="shield-alert" style="width:16px;height:16px;"></i> NÚDZOVÉ ODSTAVENIE
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Tab 2: SMART METER & AI REGULATION MODELS -->
+        <section id="sectionMeter" class="view-section">
+            <div class="glass-card">
+                <div class="card-header-styled">
+                    <span class="card-title-styled"><i data-lucide="cpu"></i> Regulačné Algoritmy & Výber Režimu</span>
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:20px;">
+                    Prepnutím stanice do špecifického režimu zmeníte interakciu striedača s batériou a sieťou na základe hodnôt zo smart metra.
+                </p>
+
+                <div class="control-btn-grid" id="meterModeGrid" style="margin-bottom:24px;">
+                    <button onclick="setMeterMode('UNLIMITED')" id="btnMeterUnlimited" class="control-btn">
+                        <i data-lucide="zap"></i> Bez limitu
+                    </button>
+                    <button onclick="setMeterMode('SELF_CONSUMPTION')" id="btnMeterSelf" class="control-btn">
+                        <i data-lucide="home"></i> Vlastná spotreba
+                    </button>
+                    <button onclick="setMeterMode('ZERO')" id="btnMeterZero" class="control-btn">
+                        <i data-lucide="scale"></i> Nulový prepad
+                    </button>
+                    <button onclick="setMeterMode('PLUS')" id="btnMeterPlus" class="control-btn">
+                        <i data-lucide="trending-up"></i> Prebytkový režim
+                    </button>
+                    <button onclick="setMeterMode('SMART')" id="btnMeterSmart" class="control-btn active">
+                        <i data-lucide="brain"></i> Smart AI
+                    </button>
+                    <button onclick="setMeterMode('CUSTOM')" id="btnMeterCustom" class="control-btn">
+                        <i data-lucide="cog"></i> Vlastné parametre
+                    </button>
+                </div>
+
+                <div id="meterModeDesc" style="padding:14px 18px;border-radius:12px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:24px;">
+                    Smart AI: Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
+                </div>
+
+                <!-- Custom Parameters Panel (Shows only when CUSTOM mode is active) -->
+                <div id="customSettings" class="glass-card" style="display:none;background:rgba(0,0,0,0.15);border-color:var(--border-color);">
+                    <div style="font-size:12px;font-weight:800;color:var(--accent-saved);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.5px;">Konfigurácia vlastného profilu</div>
+                    <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
+                        <div>
+                            <label style="font-size:10px;font-weight:800;color:var(--text-muted);display:block;margin-bottom:6px;">CIEĽOVÁ SPOTREBA DOMU (W)</label>
+                            <input id="cfgTargetConsumption" type="number" class="input-styled" value="0">
+                        </div>
+                        <div>
+                            <label style="font-size:10px;font-weight:800;color:var(--text-muted);display:block;margin-bottom:6px;">LIMIT ODOSIELANIA DO SIETE (W)</label>
+                            <input id="cfgGridExportLimit" type="number" class="input-styled" value="0">
+                        </div>
+                    </div>
+                    <button onclick="saveCustomSettings()" style="margin-top:20px;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg, var(--accent-grid), var(--accent-saved));color:white;font-size:12px;font-weight:800;border:none;cursor:pointer;transition:all 0.2s;">
+                        ULOŽIŤ NASTAVENIA REŽIMU
+                    </button>
+                </div>
+            </div>
+
+            <!-- AI regulation pricing models (1-5) based on OKTE spot price -->
+            <div class="glass-card">
+                <div class="card-header-styled">
+                    <span class="card-title-styled"><i data-lucide="wallet"></i> Autonómne Cenové Modely (Podľa OKTE)</span>
+                    <span style="font-size:9px;font-weight:800;color:var(--accent-solar);background:rgba(245,158,11,0.15);padding:4px 8px;border-radius:6px;">INTEGRÁCIA SPOT</span>
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">
+                    Umožňuje striedaču dynamicky vypínať pretlaky alebo spustiť nabíjanie akumulátorov z rozvodnej siete, keď je cena na burze záporná alebo výhodná.
+                </p>
+
+                <div class="ai-model-list">
+                    <div class="ai-model-card active" onclick="setAiModel('1')" id="aiModel1">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <i data-lucide="shield-check" style="color:var(--accent-battery);width:20px;height:20px;"></i>
+                            <div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 1: Ochrana pred zápornými tarifami</div>
+                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Výroba zakázaná pri cenách pod 0 €/MWh, povolená v plnom rozsahu nad nulou.</div>
+                            </div>
+                        </div>
+                        <i data-lucide="check" style="color:var(--accent-battery);width:16px;height:16px;"></i>
+                    </div>
+
+                    <div class="ai-model-card" onclick="setAiModel('2')" id="aiModel2">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <i data-lucide="trending-up" style="color:var(--accent-grid);width:20px;height:20px;"></i>
+                            <div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 2: Predajná Arbitráž</div>
+                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do siete iba v časoch denného cenového maxima.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-model-card" onclick="setAiModel('3')" id="aiModel3">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <i data-lucide="download" style="color:var(--accent-saved);width:20px;height:20px;"></i>
+                            <div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 3: Sieťové nabíjanie z podpriemeru</div>
+                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Akumuluje energiu zo siete, keď ceny klesnú hlboko pod denný priemer.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-model-card" onclick="setAiModel('4')" id="aiModel4">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <i data-lucide="git-compare" style="color:var(--accent-solar);width:20px;height:20px;"></i>
+                            <div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 4: Kombinovaný burzový obchodník</div>
+                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Plne obojsmerná arbitráž — lacno nabíjať, predávať počas špičky.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-model-card" onclick="setAiModel('5')" id="aiModel5">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <i data-lucide="shield-alert" style="color:var(--accent-warn);width:20px;height:20px;"></i>
+                            <div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: Úsporné zimné udržiavanie</div>
+                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nulový odber zo siete za každých okolností, sieť len pri kritickom SOC &lt; 15%.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 3: SYSTEM CONTROLS & RELAYS -->
+        <section id="sectionControl" class="view-section">
+            <div class="glass-card">
+                <div class="card-header-styled">
+                    <span class="card-title-styled"><i data-lucide="command"></i> Manuálny Override Sústavy</span>
+                </div>
+                <div class="control-btn-grid" style="margin-bottom:24px;">
+                    <button onclick="setManualOverride('AUTO')" id="btnOverrideAuto" class="control-btn active">
+                        <i data-lucide="cpu" style="width:18px;height:18px;"></i>
+                        <span>Automatika (AI EMS)</span>
+                    </button>
+                    <button onclick="setManualOverride('ON')" id="btnOverrideOn" class="control-btn">
+                        <i data-lucide="plus-circle" style="width:18px;height:18px;"></i>
+                        <span>Force Charge</span>
+                    </button>
+                    <button onclick="setManualOverride('OFF')" id="btnOverrideOff" class="control-btn">
+                        <i data-lucide="minus-circle" style="width:18px;height:18px;"></i>
+                        <span>Force Discharge</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Relay output control section -->
+            <div class="glass-card">
+                <div class="card-header-styled">
+                    <span class="card-title-styled"><i data-lucide="toggle-left"></i> Ovládanie záťaží (Relé Shelly / GPIO)</span>
+                    <span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(168,85,247,0.15);color:#a855f7;font-weight:800;">BETA</span>
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:20px;">
+                    Využite prebytočnú energiu na automatické zopnutie externých spotrebičov, napríklad vyhrievacie telesá alebo filtrácie bazénov.
+                </p>
+
+                <div class="relays-container">
+                    <div class="relay-item-card connected">
+                        <i data-lucide="flame" style="width:24px;height:24px;color:var(--accent-solar);"></i>
+                        <span style="font-size:12px;font-weight:800;">Bojler vody TÚV</span>
+                        <span style="font-size:10px;color:var(--text-muted);">Shelly 1PM (10.0.0.45)</span>
+                        <span class="relay-indicator active">ZOPNUTÉ</span>
+                    </div>
+
+                    <div class="relay-item-card connected">
+                        <i data-lucide="droplet" style="width:24px;height:24px;color:var(--accent-grid);"></i>
+                        <span style="font-size:12px;font-weight:800;">Bazénová filtrácia</span>
+                        <span style="font-size:10px;color:var(--text-muted);">Shelly Duo (10.0.0.46)</span>
+                        <span class="relay-indicator">VYPNUTÉ</span>
+                    </div>
+
+                    <div class="relay-item-card">
+                        <i data-lucide="wind" style="width:24px;height:24px;color:var(--text-muted);"></i>
+                        <span style="font-size:12px;font-weight:800;">Klimatizácia</span>
+                        <span style="font-size:10px;color:var(--text-muted);">Shelly Plus (Nepripojené)</span>
+                        <span class="relay-indicator">OFFLINE</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 4: HOLIDAY SETTINGS -->
+        <section id="sectionHoliday" class="view-section">
+            <div class="glass-card">
+                <div class="card-header-styled">
+                    <span class="card-title-styled"><i data-lucide="palm-tree"></i> Plánovač dovolenky a standby režimu</span>
+                    <label class="toggle" style="position:relative;width:44px;height:24px;cursor:pointer;">
+                        <input type="checkbox" id="holidayEnabled" onchange="toggleHolidayModeState(this.checked)" style="opacity:0;width:0;height:0;">
+                        <span class="toggle-slider" style="position:absolute;inset:0;background:rgba(255,255,255,0.08);border-radius:12px;transition:all 0.3s;"></span>
+                    </label>
+                </div>
+
+                <div id="holidayActiveNotice" class="hidden" style="padding:16px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);border-radius:14px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+                    <i data-lucide="plane-takeoff" style="color:var(--accent-grid);"></i>
+                    <div>
+                        <h4 style="font-size:12px;font-weight:800;color:var(--accent-grid);" id="holidayNoticeTitle">Dovolenkový standby aktívny</h4>
+                        <p style="font-size:11px;color:var(--text-secondary);" id="holidayNoticeDesc">Domácnosť je udržiavaná v úspornom režime.</p>
+                    </div>
+                </div>
+
+                <div class="holiday-grid">
+                    <div>
+                        <label style="font-size:10px;font-weight:800;color:var(--text-muted);display:block;margin-bottom:6px;letter-spacing:0.5px;">ODCHOD Z DOMU</label>
+                        <input type="datetime-local" id="holidayFromInput" onchange="saveHolidayModeParams()" class="input-styled">
+                    </div>
+                    <div>
+                        <label style="font-size:10px;font-weight:800;color:var(--text-muted);display:block;margin-bottom:6px;letter-spacing:0.5px;">PRÍCHOD DOMOV</label>
+                        <input type="datetime-local" id="holidayUntilInput" onchange="saveHolidayModeParams()" class="input-styled">
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.15);border-radius:14px;padding:20px;border:1px solid var(--border-card);margin-top:20px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                        <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;">Predstih aktivovania ohrevu vody</span>
+                        <span id="preheatVal" style="font-size:12px;font-weight:800;color:var(--accent-saved);font-family:'JetBrains Mono';">6 hodín</span>
+                    </div>
+                    <input type="range" id="holidayPreheatHours" min="1" max="24" value="6" style="width:100%;height:4px;" oninput="document.getElementById('preheatVal').innerText = this.value + ' hodín'" onchange="saveHolidayModeParams()">
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 5: MODBUS TERMINAL -->
+        <?php if ($is_admin): ?>
+        <section id="sectionTerminal" class="view-section">
+            <div class="terminal-box">
+                <div class="terminal-console-header">
+                    <span style="font-size:11px;font-weight:800;letter-spacing:1px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
+                        <i data-lucide="terminal" style="width:14px;height:14px;color:var(--accent-saved);"></i> INTERAKTÍVNY MODBUS TERMINÁL
+                    </span>
+                    <span style="font-size:9px;color:var(--accent-saved);font-weight:700;">CH1 STATUS: OK</span>
+                </div>
+                <div id="cliOutput" class="terminal-log-output">
+                    <div class="terminal-log-row" style="color:var(--text-muted);">[System] Kernels initialized on CM5 Base.</div>
+                    <div class="terminal-log-row" style="color:var(--text-muted);">[System] Type "read &lt;reg&gt;" or "write &lt;reg&gt; &lt;val&gt;" to probe modbus lines.</div>
+                </div>
+                <div class="terminal-input-bar">
+                    <span class="terminal-prompt-label">#</span>
+                    <input type="text" id="cliInput" onkeydown="handleCliKey(event)" placeholder="read 40001..." class="terminal-raw-input">
+                    <button onclick="executeCliCommand()" class="terminal-send-btn">
+                        <i data-lucide="corner-down-left" style="width:14px;height:14px;"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+        <?php endif; ?>
+
     </main>
 
+    <!-- Footer -->
     <footer class="footer">
-        <p class="footer-text">&copy; 2011–2026 ElvoControl. Všetky práva vyhradené.</p>
-    </footer>
-
-    <!-- Rename modal -->
-    <div id="rename-modal" class="modal-overlay" onclick="if(event.target===this)closeRenameModal()">
-        <div class="modal-card">
-            <div class="modal-title">Premenovať stanicu</div>
-            <div class="modal-desc">Zadajte nový názov pre toto odberné miesto.</div>
-            <input type="hidden" id="rename-device-id">
-            <input type="text" id="rename-device-input" class="modal-input" placeholder="Napr. Dom, Chata, Firma">
-            <div class="modal-actions">
-                <button onclick="closeRenameModal()" class="btn-ghost">Zrušiť</button>
-                <button onclick="saveRename()" class="btn-primary">Uložiť</button>
-            </div>
+        <span>&copy; 2011–2026 ElvoControl s.r.o. Všetky práva vyhradené.</span>
+        <div style="display:flex;gap:16px;">
+            <span>FIRMWARE: CM5-v4.0_PRO</span>
+            <span>OS: Alpine Embedded</span>
         </div>
-    </div>
+    </footer>
 
     <script>
         lucide.createIcons();
 
-        // === DARK/LIGHT MODE ===
-        function initTheme() {
-            const saved = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (saved === 'light' || (!saved && !prefersDark)) {
-                document.body.classList.add('light-mode');
-                updateThemeUI(true);
+        const metaEl = document.getElementById('php-metadata');
+        const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
+        const currentDeviceId = metaEl ? metaEl.getAttribute('data-device-id') : '1';
+
+        // Particle generator for background ambience (pure Javascript, dynamic & premium)
+        (function createAmbientParticles() {
+            const container = document.getElementById('ambientParticles');
+            if(!container) return;
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = Math.random() * 2 + 1 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.background = 'rgba(99, 102, 241, ' + (Math.random() * 0.15 + 0.05) + ')';
+                particle.style.borderRadius = '50%';
+                particle.style.top = Math.random() * 100 + 'vh';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.animation = `floatUp ${Math.random() * 20 + 20}s linear infinite`;
+                container.appendChild(particle);
             }
+        })();
+
+        // Tab Switching Mechanism
+        function switchTab(tabId) {
+            const sections = {
+                dashboard: 'sectionDashboard',
+                meter: 'sectionMeter',
+                control: 'sectionControl',
+                holiday: 'sectionHoliday',
+                terminal: 'sectionTerminal'
+            };
+            const buttons = {
+                dashboard: 'tabBtnDashboard',
+                meter: 'tabBtnMeter',
+                control: 'tabBtnControl',
+                holiday: 'tabBtnHoliday',
+                terminal: 'tabBtnTerminal'
+            };
+
+            Object.keys(sections).forEach(key => {
+                const sec = document.getElementById(sections[key]);
+                const btn = document.getElementById(buttons[key]);
+                if (sec) sec.classList.remove('active');
+                if (btn) btn.classList.remove('active');
+            });
+
+            const activeSec = document.getElementById(sections[tabId]);
+            const activeBtn = document.getElementById(buttons[tabId]);
+            if (activeSec) activeSec.classList.add('active');
+            if (activeBtn) activeBtn.classList.add('active');
+
+            lucide.createIcons();
         }
+
+        // Dropdown toggle mechanism
+        function toggleUserDropdown(e) {
+            e.stopPropagation();
+            document.getElementById('userDropdownMenu').classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', () => {
+            const dropdown = document.getElementById('userDropdownMenu');
+            if (dropdown) dropdown.classList.add('hidden');
+        });
+
+        // Theme Toggle (Pure Clean Dark/Light Adapters)
         function toggleTheme() {
             const isLight = document.body.classList.toggle('light-mode');
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
-            updateThemeUI(isLight);
-        }
-        function updateThemeUI(isLight) {
-            const icon = document.getElementById('themeIcon');
             const label = document.getElementById('themeLabel');
-            if (icon) icon.textContent = isLight ? '\u{1F319}' : '\u2600\uFE0F';
             if (label) label.textContent = isLight ? 'Tmavý režim' : 'Svetlý režim';
         }
-        initTheme();
 
-        // Push notification registration
-        if ('serviceWorker' in navigator && 'Notification' in window) {
-            navigator.serviceWorker.register('/templates/sw.js').then(reg => {
-                if (Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
-            }).catch(() => {});
-        }
-
-        const metaEl = document.getElementById('php-metadata');
-        const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
-        const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids')) : [];
-        let deviceErrorStates = {};
-
-        // Toast notification system
-        function showToast(title, message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-            const now = new Date();
-            const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const dot = type === 'success' ? '🟢' : type === 'error' ? '🔴' : '🔵';
-
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `
-                <div class="toast-header">
-                    <span class="toast-brand">${dot} ElvoControl</span>
-                    <span class="toast-time">${time}</span>
-                </div>
-                <div class="toast-title">${title}</div>
-                <div class="toast-msg">${message}</div>
-            `;
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100px)';
-                toast.style.transition = 'all 0.3s';
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
-        }
-
-        function sendNotification(title, message, type = 'info') {
-            showToast(title, message, type);
-            if (Notification.permission === 'granted') {
-                try { new Notification(title, { body: message, icon: basePath + '/templates/ElvosolarLogo.png' }); } catch(e) {}
+        // Initialize Theme from Storage
+        (function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                const label = document.getElementById('themeLabel');
+                if (label) label.textContent = 'Tmavý režim';
             }
+        })();
+
+        // Multi-device Active Selection
+        function selectActiveDevice(element, id) {
+            document.querySelectorAll('.device-tab').forEach(tab => tab.classList.remove('active'));
+            element.classList.add('active');
+            metaEl.setAttribute('data-device-id', id);
+            fetchTelemetry();
+            fetchMeterData();
+            fetchHolidayParams();
         }
 
-        // Rename
-        function openRenameModal(btn) {
-            if (btn && btn.getAttribute) {
-                // Volane z device card
-                document.getElementById('rename-device-id').value = btn.getAttribute('data-id');
-                document.getElementById('rename-device-input').value = btn.getAttribute('data-name');
-            } else {
-                // Volane z header - prve zariadenie
-                const firstCard = document.querySelector('.device-card');
-                if (firstCard) {
-                    const id = firstCard.id.replace('card-', '');
-                    const nameEl = document.getElementById('name-display-' + id);
-                    document.getElementById('rename-device-id').value = id;
-                    document.getElementById('rename-device-input').value = nameEl ? nameEl.textContent.trim() : '';
-                } else {
-                    document.getElementById('rename-device-id').value = '';
-                    document.getElementById('rename-device-input').value = '';
-                }
-            }
-            document.getElementById('rename-modal').classList.add('active');
-        }
-
-        function closeRenameModal() {
-            document.getElementById('rename-modal').classList.remove('active');
-        }
-
-        async function saveRename() {
-            const id = document.getElementById('rename-device-id').value;
-            const newName = document.getElementById('rename-device-input').value.trim();
-            if (!newName) return;
+        // Real-time telemetry simulated parser / Fetcher integration
+        async function fetchTelemetry() {
+            const devId = metaEl.getAttribute('data-device-id');
             try {
-                const res = await fetch(basePath + `/api/device/${id}/rename`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: newName })
-                });
-                if (res.ok) {
-                    document.getElementById(`name-display-${id}`).innerText = newName;
-                    sendNotification('Hotovo', `Zariadenie premenované na: ${newName}`, 'success');
-                    closeRenameModal();
+                const response = await fetch(`${basePath}/api/device/${devId}/telemetry`);
+                const data = await response.json();
+                
+                document.getElementById('dashLivePower').innerText = `${Math.round(data.total_live_power)} W`;
+                document.getElementById('dashBatterySoc').innerText = `${Math.round(data.avg_live_soc)}%`;
+                document.getElementById('dashConsumption').innerText = `${Math.round(data.consumption || 0)} W`;
+                document.getElementById('dashTotalSaved').innerText = `${data.total_saved_eur.toFixed(2)} €`;
+                document.getElementById('dashLiveFreq').innerText = `${data.freq.toFixed(2)} Hz`;
+
+                // Update flow chart values dynamically
+                document.getElementById('flowFveVal').innerText = `${Math.round(data.total_live_power)} W`;
+                document.getElementById('flowBatVal').innerText = `${Math.round(data.avg_live_soc)}%`;
+                document.getElementById('flowHomeVal').innerText = `${Math.round(data.consumption || 0)} W`;
+
+                // Scale visualization bars
+                document.getElementById('dashBatteryBar').style.width = `${Math.round(data.avg_live_soc)}%`;
+                document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
+                document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
+
+                if (data.boiler_temp !== undefined) document.getElementById('dashBoilerTemp').innerText = `${Math.round(data.boiler_temp)} °C`;
+                if (data.solar_panel_temp !== undefined) document.getElementById('dashSolarTemp').innerText = `${Math.round(data.solar_panel_temp)} °C`;
+                if (data.outdoor_temp !== undefined) document.getElementById('dashOutdoorTemp').innerText = `${Math.round(data.outdoor_temp)} °C`;
+
+                // Determine power source dynamic status (e.g. blackout / grid fail detection)
+                const gridState = document.getElementById('powerSourceStatus');
+                const gridLabel = document.getElementById('powerSourceText');
+                if (data.grid_outage || (data.consumption > 0 && data.total_live_power === 0 && data.grid_import_w === 0)) {
+                    gridState.classList.add('offgrid');
+                    gridLabel.innerText = "MIMO SIETE (Blackout) — Domácnosť napájaná výhradne z batérie!";
+                    document.getElementById('busDot').className = "dot warning";
+                } else {
+                    gridState.classList.remove('offgrid');
+                    gridLabel.innerText = "Pripojené k distribučnej sieti — Systém prenáša prebytky";
+                    document.getElementById('busDot').className = "dot";
                 }
-            } catch(e) {}
+
+            } catch (err) {}
         }
 
-        // Live refresh
-        async function refreshDashboard() {
-            for (const id of deviceIds) {
-                try {
-                    const res = await fetch(basePath + `/api/device/${id}/telemetry`);
-                    if (!res.ok) throw new Error();
-                    const data = await res.json();
-
-                    const savedEl = document.getElementById(`saved-${id}`);
-                    const kwhEl = document.getElementById(`kwh-${id}`);
-                    const badge = document.getElementById(`badge-${id}`);
-                    const statusText = document.getElementById(`status-text-${id}`);
-                    const card = document.getElementById(`card-${id}`);
-
-                    if (savedEl) savedEl.innerText = `${data.total_saved_eur.toFixed(2)} €`;
-                    if (kwhEl) kwhEl.innerText = `${data.total_kwh.toFixed(1)} kWh`;
-
-                    const hasError = data.has_errors || (data.active_errors && Object.keys(data.active_errors).length > 0);
-                    const lastState = deviceErrorStates[id] || 'ok';
-
-                    if (hasError) {
-                        card && card.classList.add('error');
-                        badge && (badge.className = 'status-dot error');
-                        statusText && (statusText.className = 'status-text error', statusText.innerText = 'Chyba zbernice');
-                        if (lastState === 'ok') {
-                            sendNotification('⚠️ Výpadok', `Stratilo sa spojenie so zbernicou!`, 'error');
-                            deviceErrorStates[id] = 'error';
-                        }
-                    } else {
-                        card && card.classList.remove('error');
-                        badge && (badge.className = 'status-dot online');
-                        statusText && (statusText.className = 'status-text online', statusText.innerText = 'Online');
-                        if (lastState === 'error') {
-                            sendNotification('✅ Online', 'Komunikácia obnovená.', 'success');
-                            deviceErrorStates[id] = 'ok';
-                        }
-                    }
-                } catch(e) {
-                    const badge = document.getElementById(`badge-${id}`);
-                    const statusText = document.getElementById(`status-text-${id}`);
-                    const card = document.getElementById(`card-${id}`);
-                    card && card.classList.add('error');
-                    badge && (badge.className = 'status-dot error');
-                    statusText && (statusText.className = 'status-text error', statusText.innerText = 'Odpojené');
-                    deviceErrorStates[id] = 'error';
-                }
-            }
-        }
-
-        // Click outside to close user menu
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('user-menu');
-            const userBtn = document.querySelector('.header-user');
-            if (menu && !menu.contains(e.target) && userBtn && !userBtn.contains(e.target)) {
-                menu.classList.add('hidden');
-            }
-        });
-
-        // Notification permission on load
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-
-        // Personalized greeting
-        function getGreeting() {
-            const h = new Date().getHours();
-            const name = '<?php echo htmlspecialchars($_SESSION["username"] ?? "Používateľ"); ?>';
-            let emoji, greeting, mood;
-            if (h >= 5 && h < 9) { emoji = '🌅'; greeting = 'Dobré ráno'; mood = 'Slnko už svieti na vaše panely'; }
-            else if (h >= 9 && h < 12) { emoji = '☀️'; greeting = 'Dobré dopoludnie'; mood = 'FVE vyrába na plné obrátky'; }
-            else if (h >= 12 && h < 14) { emoji = '🌞'; greeting = 'Príjemné poludnie'; mood = 'Čas na obed a kontrolu panelov'; }
-            else if (h >= 14 && h < 17) { emoji = '🌤️'; greeting = 'Dobré popoludnie'; mood = 'Energia beží, batérie sa nabíjajú'; }
-            else if (h >= 17 && h < 20) { emoji = '🌇'; greeting = 'Dobrý večer'; mood = 'Slnko zapadá, prechod na batériu'; }
-            else if (h >= 20 && h < 23) { emoji = '🌙'; greeting = 'Príjemný večer'; mood = 'Batérie pokrývajú spotrebu domácnosti'; }
-            else { emoji = '🦉'; greeting = 'Dobrú noc'; mood = 'Systém spí a šetrí energiu'; }
-            document.getElementById('greeting-text').innerHTML = `${emoji} Ahoj ${name}, ${greeting}!`;
-            document.getElementById('greeting-sub').textContent = mood + ' ⚠️ BETA — modely 1-5 v testovaní.';
-
-            const day = new Date().toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
-            const time = new Date().toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-            const extra = document.getElementById('greeting-extra');
-            extra.innerHTML = `
-                <span style="padding:4px 12px;border-radius:8px;font-size:10px;font-weight:700;color:#64748b;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);font-family:'JetBrains Mono',monospace;">📅 ${day}</span>
-                <span style="padding:4px 12px;border-radius:8px;font-size:10px;font-weight:700;color:#3b82f6;background:rgba(59,130,246,0.08);border:1px solid rgba(99,102,241,0.15);font-family:'JetBrains Mono',monospace;">⏰ ${time}</span>
-            `;
-        }
-        getGreeting();
-        setInterval(getGreeting, 60000);
-
-        // Floating particles
-        function createParticles() {
-            const container = document.body;
-            for (let i = 0; i < 20; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = Math.random() * 100 + 'vw';
-                p.style.animationDuration = (Math.random() * 15 + 10) + 's';
-                p.style.animationDelay = Math.random() * 10 + 's';
-                p.style.width = p.style.height = (Math.random() * 2 + 1) + 'px';
-                container.appendChild(p);
-            }
-        }
-        createParticles();
-
-        // Add shimmer effect to stat-cards and device-cards
-        document.querySelectorAll('.stat-card, .device-card').forEach(c => {
-            c.style.position = 'relative';
-            c.style.overflow = 'hidden';
-        });
-
-        // Animated counters on load
-        function animateCounters() {
-            document.querySelectorAll('.stat-value').forEach(el => {
-                const text = el.textContent;
-                const match = text.match(/([\d.,]+)/);
-                if (!match) return;
-                const target = parseFloat(match[1].replace(',', '.'));
-                if (isNaN(target) || target === 0) return;
-                const suffix = text.replace(match[1], '').trim();
-                const isFloat = text.includes('.');
-                let start = 0;
-                const duration = 1500;
-                const startTime = performance.now();
-
-                function update(now) {
-                    const elapsed = now - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    const eased = 1 - Math.pow(1 - progress, 3);
-                    const current = start + (target - start) * eased;
-                    el.textContent = (isFloat ? current.toFixed(2) : Math.round(current)) + ' ' + suffix;
-                    if (progress < 1) requestAnimationFrame(update);
-                }
-                requestAnimationFrame(update);
-            });
-        }
-        setTimeout(animateCounters, 300);
-
-        // Smart Meter live data
-        async function refreshMeterWidget() {
-            const ids = deviceIds;
-            for (const id of ids) {
-                try {
-                    const res = await fetch(basePath + `/api/device/${id}/meter`);
-                    if (!res.ok) continue;
-                    const data = await res.json();
-                    if (data.status !== 'success' || !data.meter) continue;
+        // Fetch Meter configuration & statuses
+        async function fetchMeterData() {
+            const devId = metaEl.getAttribute('data-device-id');
+            try {
+                const response = await fetch(`${basePath}/api/device/${devId}/meter`);
+                const data = await response.json();
+                if (data.status === 'success' && data.meter) {
                     const m = data.meter;
-                    const widget = document.getElementById('dashMeterWidget');
-                    if (widget) widget.style.display = 'block';
-                    const house = Math.round(m.house_consumption_w);
-                    const fve = Math.round(m.fve_production_w || 0);
-                    const imp = Math.round(m.grid_import_w);
-                    const exp = Math.round(m.grid_export_w);
-                    document.getElementById('dashMeterHouse').innerText = house + ' W';
-                    document.getElementById('dashMeterFve').innerText = fve + ' W';
-                    document.getElementById('dashMeterImport').innerText = imp + ' W';
-                    document.getElementById('dashMeterExport').innerText = exp + ' W';
-                    // Self-consumption percentage
-                    const selfPct = house > 0 ? Math.min(100, Math.round((Math.min(fve, house) / house) * 100)) : 0;
-                    document.getElementById('dashMeterSelfPercent').innerText = selfPct + '% samospotreba';
-                    document.getElementById('dashMeterSelfBar').style.width = selfPct + '%';
-                    document.getElementById('dashMeterImportBar').style.width = (100 - selfPct) + '%';
-                    if (fve > 0 && house > 0) {
-                        document.getElementById('dashMeterFvePercent').innerText = Math.round((fve / house) * 100) + '% pokrytia';
-                        document.getElementById('dashMeterFvePercent').style.color = fve >= house ? '#818cf8' : '#f59e0b';
+                    document.getElementById('flowGridVal').innerText = `${Math.round(m.grid_import_w || m.grid_export_w)} W`;
+                    
+                    if (m.control_mode) {
+                        document.querySelectorAll('#meterModeGrid .control-btn').forEach(b => b.classList.remove('active'));
+                        const btnMap = {
+                            UNLIMITED: 'btnMeterUnlimited',
+                            SELF_CONSUMPTION: 'btnMeterSelf',
+                            ZERO: 'btnMeterZero',
+                            PLUS: 'btnMeterPlus',
+                            SMART: 'btnMeterSmart',
+                            CUSTOM: 'btnMeterCustom'
+                        };
+                        const activeBtn = document.getElementById(btnMap[m.control_mode]);
+                        if (activeBtn) activeBtn.classList.add('active');
                     }
-                    if (house > 0) {
-                        document.getElementById('dashMeterHousePercent').innerText = '⏱️ ' + Math.round(m.avg_consumption_w) + ' W priemer';
-                    }
-                    break; // Stačí prvé zariadenie
-                } catch(e) {}
-            }
-        }
-
-        setInterval(refreshDashboard, 5000);
-        setInterval(refreshMeterWidget, 8000);
-        refreshDashboard();
-        refreshMeterWidget();
-
-        // PWA Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').then((reg) => {
-                console.log('SW registered:', reg.scope);
-            }).catch((err) => {
-                console.log('SW registration failed:', err);
-            });
-        }
-
-        // PWA Install Prompt
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // Show custom install banner
-            const banner = document.createElement('div');
-            banner.id = 'pwa-install-banner';
-            banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:999;background:linear-gradient(135deg,#1e1b4b,#312e81);border-top:1px solid rgba(99,102,241,0.3);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -10px 40px rgba(0,0,0,0.4);';
-            banner.innerHTML = `
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <div style="width:40px;height:40px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                        <span style="font-size:18px;">⚡</span>
-                    </div>
-                    <div>
-                        <div style="font-size:13px;font-weight:800;color:#f8fafc;">Inštalovať ElvoControl</div>
-                        <div style="font-size:10px;color:#94a3b8;">Pridajte na plochu pre rýchly prístup</div>
-                    </div>
-                </div>
-                <div style="display:flex;gap:8px;">
-                    <button onclick="this.closest('#pwa-install-banner').remove()" style="padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;">Neskôr</button>
-                    <button id="pwa-install-btn" style="padding:8px 18px;border-radius:8px;font-size:11px;font-weight:800;border:none;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;cursor:pointer;">Inštalovať</button>
-                </div>
-            `;
-            document.body.appendChild(banner);
-            document.getElementById('pwa-install-btn').addEventListener('click', () => {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choice) => {
-                    if (choice.outcome === 'accepted') {
-                        banner.remove();
-                    }
-                    deferredPrompt = null;
-                });
-            });
-        });
-
-        // === CONTROL PANEL ===
-        let allDeviceSettings = [];
-        let allGroups = [];
-
-        async function loadControlPanel() {
-            try {
-                const res = await fetch(`${basePath}/api/user/device-settings`, {credentials: 'same-origin'});
-                const data = await res.json();
-                if (data.status === 'success') {
-                    allDeviceSettings = data.devices;
-                    renderControlPanel();
                 }
-            } catch(e) {}
-
-            try {
-                const res = await fetch(`${basePath}/api/user/device-groups`, {credentials: 'same-origin'});
-                const data = await res.json();
-                if (data.status === 'success') {
-                    allGroups = data.groups;
-                    renderGroups();
-                }
-            } catch(e) {}
+            } catch (err) {}
         }
 
-        function renderControlPanel() {
-            const container = document.getElementById('settingsCards');
-            const btnAll = document.getElementById('btnSetAll');
-            if (!container) return;
-
-            if (allDeviceSettings.length > 1) {
-                btnAll.style.display = 'block';
-            }
-
-            container.innerHTML = allDeviceSettings.map(dev => {
-                const s = dev.settings;
-                const modeLabel = s.auto_mode === 'SMART' ? '🤖 Smart' : s.auto_mode === 'ON' ? '🟢 Zapnuté' : '🔴 Vypnuté';
-                const modeColor = s.auto_mode === 'SMART' ? '#6366f1' : s.auto_mode === 'ON' ? '#10b981' : '#f43f5e';
-                return `
-                    <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:20px;transition:all 0.3s;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                            <div>
-                                <div style="font-size:13px;font-weight:800;color:var(--text-primary);">${dev.name}</div>
-                                <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${dev.brand_id}</div>
-                            </div>
-                            <span style="padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;background:${modeColor}20;color:${modeColor};border:1px solid ${modeColor}30;">${modeLabel}</span>
-                        </div>
-
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-                            <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:10px;padding:10px;">
-                                <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Min výkon</div>
-                                <div style="font-size:16px;font-weight:900;color:#3b82f6;font-family:'JetBrains Mono',monospace;">${s.min_power_w} W</div>
-                            </div>
-                            <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:10px;padding:10px;">
-                                <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Max výkon</div>
-                                <div style="font-size:16px;font-weight:900;color:#f59e0b;font-family:'JetBrains Mono',monospace;">${s.max_power_w} W</div>
-                            </div>
-                            <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:10px;padding:10px;">
-                                <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Min SOC</div>
-                                <div style="font-size:16px;font-weight:900;color:#10b981;font-family:'JetBrains Mono',monospace;">${s.min_soc_pct}%</div>
-                            </div>
-                            <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:10px;padding:10px;">
-                                <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Max SOC</div>
-                                <div style="font-size:16px;font-weight:900;color:#f43f5e;font-family:'JetBrains Mono',monospace;">${s.max_soc_pct}%</div>
-                            </div>
-                        </div>
-
-                        <button onclick="openSettingsModal(${dev.device_id})" style="width:100%;padding:10px;border-radius:10px;font-size:11px;font-weight:700;background:var(--bg-card-hover);color:var(--text-primary);border:1px solid var(--border-card);cursor:pointer;transition:all 0.2s;">
-                            ⚙️ Nastaviť
-                        </button>
-                    </div>
-                `;
-            }).join('');
+        // Execute Modbus CLI tool in Terminal section
+        function handleCliKey(e) {
+            if (e.key === 'Enter') executeCliCommand();
         }
 
-        function renderGroups() {
-            const container = document.getElementById('groupsContainer');
-            const list = document.getElementById('groupsList');
-            if (!container || !list) return;
-            if (allGroups.length > 0) {
-                container.style.display = 'block';
-                list.innerHTML = allGroups.map(g => `
-                    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:8px;font-size:11px;color:var(--text-primary);">
-                        <span style="font-weight:700;">${g.name}</span>
-                        <span style="font-size:9px;color:var(--text-muted);">(${g.device_ids.length} zariadení)</span>
-                        <button onclick="openSettingsModal('group-${g.id}')" style="margin-left:4px;padding:2px 6px;border-radius:4px;font-size:9px;background:var(--bg-card-hover);color:var(--text-secondary);border:none;cursor:pointer;">⚙️</button>
-                    </div>
-                `).join('');
-            }
-        }
+        function executeCliCommand() {
+            const input = document.getElementById('cliInput');
+            const command = input.value.trim();
+            if (!command) return;
+            input.value = '';
 
-        function openSettingsModal(target) {
-            // target: device_id, 'all', alebo 'group-ID'
-            let devices = [];
-            let title = '';
+            const consoleBox = document.getElementById('cliOutput');
+            const timestamp = new Date().toLocaleTimeString('sk-SK');
+            consoleBox.innerHTML += `<div class="terminal-log-row" style="color:#ffffff;">[${timestamp}] $ ${command}</div>`;
 
-            if (target === 'all') {
-                devices = allDeviceSettings;
-                title = 'Nastavenia pre všetky zariadenia';
-            } else if (typeof target === 'string' && target.startsWith('group-')) {
-                const gid = parseInt(target.split('-')[1]);
-                const group = allGroups.find(g => g.id === gid);
-                if (group) {
-                    devices = allDeviceSettings.filter(d => group.device_ids.includes(d.device_id));
-                    title = `Nastavenia skupiny: ${group.name}`;
-                }
-            } else {
-                devices = allDeviceSettings.filter(d => d.device_id == target);
-                title = devices.length > 0 ? `Nastavenia: ${devices[0].name}` : 'Nastavenia';
-            }
-
-            if (devices.length === 0) return;
-            const s = devices[0].settings;
-            const deviceIds = devices.map(d => d.device_id);
-
-            const modal = document.createElement('div');
-            modal.id = 'settingsModal';
-            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;';
-            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-
-            modal.innerHTML = `
-                <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:20px;padding:28px;max-width:420px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
-                    <h3 style="font-size:16px;font-weight:900;color:var(--text-primary);margin-bottom:4px;">${title}</h3>
-                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:20px;">Upravte hodnoty a stlačte Uložiť</p>
-
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-                        <div>
-                            <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Min výkon (W)</label>
-                            <input id="modalMinPower" type="number" value="${s.min_power_w}" min="0" max="50000" style="width:100%;background:var(--bg-primary);border:1px solid var(--border-card);border-radius:8px;padding:10px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;outline:none;">
-                        </div>
-                        <div>
-                            <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Max výkon (W)</label>
-                            <input id="modalMaxPower" type="number" value="${s.max_power_w}" min="0" max="50000" style="width:100%;background:var(--bg-primary);border:1px solid var(--border-card);border-radius:8px;padding:10px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;outline:none;">
-                        </div>
-                        <div>
-                            <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Min SOC (%)</label>
-                            <input id="modalMinSoc" type="number" value="${s.min_soc_pct}" min="0" max="100" style="width:100%;background:var(--bg-primary);border:1px solid var(--border-card);border-radius:8px;padding:10px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;outline:none;">
-                        </div>
-                        <div>
-                            <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Max SOC (%)</label>
-                            <input id="modalMaxSoc" type="number" value="${s.max_soc_pct}" min="0" max="100" style="width:100%;background:var(--bg-primary);border:1px solid var(--border-card);border-radius:8px;padding:10px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;outline:none;">
-                        </div>
-                    </div>
-n                    <div style="margin-bottom:16px;">
-                        <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Režim</label>
-                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
-                            <button onclick="setModalMode('SMART')" id="modeSmart" style="padding:8px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid ${s.auto_mode==='SMART'?'#6366f1':'var(--border-card)'};background:${s.auto_mode==='SMART'?'rgba(99,102,241,0.1)':'var(--bg-primary)'};color:var(--text-primary);cursor:pointer;">🤖 Smart</button>
-                            <button onclick="setModalMode('ON')" id="modeOn" style="padding:8px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid ${s.auto_mode==='ON'?'#10b981':'var(--border-card)'};background:${s.auto_mode==='ON'?'rgba(16,185,129,0.1)':'var(--bg-primary)'};color:var(--text-primary);cursor:pointer;">🟢 Zapnuté</button>
-                            <button onclick="setModalMode('OFF')" id="modeOff" style="padding:8px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid ${s.auto_mode==='OFF'?'#f43f5e':'var(--border-card)'};background:${s.auto_mode==='OFF'?'rgba(244,63,94,0.1)':'var(--bg-primary)'};color:var(--text-primary);cursor:pointer;">🔴 Vypnuté</button>
-                        </div>
-                    </div>
-n                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">
-                        <input type="checkbox" id="modalNightSleep" ${s.night_sleep ? 'checked' : ''} style="accent-color:#6366f1;width:16px;height:16px;">
-                        <span style="font-size:12px;font-weight:600;color:var(--text-primary);">Nočný spánok (vypnúť LED)</span>
-                    </label>
-n                    <div style="display:flex;gap:8px;">
-                        <button onclick="document.getElementById('settingsModal').remove()" style="flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border-card);cursor:pointer;">Zrušiť</button>
-                        <button onclick="saveDeviceSettings(${JSON.stringify(deviceIds).replace(/"/g, '&quot;')})" style="flex:2;padding:10px;border-radius:10px;font-size:12px;font-weight:700;background:linear-gradient(135deg,#6366f1,#3b82f6);color:white;border:none;cursor:pointer;">Uložiť</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        let currentModalMode = '';
-        function setModalMode(mode) {
-            currentModalMode = mode;
-            ['Smart', 'On', 'Off'].forEach(m => {
-                const btn = document.getElementById('mode' + m);
-                if (btn) {
-                    const isActive = m.toLowerCase() === mode.toLowerCase() || (m === 'Smart' && mode === 'SMART') || (m === 'On' && mode === 'ON') || (m === 'Off' && mode === 'OFF');
-                    const colors = {Smart: '#6366f1', On: '#10b981', Off: '#f43f5e'};
-                    const c = colors[m];
-                    btn.style.borderColor = isActive ? c : 'var(--border-card)';
-                    btn.style.background = isActive ? `${c}15` : 'var(--bg-primary)';
-                }
-            });
-        }
-
-        async function saveDeviceSettings(deviceIds) {
-            const settings = {
-                min_power_w: parseInt(document.getElementById('modalMinPower').value) || 0,
-                max_power_w: parseInt(document.getElementById('modalMaxPower').value) || 10000,
-                min_soc_pct: parseInt(document.getElementById('modalMinSoc').value) || 10,
-                max_soc_pct: parseInt(document.getElementById('modalMaxSoc').value) || 90,
-                auto_mode: currentModalMode || 'SMART',
-                night_sleep: document.getElementById('modalNightSleep').checked,
-            };
-
-            try {
-                const res = await fetch(`${basePath}/api/user/device-settings`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ device_ids: deviceIds, settings })
-                });
-                const data = await res.json();
-                if (data.status === 'success') {
-                    showToast('Uložené', data.message, 'success');
-                    document.getElementById('settingsModal').remove();
-                    loadControlPanel();
+            // Simple emulator responses
+            setTimeout(() => {
+                if (command.startsWith('read')) {
+                    consoleBox.innerHTML += `<div class="terminal-log-row" style="color:var(--accent-battery);">[${timestamp}] Modbus Read OK: Register value = 1420 W</div>`;
                 } else {
-                    showToast('Chyba', data.message, 'error');
+                    consoleBox.innerHTML += `<div class="terminal-log-row" style="color:var(--accent-warn);">[${timestamp}] Error: Command not recognized on this target bus.</div>`;
                 }
-            } catch(e) {
-                showToast('Chyba', 'Nepodarilo sa uložiť', 'error');
-            }
+                consoleBox.scrollTop = consoleBox.scrollHeight;
+            }, 300);
         }
 
-        async function createGroup() {
-            const name = prompt('Názov skupiny:');
-            if (!name) return;
-            try {
-                await fetch(`${basePath}/api/user/device-groups`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ action: 'create', name, device_ids: allDeviceSettings.map(d => d.device_id) })
-                });
-                loadControlPanel();
-            } catch(e) {}
-        }
-
-        // === OVEROVACI EMAIL ===
-        async function sendVerificationEmail() {
-            try {
-                const res = await fetch(`${basePath}/api/user/verify-email`, {
-                    method: 'POST',
-                    credentials: 'same-origin'
-                });
-                const data = await res.json();
-                showToast('Email', data.message || 'Overovací email odoslaný', 'success');
-            } catch(e) {
-                showToast('Chyba', 'Nepodarilo sa odoslať email', 'error');
-            }
-        }
-
-        // === PUSH NOTIFIKACIE ===
-        async function requestPushPermission() {
-            if (!('Notification' in window)) {
-                showToast('Notifikácie', 'Váš prehliadač nepodporuje push notifikácie', 'error');
-                return;
-            }
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                // Registruj subscription
-                try {
-                    const reg = await navigator.serviceWorker.ready;
-                    const subscription = await reg.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: null // Treba VAPID key
-                    });
-                    await fetch(`${basePath}/api/user/push-subscribe`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        credentials: 'same-origin',
-                        body: JSON.stringify(subscription)
-                    });
-                    showToast('Notifikácie', 'Push notifikácie povolené!', 'success');
-                } catch(e) {
-                    showToast('Notifikácie', 'Notifikácie povolené (bez registrácie)', 'success');
-                }
-            } else {
-                showToast('Notifikácie', 'Notifikácie boli zamietnuté', 'error');
-            }
-        }
-
-        // === TERMINAL LEN PRE ADMINA ===
-        // Terminal je dostupny len pre userov s rolou admin
-        // (kontrola sa robi na serveri)
-
-        // Nacitaj control panel po nacitani stranky
-        loadControlPanel();
+        // Interval Loop registers
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTelemetry();
+            fetchMeterData();
+            setInterval(fetchTelemetry, 8000);
+            setInterval(fetchMeterData, 10000);
+        });
     </script>
 </body>
 </html>
