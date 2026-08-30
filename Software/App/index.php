@@ -937,37 +937,35 @@ elseif (preg_match('#^/api/device/([0-9]+)/telemetry$#', $path, $matches) && $me
 }
 
 elseif ($path === '/api/devices/list' && $method === 'GET') {
+    // SmartLogger/EzLogger su samostatne zariadenia, nie su v brand zozname
+    // SmartMeter sa konfiguruje osobitne (krok 4)
     send_json([
-        '1' => ['znacka' => 'HUAWEI', 'icon' => '⚡', 'zapojenie' => 'Modul CH1: R/A(+) a T/B(-).', 'kategorie' => [
-            '1' => ['meno' => 'Striedače SUN2000', 'typ' => 'striedac', 'popis' => 'Jednofázové aj trojfázové', 'modely' => [
-                '1' => ['meno' => 'Všetky modely SUN2000']]],
-            '2' => ['meno' => 'SmartLogger', 'typ' => 'smartlogger', 'popis' => 'Monitorovací zariadenie', 'modely' => [
-                '1' => ['meno' => 'SmartLogger 3000A / 1000']]]]],
-        '2' => ['znacka' => 'FRONIUS', 'icon' => '⚡', 'zapojenie' => 'D+ na A(+), D- na B(-).', 'kategorie' => [
-            '1' => ['meno' => 'Rezidenčné (Galvo/Symo/Primo)', 'typ' => 'striedac', 'popis' => 'Jedno- aj trojfázové', 'modely' => [
+        '1' => ['znacka' => 'HUAWEI', 'zapojenie' => 'Modul CH1: R/A(+) a T/B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Striedače SUN2000', 'popis' => 'Jednofázové aj trojfázové', 'modely' => [
+                '1' => ['meno' => 'Všetky modely SUN2000']]]]],
+        '2' => ['znacka' => 'FRONIUS', 'zapojenie' => 'D+ na A(+), D- na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Rezidenčné (Galvo/Symo/Primo)', 'popis' => 'Jedno- aj trojfázové', 'modely' => [
                 '1' => ['meno' => 'Všetky Fronius modely']]]]],
-        '3' => ['znacka' => 'GOODWE', 'icon' => '⚡', 'zapojenie' => 'Pin A na A(+), Pin B na B(-).', 'kategorie' => [
-            '1' => ['meno' => 'Striedače (XS/DNS/EH/ET)', 'typ' => 'striedac', 'popis' => 'Domáce aj komerčné', 'modely' => [
-                '1' => ['meno' => 'Všetky GoodWe modely']]],
-            '2' => ['meno' => 'EzLogger', 'typ' => 'smartlogger', 'popis' => 'Monitorovací zariadenie', 'modely' => [
-                '1' => ['meno' => 'EzLogger Pro / 3000C']]]]],
-        '4' => ['znacka' => 'SOLAX', 'icon' => '⚡', 'zapojenie' => 'RJ45 pin 4 na A(+), pin 5 na B(-).', 'kategorie' => [
-            '1' => ['meno' => 'Jedno- aj trojfázové (X1/X3)', 'typ' => 'striedac', 'popis' => 'Sieťové aj hybridné', 'modely' => [
+        '3' => ['znacka' => 'GOODWE', 'zapojenie' => 'Pin A na A(+), Pin B na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Striedače (XS/DNS/EH/ET)', 'popis' => 'Domáce aj komerčné', 'modely' => [
+                '1' => ['meno' => 'Všetky GoodWe modely']]]]],
+        '4' => ['znacka' => 'SOLAX', 'zapojenie' => 'RJ45 pin 4 na A(+), pin 5 na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Jedno- aj trojfázové (X1/X3)', 'popis' => 'Sieťové aj hybridné', 'modely' => [
                 '1' => ['meno' => 'Všetky SolaX modely']]]]],
-        '5' => ['znacka' => 'VICTRON', 'icon' => '⚡', 'zapojenie' => 'USB-RS485: Oranžový=A(+), Žlty=B(-).', 'kategorie' => [
-            '1' => ['meno' => 'MultiPlus / Quattro', 'typ' => 'striedac', 'popis' => 'Menič/Nabíjač', 'modely' => [
+        '5' => ['znacka' => 'VICTRON', 'zapojenie' => 'USB-RS485: Oranžový=A(+), Žlty=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'MultiPlus / Quattro', 'popis' => 'Menič/Nabíjač', 'modely' => [
                 '1' => ['meno' => 'Všetky Victron modely']]]]],
-        '6' => ['znacka' => 'GROWATT', 'icon' => '⚡', 'zapojenie' => 'SYS COM: pin 3=A(+), pin 4=B(-).', 'kategorie' => [
-            '1' => ['meno' => 'MIN-XE / MOD / SPH', 'typ' => 'striedac', 'popis' => 'Sieťové aj hybridné', 'modely' => [
+        '6' => ['znacka' => 'GROWATT', 'zapojenie' => 'SYS COM: pin 3=A(+), pin 4=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'MIN-XE / MOD / SPH', 'popis' => 'Sieťové aj hybridné', 'modely' => [
                 '1' => ['meno' => 'Všetky Growatt modely']]]]],
-        '7' => ['znacka' => 'SOFAR', 'icon' => '⚡', 'zapojenie' => 'Pin 1=A(+), Pin 2=B(-).', 'kategorie' => [
-            '1' => ['meno' => 'Trojfázové hybridy HYD', 'typ' => 'striedac', 'popis' => 'Séria HYD', 'modely' => [
+        '7' => ['znacka' => 'SOFAR', 'zapojenie' => 'Pin 1=A(+), Pin 2=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Trojfázové hybridy HYD', 'popis' => 'Séria HYD', 'modely' => [
                 '1' => ['meno' => 'Všetky Sofar modely']]]]],
-        '8' => ['znacka' => 'DEYE', 'icon' => '⚡', 'zapojenie' => 'RS485: pin 7=A(+), pin 8=B(-).', 'kategorie' => [
-            '1' => ['meno' => 'Nízkonapƈové hybridy', 'typ' => 'striedac', 'popis' => 'Séria SG04LP3', 'modely' => [
+        '8' => ['znacka' => 'DEYE', 'zapojenie' => 'RS485: pin 7=A(+), pin 8=B(-).', 'kategorie' => [
+            '1' => ['meno' => 'Nízkonapäťové hybridy', 'popis' => 'Séria SG04LP3', 'modely' => [
                 '1' => ['meno' => 'Všetky Deye modely']]]]],
-        '9' => ['znacka' => 'SUNGROW', 'icon' => '⚡', 'zapojenie' => 'A2 na A(+), B2 na B(-).', 'kategorie' => [
-            '1' => ['meno' => 'SH-RT / SG-RT', 'typ' => 'striedac', 'popis' => 'Hybridné aj sieťové', 'modely' => [
+        '9' => ['znacka' => 'SUNGROW', 'zapojenie' => 'A2 na A(+), B2 na B(-).', 'kategorie' => [
+            '1' => ['meno' => 'SH-RT / SG-RT', 'popis' => 'Hybridné aj sieťové', 'modely' => [
                 '1' => ['meno' => 'Všetky Sungrow modely']]]]],
     ]);
 }
@@ -1628,6 +1626,8 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
         'slave_id' => intval($data['slave_id'] ?? 1),
         'has_battery' => boolval($data['has_battery'] ?? true),
         'name' => $data['name'] ?? '',
+        'device_name' => $data['device_name'] ?? '',
+        'smart_meter' => $data['smart_meter'] ?? [],
     ];
     $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
     $stmt->execute([$serial, json_encode($config)]);
@@ -1636,7 +1636,7 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     if (isset($_SESSION['user_id'])) {
         $brand = $data['brand_id'] ?? '';
         $model = $data['model_id'] ?? '';
-        $name = $data['name'] ?? 'Striedac';
+        $name = $data['device_name'] ?? $data['name'] ?? 'ElvoControll';
         $stmt2 = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
         $stmt2->execute([$_SESSION['user_id'], $name, $serial, $brand, $model]);
     }
