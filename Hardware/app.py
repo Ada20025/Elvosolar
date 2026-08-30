@@ -604,6 +604,16 @@ def claim_device(data: ClaimDeviceRequest):
     cursor.execute("INSERT INTO system_settings (key, value) VALUES ('comm_mode', ?)", (data.comm_mode,))
     conn.commit()
     conn.close()
+    
+    # WiFi konfiguracia - ak prisla cez kabel/BLE
+    ssid = getattr(data, 'ssid', '') or ''
+    password = getattr(data, 'password', '') or ''
+    if ssid and ssid != 'ACTIVE_CURRENT_WIFI':
+        log_message(f"[CLAIM] WiFi config: {ssid} - pripajam sa...")
+        led.anim_connecting()
+        wifi_result = SystemService.connect_wifi(ssid, password)
+        log_message(f"[CLAIM] WiFi vysledok: {wifi_result}")
+    
     return {"status": "success"}
 
 @app.post("/api/user/claim-device")
