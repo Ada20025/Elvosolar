@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Riadiace centrum | Biok Smart EMS</title>
+    <title>Riadiace centrum | Smart EMS</title>
     <link class="brand-favicon" rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
     <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -95,11 +95,11 @@
             padding: 0 24px;
             height: 80px;
             display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            grid-template-columns: 1.2fr auto 1.2fr;
             align-items: center;
         }
 
-        /* Brand Left: Real Elvosolar Logo and Local Station Info Badge */
+        /* Brand Left: Elvosolar Logo + Smart EMS Tagline */
         .header-left {
             display: flex;
             align-items: center;
@@ -110,6 +110,7 @@
         .brand-logo-link {
             display: flex;
             align-items: center;
+            gap: 12px;
             text-decoration: none;
         }
 
@@ -123,6 +124,27 @@
 
         .brand-logo-img-left:hover {
             transform: scale(1.02);
+        }
+
+        .brand-text-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-title {
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+        }
+
+        .brand-tagline {
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent-battery);
+            font-family: 'JetBrains Mono', monospace;
         }
 
         /* Brush Edit local renamed button */
@@ -144,39 +166,13 @@
             transform: scale(1.1);
         }
 
+        /* Centered Device/Station Widget */
         .header-brand-center {
             display: flex;
             align-items: center;
             gap: 12px;
             text-decoration: none;
             justify-content: center;
-        }
-
-        .brand-logo-svg {
-            height: 44px;
-            width: auto;
-            filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.3));
-        }
-
-        .brand-text-container {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .brand-title {
-            font-size: 20px;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-            color: var(--text-primary);
-        }
-
-        .brand-tagline {
-            font-size: 8px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--accent-battery);
-            font-family: 'JetBrains Mono', monospace;
         }
 
         .header-right {
@@ -966,28 +962,34 @@
     <header class="header">
         <div class="header-inner">
             
-            <!-- Brand Left: Real Elvosolar Logo and Local Station Info Badge -->
+            <!-- Brand Left: Elvosolar Logo + Smart EMS Tagline (repositioned to Left) -->
             <div class="header-left">
                 <a href="https://elvosolar.sk/" target="_blank" class="brand-logo-link">
                     <img src="/templates/ElvosolarLogo.png" alt="Elvosolar" class="brand-logo-img-left">
+                    <div class="brand-text-container">
+                        <span class="brand-title">Elvosolar</span>
+                        <span class="brand-tagline">SMART EMS PLATFORM</span>
+                    </div>
                 </a>
+            </div>
 
-                <!-- Check if there is only one device (Info static pill with paintbrush rename) -->
+            <!-- Centered Device/Station Widget (repositioned to Center) -->
+            <div class="header-brand-center">
                 <?php if (!isset($devices) || count($devices) <= 1): ?>
-                    <div class="sys-indicator" style="gap: 8px; padding: 8px 12px; background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.15);">
+                    <div class="sys-indicator" style="gap: 8px; padding: 10px 18px; background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.15); border-radius: 16px;">
                         <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-battery);"></i>
-                        <span id="singleDeviceLabel" style="font-weight: 800; color: var(--text-primary);">Biok Box v4</span>
+                        <span id="singleDeviceLabel" style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Biok Box v4</span>
                         <!-- Paintbrush icon for local browser renaming -->
                         <button onclick="triggerLocalRename(event)" class="rename-btn" title="Premenovať lokálne">
-                            <i data-lucide="brush" style="width:12px;height:12px;"></i>
+                            <i data-lucide="brush" style="width:13px;height:13px;"></i>
                         </button>
                     </div>
                 <?php else: ?>
                     <!-- Multiple devices dropdown -->
                     <div class="station-dropdown-container">
-                        <button id="deviceSelectDropdownBtn" class="sys-indicator station-dropdown-trigger" onclick="toggleDeviceDropdown(event)">
+                        <button id="deviceSelectDropdownBtn" class="sys-indicator station-dropdown-trigger" style="padding: 10px 18px; border-radius: 16px;" onclick="toggleDeviceDropdown(event)">
                             <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-battery);"></i>
-                            <span id="activeStationName"><?php echo htmlspecialchars($devices[0]['name']); ?></span>
+                            <span id="activeStationName" style="font-size: 14px;"><?php echo htmlspecialchars($devices[0]['name']); ?></span>
                             <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
                         </button>
                         <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
@@ -1009,20 +1011,6 @@
                         </div>
                     </div>
                 <?php endif; ?>
-            </div>
-
-            <!-- Centralized Brand Platform Logotype -->
-            <div class="header-brand-center">
-                <svg class="brand-logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
-                    <circle cx="40" cy="40" r="38" fill="none" stroke="rgba(16, 185, 129, 0.2)" stroke-width="2"/>
-                    <path d="M25,20 C25,20 45,15 55,30 C65,45 55,60 55,60 C55,60 35,65 25,50 C15,35 25,20 25,20 Z" fill="none" stroke="#10b981" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M25,50 C32,45 45,45 55,30 M25,20 L55,60" fill="none" stroke="#818cf8" stroke-width="3" stroke-linecap="round"/>
-                    <line x1="25" y1="15" x2="25" y2="65" stroke="#10b981" stroke-width="4.5" stroke-linecap="round"/>
-                </svg>
-                <div class="brand-text-container">
-                    <span class="brand-title">Biok</span>
-                    <span class="brand-tagline">SMART EMS PLATFORM</span>
-                </div>
             </div>
 
             <!-- Right Side Dynamic Indicator Panel -->
@@ -1221,7 +1209,7 @@
                             <span id="okteSpotPrice" class="font-mono" style="font-size:32px;font-weight:900;color:var(--text-primary);">84.60</span>
                             <span style="font-size:12px;color:var(--text-secondary);font-weight:700;">€/MWh</span>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;font-size:11px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255, 255, 255, 0.06);padding-top:12px;font-size:11px;">
                             <div style="display:flex;flex-direction:column;">
                                 <span style="color:var(--text-muted);font-size:9px;text-transform:uppercase;">Minimum dňa</span>
                                 <span class="font-mono" style="color:var(--accent-battery);font-weight:700;">-12.50 €</span>
@@ -1279,7 +1267,7 @@
                         </div>
 
                         <!-- Dynamic communication diagnostic info -->
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:12px;font-size:10px;color:var(--text-secondary);">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255, 255, 255, 0.05);padding-top:12px;font-size:10px;color:var(--text-secondary);">
                             <div style="display:flex;flex-direction:column;gap:2px;">
                                 <span>Latencia zbernice:</span>
                                 <strong class="font-mono" style="color:var(--text-primary);">12 ms</strong>
@@ -1491,7 +1479,7 @@
             </div>
             <h2 style="font-size:22px;font-weight:900;color:var(--text-primary);letter-spacing:-0.5px;margin-bottom:12px;">POTVRDENIE KRITICKEJ OPERÁCIE</h2>
             <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:8px;">
-                Chystáte sa vykonať zmenu systémového riadenia na platforme <strong>Biok Smart EMS</strong>.
+                Chystáte sa vykonať zmenu systémového riadenia na platforme <strong>Elvosolar Smart EMS</strong>.
             </p>
             <p style="font-size:12px;color:var(--accent-warn);font-weight:700;">
                 Ste si plne vedomý/á následkov tohto kroku a možného ovplyvnenia stability FVE?
