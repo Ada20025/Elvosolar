@@ -1704,11 +1704,21 @@ elseif ($path === '/api/cm5/poll-result' && $method === 'GET') {
 
 // --- SYSTEM STATUS (cloud verzia) ---
 elseif ($path === '/api/system/status' && $method === 'GET') {
+    // Vrat serial number ak je dostupny
+    $serial = 'CM5-DEFAULT';
+    try {
+        $stmt = $pdo->query("SELECT serial_number FROM devices WHERE serial_number LIKE 'SN-CM5-%' ORDER BY last_seen DESC LIMIT 1");
+        $row = $stmt->fetch();
+        if ($row) $serial = $row['serial_number'];
+    } catch (Exception $e) {}
+    
     send_json([
         'status' => 'success',
         'is_claimed' => isset($_SESSION['user_id']),
         'internet' => true,
-        'modbus' => 'CLOUD_MODE'
+        'modbus' => 'CLOUD_MODE',
+        'serial_number' => $serial,
+        'serial' => $serial
     ]);
 }
 

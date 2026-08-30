@@ -14,11 +14,43 @@
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+        /* Dark mode (default) */
+        :root {
+            --bg-primary: #020617;
+            --bg-secondary: #0f172a;
+            --bg-card: rgba(15, 23, 42, 0.6);
+            --bg-card-hover: rgba(30, 41, 59, 0.6);
+            --border-color: rgba(99, 102, 241, 0.08);
+            --border-card: rgba(148, 163, 184, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --header-bg: rgba(2, 6, 23, 0.75);
+            --shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            --orb-opacity: 0.10;
+        }
+        /* Light mode */
+        body.light-mode {
+            --bg-primary: #f1f5f9;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --bg-card-hover: rgba(241, 245, 249, 0.9);
+            --border-color: rgba(0, 0, 0, 0.06);
+            --border-card: rgba(0, 0, 0, 0.08);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --header-bg: rgba(255, 255, 255, 0.85);
+            --shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+            --orb-opacity: 0.05;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             min-height: 100vh;
-            background: #020617;
-            color: #f8fafc;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
         }
 
         .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -43,11 +75,11 @@
             position: sticky;
             top: 0;
             z-index: 50;
-            background: rgba(2, 6, 23, 0.75);
+            background: var(--header-bg);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
-            border-bottom: 1px solid rgba(99, 102, 241, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
         }
 
         .header-inner {
@@ -171,8 +203,8 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.3));
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
             border-radius: 18px;
             padding: 22px;
             transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -194,9 +226,9 @@
         }
 
         .stat-card:hover {
-            border-color: rgba(255, 255, 255, 0.08);
+            border-color: var(--border-color);
             transform: translateY(-2px);
-            box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.2);
         }
 
         .stat-card:hover::before {
@@ -309,8 +341,8 @@
         }
 
         .device-card {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.3));
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
             border-radius: 22px;
             padding: 24px;
             position: relative;
@@ -343,9 +375,9 @@
         }
 
         .device-card:hover {
-            border-color: rgba(255, 255, 255, 0.08);
+            border-color: var(--border-color);
             transform: translateY(-4px);
-            box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.3);
         }
 
         .device-card:hover::before { opacity: 1; }
@@ -696,8 +728,12 @@
             </div>
 
             <!-- User dropdown -->
-            <div id="user-menu" class="hidden" style="position: absolute; top: 56px; right: 24px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 8px; min-width: 180px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 60;">
-                <a href="<?php echo $base_path; ?>/profile" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #e2e8f0; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+            <div id="user-menu" class="hidden" style="position: absolute; top: 56px; right: 24px; background: var(--bg-secondary); border: 1px solid var(--border-card); border-radius: 12px; padding: 8px; min-width: 200px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 60;">
+                <button onclick="toggleTheme()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); text-decoration: none; transition: background 0.2s; width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
+                    <span id="themeIcon">☀️</span> <span id="themeLabel">Svetlý režim</span>
+                </button>
+                <div style="height: 1px; background: var(--border-card); margin: 4px 8px;"></div>
+                <a href="<?php echo $base_path; ?>/profile" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
                     <i data-lucide="settings" style="width: 14px; height: 14px;"></i> Nastavenia profilu
                 </a>
                 <a href="<?php echo $base_path; ?>/logout" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #f43f5e; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='rgba(244,63,94,0.1)'" onmouseout="this.style.background='transparent'">
@@ -845,6 +881,28 @@
 
     <script>
         lucide.createIcons();
+
+        // === DARK/LIGHT MODE ===
+        function initTheme() {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'light' || (!saved && !prefersDark)) {
+                document.body.classList.add('light-mode');
+                updateThemeUI(true);
+            }
+        }
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateThemeUI(isLight);
+        }
+        function updateThemeUI(isLight) {
+            const icon = document.getElementById('themeIcon');
+            const label = document.getElementById('themeLabel');
+            if (icon) icon.textContent = isLight ? '\u{1F319}' : '\u2600\uFE0F';
+            if (label) label.textContent = isLight ? 'Tmavý režim' : 'Svetlý režim';
+        }
+        initTheme();
 
         // Push notification registration
         if ('serviceWorker' in navigator && 'Notification' in window) {

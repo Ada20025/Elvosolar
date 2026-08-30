@@ -777,9 +777,12 @@
             }
         }
 
+        // Globalny SN pre CM5
+        let detectedCM5Serial = 'CM5-DEFAULT';
+
         async function detectCableConnection() {
             try {
-                const res = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(1000) });
+                const res = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(2000) });
                 const data = await res.json();
                 const pulse = document.getElementById('cablePulse');
                 const txt = document.getElementById('cableText');
@@ -787,7 +790,13 @@
 
                 if (data.internet) {
                     pulse.className = "h-2 w-2 rounded-full bg-emerald-500 animate-pulse";
-                    txt.innerText = "Lokálne pripojenie k bráne (LAN/Wi-Fi) je aktívne.";
+                    // Zisti SN
+                    detectedCM5Serial = data.serial_number || data.serial || 'CM5-DEFAULT';
+                    if (detectedCM5Serial !== 'CM5-DEFAULT') {
+                        txt.innerText = `Pripojené: ${detectedCM5Serial}`;
+                    } else {
+                        txt.innerText = "Lokálne pripojenie k bráne (LAN/Wi-Fi) je aktívne.";
+                    }
                     badge.className = "p-3 bg-emerald-950/10 border border-emerald-900/30 rounded-xl flex items-center justify-center gap-2.5 text-xs text-emerald-400";
                     document.getElementById('netTypeEth').checked = true;
                     toggleNetType('eth');
@@ -1050,12 +1059,7 @@
                 // 1) NAJPRV discover - otestuj zbernicu
                 await runDiscoverAndAnimate();
 
-                let serial = 'CM5-DEFAULT';
-                try {
-                    const statusRes = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(5000) });
-                    const statusData = await statusRes.json();
-                    serial = statusData.serial_number || statusData.serial || 'CM5-DEFAULT';
-                } catch(e) {}
+                let serial = detectedCM5Serial || 'CM5-DEFAULT';
 
                 // 2) Claim na CM5 - ulozi zariadenie
                 if (selectedTransport !== 'BLE') {
