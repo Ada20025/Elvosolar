@@ -136,7 +136,7 @@
         .header-controls {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .sys-indicator {
@@ -153,23 +153,48 @@
             transition: all 0.2s;
         }
 
-        /* Glowing Battery Status in Header (Always Visible) */
+        /* Glowing Battery Status (Main accumulator) */
         .battery-header-pill {
-            background: rgba(16, 185, 129, 0.06);
-            border-color: rgba(16, 185, 129, 0.25);
+            background: rgba(16, 185, 129, 0.04);
+            border-color: rgba(16, 185, 129, 0.2);
             color: var(--accent-battery);
             font-weight: 800;
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.05);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.04);
         }
 
-        .battery-header-pill .battery-fill-level {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--accent-battery);
-            box-shadow: 0 0 8px var(--accent-battery);
+        /* CM5 Device system internal backup battery */
+        .system-header-pill {
+            background: rgba(129, 140, 248, 0.04);
+            border-color: rgba(129, 140, 248, 0.2);
+            color: var(--accent-saved);
+            font-weight: 800;
         }
+
+        /* Dynamic Custom Wi-Fi Strength Indicator Bars */
+        .wifi-signal-bars {
+            display: inline-flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 10px;
+            margin-left: 2px;
+        }
+
+        .wifi-signal-bars .bar {
+            width: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 1px;
+            transition: background 0.3s, height 0.3s;
+        }
+
+        .wifi-signal-bars .bar-1 { height: 3px; }
+        .wifi-signal-bars .bar-2 { height: 5px; }
+        .wifi-signal-bars .bar-3 { height: 8px; }
+        .wifi-signal-bars .bar-4 { height: 10px; }
+
+        .wifi-signal-bars.strength-1 .bar-1 { background: var(--accent-battery); }
+        .wifi-signal-bars.strength-2 .bar-1, .wifi-signal-bars.strength-2 .bar-2 { background: var(--accent-battery); }
+        .wifi-signal-bars.strength-3 .bar-1, .wifi-signal-bars.strength-3 .bar-2, .wifi-signal-bars.strength-3 .bar-3 { background: var(--accent-battery); }
+        .wifi-signal-bars.strength-4 .bar-1, .wifi-signal-bars.strength-4 .bar-2, .wifi-signal-bars.strength-4 .bar-3, .wifi-signal-bars.strength-4 .bar-4 { background: var(--accent-battery); }
 
         /* User Profile Trigger Button & Dropdown positioning */
         .user-profile-container {
@@ -450,7 +475,7 @@
             color: var(--text-primary);
         }
 
-        /* CSS Responsive animated lines instead of hardcoded absolute SVG coordinates */
+        /* CSS Responsive animated lines */
         .flow-lines-overlay {
             position: absolute;
             top: 70px;
@@ -760,9 +785,14 @@
 
         .hidden { display: none !important; }
 
+        @media (max-width: 1024px) {
+            .header-controls { gap: 6px; }
+            .sys-indicator { padding: 6px 10px; font-size: 10px; }
+        }
+
         @media (max-width: 768px) {
             .footer { flex-direction: column; gap: 12px; text-align: center; }
-            .header-controls .sys-indicator:not(.battery-header-pill) { display: none; }
+            .header-controls .sys-indicator:not(.battery-header-pill):not(.system-header-pill) { display: none; }
         }
     </style>
 </head>
@@ -804,24 +834,40 @@
 
             <!-- Permanent System Status Header Panel -->
             <div class="header-controls">
-                <!-- Persistent Battery Charge Level Widget -->
+                
+                <!-- 1. CM5 System Internal Backup Battery (Batéria zariadenia) -->
+                <div class="sys-indicator system-header-pill">
+                    <i id="deviceBatteryIcon" data-lucide="battery" style="width:14px;height:14px;"></i>
+                    <span style="opacity: 0.8; font-size:9px; text-transform:uppercase;">Sys:</span>
+                    <span id="deviceBatterySoc" class="font-mono">--%</span>
+                </div>
+
+                <!-- 2. Main Accumulator Battery Storage (Batéria stringu / FVE) -->
                 <div class="sys-indicator battery-header-pill">
-                    <span class="battery-fill-level"></span>
-                    <i data-lucide="battery" style="width:14px;height:14px;margin-right:2px;"></i>
-                    <span id="headerBatterySoc">--%</span>
+                    <i id="fveBatteryIcon" data-lucide="battery" style="width:14px;height:14px;"></i>
+                    <span style="opacity: 0.8; font-size:9px; text-transform:uppercase;">Aku:</span>
+                    <span id="fveBatterySoc" class="font-mono">--%</span>
                 </div>
 
-                <div class="sys-indicator">
+                <!-- 3. Dynamic Wifi Signal Strength Gauge -->
+                <div class="sys-indicator" id="wifiIndicator">
                     <i data-lucide="wifi" style="width:13px;height:13px;"></i>
-                    <span id="wifiLabel">Wi-Fi: Áno</span>
+                    <span id="wifiValText" class="font-mono">--%</span>
+                    <div id="wifiBars" class="wifi-signal-bars">
+                        <span class="bar bar-1"></span>
+                        <span class="bar bar-2"></span>
+                        <span class="bar bar-3"></span>
+                        <span class="bar bar-4"></span>
+                    </div>
                 </div>
 
+                <!-- 4. Bus status dot -->
                 <div class="sys-indicator">
-                    <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-battery);box-shadow:0 0 6px var(--accent-battery);"></span>
+                    <span id="busStatusDot" style="width:6px;height:6px;border-radius:50%;background:var(--accent-battery);box-shadow:0 0 6px var(--accent-battery);transition:all 0.3s;"></span>
                     <span>Zbernica</span>
                 </div>
 
-                <!-- Correctly wrapper and layout user button trigger dropdown list -->
+                <!-- User Profile Trigger Button & Dropdown -->
                 <div class="user-profile-container">
                     <button id="userMenuBtn" class="sys-indicator user-trigger-btn" onclick="toggleUserDropdown(event)">
                         <i data-lucide="user" style="width:13px;height:13px;"></i>
@@ -829,7 +875,7 @@
                         <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
                     </button>
 
-                    <!-- Dropdown structure completely fixed absolute positioning -->
+                    <!-- Dropdown structure -->
                     <div id="userDropdownMenu" class="user-dropdown-card hidden">
                         <button onclick="toggleTheme()" class="user-dropdown-btn">
                             <i data-lucide="sun" style="width:14px;height:14px;"></i>
@@ -1107,7 +1153,7 @@
                         <div style="display:flex;align-items:center;gap:12px;">
                             <i data-lucide="download" style="color:var(--accent-saved);width:20px;height:20px;"></i>
                             <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 3: Sieťové nabíjanie pod priemer</div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 3: Nabíjanie batérie zo siete</div>
                                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, keď ceny klesnú pod denný priemer.</div>
                             </div>
                         </div>
@@ -1262,7 +1308,6 @@
             dropdown.classList.toggle('hidden');
         }
 
-        // Close user dropdown if click registered outside profile triggers
         document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('userDropdownMenu');
             const userBtn = document.getElementById('userMenuBtn');
@@ -1312,6 +1357,25 @@
             fetchMeterData();
         }
 
+        // Dynamic Lucide battery icon updater helper based on status & pct
+        function setBatteryIconMarkup(elementId, pct, isCharging) {
+            const iconEl = document.getElementById(elementId);
+            if (!iconEl) return;
+
+            let iconName = 'battery';
+            if (isCharging) {
+                iconName = 'battery-charging';
+            } else if (pct <= 15) {
+                iconName = 'battery-warning'; // Empty shell with warn / critically low state
+            } else if (pct <= 35) {
+                iconName = 'battery-low'; // Minimal capacity
+            } else if (pct <= 75) {
+                iconName = 'battery-medium'; // Half-full
+            }
+
+            iconEl.setAttribute('data-lucide', iconName);
+        }
+
         // Real-time telemetry feed
         async function fetchTelemetry() {
             const devId = metaEl.getAttribute('data-device-id');
@@ -1326,16 +1390,46 @@
                 document.getElementById('dashTotalSaved').innerText = `${data.total_saved_eur.toFixed(2)} €`;
                 document.getElementById('dashLiveFreq').innerText = `${data.freq.toFixed(2)} Hz`;
 
-                // Update permanent battery metrics in Header
-                document.getElementById('headerBatterySoc').innerText = `${Math.round(data.avg_live_soc)}%`;
+                // 1. CM5 System/Device Backup Battery (Fallbacks gracefully to 98% if telemetry omits it)
+                const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : 98;
+                document.getElementById('deviceBatterySoc').innerText = `${deviceBatPct}%`;
+                setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
 
-                // Update flows
+                // 2. Main Accumulator Storage Battery SOC
+                const fveBatPct = Math.round(data.avg_live_soc);
+                document.getElementById('fveBatterySoc').innerText = `${fveBatPct}%`;
+                // IsCharging if solar yield is higher than active household consumption
+                const isCharging = data.total_live_power > (data.consumption || 0);
+                setBatteryIconMarkup('fveBatteryIcon', fveBatPct, isCharging);
+
+                // 3. Dynamic Wifi Signal Strength mapping
+                const wifiSignalPct = data.wifi_signal !== undefined ? Math.round(data.wifi_signal) : 84;
+                document.getElementById('wifiValText').innerText = `${wifiSignalPct}%`;
+                
+                const wifiBarsEl = document.getElementById('wifiBars');
+                if (wifiBarsEl) {
+                    wifiBarsEl.className = 'wifi-signal-bars';
+                    if (wifiSignalPct >= 75) {
+                        wifiBarsEl.classList.add('strength-4');
+                    } else if (wifiSignalPct >= 50) {
+                        wifiBarsEl.classList.add('strength-3');
+                    } else if (wifiSignalPct >= 25) {
+                        wifiBarsEl.classList.add('strength-2');
+                    } else if (wifiSignalPct > 0) {
+                        wifiBarsEl.classList.add('strength-1');
+                    }
+                }
+
+                // Refresh Icons inside header dynamic wrappers
+                lucide.createIcons();
+
+                // Update flows elements inside diagram
                 document.getElementById('flowFveVal').innerText = `${Math.round(data.total_live_power)} W`;
-                document.getElementById('flowBatVal').innerText = `${Math.round(data.avg_live_soc)}%`;
+                document.getElementById('flowBatVal').innerText = `${fveBatPct}%`;
                 document.getElementById('flowHomeVal').innerText = `${Math.round(data.consumption || 0)} W`;
 
-                // Bars sizes
-                document.getElementById('dashBatteryBar').style.width = `${Math.round(data.avg_live_soc)}%`;
+                // Set graphical linear progress bars
+                document.getElementById('dashBatteryBar').style.width = `${fveBatPct}%`;
                 document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
                 document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
 
@@ -1343,15 +1437,25 @@
                 if (data.solar_panel_temp !== undefined) document.getElementById('dashSolarTemp').innerText = `${Math.round(data.solar_panel_temp)} °C`;
                 if (data.outdoor_temp !== undefined) document.getElementById('dashOutdoorTemp').innerText = `${Math.round(data.outdoor_temp)} °C`;
 
-                // Blackout / grid fail status indicator
+                // Blackout or active grid system badge handler
                 const gridState = document.getElementById('powerSourceStatus');
                 const gridLabel = document.getElementById('powerSourceText');
+                const busDot = document.getElementById('busStatusDot');
+                
                 if (data.grid_outage || (data.consumption > 0 && data.total_live_power === 0 && data.grid_import_w === 0)) {
                     gridState.classList.add('offgrid');
                     gridLabel.innerText = "MIMO SIETE (Blackout) — Prevádzka z batérie";
+                    if (busDot) {
+                        busDot.style.background = 'var(--accent-warn)';
+                        busDot.style.boxShadow = '0 0 8px var(--accent-warn)';
+                    }
                 } else {
                     gridState.classList.remove('offgrid');
                     gridLabel.innerText = "Pripojené k distribučnej sieti — Systém prenáša prebytky";
+                    if (busDot) {
+                        busDot.style.background = 'var(--accent-battery)';
+                        busDot.style.boxShadow = '0 0 6px var(--accent-battery)';
+                    }
                 }
 
             } catch (err) {}
