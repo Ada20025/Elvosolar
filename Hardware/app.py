@@ -1269,7 +1269,7 @@ def cloud_sync_loop():
                     result = {"status": "success", "message": f"Nazov: {new_name}"}
 
             elif action == "update_settings":
-                # Aktualizuj nastavenia (min/max power, SOC, mode, override, model)
+                # Aktualizuj nastavenia (min/max power, SOC, mode)
                 conn = get_db_connection()
                 cursor = conn.cursor()
                 for key in ['min_power_w', 'max_power_w', 'min_soc_pct', 'max_soc_pct', 'auto_mode', 'night_sleep']:
@@ -1278,33 +1278,6 @@ def cloud_sync_loop():
                         cursor.execute("INSERT INTO system_settings (key, value) VALUES (?, ?)", (key, str(config[key])))
                 conn.commit()
                 conn.close()
-
-                # === manual_override (AUTO / ON / OFF) ===
-                new_override = str(config.get('manual_override', '')).strip().upper()
-                if new_override in ['AUTO', 'ON', 'OFF']:
-                    success = safe_apply_system_state(manual_override=new_override)
-                    if success:
-                        log_message(f"[CLOUD] Manual override zmeneny na: {new_override}")
-                    else:
-                        log_message(f"[CLOUD] Chyba pri zmene override na: {new_override}")
-
-                # === active_model_id (1-5 / AI) ===
-                new_model = str(config.get('active_model_id', '')).strip().upper()
-                if new_model:
-                    try:
-                        bg_service.active_model_id = new_model
-                        bg_service.process_control_commands()
-                        log_message(f"[CLOUD] Aktivny model zmeneny na: {new_model}")
-                    except Exception as me:
-                        log_message(f"[CLOUD] Chyba pri zmene modelu: {me}")
-
-                # === night_sleep ===
-                if 'night_sleep' in config:
-                    try:
-                        ns_val = int(config['night_sleep'])
-                        bg_service.night_sleep = ns_val
-                    except: pass
-
                 log_message(f"[CLOUD] Nastavenia aktualizovane: {list(config.keys())}")
                 result = {"status": "success", "message": "Nastavenia ulozene"}
 
