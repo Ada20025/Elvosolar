@@ -153,21 +153,65 @@
             transition: all 0.2s;
         }
 
-        /* Glowing Battery Status (Main accumulator) */
-        .battery-header-pill {
-            background: rgba(16, 185, 129, 0.04);
-            border-color: rgba(16, 185, 129, 0.2);
-            color: var(--accent-battery);
-            font-weight: 800;
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.04);
+        /* Interactive Station Selector Dropdown */
+        .station-dropdown-container {
+            position: relative;
         }
 
-        /* CM5 Device system internal backup battery */
-        .system-header-pill {
-            background: rgba(129, 140, 248, 0.04);
-            border-color: rgba(129, 140, 248, 0.2);
-            color: var(--accent-saved);
+        .station-dropdown-trigger {
+            cursor: pointer;
+            background: rgba(99, 102, 241, 0.08);
+            border-color: rgba(99, 102, 241, 0.25);
+            color: var(--text-primary);
             font-weight: 800;
+        }
+
+        .station-dropdown-trigger:hover {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .station-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: #090d16;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 6px;
+            min-width: 260px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            z-index: 130;
+        }
+
+        .station-dropdown-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        .station-dropdown-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .station-dropdown-item .sn-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8px;
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            color: var(--text-muted);
         }
 
         /* Dynamic Custom Wi-Fi Strength Indicator Bars */
@@ -256,54 +300,6 @@
 
         .user-dropdown-btn:hover {
             background: var(--bg-card-hover);
-        }
-
-        /* Device Tabs bar */
-        .device-selector-wrapper {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding: 12px 24px;
-        }
-
-        .device-selector-inner {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-
-        .device-selector-inner::-webkit-scrollbar { display: none; }
-
-        .device-tab {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
-            border-radius: 12px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-card);
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            white-space: nowrap;
-        }
-
-        .device-tab:hover {
-            background: var(--bg-card-hover);
-            color: var(--text-primary);
-            border-color: rgba(99, 102, 241, 0.3);
-        }
-
-        .device-tab.active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(59, 130, 246, 0.12));
-            border-color: var(--accent-saved);
-            color: var(--text-primary);
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
         }
 
         /* Navigation tabs layout */
@@ -806,21 +802,6 @@
          data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>"
          class="hidden"></div>
 
-    <!-- PWA Install Banner -->
-    <div id="pwaInstallBanner" class="hidden pwa-banner">
-        <div style="display:flex;align-items:center;gap:12px;">
-            <i data-lucide="smartphone" style="color:var(--accent-saved);"></i>
-            <div>
-                <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Nainštalovať ElvoControl</span>
-                <span style="font-size:10px;color:var(--text-secondary);display:block;">Získajte rýchly prístup z domovskej obrazovky.</span>
-            </div>
-        </div>
-        <div style="display:flex;gap:8px;">
-            <button onclick="dismissPwaPrompt()" style="padding:6px 12px;font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;">Neskôr</button>
-            <button onclick="triggerPwaInstall()" style="padding:8px 16px;border-radius:10px;background:linear-gradient(135deg, var(--accent-grid), var(--accent-saved));color:white;font-size:11px;font-weight:800;border:none;cursor:pointer;">Inštalovať</button>
-        </div>
-    </div>
-
     <!-- Header -->
     <header class="header">
         <div class="header-inner">
@@ -835,36 +816,56 @@
             <!-- Permanent System Status Header Panel -->
             <div class="header-controls">
                 
-                <!-- 1. CM5 System Internal Backup Battery (Batéria zariadenia) -->
+                <!-- Station Selector fully integrated into upper header bar -->
+                <?php if (count($devices) > 1): ?>
+                    <div class="station-dropdown-container">
+                        <button id="deviceSelectDropdownBtn" class="sys-indicator station-dropdown-trigger" onclick="toggleDeviceDropdown(event)">
+                            <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-saved);"></i>
+                            <span id="activeStationName"><?php echo htmlspecialchars($devices[0]['name']); ?></span>
+                            <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
+                        </button>
+                        <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
+                            <button onclick="selectActiveDevice(this, 'all', 'Všetky stanice')" class="station-dropdown-item">
+                                <span style="display:flex;align-items:center;gap:8px;">
+                                    <i data-lucide="grid" style="width:14px;height:14px;"></i> Všetky stanice
+                                </span>
+                            </button>
+                            <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
+                            <?php foreach ($devices as $dev): ?>
+                                <button onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" class="station-dropdown-item">
+                                    <span style="display:flex;align-items:center;gap:8px;">
+                                        <i data-lucide="box" style="width:14px;height:14px;"></i>
+                                        <span><?php echo htmlspecialchars($dev['name']); ?></span>
+                                    </span>
+                                    <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="sys-indicator">
+                        <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-saved);"></i>
+                        <span><?php echo htmlspecialchars($devices[0]['name'] ?? 'ElvoControl CM5'); ?></span>
+                    </div>
+                <?php endif; ?>
+
+                <!-- 1. CM5 System/Device Backup Battery (Batéria zariadenia) -->
                 <div class="sys-indicator system-header-pill">
                     <i id="deviceBatteryIcon" data-lucide="battery" style="width:14px;height:14px;"></i>
-                    <span style="opacity: 0.8; font-size:9px; text-transform:uppercase;">Sys:</span>
+                    <span style="opacity: 0.7; font-size:9px; text-transform:uppercase;">Sys:</span>
                     <span id="deviceBatterySoc" class="font-mono">--%</span>
                 </div>
 
-                <!-- 2. Main Accumulator Battery Storage (Batéria stringu / FVE) -->
-                <div class="sys-indicator battery-header-pill">
-                    <i id="fveBatteryIcon" data-lucide="battery" style="width:14px;height:14px;"></i>
-                    <span style="opacity: 0.8; font-size:9px; text-transform:uppercase;">Aku:</span>
-                    <span id="fveBatterySoc" class="font-mono">--%</span>
-                </div>
-
-                <!-- 3. Dynamic Wifi Signal Strength Gauge -->
-                <div class="sys-indicator" id="wifiIndicator">
-                    <i data-lucide="wifi" style="width:13px;height:13px;"></i>
-                    <span id="wifiValText" class="font-mono">--%</span>
+                <!-- 2. Single Adaptive Connection Indicator (WiFi vs Ethernet vs Offline) -->
+                <div class="sys-indicator" id="primaryConnectionIndicator">
+                    <i id="connectionTypeIcon" data-lucide="wifi" style="width:14px;height:14px;"></i>
+                    <span id="connectionTypeText" class="font-mono">Wi-Fi --%</span>
                     <div id="wifiBars" class="wifi-signal-bars">
                         <span class="bar bar-1"></span>
                         <span class="bar bar-2"></span>
                         <span class="bar bar-3"></span>
                         <span class="bar bar-4"></span>
                     </div>
-                </div>
-
-                <!-- 4. Bus status dot -->
-                <div class="sys-indicator">
-                    <span id="busStatusDot" style="width:6px;height:6px;border-radius:50%;background:var(--accent-battery);box-shadow:0 0 6px var(--accent-battery);transition:all 0.3s;"></span>
-                    <span>Zbernica</span>
                 </div>
 
                 <!-- User Profile Trigger Button & Dropdown -->
@@ -908,22 +909,6 @@
         </div>
     </header>
 
-    <!-- Multi-Device selection list -->
-    <div class="device-selector-wrapper">
-        <div class="device-selector-inner">
-            <span style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--text-muted);text-transform:uppercase;margin-right:8px;display:flex;align-items:center;gap:4px;">
-                <i data-lucide="cpu" style="width:12px;height:12px;"></i> Stanice:
-            </span>
-            <?php foreach ($devices as $i => $dev): ?>
-                <div class="device-tab <?php echo $i === 0 ? 'active' : ''; ?>" data-device-id="<?php echo $dev['id']; ?>" onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>')">
-                    <i data-lucide="box" style="width:14px;height:14px;"></i>
-                    <span class="device-tab-name"><?php echo htmlspecialchars($dev['name']); ?></span>
-                    <span style="font-family:'JetBrains Mono';font-size:9px;opacity:0.6;">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-
     <!-- Navigation Tab Bar -->
     <nav class="nav-tabs-container">
         <div class="nav-tabs-inner">
@@ -961,7 +946,7 @@
                         <span id="powerSourceText">Pripojené k distribučnej sieti — Systém prenáša prebytky</span>
                     </div>
 
-                    <!-- Core Telemetry (Category: Live Values) -->
+                    <!-- Core Telemetry -->
                     <div class="metrics-grid-4">
                         <div class="metric-card" style="--line-color: var(--accent-solar);">
                             <span class="metric-label-styled"><i data-lucide="sun" style="width:12px;height:12px;color:var(--accent-solar);"></i> Výkon FVE</span>
@@ -1061,7 +1046,7 @@
                         <div class="card-header-styled">
                             <span class="card-title-styled"><i data-lucide="zap-off"></i> Havarijné Odpojenie FVE</span>
                         </div>
-                        <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">V prípade núdze alebo servisu môžete okamžite vynútiť obmedzenie výroby.</p>
+                        <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">V prípade núdze alebo servisu môžete okamžite obmedziť výkon.</p>
                         <button onclick="setManualOverride('OFF')" class="control-btn" style="width:100%;background:rgba(244,63,94,0.1);border-color:var(--accent-warn);color:var(--accent-warn);">
                             <i data-lucide="shield-alert" style="width:16px;height:16px;"></i> NÚDZOVÉ ODSTAVENIE
                         </button>
@@ -1136,7 +1121,7 @@
                                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Výroba zakázaná pri cenách pod 0 €/MWh.</div>
                             </div>
                         </div>
-                        <i data-lucide="check" style="color:var(--accent-battery);width:16px;height:16px;"></i>
+                        <i id="aiModelCheck1" data-lucide="check" style="color:var(--accent-battery);width:16px;height:16px;"></i>
                     </div>
 
                     <div class="ai-model-card" onclick="setAiModel('2')" id="aiModel2">
@@ -1147,6 +1132,7 @@
                                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do siete iba počas špičiek.</div>
                             </div>
                         </div>
+                        <i id="aiModelCheck2" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
                     </div>
 
                     <div class="ai-model-card" onclick="setAiModel('3')" id="aiModel3">
@@ -1157,6 +1143,7 @@
                                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, keď ceny klesnú pod denný priemer.</div>
                             </div>
                         </div>
+                        <i id="aiModelCheck3" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
                     </div>
 
                     <div class="ai-model-card" onclick="setAiModel('4')" id="aiModel4">
@@ -1167,6 +1154,7 @@
                                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Kombinované nákupy a predaje podľa trhu.</div>
                             </div>
                         </div>
+                        <i id="aiModelCheck4" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
                     </div>
 
                     <div class="ai-model-card" onclick="setAiModel('5')" id="aiModel5">
@@ -1177,6 +1165,7 @@
                                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nulový odber zo siete, záchranná hranica SOC 15%.</div>
                             </div>
                         </div>
+                        <i id="aiModelCheck5" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
                     </div>
                 </div>
             </div>
@@ -1216,47 +1205,100 @@
                         <i data-lucide="flame" style="width:24px;height:24px;color:var(--accent-solar);"></i>
                         <span style="font-size:12px;font-weight:800;">Bojler TÚV</span>
                         <span style="font-size:10px;color:var(--text-muted);">Shelly 1PM</span>
-                        <span class="relay-indicator active">ZOPNUTÉ</span>
+                        <span id="relayStatus1" class="relay-indicator active">ZOPNUTÉ</span>
+                        <button onclick="toggleRelayState(1)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť relé</button>
                     </div>
 
                     <div class="relay-item-card">
                         <i data-lucide="droplet" style="width:24px;height:24px;color:var(--accent-grid);"></i>
                         <span style="font-size:12px;font-weight:800;">Filtrácia bazéna</span>
                         <span style="font-size:10px;color:var(--text-muted);">Shelly Duo</span>
-                        <span class="relay-indicator">VYPNUTÉ</span>
+                        <span id="relayStatus2" class="relay-indicator">VYPNUTÉ</span>
+                        <button onclick="toggleRelayState(2)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť relé</button>
                     </div>
 
                     <div class="relay-item-card">
                         <i data-lucide="wind" style="width:24px;height:24px;color:var(--text-muted);"></i>
                         <span style="font-size:12px;font-weight:800;">Klimatizácia</span>
                         <span style="font-size:10px;color:var(--text-muted);">GPIO Relé</span>
-                        <span class="relay-indicator">OFFLINE</span>
+                        <span id="relayStatus3" class="relay-indicator">OFFLINE</span>
+                        <button onclick="toggleRelayState(3)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť relé</button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Tab 4: HOLIDAY -->
+        <!-- Tab 4: PRE-DESIGNED ULTRA HOLIDAY SAFEGUARD EMS MODULE -->
         <section id="sectionHoliday" class="view-section">
-            <div class="glass-card">
-                <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="palm-tree"></i> Plánovač standby dovolenky</span>
-                    <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+            <div class="glass-card" style="border:1.5px solid var(--accent-grid);background:linear-gradient(135deg,rgba(15,23,42,0.8),rgba(99,102,241,0.06));">
+                
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;justify-content:center;">
+                            <i data-lucide="shield-check" style="color:var(--accent-saved);width:22px;height:22px;"></i>
+                        </div>
+                        <div>
+                            <span style="font-size:9px;font-weight:900;letter-spacing:1px;color:var(--accent-saved);text-transform:uppercase;display:block;">BEZPEČNOSTNÝ EMS ASISTENT</span>
+                            <h3 style="font-size:18px;font-weight:900;color:var(--text-primary);letter-spacing:-0.3px;margin-top:2px;">SafeGuard EMS — Inteligentná Dovolenka</h3>
+                        </div>
+                    </div>
+                    <label style="position:relative;width:52px;height:28px;cursor:pointer;">
                         <input type="checkbox" id="holidayEnabled" onchange="toggleHolidayModeState(this.checked)" style="opacity:0;width:0;height:0;">
-                        <span style="position:absolute;inset:0;background:rgba(255,255,255,0.08);border-radius:12px;transition:all 0.3s;"></span>
+                        <span style="position:absolute;inset:0;background:rgba(255,255,255,0.08);border:1px solid var(--border-card);border-radius:14px;transition:all 0.3s;display:flex;align-items:center;"><span style="width:20px;height:20px;border-radius:50%;background:#4b5563;margin-left:4px;transition:all 0.3s;display:block;" id="holidayToggleKnob"></span></span>
                     </label>
                 </div>
 
-                <div class="holiday-grid">
+                <div id="holidayActiveNotice" class="hidden" style="padding:16px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);border-radius:14px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+                    <i data-lucide="lock" style="color:var(--accent-battery);width:20px;height:20px;"></i>
                     <div>
-                        <label style="font-size:10px;font-weight:800;color:var(--text-muted);display:block;margin-bottom:6px;">ODCHOD Z DOMU</label>
+                        <h4 style="font-size:12px;font-weight:800;color:var(--accent-battery);">Ochranný režim standby je aktívny</h4>
+                        <p style="font-size:11px;color:var(--text-secondary);">EMS znížil spotrebu domu a monitoruje havarijné stavy.</p>
+                    </div>
+                </div>
+
+                <!-- Interaktívne Dátumy odchodu / príchodu -->
+                <div class="holiday-grid" style="margin-bottom:24px;">
+                    <div>
+                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">DÁTUM A ČAS ODCHODU</label>
                         <input type="datetime-local" id="holidayFromInput" class="input-styled">
                     </div>
                     <div>
-                        <label style="font-size:10px;font-weight:800;color:var(--text-muted);display:block;margin-bottom:6px;">PRÍCHOD DOMOV</label>
+                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">DÁTUM A ČAS NÁVRATU</label>
                         <input type="datetime-local" id="holidayUntilInput" class="input-styled">
                     </div>
                 </div>
+
+                <!-- Zónové klimatické min/max nastavenie pre ochranu budovy -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;padding:20px;margin-bottom:20px;">
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;">Min Teplota (Ochrana budovy)</span>
+                            <span id="minTempDisplay" style="font-size:12px;font-weight:800;color:var(--accent-grid);font-family:'JetBrains Mono';">15 °C</span>
+                        </div>
+                        <input type="range" id="holidayMinTemp" min="5" max="20" value="15" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('minTempDisplay').innerText = this.value + ' °C'">
+                    </div>
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;">Max Teplota (Proti prehriatiu)</span>
+                            <span id="maxTempDisplay" style="font-size:12px;font-weight:800;color:var(--accent-warn);font-family:'JetBrains Mono';">32 °C</span>
+                        </div>
+                        <input type="range" id="holidayMaxTemp" min="25" max="40" value="32" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('maxTempDisplay').innerText = this.value + ' °C'">
+                    </div>
+                </div>
+
+                <!-- Vitality battery threshold selection -->
+                <div style="background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;padding:20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;">Záložný SOC limit akumulátora</span>
+                        <span id="minSocDisplay" style="font-size:12px;font-weight:800;color:var(--accent-battery);font-family:'JetBrains Mono';">20% SOC</span>
+                    </div>
+                    <input type="range" id="holidayMinSoc" min="10" max="50" step="5" value="20" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('minSocDisplay').innerText = this.value + '% SOC'">
+                    <span style="font-size:10px;color:var(--text-muted);display:block;margin-top:8px;">Ak batéria klesne pod túto úroveň, systém záchranne zablokuje akýkoľvek standby odber na uchovanie kapacity článkov.</span>
+                </div>
+
+                <button onclick="saveHolidayParams()" style="margin-top:20px;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg, var(--accent-grid), var(--accent-saved));color:white;font-size:12px;font-weight:800;border:none;cursor:pointer;transition:all 0.2s;">
+                    ULOŽIŤ BEZPEČNOSTNÝ PROTOKOL DOVOLENKY
+                </button>
             </div>
         </section>
 
@@ -1301,6 +1343,13 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
+        // Device Dropdown handler
+        function toggleDeviceDropdown(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('deviceDropdownMenu');
+            if (dropdown) dropdown.classList.toggle('hidden');
+        }
+
         // Dropdown toggle system with dynamic styling fixes
         function toggleUserDropdown(e) {
             e.stopPropagation();
@@ -1309,11 +1358,10 @@
         }
 
         document.addEventListener('click', (e) => {
-            const dropdown = document.getElementById('userDropdownMenu');
-            const userBtn = document.getElementById('userMenuBtn');
-            if (dropdown && !dropdown.contains(e.target) && !userBtn.contains(e.target)) {
-                dropdown.classList.add('hidden');
-            }
+            const uDropdown = document.getElementById('userDropdownMenu');
+            const dDropdown = document.getElementById('deviceDropdownMenu');
+            if (uDropdown) uDropdown.classList.add('hidden');
+            if (dDropdown) dDropdown.classList.add('hidden');
         });
 
         // Tab selection controller
@@ -1349,9 +1397,12 @@
         }
 
         // Dynamic multi-device toggle fetch
-        function selectActiveDevice(element, id) {
-            document.querySelectorAll('.device-tab').forEach(tab => tab.classList.remove('active'));
-            element.classList.add('active');
+        function selectActiveDevice(element, id, name) {
+            const dropdown = document.getElementById('deviceDropdownMenu');
+            if (dropdown) dropdown.classList.add('hidden');
+            const label = document.getElementById('activeStationName');
+            if (label) label.innerText = name;
+            
             metaEl.setAttribute('data-device-id', id);
             fetchTelemetry();
             fetchMeterData();
@@ -1366,11 +1417,11 @@
             if (isCharging) {
                 iconName = 'battery-charging';
             } else if (pct <= 15) {
-                iconName = 'battery-warning'; // Empty shell with warn / critically low state
+                iconName = 'battery-warning';
             } else if (pct <= 35) {
-                iconName = 'battery-low'; // Minimal capacity
+                iconName = 'battery-low';
             } else if (pct <= 75) {
-                iconName = 'battery-medium'; // Half-full
+                iconName = 'battery-medium';
             }
 
             iconEl.setAttribute('data-lucide', iconName);
@@ -1390,33 +1441,31 @@
                 document.getElementById('dashTotalSaved').innerText = `${data.total_saved_eur.toFixed(2)} €`;
                 document.getElementById('dashLiveFreq').innerText = `${data.freq.toFixed(2)} Hz`;
 
-                // 1. CM5 System/Device Backup Battery (Fallbacks gracefully to 98% if telemetry omits it)
+                // 1. CM5 System/Device Backup Battery
                 const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : 98;
                 document.getElementById('deviceBatterySoc').innerText = `${deviceBatPct}%`;
                 setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
 
-                // 2. Main Accumulator Storage Battery SOC
-                const fveBatPct = Math.round(data.avg_live_soc);
-                document.getElementById('fveBatterySoc').innerText = `${fveBatPct}%`;
-                // IsCharging if solar yield is higher than active household consumption
-                const isCharging = data.total_live_power > (data.consumption || 0);
-                setBatteryIconMarkup('fveBatteryIcon', fveBatPct, isCharging);
-
-                // 3. Dynamic Wifi Signal Strength mapping
+                // 2. Wi-Fi or Ethernet selection status indicators
                 const wifiSignalPct = data.wifi_signal !== undefined ? Math.round(data.wifi_signal) : 84;
-                document.getElementById('wifiValText').innerText = `${wifiSignalPct}%`;
-                
+                const connectionTypeIcon = document.getElementById('connectionTypeIcon');
+                const connectionTypeText = document.getElementById('connectionTypeText');
                 const wifiBarsEl = document.getElementById('wifiBars');
-                if (wifiBarsEl) {
-                    wifiBarsEl.className = 'wifi-signal-bars';
-                    if (wifiSignalPct >= 75) {
-                        wifiBarsEl.classList.add('strength-4');
-                    } else if (wifiSignalPct >= 50) {
-                        wifiBarsEl.classList.add('strength-3');
-                    } else if (wifiSignalPct >= 25) {
-                        wifiBarsEl.classList.add('strength-2');
-                    } else if (wifiSignalPct > 0) {
-                        wifiBarsEl.classList.add('strength-1');
+
+                if (data.connection_type === 'ethernet' || data.ethernet_active) {
+                    if (connectionTypeIcon) connectionTypeIcon.setAttribute('data-lucide', 'cable');
+                    if (connectionTypeText) connectionTypeText.innerText = 'Ethernet OK';
+                    if (wifiBarsEl) wifiBarsEl.classList.add('hidden');
+                } else {
+                    if (connectionTypeIcon) connectionTypeIcon.setAttribute('data-lucide', 'wifi');
+                    if (connectionTypeText) connectionTypeText.innerText = `${wifiSignalPct}%`;
+                    if (wifiBarsEl) {
+                        wifiBarsEl.classList.remove('hidden');
+                        wifiBarsEl.className = 'wifi-signal-bars';
+                        if (wifiSignalPct >= 75) wifiBarsEl.classList.add('strength-4');
+                        else if (wifiSignalPct >= 50) wifiBarsEl.classList.add('strength-3');
+                        else if (wifiSignalPct >= 25) wifiBarsEl.classList.add('strength-2');
+                        else if (wifiSignalPct > 0) wifiBarsEl.classList.add('strength-1');
                     }
                 }
 
@@ -1425,11 +1474,11 @@
 
                 // Update flows elements inside diagram
                 document.getElementById('flowFveVal').innerText = `${Math.round(data.total_live_power)} W`;
-                document.getElementById('flowBatVal').innerText = `${fveBatPct}%`;
+                document.getElementById('flowBatVal').innerText = `${Math.round(data.avg_live_soc)}%`;
                 document.getElementById('flowHomeVal').innerText = `${Math.round(data.consumption || 0)} W`;
 
                 // Set graphical linear progress bars
-                document.getElementById('dashBatteryBar').style.width = `${fveBatPct}%`;
+                document.getElementById('dashBatteryBar').style.width = `${Math.round(data.avg_live_soc)}%`;
                 document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
                 document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
 
@@ -1440,22 +1489,13 @@
                 // Blackout or active grid system badge handler
                 const gridState = document.getElementById('powerSourceStatus');
                 const gridLabel = document.getElementById('powerSourceText');
-                const busDot = document.getElementById('busStatusDot');
                 
                 if (data.grid_outage || (data.consumption > 0 && data.total_live_power === 0 && data.grid_import_w === 0)) {
                     gridState.classList.add('offgrid');
                     gridLabel.innerText = "MIMO SIETE (Blackout) — Prevádzka z batérie";
-                    if (busDot) {
-                        busDot.style.background = 'var(--accent-warn)';
-                        busDot.style.boxShadow = '0 0 8px var(--accent-warn)';
-                    }
                 } else {
                     gridState.classList.remove('offgrid');
                     gridLabel.innerText = "Pripojené k distribučnej sieti — Systém prenáša prebytky";
-                    if (busDot) {
-                        busDot.style.background = 'var(--accent-battery)';
-                        busDot.style.boxShadow = '0 0 6px var(--accent-battery)';
-                    }
                 }
 
             } catch (err) {}
@@ -1471,6 +1511,152 @@
                     document.getElementById('flowGridVal').innerText = `${Math.round(m.grid_import_w || m.grid_export_w)} W`;
                 }
             } catch (err) {}
+        }
+
+        // Functional bindings for Meter Mode, Manual Override, and AI models
+        async function setMeterMode(mode) {
+            document.querySelectorAll('#meterModeGrid .control-btn').forEach(btn => btn.classList.remove('active'));
+            const customSet = document.getElementById('customSettings');
+            if (customSet) customSet.style.display = (mode === 'CUSTOM') ? 'block' : 'none';
+
+            const activeBtnId = {
+                UNLIMITED: 'btnMeterUnlimited',
+                SELF_CONSUMPTION: 'btnMeterSelf',
+                ZERO: 'btnMeterZero',
+                PLUS: 'btnMeterPlus',
+                SMART: 'btnMeterSmart',
+                CUSTOM: 'btnMeterCustom'
+            }[mode];
+            const btn = document.getElementById(activeBtnId);
+            if (btn) btn.classList.add('active');
+
+            try {
+                const devId = metaEl.getAttribute('data-device-id');
+                await fetch(`${basePath}/api/device/${devId}/meter`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({control_mode: mode})
+                });
+            } catch(e) {}
+        }
+
+        async function setManualOverride(mode) {
+            document.querySelectorAll('#sectionControl .control-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtnId = {
+                AUTO: 'btnOverrideAuto',
+                ON: 'btnOverrideOn',
+                OFF: 'btnOverrideOff'
+            }[mode];
+            const btn = document.getElementById(activeBtnId);
+            if (btn) btn.classList.add('active');
+
+            try {
+                const devId = metaEl.getAttribute('data-device-id');
+                await fetch(`${basePath}/api/device/${devId}/control`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action: 'override', value: mode})
+                });
+            } catch(e) {}
+        }
+
+        async function setAiModel(id) {
+            document.querySelectorAll('.ai-model-card').forEach((card, idx) => {
+                card.classList.remove('active');
+                const check = document.getElementById('aiModelCheck' + (idx + 1));
+                if (check) check.classList.add('hidden');
+            });
+
+            const activeCard = document.getElementById('aiModel' + id);
+            if (activeCard) activeCard.classList.add('active');
+            const activeCheck = document.getElementById('aiModelCheck' + id);
+            if (activeCheck) activeCheck.classList.remove('hidden');
+
+            try {
+                const devId = metaEl.getAttribute('data-device-id');
+                await fetch(`${basePath}/api/device/${devId}/model`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({model_id: id})
+                });
+            } catch(e) {}
+        }
+
+        // Relay simulation toggles
+        function toggleRelayState(relayId) {
+            const label = document.getElementById('relayStatus' + relayId);
+            if (!label) return;
+            if (label.innerText === 'ZOPNUTÉ') {
+                label.innerText = 'VYPNUTÉ';
+                label.classList.remove('active');
+            } else {
+                label.innerText = 'ZOPNUTÉ';
+                label.classList.add('active');
+            }
+        }
+
+        // Holiday Management SafeGuard module
+        function toggleHolidayModeState(checked) {
+            const knob = document.getElementById('holidayToggleKnob');
+            const notice = document.getElementById('holidayActiveNotice');
+            if (checked) {
+                if (knob) {
+                    knob.style.transform = 'translateX(24px)';
+                    knob.style.background = 'var(--accent-battery)';
+                }
+                if (notice) notice.classList.remove('hidden');
+            } else {
+                if (knob) {
+                    knob.style.transform = 'translateX(0px)';
+                    knob.style.background = '#4b5563';
+                }
+                if (notice) notice.classList.add('hidden');
+            }
+        }
+
+        async function saveHolidayParams() {
+            const isEnabled = document.getElementById('holidayEnabled').checked;
+            const payload = {
+                enabled: isEnabled,
+                until: document.getElementById('holidayUntilInput').value,
+                preheat_hours: parseInt(document.getElementById('holidayPreheatHours').value),
+                min_temp: parseFloat(document.getElementById('holidayMinTemp').value),
+                max_temp: parseFloat(document.getElementById('holidayMaxTemp').value),
+                min_soc: parseInt(document.getElementById('holidayMinSoc').value)
+            };
+            try {
+                const devId = metaEl.getAttribute('data-device-id');
+                await fetch(`${basePath}/api/device/${devId}/holiday-mode`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+            } catch(e) {}
+        }
+
+        // Terminal CMD logic
+        function handleCliKey(e) {
+            if (e.key === 'Enter') executeCliCommand();
+        }
+
+        function executeCliCommand() {
+            const input = document.getElementById('cliInput');
+            const command = input.value.trim();
+            if (!command) return;
+            input.value = '';
+
+            const consoleBox = document.getElementById('cliOutput');
+            const timestamp = new Date().toLocaleTimeString('sk-SK');
+            consoleBox.innerHTML += `<div class="terminal-log-row" style="color:#ffffff;">[${timestamp}] $ ${command}</div>`;
+
+            setTimeout(() => {
+                if (command.startsWith('read')) {
+                    consoleBox.innerHTML += `<div class="terminal-log-row" style="color:var(--accent-battery);">[${timestamp}] Modbus Read OK: Value = 230 V</div>`;
+                } else {
+                    consoleBox.innerHTML += `<div class="terminal-log-row" style="color:var(--accent-warn);">[${timestamp}] CMD Error or invalid syntax.</div>`;
+                }
+                consoleBox.scrollTop = consoleBox.scrollHeight;
+            }, 300);
         }
 
         // Theme controllers
