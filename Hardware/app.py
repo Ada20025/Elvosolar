@@ -1256,6 +1256,31 @@ def cloud_sync_loop():
                 else:
                     result = {"status": "success", "message": "WiFi preskocene"}
 
+            elif action == "set_name":
+                new_name = config.get("name", "")
+                if new_name:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM system_settings WHERE key = 'device_name'")
+                    cursor.execute("INSERT INTO system_settings (key, value) VALUES ('device_name', ?)", (new_name,))
+                    conn.commit()
+                    conn.close()
+                    log_message(f"[CLOUD] Nazov zariadenia zmeneny na: {new_name}")
+                    result = {"status": "success", "message": f"Nazov: {new_name}"}
+
+            elif action == "update_settings":
+                # Aktualizuj nastavenia (min/max power, SOC, mode)
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                for key in ['min_power_w', 'max_power_w', 'min_soc_pct', 'max_soc_pct', 'auto_mode', 'night_sleep']:
+                    if key in config:
+                        cursor.execute("DELETE FROM system_settings WHERE key = ?", (key,))
+                        cursor.execute("INSERT INTO system_settings (key, value) VALUES (?, ?)", (key, str(config[key])))
+                conn.commit()
+                conn.close()
+                log_message(f"[CLOUD] Nastavenia aktualizovane: {list(config.keys())}")
+                result = {"status": "success", "message": "Nastavenia ulozene"}
+
             try:
                 for _retry in range(3):
                     try:
