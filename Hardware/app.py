@@ -435,6 +435,128 @@ def api_is_claimed():
 def get_devices_db_list():
     return DEVICE_DB
 
+@app.get("/wifi-config", response_class=HTMLResponse)
+def serve_wifi_config():
+    """Lokalna WiFi konfiguracia - funguje aj bez internetu (AP mode)."""
+    html = """
+    <!DOCTYPE html>
+    <html lang="sk">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nastavenie WiFi | ElvoControl</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+        <style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body { font-family:'Plus Jakarta Sans',sans-serif; min-height:100vh; background:#020617; color:#f8fafc; display:flex; align-items:center; justify-content:center; padding:20px; }
+            .card { background:rgba(15,23,42,.8); border:1px solid rgba(99,102,241,.15); border-radius:20px; padding:32px; max-width:400px; width:100%; box-shadow:0 20px 50px rgba(0,0,0,.4); }
+            h1 { font-size:20px; font-weight:900; margin-bottom:8px; }
+            .subtitle { font-size:12px; color:#64748b; margin-bottom:24px; }
+            .wifi-list { max-height:200px; overflow-y:auto; margin-bottom:16px; }
+            .wifi-item { display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid rgba(255,255,255,.06); border-radius:10px; margin-bottom:8px; cursor:pointer; transition:all .2s; }
+            .wifi-item:hover { border-color:rgba(59,130,246,.3); background:rgba(59,130,246,.05); }
+            .wifi-item.selected { border-color:#3b82f6; background:rgba(59,130,246,.1); }
+            .wifi-name { font-size:13px; font-weight:700; }
+            .wifi-signal { font-size:10px; color:#64748b; }
+            input { width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.06); background:rgba(2,6,23,.8); color:#f8fafc; font-size:13px; outline:none; margin-bottom:12px; }
+            input:focus { border-color:rgba(59,130,246,.5); }
+            button { width:100%; padding:14px; border-radius:12px; border:none; background:linear-gradient(135deg,#3b82f6,#6366f1); color:white; font-size:14px; font-weight:800; cursor:pointer; transition:all .2s; }
+            button:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(59,130,246,.3); }
+            button:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+            .status { margin-top:16px; padding:12px; border-radius:10px; font-size:12px; text-align:center; display:none; }
+            .status.ok { display:block; background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.2); color:#10b981; }
+            .status.error { display:block; background:rgba(244,63,94,.1); border:1px solid rgba(244,63,94,.2); color:#f43f5e; }
+            .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .6s linear infinite; margin-right:8px; vertical-align:middle; }
+            @keyframes spin { to { transform:rotate(360deg); } }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>📶 Nastavenie WiFi</h1>
+            <p class="subtitle">Pripojte ElvoControl k vašej domácej WiFi sieti</p>
+            
+            <div id="wifiList" class="wifi-list">
+                <p style="text-align:center;color:#64748b;font-size:12px;">Načítavam siete...</p>
+            </div>
+            
+            <input type="password" id="wifiPass" placeholder="Heslo k WiFi sieti">
+            <button id="connectBtn" onclick="connectWifi()" disabled>Pripojiť sa</button>
+            <div id="statusMsg" class="status"></div>
+        </div>
+
+        <script>
+            let selectedSsid = '';
+            
+            async function loadWifi() {
+                try {
+                    const res = await fetch('/api/system/wifi/scan');
+                    const nets = await res.json();
+                    const list = document.getElementById('wifiList');
+                    list.innerHTML = '';
+                    if (nets.length === 0) {
+                        list.innerHTML = '<p style="text-align:center;color:#64748b;font-size:12px;">Žiadne siete nenájdené</p>';
+                        return;
+                    }
+                    nets.forEach(n => {
+                        const item = document.createElement('div');
+                        item.className = 'wifi-item';
+                        item.innerHTML = `<div><div class="wifi-name">${n.ssid}</div><div class="wifi-signal">${n.signal}% signal</div></div>`;
+                        item.onclick = () => {
+                            document.querySelectorAll('.wifi-item').forEach(i => i.classList.remove('selected'));
+                            item.classList.add('selected');
+                            selectedSsid = n.ssid;
+                            document.getElementById('connectBtn').disabled = false;
+                        };
+                        list.appendChild(item);
+                    });
+                } catch(e) {
+                    document.getElementById('wifiList').innerHTML = '<p style="text-align:center;color:#f43f5e;font-size:12px;">Chyba pri načítaní sietí</p>';
+                }
+            }
+            
+            async function connectWifi() {
+                if (!selectedSsid) return;
+                const pass = document.getElementById('wifiPass').value;
+                const btn = document.getElementById('connectBtn');
+                const status = document.getElementById('statusMsg');
+                
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span>Pripájam sa...';
+                
+                try {
+                    const res = await fetch('/api/system/wifi/connect', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ssid: selectedSsid, password: pass})
+                    });
+                    const data = await res.json();
+                    
+                    if (data.status === 'success') {
+                        status.className = 'status ok';
+                        status.innerText = '✅ WiFi pripojené! Zariadenie sa pripája k internetu...';
+                        // Reload za 5s
+                        setTimeout(() => { window.location.reload(); }, 5000);
+                    } else {
+                        status.className = 'status error';
+                        status.innerText = '❌ ' + (data.message || 'Pripojenie zlyhalo');
+                        btn.disabled = false;
+                        btn.innerText = 'Pripojiť sa';
+                    }
+                } catch(e) {
+                    status.className = 'status error';
+                    status.innerText = '❌ Chyba komunikácie';
+                    btn.disabled = false;
+                    btn.innerText = 'Pripojiť sa';
+                }
+            }
+            
+            loadWifi();
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html)
+
 @app.get("/api/system/wifi/scan")
 def api_scan_wifi():
     return SystemService.scan_wifi_networks()
@@ -912,7 +1034,7 @@ def cloud_sync_loop():
         ap_result = SystemService.start_ap_mode()
         if ap_result.get('status') == 'success':
             log_message(f"[WIFI] AP hotspot: {ap_result.get('ssid')} / {ap_result.get('password')}")
-            log_message(f"[WIFI] Pripojte sa na WiFi a otvorte http://192.168.4.1/setup")
+            log_message(f"[WIFI] Pripojte sa na WiFi a otvorte http://192.168.4.1/wifi-config")
             led.anim_wifi_ap()  # Cyan puls - AP mode
         else:
             log_message(f"[WIFI] AP hotspot zlyhal: {ap_result.get('message')}")
