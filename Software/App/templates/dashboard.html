@@ -44,6 +44,31 @@
             --shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
             --orb-opacity: 0.05;
         }
+        body.light-mode .brand-text { color: #0f172a; }
+        body.light-mode .brand-tag { color: #6366f1; }
+        body.light-mode .user-name { color: #0f172a; }
+        body.light-mode .page-title { color: #0f172a; }
+        body.light-mode .page-subtitle { color: #475569; }
+        body.light-mode .stat-label { color: #64748b; }
+        body.light-mode .stat-value { color: #0f172a; }
+        body.light-mode .stat-value.cyan { color: #6366f1; }
+        body.light-mode .stat-value.blue { color: #3b82f6; }
+        body.light-mode .stat-value.amber { color: #d97706; }
+        body.light-mode .stat-change { color: #64748b; }
+        body.light-mode .card-brand { color: #6366f1; }
+        body.light-mode .card-name { color: #0f172a; }
+        body.light-mode .card-serial { color: #64748b; }
+        body.light-mode .metric-label { color: #64748b; }
+        body.light-mode .metric-value { color: #0f172a; }
+        body.light-mode .metric-value.blue { color: #3b82f6; }
+        body.light-mode .metric-value.white { color: #0f172a; }
+        body.light-mode .card-open { color: #6366f1; }
+        body.light-mode .status-text { color: #64748b; }
+        body.light-mode .status-text.online { color: #10b981; }
+        body.light-mode .footer-text { color: #94a3b8; }
+        body.light-mode .toast { background: #ffffff; border-color: rgba(0,0,0,0.08); color: #0f172a; }
+        body.light-mode input, body.light-mode select, body.light-mode textarea { background: #ffffff; color: #0f172a; border-color: rgba(0,0,0,0.1); }
+        body.light-mode .bg-orb { opacity: 0.03; }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -728,9 +753,15 @@
             </div>
 
             <!-- User dropdown -->
-            <div id="user-menu" class="hidden" style="position: absolute; top: 56px; right: 24px; background: var(--bg-secondary); border: 1px solid var(--border-card); border-radius: 12px; padding: 8px; min-width: 200px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 60;">
-                <button onclick="toggleTheme()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); text-decoration: none; transition: background 0.2s; width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
+            <div id="user-menu" class="hidden" style="position: absolute; top: 56px; right: 24px; background: var(--bg-secondary); border: 1px solid var(--border-card); border-radius: 12px; padding: 8px; min-width: 220px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 60;">
+                <button onclick="toggleTheme()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); transition: background 0.2s; width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
                     <span id="themeIcon">☀️</span> <span id="themeLabel">Svetlý režim</span>
+                </button>
+                <button onclick="sendVerificationEmail()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); transition: background 0.2s; width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
+                    📧 Overiť email
+                </button>
+                <button onclick="requestPushPermission()" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); transition: background 0.2s; width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
+                    🔔 Push notifikácie
                 </button>
                 <div style="height: 1px; background: var(--border-card); margin: 4px 8px;"></div>
                 <a href="<?php echo $base_path; ?>/profile" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-primary); text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
@@ -1451,6 +1482,54 @@
                 loadControlPanel();
             } catch(e) {}
         }
+
+        // === OVEROVACI EMAIL ===
+        async function sendVerificationEmail() {
+            try {
+                const res = await fetch(`${basePath}/api/user/verify-email`, {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                const data = await res.json();
+                showToast('Email', data.message || 'Overovací email odoslaný', 'success');
+            } catch(e) {
+                showToast('Chyba', 'Nepodarilo sa odoslať email', 'error');
+            }
+        }
+
+        // === PUSH NOTIFIKACIE ===
+        async function requestPushPermission() {
+            if (!('Notification' in window)) {
+                showToast('Notifikácie', 'Váš prehliadač nepodporuje push notifikácie', 'error');
+                return;
+            }
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                // Registruj subscription
+                try {
+                    const reg = await navigator.serviceWorker.ready;
+                    const subscription = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: null // Treba VAPID key
+                    });
+                    await fetch(`${basePath}/api/user/push-subscribe`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        credentials: 'same-origin',
+                        body: JSON.stringify(subscription)
+                    });
+                    showToast('Notifikácie', 'Push notifikácie povolené!', 'success');
+                } catch(e) {
+                    showToast('Notifikácie', 'Notifikácie povolené (bez registrácie)', 'success');
+                }
+            } else {
+                showToast('Notifikácie', 'Notifikácie boli zamietnuté', 'error');
+            }
+        }
+
+        // === TERMINAL LEN PRE ADMINA ===
+        // Terminal je dostupny len pre userov s rolou admin
+        // (kontrola sa robi na serveri)
 
         // Nacitaj control panel po nacitani stranky
         loadControlPanel();

@@ -786,7 +786,15 @@ elseif (preg_match('#^/device/([0-9]+)$#', $path, $matches) && $method === 'GET'
         header("Location: " . $base_path . "/");
         exit;
     }
-    render_template('device_detail.html', ['device' => $device]);
+    // Zisti ci je user admin
+    $is_admin = false;
+    if (isset($_SESSION['user_id'])) {
+        $stmt_admin = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $stmt_admin->execute([$_SESSION['user_id']]);
+        $admin_row = $stmt_admin->fetch();
+        $is_admin = ($admin_row && ($admin_row['role'] ?? '') === 'admin');
+    }
+    render_template('device_detail.html', ['device' => $device, 'is_admin' => $is_admin]);
 }
 
 // --- DOVOLENKOVÉ CLOUD API ENDPOINTY ---

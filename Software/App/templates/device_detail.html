@@ -162,7 +162,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;hei
 <button onclick="switchTab('dashboard')" id="tabBtnDashboard" class="tab active"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Prehľad</button>
 <button onclick="switchTab('app_sim')" id="tabBtnAppSim" class="tab"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>Smart Aplikácia</button>
 <button onclick="switchTab('holiday')" id="tabBtnHoliday" class="tab">🌴 Dovolenka</button>
-<button onclick="switchTab('terminal')" id="tabBtnTerminal" class="tab"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Terminál</button>
+<?php if ($is_admin): ?><button onclick="switchTab('terminal')" id="tabBtnTerminal" class="tab"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Terminál</button><?php endif; ?>
 <button onclick="switchTab('meter')" id="tabBtnMeter" class="tab"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M6.34 6.34l1.42 1.42M16.24 16.24l1.42 1.42M17.66 6.34l-1.42 1.42M7.76 16.24l-1.42 1.42"/></svg>Smart Meter</button>
 </nav>
 
