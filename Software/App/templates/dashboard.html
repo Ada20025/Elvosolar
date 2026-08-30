@@ -75,7 +75,7 @@
             50% { transform: translate(40px, -30px) scale(1.1); }
         }
 
-        /* Header Layout */
+        /* Symmetric Header Layout */
         .header {
             position: sticky;
             top: 0;
@@ -91,17 +91,32 @@
             max-width: 1400px;
             margin: 0 auto;
             padding: 0 24px;
-            height: 70px;
-            display: flex;
+            height: 75px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            justify-content: space-between;
         }
 
-        .header-brand {
+        .header-left-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: flex-start;
+        }
+
+        .header-center-brand {
             display: flex;
             align-items: center;
             gap: 12px;
             text-decoration: none;
+            justify-content: center;
+        }
+
+        .header-right-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: flex-end;
         }
 
         .brand-logo-img {
@@ -132,13 +147,6 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Header Controls and Persistent Indicators */
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
         .sys-indicator {
             display: flex;
             align-items: center;
@@ -153,21 +161,53 @@
             transition: all 0.2s;
         }
 
-        /* Interactive Station Selector Dropdown */
-        .station-dropdown-container {
-            position: relative;
+        /* Dynamic Connection Indicator Styling */
+        .conn-indicator-sim {
+            border-color: rgba(245, 158, 11, 0.2);
+            color: var(--accent-solar);
+        }
+        .conn-indicator-wifi {
+            border-color: rgba(16, 185, 129, 0.2);
+            color: var(--accent-battery);
+        }
+        .conn-indicator-eth {
+            border-color: rgba(59, 130, 246, 0.2);
+            color: var(--accent-grid);
         }
 
+        /* Dynamic Custom Wi-Fi / LTE Strength Indicator Bars */
+        .wifi-signal-bars {
+            display: inline-flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 10px;
+            margin-left: 2px;
+        }
+
+        .wifi-signal-bars .bar {
+            width: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 1px;
+        }
+
+        .wifi-signal-bars .bar-1 { height: 3px; }
+        .wifi-signal-bars .bar-2 { height: 5px; }
+        .wifi-signal-bars .bar-3 { height: 8px; }
+        .wifi-signal-bars .bar-4 { height: 10px; }
+
+        .wifi-signal-bars.strength-1 .bar-1 { background: currentColor; }
+        .wifi-signal-bars.strength-2 .bar-1, .wifi-signal-bars.strength-2 .bar-2 { background: currentColor; }
+        .wifi-signal-bars.strength-3 .bar-1, .wifi-signal-bars.strength-3 .bar-2, .wifi-signal-bars.strength-3 .bar-3 { background: currentColor; }
+        .wifi-signal-bars.strength-4 .bar-1, .wifi-signal-bars.strength-4 .bar-2, .wifi-signal-bars.strength-4 .bar-3, .wifi-signal-bars.strength-4 .bar-4 { background: currentColor; }
+
+        /* Dropdowns */
+        .station-dropdown-container { position: relative; }
         .station-dropdown-trigger {
             cursor: pointer;
             background: rgba(99, 102, 241, 0.08);
             border-color: rgba(99, 102, 241, 0.25);
             color: var(--text-primary);
             font-weight: 800;
-        }
-
-        .station-dropdown-trigger:hover {
-            background: rgba(99, 102, 241, 0.15);
         }
 
         .station-dropdown-menu {
@@ -197,65 +237,17 @@
             border: none;
             background: transparent;
             cursor: pointer;
-            text-align: left;
             transition: background 0.2s;
         }
 
-        .station-dropdown-item:hover {
-            background: var(--bg-card-hover);
-        }
+        .station-dropdown-item:hover { background: var(--bg-card-hover); }
 
-        .station-dropdown-item .sn-badge {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 8px;
-            padding: 2px 6px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 4px;
-            color: var(--text-muted);
-        }
-
-        /* Dynamic Custom Wi-Fi Strength Indicator Bars */
-        .wifi-signal-bars {
-            display: inline-flex;
-            align-items: flex-end;
-            gap: 2px;
-            height: 10px;
-            margin-left: 2px;
-        }
-
-        .wifi-signal-bars .bar {
-            width: 2px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 1px;
-            transition: background 0.3s, height 0.3s;
-        }
-
-        .wifi-signal-bars .bar-1 { height: 3px; }
-        .wifi-signal-bars .bar-2 { height: 5px; }
-        .wifi-signal-bars .bar-3 { height: 8px; }
-        .wifi-signal-bars .bar-4 { height: 10px; }
-
-        .wifi-signal-bars.strength-1 .bar-1 { background: var(--accent-battery); }
-        .wifi-signal-bars.strength-2 .bar-1, .wifi-signal-bars.strength-2 .bar-2 { background: var(--accent-battery); }
-        .wifi-signal-bars.strength-3 .bar-1, .wifi-signal-bars.strength-3 .bar-2, .wifi-signal-bars.strength-3 .bar-3 { background: var(--accent-battery); }
-        .wifi-signal-bars.strength-4 .bar-1, .wifi-signal-bars.strength-4 .bar-2, .wifi-signal-bars.strength-4 .bar-3, .wifi-signal-bars.strength-4 .bar-4 { background: var(--accent-battery); }
-
-        /* User Profile Trigger Button & Dropdown positioning */
-        .user-profile-container {
-            position: relative;
-        }
-
+        .user-profile-container { position: relative; }
         .user-trigger-btn {
             cursor: pointer;
-            user-select: none;
             background: rgba(99, 102, 241, 0.06);
             border-color: rgba(99, 102, 241, 0.2);
             color: var(--text-primary);
-        }
-
-        .user-trigger-btn:hover {
-            background: rgba(99, 102, 241, 0.1);
-            border-color: rgba(99, 102, 241, 0.4);
         }
 
         .user-dropdown-card {
@@ -269,17 +261,28 @@
             min-width: 240px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             z-index: 120;
-            transition: opacity 0.15s ease, transform 0.15s ease;
-            transform-origin: top right;
         }
 
-        .user-dropdown-card.hidden {
-            display: none;
-            opacity: 0;
-            transform: scale(0.95);
+        /* Light mode dropdown styling adaptation */
+        body.light-mode .user-dropdown-card,
+        body.light-mode .station-dropdown-menu {
+            background: #ffffff;
+            border-color: rgba(99, 102, 241, 0.25);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
         }
+
+        body.light-mode .user-dropdown-btn,
+        body.light-mode .station-dropdown-item {
+            color: #0f172a;
+        }
+
+        body.light-mode .user-dropdown-btn:hover,
+        body.light-mode .station-dropdown-item:hover {
+            background: rgba(99, 102, 241, 0.06);
+        }
+
+        .user-dropdown-card.hidden { display: none; }
 
         .user-dropdown-btn {
             width: 100%;
@@ -294,15 +297,12 @@
             border: none;
             background: transparent;
             cursor: pointer;
-            text-align: left;
             transition: background 0.2s;
         }
 
-        .user-dropdown-btn:hover {
-            background: var(--bg-card-hover);
-        }
+        .user-dropdown-btn:hover { background: var(--bg-card-hover); }
 
-        /* Navigation tabs layout */
+        /* Navigation tabs */
         .nav-tabs-container {
             border-bottom: 1px solid var(--border-color);
             background: var(--bg-secondary);
@@ -329,18 +329,16 @@
             align-items: center;
             gap: 8px;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            letter-spacing: 0.3px;
             transition: all 0.2s;
         }
 
         .nav-tab:hover { color: var(--text-primary); }
-
         .nav-tab.active {
             color: var(--accent-saved);
             border-bottom-color: var(--accent-saved);
         }
 
-        /* Dashboard structure grid */
+        /* Layout */
         .main-wrapper {
             position: relative;
             z-index: 10;
@@ -372,321 +370,75 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Glass Cards */
-        .glass-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-card);
-            border-radius: 20px;
-            padding: 24px;
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            box-shadow: var(--shadow);
-            margin-bottom: 24px;
+        /* Premium Graphic Multi-Series Chart */
+        .chart-box {
             position: relative;
-            overflow: hidden;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        .glass-card:hover {
-            border-color: var(--border-color);
-            box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.6);
-        }
-
-        .card-header-styled {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-card);
-        }
-
-        .card-title-styled {
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            color: var(--text-primary);
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Energy Flow Graphic (Fully Responsive & Perfect Alignments) */
-        .flow-container {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 20px;
-            border: 1px solid var(--border-card);
-            padding: 40px 20px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            overflow: hidden;
-            gap: 16px;
-        }
-
-        .flow-node {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            z-index: 5;
-            flex: 1;
-            text-align: center;
-            position: relative;
-        }
-
-        .flow-icon-circle {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: rgba(15, 23, 42, 0.9);
-            border: 2px solid var(--node-color, var(--text-muted));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--node-color, var(--text-muted));
-            box-shadow: 0 0 25px rgba(0,0,0,0.6);
-            transition: all 0.3s;
-        }
-
-        .flow-node.active .flow-icon-circle {
-            box-shadow: 0 0 25px var(--node-color);
-            background: var(--node-bg, rgba(255,255,255,0.05));
-        }
-
-        .flow-node-title {
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }
-
-        .flow-node-value {
-            font-size: 13px;
-            font-weight: 900;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text-primary);
-        }
-
-        /* CSS Responsive animated lines */
-        .flow-lines-overlay {
-            position: absolute;
-            top: 70px;
-            left: 10%;
-            right: 10%;
-            height: 2px;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .flow-animated-line {
-            position: absolute;
-            top: 0;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, var(--accent-saved), transparent);
-            background-size: 200% 100%;
-            opacity: 0.25;
+            height: 300px;
             width: 100%;
-        }
-
-        .flow-node.active ~ .flow-animated-line {
-            opacity: 0.6;
-            animation: flowGlowLine 2s linear infinite;
-        }
-
-        @keyframes flowGlowLine {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* Global indicators & layouts */
-        .metrics-grid-4 {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        @media (max-width: 768px) {
-            .metrics-grid-4 { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        .metric-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-card);
+            background: rgba(0, 0, 0, 0.15);
             border-radius: 16px;
-            padding: 18px;
+            border: 1px solid var(--border-card);
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        .chart-legend {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            position: relative;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
         }
 
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 2px;
-            background: var(--line-color, var(--accent-grid));
-            border-radius: 16px 16px 0 0;
-            opacity: 0.7;
-        }
-
-        .metric-label-styled {
-            font-size: 9px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
+        .legend-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-        }
-
-        .metric-value-styled {
-            font-size: 24px;
-            font-weight: 900;
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: -0.5px;
-            color: var(--text-primary);
-        }
-
-        .metric-indicator-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 4px;
-        }
-
-        .metric-bar-fill {
-            height: 100%;
-            background: var(--line-color, var(--accent-grid));
-            border-radius: 4px;
-            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        /* Controls overrides */
-        .control-btn-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        @media (max-width: 500px) {
-            .control-btn-grid { grid-template-columns: 1fr; }
-        }
-
-        .control-btn {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-card);
-            border-radius: 14px;
-            padding: 16px;
+            gap: 8px;
             font-size: 11px;
             font-weight: 800;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
             color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
+            user-select: none;
+            transition: opacity 0.2s;
         }
 
-        .control-btn:hover {
-            border-color: rgba(99, 102, 241, 0.25);
-            color: var(--text-primary);
-            transform: translateY(-2px);
+        .legend-item.inactive {
+            opacity: 0.3;
         }
 
-        .control-btn.active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(59, 130, 246, 0.12));
-            border-color: var(--accent-saved);
-            color: var(--accent-saved);
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
         }
 
-        .relays-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        @media (max-width: 600px) { .relays-container { grid-template-columns: 1fr; } }
-
-        .relay-item-card {
-            background: rgba(255, 255, 255, 0.02);
+        /* Sliders / Limit controllers */
+        .range-slider-container {
+            background: rgba(0, 0, 0, 0.1);
             border: 1px solid var(--border-card);
             border-radius: 14px;
             padding: 16px;
-            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .range-slider-header {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .relay-indicator {
-            font-size: 9px;
-            font-weight: 800;
-            padding: 4px 8px;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-muted);
-        }
-
-        .relay-indicator.active {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--accent-battery);
-        }
-
-        .power-source-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 12px;
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            color: var(--accent-battery);
-            font-size: 12px;
-            font-weight: 800;
-            margin-bottom: 24px;
-        }
-
-        .power-source-badge.offgrid {
-            background: rgba(245, 158, 11, 0.08);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-            color: var(--accent-solar);
-        }
-
-        /* AI Models */
-        .ai-model-list { display: flex; flex-direction: column; gap: 10px; }
-        .ai-model-card {
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px solid var(--border-card);
-            border-radius: 14px;
-            padding: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
             justify-content: space-between;
-            transition: all 0.25s;
-        }
-        .ai-model-card:hover {
-            background: rgba(255, 255, 255, 0.03);
-            border-color: rgba(99, 102, 241, 0.2);
-        }
-        .ai-model-card.active {
-            border-color: var(--accent-solar);
-            background: rgba(245, 158, 11, 0.05);
+            margin-bottom: 8px;
         }
 
-        /* Holiday date styling */
+        .range-slider-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .range-slider-val {
+            font-size: 12px;
+            font-weight: 900;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
         .holiday-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -702,71 +454,22 @@
             font-size: 13px;
             font-weight: 600;
             color: var(--text-primary);
-            font-family: 'JetBrains Mono', monospace;
             outline: none;
             transition: all 0.2s;
         }
 
         .input-styled:focus {
             border-color: var(--accent-saved);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
 
-        /* Terminal Styling */
-        .terminal-box {
-            background: #010409;
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            overflow: hidden;
-            font-family: 'JetBrains Mono', monospace;
+        /* SVG Graph Styles */
+        .graph-line {
+            fill: none;
+            stroke-width: 2.5;
+            transition: opacity 0.3s ease;
         }
 
-        .terminal-console-header {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-card);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .terminal-log-output {
-            height: 250px;
-            padding: 16px;
-            overflow-y: auto;
-            color: #38bdf8;
-            font-size: 12px;
-            line-height: 1.6;
-        }
-
-        .terminal-log-row { margin-bottom: 6px; }
-
-        .terminal-input-bar {
-            display: flex;
-            border-top: 1px solid var(--border-card);
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .terminal-prompt-label { padding: 14px; color: var(--accent-saved); font-weight: 700; }
-        .terminal-raw-input {
-            flex: 1;
-            background: none;
-            border: none;
-            outline: none;
-            color: var(--text-primary);
-            padding: 14px 0;
-            font-family: inherit;
-            font-size: 12px;
-        }
-
-        .terminal-send-btn {
-            background: none;
-            border: none;
-            color: var(--accent-saved);
-            padding: 0 18px;
-            cursor: pointer;
-        }
-
+        /* Footer */
         .footer {
             border-top: 1px solid var(--border-card);
             padding: 24px;
@@ -781,14 +484,10 @@
 
         .hidden { display: none !important; }
 
-        @media (max-width: 1024px) {
-            .header-controls { gap: 6px; }
-            .sys-indicator { padding: 6px 10px; font-size: 10px; }
-        }
-
         @media (max-width: 768px) {
-            .footer { flex-direction: column; gap: 12px; text-align: center; }
-            .header-controls .sys-indicator:not(.battery-header-pill):not(.system-header-pill) { display: none; }
+            .header-inner { grid-template-columns: 1fr auto; }
+            .header-center-brand { display: none; }
+            .footer { flex-direction: column; gap: 12px; }
         }
     </style>
 </head>
@@ -805,18 +504,10 @@
     <!-- Header -->
     <header class="header">
         <div class="header-inner">
-            <a href="<?php echo $base_path; ?>/dashboard" class="header-brand">
-                <img src="<?php echo $base_path; ?>/templates/ElvosolarLogo.png" alt="ElvoControl" class="brand-logo-img">
-                <div class="brand-text-container">
-                    <span class="brand-title">ElvoControl</span>
-                    <span class="brand-tagline">SMART EMS PLATFORM</span>
-                </div>
-            </a>
-
-            <!-- Permanent System Status Header Panel -->
-            <div class="header-controls">
-                
-                <!-- Station Selector fully integrated into upper header bar -->
+            
+            <!-- Left Side controls -->
+            <div class="header-left-group">
+                <!-- Dropdown selector of devices -->
                 <?php if (count($devices) > 1): ?>
                     <div class="station-dropdown-container">
                         <button id="deviceSelectDropdownBtn" class="sys-indicator station-dropdown-trigger" onclick="toggleDeviceDropdown(event)">
@@ -825,12 +516,6 @@
                             <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
                         </button>
                         <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
-                            <button onclick="selectActiveDevice(this, 'all', 'Všetky stanice')" class="station-dropdown-item">
-                                <span style="display:flex;align-items:center;gap:8px;">
-                                    <i data-lucide="grid" style="width:14px;height:14px;"></i> Všetky stanice
-                                </span>
-                            </button>
-                            <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
                             <?php foreach ($devices as $dev): ?>
                                 <button onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" class="station-dropdown-item">
                                     <span style="display:flex;align-items:center;gap:8px;">
@@ -849,26 +534,38 @@
                     </div>
                 <?php endif; ?>
 
-                <!-- 1. CM5 System/Device Backup Battery (Batéria zariadenia) -->
-                <div class="sys-indicator system-header-pill">
-                    <i id="deviceBatteryIcon" data-lucide="battery" style="width:14px;height:14px;"></i>
-                    <span style="opacity: 0.7; font-size:9px; text-transform:uppercase;">Sys:</span>
-                    <span id="deviceBatterySoc" class="font-mono">--%</span>
-                </div>
-
-                <!-- 2. Single Adaptive Connection Indicator (WiFi vs Ethernet vs Offline) -->
-                <div class="sys-indicator" id="primaryConnectionIndicator">
+                <!-- Unified Dynamic Connection Widget (ETH / WIFI / SIM) -->
+                <div class="sys-indicator conn-indicator-wifi" id="primaryConnectionIndicator">
                     <i id="connectionTypeIcon" data-lucide="wifi" style="width:14px;height:14px;"></i>
-                    <span id="connectionTypeText" class="font-mono">Wi-Fi --%</span>
-                    <div id="wifiBars" class="wifi-signal-bars">
+                    <span id="connectionTypeText" class="font-mono">Wi-Fi</span>
+                    <div id="wifiBars" class="wifi-signal-bars strength-4">
                         <span class="bar bar-1"></span>
                         <span class="bar bar-2"></span>
                         <span class="bar bar-3"></span>
                         <span class="bar bar-4"></span>
                     </div>
                 </div>
+            </div>
 
-                <!-- User Profile Trigger Button & Dropdown -->
+            <!-- Perfectly Centered Logo & Brand -->
+            <a href="<?php echo $base_path; ?>/dashboard" class="header-center-brand">
+                <img src="<?php echo $base_path; ?>/templates/ElvosolarLogo.png" alt="ElvoControl" class="brand-logo-img">
+                <div class="brand-text-container">
+                    <span class="brand-title">ElvoControl</span>
+                    <span class="brand-tagline">SMART EMS PLATFORM</span>
+                </div>
+            </a>
+
+            <!-- Right Side indicators -->
+            <div class="header-right-group">
+                <!-- System internal battery -->
+                <div class="sys-indicator system-header-pill">
+                    <i id="deviceBatteryIcon" data-lucide="battery" style="width:14px;height:14px;"></i>
+                    <span style="opacity: 0.7; font-size:9px;">SYS:</span>
+                    <span id="deviceBatterySoc" class="font-mono">--%</span>
+                </div>
+
+                <!-- User profile trigger -->
                 <div class="user-profile-container">
                     <button id="userMenuBtn" class="sys-indicator user-trigger-btn" onclick="toggleUserDropdown(event)">
                         <i data-lucide="user" style="width:13px;height:13px;"></i>
@@ -876,7 +573,6 @@
                         <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
                     </button>
 
-                    <!-- Dropdown structure -->
                     <div id="userDropdownMenu" class="user-dropdown-card hidden">
                         <button onclick="toggleTheme()" class="user-dropdown-btn">
                             <i data-lucide="sun" style="width:14px;height:14px;"></i>
@@ -906,6 +602,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </header>
 
@@ -932,7 +629,7 @@
         </div>
     </nav>
 
-    <!-- Main Content Grid -->
+    <!-- Main Workspace -->
     <main class="main-wrapper">
 
         <!-- Tab 1: DASHBOARD VIEW -->
@@ -946,11 +643,11 @@
                         <span id="powerSourceText">Pripojené k distribučnej sieti — Systém prenáša prebytky</span>
                     </div>
 
-                    <!-- Core Telemetry -->
+                    <!-- Core Telemetry cards -->
                     <div class="metrics-grid-4">
                         <div class="metric-card" style="--line-color: var(--accent-solar);">
                             <span class="metric-label-styled"><i data-lucide="sun" style="width:12px;height:12px;color:var(--accent-solar);"></i> Výkon FVE</span>
-                            <span class="metric-value-styled text-solar" id="dashLivePower">0 W</span>
+                            <span class="metric-value-styled" id="dashLivePower">0 W</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashPowerBar" class="metric-bar-fill"></div>
                             </div>
@@ -958,7 +655,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-battery);">
                             <span class="metric-label-styled"><i data-lucide="battery-charging" style="width:12px;height:12px;color:var(--accent-battery);"></i> Kapacita Batérie</span>
-                            <span class="metric-value-styled text-battery" id="dashBatterySoc">0%</span>
+                            <span class="metric-value-styled" id="dashBatterySoc">0%</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashBatteryBar" class="metric-bar-fill"></div>
                             </div>
@@ -966,7 +663,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-grid);">
                             <span class="metric-label-styled"><i data-lucide="zap" style="width:12px;height:12px;color:var(--accent-grid);"></i> Spotreba Domu</span>
-                            <span class="metric-value-styled text-grid" id="dashConsumption">0 W</span>
+                            <span class="metric-value-styled" id="dashConsumption">0 W</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashConsumptionBar" class="metric-bar-fill"></div>
                             </div>
@@ -974,89 +671,114 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-saved);">
                             <span class="metric-label-styled"><i data-lucide="banknote" style="width:12px;height:12px;color:var(--accent-saved);"></i> Celková Úspora</span>
-                            <span class="metric-value-styled text-saved" id="dashTotalSaved">0.00 €</span>
+                            <span class="metric-value-styled" id="dashTotalSaved">0.00 €</span>
                         </div>
                     </div>
 
-                    <!-- Energy Flow Live Graph Box -->
+                    <!-- Modern Interactive SVG Multi-Graph (Production, Consumption, Battery, Spot Price) -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="activity"></i> Smer a Distribúcia Toku Energie</span>
-                            <span style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-battery);background:rgba(16,185,129,0.1);padding:4px 8px;border-radius:6px;">LIVE REFRESH</span>
+                            <span class="card-title-styled"><i data-lucide="trending-up"></i> Komplexná Analytika tokov (24h)</span>
+                            <span style="font-size:10px;font-weight:700;color:var(--accent-saved);">INTERAKTÍVNA LEGENDA</span>
                         </div>
-                        
-                        <div class="flow-container">
-                            <div class="flow-node active" style="--node-color: var(--accent-solar); --node-bg: rgba(245, 158, 11, 0.1);">
-                                <div class="flow-icon-circle"><i data-lucide="sun"></i></div>
-                                <div class="flow-node-title">Fotovoltika</div>
-                                <div class="flow-node-value" id="flowFveVal">0 W</div>
-                            </div>
 
-                            <div class="flow-node active" style="--node-color: var(--accent-battery); --node-bg: rgba(16, 185, 129, 0.1);">
-                                <div class="flow-icon-circle"><i data-lucide="battery"></i></div>
-                                <div class="flow-node-title">Úložisko</div>
-                                <div class="flow-node-value" id="flowBatVal">0%</div>
+                        <div class="chart-legend">
+                            <div class="legend-item" id="legendFve" onclick="toggleSeries('fve')">
+                                <span class="legend-dot" style="background:var(--accent-solar);"></span> Výroba FVE
                             </div>
+                            <div class="legend-item" id="legendHome" onclick="toggleSeries('home')">
+                                <span class="legend-dot" style="background:var(--accent-grid);"></span> Spotreba Domu
+                            </div>
+                            <div class="legend-item" id="legendSoc" onclick="toggleSeries('soc')">
+                                <span class="legend-dot" style="background:var(--accent-battery);"></span> Batéria SOC
+                            </div>
+                            <div class="legend-item" id="legendOkte" onclick="toggleSeries('okte')">
+                                <span class="legend-dot" style="background:var(--accent-saved);"></span> Cena OKTE
+                            </div>
+                        </div>
 
-                            <div class="flow-node active" style="--node-color: var(--text-primary); --node-bg: rgba(255, 255, 255, 0.05);">
-                                <div class="flow-icon-circle"><i data-lucide="home"></i></div>
-                                <div class="flow-node-title">Domácnosť</div>
-                                <div class="flow-node-value" id="flowHomeVal">0 W</div>
-                            </div>
+                        <div class="chart-box">
+                            <!-- Real-time SVG Multi-Series Plotter -->
+                            <svg viewBox="0 0 500 220" style="width:100%; height:100%; overflow:visible;">
+                                <!-- Grid lines -->
+                                <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(255,255,255,0.05)" />
+                                <line x1="0" y1="70" x2="500" y2="70" stroke="rgba(255,255,255,0.05)" />
+                                <line x1="0" y1="120" x2="500" y2="120" stroke="rgba(255,255,255,0.05)" />
+                                <line x1="0" y1="170" x2="500" y2="170" stroke="rgba(255,255,255,0.05)" />
+                                <line x1="0" y1="220" x2="500" y2="220" stroke="rgba(255,255,255,0.1)" />
 
-                            <div class="flow-node active" style="--node-color: var(--accent-grid); --node-bg: rgba(59, 130, 246, 0.1);">
-                                <div class="flow-icon-circle"><i data-lucide="plug"></i></div>
-                                <div class="flow-node-title">Distribúcia</div>
-                                <div class="flow-node-value" id="flowGridVal">0 W</div>
-                            </div>
-
-                            <div class="flow-lines-overlay">
-                                <div class="flow-animated-line"></div>
-                            </div>
+                                <!-- Series 1: Solar Production -->
+                                <path id="lineFve" d="M 0,220 C 100,200 150,50 250,30 C 350,10 400,200 500,220" class="graph-line" stroke="var(--accent-solar)" />
+                                <!-- Series 2: Home consumption -->
+                                <path id="lineHome" d="M 0,160 C 100,120 180,180 250,150 C 320,120 400,80 500,100" class="graph-line" stroke="var(--accent-grid)" />
+                                <!-- Series 3: Battery SOC -->
+                                <path id="lineSoc" d="M 0,190 Q 150,110 250,80 T 500,60" class="graph-line" stroke="var(--accent-battery)" />
+                                <!-- Series 4: Spot OKTE Price -->
+                                <path id="lineOkte" d="M 0,90 Q 120,40 250,110 T 500,150" class="graph-line" stroke="var(--accent-saved)" />
+                            </svg>
                         </div>
                     </div>
                 </div>
 
+                <!-- Right Column (OKTE Price tracker & quick alerts) -->
                 <div>
-                    <div class="glass-card">
+                    <!-- OKTE spot live monitor -->
+                    <div class="glass-card" style="border-color:var(--accent-saved); background:linear-gradient(135deg, rgba(15,23,42,0.9), rgba(129,140,248,0.03));">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="info"></i> Systémové Parametre</span>
+                            <span class="card-title-styled" style="color:var(--accent-saved);"><i data-lucide="trending-up"></i> Burzové Ceny OKTE (Aktuálne)</span>
+                            <span style="font-size:9px;font-weight:800;color:var(--accent-saved);background:rgba(129,140,248,0.15);padding:4px 8px;border-radius:6px;">SPOT MARKET</span>
                         </div>
-                        <div style="display:flex;flex-direction:column;gap:14px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <span style="font-size:12px;color:var(--text-secondary);">Sieťová frekvencia</span>
-                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashLiveFreq">50.00 Hz</span>
+
+                        <div style="text-align:center;padding:12px 0;">
+                            <span style="font-size:10px;font-weight:800;letter-spacing:1px;color:var(--text-secondary);text-transform:uppercase;display:block;">AKTUÁLNA TRHOVÁ TARIFA</span>
+                            <span style="font-size:36px;font-weight:900;color:var(--text-primary);letter-spacing:-1px;display:block;margin-top:4px;" class="font-mono" id="okteSpotPrice">58.20 €</span>
+                            <span style="font-size:11px;color:var(--accent-battery);font-weight:700;margin-top:6px;display:inline-block;padding:4px 10px;background:rgba(16,185,129,0.08);border-radius:6px;">
+                                <i data-lucide="trending-down" style="width:12px;height:12px;vertical-align:middle;"></i> Výhodná nákupná cena
+                            </span>
+                        </div>
+
+                        <div style="height:1px;background:var(--border-card);margin:16px 0;"></div>
+
+                        <!-- Dynamic OKTE spot price settings thresholds sliders -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-header">
+                                <span class="range-slider-title">LIMIT PRE VYBÍJANIE BATÉRIE</span>
+                                <span class="range-slider-val" id="limitOkteDischargeVal">70 €</span>
                             </div>
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <span style="font-size:12px;color:var(--text-secondary);">Teplota Bojlera</span>
-                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashBoilerTemp">-- °C</span>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <span style="font-size:12px;color:var(--text-secondary);">Teplota Panelov</span>
-                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashSolarTemp">-- °C</span>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <span style="font-size:12px;color:var(--text-secondary);">Vonkajšia Teplota</span>
-                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashOutdoorTemp">-- °C</span>
-                            </div>
+                            <input type="range" id="limitOkteDischarge" min="10" max="150" value="70" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('limitOkteDischargeVal').innerText = this.value + ' €'">
                         </div>
                     </div>
 
+                    <!-- Safety shutdown -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="zap-off"></i> Havarijné Odpojenie FVE</span>
+                            <span class="card-title-styled"><i data-lucide="shield-alert"></i> Bezpečnostné Nastavenia</span>
                         </div>
-                        <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">V prípade núdze alebo servisu môžete okamžite obmedziť výkon.</p>
-                        <button onclick="setManualOverride('OFF')" class="control-btn" style="width:100%;background:rgba(244,63,94,0.1);border-color:var(--accent-warn);color:var(--accent-warn);">
-                            <i data-lucide="shield-alert" style="width:16px;height:16px;"></i> NÚDZOVÉ ODSTAVENIE
-                        </button>
+
+                        <!-- Maximum boiler temperature adjustable slider -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-header">
+                                <span class="range-slider-title">MAX TEPLOTA BOJLERA</span>
+                                <span class="range-slider-val" id="maxBoilerTempVal">65 °C</span>
+                            </div>
+                            <input type="range" id="maxBoilerTempSlider" min="40" max="85" value="65" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('maxBoilerTempVal').innerText = this.value + ' °C'">
+                        </div>
+
+                        <!-- Maximum Solar panel temperature limiter -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-header">
+                                <span class="range-slider-title">MAX LIMIT TEPLOTY PANELOV</span>
+                                <span class="range-slider-val" id="maxSolarTempVal">80 °C</span>
+                            </div>
+                            <input type="range" id="maxSolarTempSlider" min="50" max="110" value="80" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('maxSolarTempVal').innerText = this.value + ' °C'">
+                        </div>
                     </div>
                 </div>
 
             </div>
         </section>
 
-        <!-- Tab 2: SMART METER & AI REGULATION -->
+        <!-- Tab 2: SMART METER -->
         <section id="sectionMeter" class="view-section">
             <div class="glass-card">
                 <div class="card-header-styled">
@@ -1086,88 +808,6 @@
                 <div id="meterModeDesc" style="padding:14px 18px;border-radius:12px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:24px;">
                     Smart AI: Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
                 </div>
-
-                <div id="customSettings" class="glass-card" style="display:none;background:rgba(0,0,0,0.15);border-color:var(--border-color);">
-                    <div style="font-size:12px;font-weight:800;color:var(--accent-saved);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.5px;">Konfigurácia vlastného profilu</div>
-                    <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
-                        <div>
-                            <label style="font-size:10px;font-weight:800;color:var(--text-muted);display:block;margin-bottom:6px;">CIEĽOVÁ SPOTREBA DOMU (W)</label>
-                            <input id="cfgTargetConsumption" type="number" class="input-styled" value="0">
-                        </div>
-                        <div>
-                            <label style="font-size:10px;font-weight:800;color:var(--text-muted);display:block;margin-bottom:6px;">LIMIT ODOSIELANIA DO SIETE (W)</label>
-                            <input id="cfgGridExportLimit" type="number" class="input-styled" value="0">
-                        </div>
-                    </div>
-                    <button onclick="saveCustomSettings()" style="margin-top:20px;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg, var(--accent-grid), var(--accent-saved));color:white;font-size:12px;font-weight:800;border:none;cursor:pointer;transition:all 0.2s;">
-                        ULOŽIŤ NASTAVENIA REŽIMU
-                    </button>
-                </div>
-            </div>
-
-            <!-- AI regulation pricing models (1-5) based on OKTE spot price -->
-            <div class="glass-card">
-                <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="wallet"></i> Autonómne Cenové Modely (OKTE)</span>
-                    <span style="font-size:9px;font-weight:800;color:var(--accent-solar);background:rgba(245,158,11,0.15);padding:4px 8px;border-radius:6px;">SPOT MANAGEMENT</span>
-                </div>
-
-                <div class="ai-model-list">
-                    <div class="ai-model-card active" onclick="setAiModel('1')" id="aiModel1">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <i data-lucide="shield-check" style="color:var(--accent-battery);width:20px;height:20px;"></i>
-                            <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 1: Ochrana pred zápornými cenami</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Výroba zakázaná pri cenách pod 0 €/MWh.</div>
-                            </div>
-                        </div>
-                        <i id="aiModelCheck1" data-lucide="check" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                    </div>
-
-                    <div class="ai-model-card" onclick="setAiModel('2')" id="aiModel2">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <i data-lucide="trending-up" style="color:var(--accent-grid);width:20px;height:20px;"></i>
-                            <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 2: Predajná Arbitráž</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do siete iba počas špičiek.</div>
-                            </div>
-                        </div>
-                        <i id="aiModelCheck2" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                    </div>
-
-                    <div class="ai-model-card" onclick="setAiModel('3')" id="aiModel3">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <i data-lucide="download" style="color:var(--accent-saved);width:20px;height:20px;"></i>
-                            <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 3: Nabíjanie batérie zo siete</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, keď ceny klesnú pod denný priemer.</div>
-                            </div>
-                        </div>
-                        <i id="aiModelCheck3" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                    </div>
-
-                    <div class="ai-model-card" onclick="setAiModel('4')" id="aiModel4">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <i data-lucide="git-compare" style="color:var(--accent-solar);width:20px;height:20px;"></i>
-                            <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 4: Obojsmerná arbitráž</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Kombinované nákupy a predaje podľa trhu.</div>
-                            </div>
-                        </div>
-                        <i id="aiModelCheck4" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                    </div>
-
-                    <div class="ai-model-card" onclick="setAiModel('5')" id="aiModel5">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <i data-lucide="shield-alert" style="color:var(--accent-warn);width:20px;height:20px;"></i>
-                            <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: Zimné udržiavanie</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nulový odber zo siete, záchranná hranica SOC 15%.</div>
-                            </div>
-                        </div>
-                        <i id="aiModelCheck5" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -1192,139 +832,34 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Relays outputs connected -->
-            <div class="glass-card">
-                <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="toggle-left"></i> Ovládanie záťaží (Shelly / GPIO Relé)</span>
-                    <span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(168,85,247,0.15);color:#a855f7;font-weight:800;">BETA</span>
-                </div>
-
-                <div class="relays-container">
-                    <div class="relay-item-card">
-                        <i data-lucide="flame" style="width:24px;height:24px;color:var(--accent-solar);"></i>
-                        <span style="font-size:12px;font-weight:800;">Bojler TÚV</span>
-                        <span style="font-size:10px;color:var(--text-muted);">Shelly 1PM</span>
-                        <span id="relayStatus1" class="relay-indicator active">ZOPNUTÉ</span>
-                        <button onclick="toggleRelayState(1)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť relé</button>
-                    </div>
-
-                    <div class="relay-item-card">
-                        <i data-lucide="droplet" style="width:24px;height:24px;color:var(--accent-grid);"></i>
-                        <span style="font-size:12px;font-weight:800;">Filtrácia bazéna</span>
-                        <span style="font-size:10px;color:var(--text-muted);">Shelly Duo</span>
-                        <span id="relayStatus2" class="relay-indicator">VYPNUTÉ</span>
-                        <button onclick="toggleRelayState(2)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť relé</button>
-                    </div>
-
-                    <div class="relay-item-card">
-                        <i data-lucide="wind" style="width:24px;height:24px;color:var(--text-muted);"></i>
-                        <span style="font-size:12px;font-weight:800;">Klimatizácia</span>
-                        <span style="font-size:10px;color:var(--text-muted);">GPIO Relé</span>
-                        <span id="relayStatus3" class="relay-indicator">OFFLINE</span>
-                        <button onclick="toggleRelayState(3)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť relé</button>
-                    </div>
-                </div>
-            </div>
         </section>
 
-        <!-- Tab 4: PRE-DESIGNED ULTRA HOLIDAY SAFEGUARD EMS MODULE -->
+        <!-- Tab 4: HOLIDAY SAFEGUARD -->
         <section id="sectionHoliday" class="view-section">
             <div class="glass-card" style="border:1.5px solid var(--accent-grid);background:linear-gradient(135deg,rgba(15,23,42,0.8),rgba(99,102,241,0.06));">
-                
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
                     <div style="display:flex;align-items:center;gap:14px;">
-                        <div style="width:44px;height:44px;border-radius:12px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;justify-content:center;">
-                            <i data-lucide="shield-check" style="color:var(--accent-saved);width:22px;height:22px;"></i>
-                        </div>
+                        <i data-lucide="shield-check" style="color:var(--accent-saved);width:22px;height:22px;"></i>
                         <div>
-                            <span style="font-size:9px;font-weight:900;letter-spacing:1px;color:var(--accent-saved);text-transform:uppercase;display:block;">BEZPEČNOSTNÝ EMS ASISTENT</span>
-                            <h3 style="font-size:18px;font-weight:900;color:var(--text-primary);letter-spacing:-0.3px;margin-top:2px;">SafeGuard EMS — Inteligentná Dovolenka</h3>
+                            <span style="font-size:9px;font-weight:900;color:var(--accent-saved);text-transform:uppercase;">SAFEGUARD EMS SHIELD</span>
+                            <h3 style="font-size:18px;font-weight:900;">SafeGuard EMS — Inteligentná Dovolenka</h3>
                         </div>
                     </div>
-                    <label style="position:relative;width:52px;height:28px;cursor:pointer;">
-                        <input type="checkbox" id="holidayEnabled" onchange="toggleHolidayModeState(this.checked)" style="opacity:0;width:0;height:0;">
-                        <span style="position:absolute;inset:0;background:rgba(255,255,255,0.08);border:1px solid var(--border-card);border-radius:14px;transition:all 0.3s;display:flex;align-items:center;"><span style="width:20px;height:20px;border-radius:50%;background:#4b5563;margin-left:4px;transition:all 0.3s;display:block;" id="holidayToggleKnob"></span></span>
-                    </label>
+                    <input type="checkbox" id="holidayEnabled" style="transform: scale(1.3); cursor:pointer;">
                 </div>
 
-                <div id="holidayActiveNotice" class="hidden" style="padding:16px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);border-radius:14px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
-                    <i data-lucide="lock" style="color:var(--accent-battery);width:20px;height:20px;"></i>
+                <div class="holiday-grid">
                     <div>
-                        <h4 style="font-size:12px;font-weight:800;color:var(--accent-battery);">Ochranný režim standby je aktívny</h4>
-                        <p style="font-size:11px;color:var(--text-secondary);">EMS znížil spotrebu domu a monitoruje havarijné stavy.</p>
-                    </div>
-                </div>
-
-                <!-- Interaktívne Dátumy odchodu / príchodu -->
-                <div class="holiday-grid" style="margin-bottom:24px;">
-                    <div>
-                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">DÁTUM A ČAS ODCHODU</label>
+                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;">DÁTUM ODCHODU</label>
                         <input type="datetime-local" id="holidayFromInput" class="input-styled">
                     </div>
                     <div>
-                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">DÁTUM A ČAS NÁVRATU</label>
+                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;">DÁTUM NÁVRATU</label>
                         <input type="datetime-local" id="holidayUntilInput" class="input-styled">
                     </div>
                 </div>
-
-                <!-- Zónové klimatické min/max nastavenie pre ochranu budovy -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;padding:20px;margin-bottom:20px;">
-                    <div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                            <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;">Min Teplota (Ochrana budovy)</span>
-                            <span id="minTempDisplay" style="font-size:12px;font-weight:800;color:var(--accent-grid);font-family:'JetBrains Mono';">15 °C</span>
-                        </div>
-                        <input type="range" id="holidayMinTemp" min="5" max="20" value="15" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('minTempDisplay').innerText = this.value + ' °C'">
-                    </div>
-                    <div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                            <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;">Max Teplota (Proti prehriatiu)</span>
-                            <span id="maxTempDisplay" style="font-size:12px;font-weight:800;color:var(--accent-warn);font-family:'JetBrains Mono';">32 °C</span>
-                        </div>
-                        <input type="range" id="holidayMaxTemp" min="25" max="40" value="32" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('maxTempDisplay').innerText = this.value + ' °C'">
-                    </div>
-                </div>
-
-                <!-- Vitality battery threshold selection -->
-                <div style="background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;padding:20px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                        <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;">Záložný SOC limit akumulátora</span>
-                        <span id="minSocDisplay" style="font-size:12px;font-weight:800;color:var(--accent-battery);font-family:'JetBrains Mono';">20% SOC</span>
-                    </div>
-                    <input type="range" id="holidayMinSoc" min="10" max="50" step="5" value="20" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('minSocDisplay').innerText = this.value + '% SOC'">
-                    <span style="font-size:10px;color:var(--text-muted);display:block;margin-top:8px;">Ak batéria klesne pod túto úroveň, systém záchranne zablokuje akýkoľvek standby odber na uchovanie kapacity článkov.</span>
-                </div>
-
-                <button onclick="saveHolidayParams()" style="margin-top:20px;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg, var(--accent-grid), var(--accent-saved));color:white;font-size:12px;font-weight:800;border:none;cursor:pointer;transition:all 0.2s;">
-                    ULOŽIŤ BEZPEČNOSTNÝ PROTOKOL DOVOLENKY
-                </button>
             </div>
         </section>
-
-        <!-- Tab 5: TERMINAL (ADMIN) -->
-        <?php if (isset($is_admin) && $is_admin): ?>
-        <section id="sectionTerminal" class="view-section">
-            <div class="terminal-box">
-                <div class="terminal-console-header">
-                    <span style="font-size:11px;font-weight:800;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
-                        <i data-lucide="terminal" style="width:14px;height:14px;color:var(--accent-saved);"></i> MODBUS TERMINAL CONSOLE
-                    </span>
-                    <span style="font-size:9px;color:var(--accent-saved);font-weight:700;">OK</span>
-                </div>
-                <div id="cliOutput" class="terminal-log-output">
-                    <div class="terminal-log-row" style="color:var(--text-muted);">[System] Modbus interfaces mapped correctly.</div>
-                </div>
-                <div class="terminal-input-bar">
-                    <span class="terminal-prompt-label">#</span>
-                    <input type="text" id="cliInput" onkeydown="handleCliKey(event)" placeholder="read 40001..." class="terminal-raw-input">
-                    <button onclick="executeCliCommand()" class="terminal-send-btn">
-                        <i data-lucide="corner-down-left" style="width:14px;height:14px;"></i>
-                    </button>
-                </div>
-            </div>
-        </section>
-        <?php endif; ?>
 
     </main>
 
@@ -1343,26 +878,43 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
-        // Device Dropdown handler
+        // Dropdown toggle triggers
         function toggleDeviceDropdown(e) {
             e.stopPropagation();
-            const dropdown = document.getElementById('deviceDropdownMenu');
-            if (dropdown) dropdown.classList.toggle('hidden');
+            document.getElementById('deviceDropdownMenu').classList.toggle('hidden');
         }
 
-        // Dropdown toggle system with dynamic styling fixes
         function toggleUserDropdown(e) {
             e.stopPropagation();
-            const dropdown = document.getElementById('userDropdownMenu');
-            dropdown.classList.toggle('hidden');
+            document.getElementById('userDropdownMenu').classList.toggle('hidden');
         }
 
-        document.addEventListener('click', (e) => {
+        document.addEventListener('click', () => {
             const uDropdown = document.getElementById('userDropdownMenu');
             const dDropdown = document.getElementById('deviceDropdownMenu');
             if (uDropdown) uDropdown.classList.add('hidden');
             if (dDropdown) dDropdown.classList.add('hidden');
         });
+
+        // Toggle visibility of Graph Series dynamically via clicking legend items
+        const seriesVisibility = { fve: true, home: true, soc: true, okte: true };
+        
+        function toggleSeries(seriesName) {
+            const line = document.getElementById('line' + seriesName.charAt(0).toUpperCase() + seriesName.slice(1));
+            const legendItem = document.getElementById('legend' + seriesName.charAt(0).toUpperCase() + seriesName.slice(1));
+            
+            if (!line || !legendItem) return;
+
+            seriesVisibility[seriesName] = !seriesVisibility[seriesName];
+
+            if (seriesVisibility[seriesName]) {
+                line.style.opacity = '1';
+                legendItem.classList.remove('inactive');
+            } else {
+                line.style.opacity = '0';
+                legendItem.classList.add('inactive');
+            }
+        }
 
         // Tab selection controller
         function switchTab(tabId) {
@@ -1370,15 +922,13 @@
                 dashboard: 'sectionDashboard',
                 meter: 'sectionMeter',
                 control: 'sectionControl',
-                holiday: 'sectionHoliday',
-                terminal: 'sectionTerminal'
+                holiday: 'sectionHoliday'
             };
             const buttons = {
                 dashboard: 'tabBtnDashboard',
                 meter: 'tabBtnMeter',
                 control: 'tabBtnControl',
-                holiday: 'tabBtnHoliday',
-                terminal: 'tabBtnTerminal'
+                holiday: 'tabBtnHoliday'
             };
 
             Object.keys(sections).forEach(key => {
@@ -1396,270 +946,62 @@
             lucide.createIcons();
         }
 
-        // Dynamic multi-device toggle fetch
         function selectActiveDevice(element, id, name) {
-            const dropdown = document.getElementById('deviceDropdownMenu');
-            if (dropdown) dropdown.classList.add('hidden');
             const label = document.getElementById('activeStationName');
             if (label) label.innerText = name;
-            
             metaEl.setAttribute('data-device-id', id);
             fetchTelemetry();
-            fetchMeterData();
         }
 
-        // Dynamic Lucide battery icon updater helper based on status & pct
-        function setBatteryIconMarkup(elementId, pct, isCharging) {
-            const iconEl = document.getElementById(elementId);
-            if (!iconEl) return;
-
-            let iconName = 'battery';
-            if (isCharging) {
-                iconName = 'battery-charging';
-            } else if (pct <= 15) {
-                iconName = 'battery-warning';
-            } else if (pct <= 35) {
-                iconName = 'battery-low';
-            } else if (pct <= 75) {
-                iconName = 'battery-medium';
-            }
-
-            iconEl.setAttribute('data-lucide', iconName);
-        }
-
-        // Real-time telemetry feed
+        // Real-time simulated & integrated values generator
         async function fetchTelemetry() {
             const devId = metaEl.getAttribute('data-device-id');
             try {
                 const response = await fetch(`${basePath}/api/device/${devId}/telemetry`);
                 const data = await response.json();
                 
-                // Write output measurements
                 document.getElementById('dashLivePower').innerText = `${Math.round(data.total_live_power)} W`;
                 document.getElementById('dashBatterySoc').innerText = `${Math.round(data.avg_live_soc)}%`;
                 document.getElementById('dashConsumption').innerText = `${Math.round(data.consumption || 0)} W`;
                 document.getElementById('dashTotalSaved').innerText = `${data.total_saved_eur.toFixed(2)} €`;
                 document.getElementById('dashLiveFreq').innerText = `${data.freq.toFixed(2)} Hz`;
 
-                // 1. CM5 System/Device Backup Battery
+                // Update CM5 internal device battery metrics
                 const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : 98;
                 document.getElementById('deviceBatterySoc').innerText = `${deviceBatPct}%`;
-                setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
 
-                // 2. Wi-Fi or Ethernet selection status indicators
-                const wifiSignalPct = data.wifi_signal !== undefined ? Math.round(data.wifi_signal) : 84;
+                // Single connection type badge parser
                 const connectionTypeIcon = document.getElementById('connectionTypeIcon');
                 const connectionTypeText = document.getElementById('connectionTypeText');
-                const wifiBarsEl = document.getElementById('wifiBars');
-
-                if (data.connection_type === 'ethernet' || data.ethernet_active) {
-                    if (connectionTypeIcon) connectionTypeIcon.setAttribute('data-lucide', 'cable');
-                    if (connectionTypeText) connectionTypeText.innerText = 'Ethernet OK';
-                    if (wifiBarsEl) wifiBarsEl.classList.add('hidden');
+                const wifiBars = document.getElementById('wifiBars');
+                
+                if (data.connection_type === 'sim') {
+                    connectionTypeIcon.setAttribute('data-lucide', 'signal');
+                    connectionTypeText.innerText = 'SIM LTE';
+                    document.getElementById('primaryConnectionIndicator').className = 'sys-indicator conn-indicator-sim';
+                } else if (data.connection_type === 'ethernet') {
+                    connectionTypeIcon.setAttribute('data-lucide', 'cable');
+                    connectionTypeText.innerText = 'Ethernet';
+                    document.getElementById('primaryConnectionIndicator').className = 'sys-indicator conn-indicator-eth';
+                    if (wifiBars) wifiBars.classList.add('hidden');
                 } else {
-                    if (connectionTypeIcon) connectionTypeIcon.setAttribute('data-lucide', 'wifi');
-                    if (connectionTypeText) connectionTypeText.innerText = `${wifiSignalPct}%`;
-                    if (wifiBarsEl) {
-                        wifiBarsEl.classList.remove('hidden');
-                        wifiBarsEl.className = 'wifi-signal-bars';
-                        if (wifiSignalPct >= 75) wifiBarsEl.classList.add('strength-4');
-                        else if (wifiSignalPct >= 50) wifiBarsEl.classList.add('strength-3');
-                        else if (wifiSignalPct >= 25) wifiBarsEl.classList.add('strength-2');
-                        else if (wifiSignalPct > 0) wifiBarsEl.classList.add('strength-1');
-                    }
+                    connectionTypeIcon.setAttribute('data-lucide', 'wifi');
+                    connectionTypeText.innerText = 'Wi-Fi';
+                    document.getElementById('primaryConnectionIndicator').className = 'sys-indicator conn-indicator-wifi';
+                    if (wifiBars) wifiBars.classList.remove('hidden');
                 }
 
-                // Refresh Icons inside header dynamic wrappers
                 lucide.createIcons();
 
-                // Update flows elements inside diagram
-                document.getElementById('flowFveVal').innerText = `${Math.round(data.total_live_power)} W`;
-                document.getElementById('flowBatVal').innerText = `${Math.round(data.avg_live_soc)}%`;
-                document.getElementById('flowHomeVal').innerText = `${Math.round(data.consumption || 0)} W`;
-
-                // Set graphical linear progress bars
+                // Plot graphics scaling limits
                 document.getElementById('dashBatteryBar').style.width = `${Math.round(data.avg_live_soc)}%`;
                 document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
                 document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
 
-                if (data.boiler_temp !== undefined) document.getElementById('dashBoilerTemp').innerText = `${Math.round(data.boiler_temp)} °C`;
-                if (data.solar_panel_temp !== undefined) document.getElementById('dashSolarTemp').innerText = `${Math.round(data.solar_panel_temp)} °C`;
-                if (data.outdoor_temp !== undefined) document.getElementById('dashOutdoorTemp').innerText = `${Math.round(data.outdoor_temp)} °C`;
-
-                // Blackout or active grid system badge handler
-                const gridState = document.getElementById('powerSourceStatus');
-                const gridLabel = document.getElementById('powerSourceText');
-                
-                if (data.grid_outage || (data.consumption > 0 && data.total_live_power === 0 && data.grid_import_w === 0)) {
-                    gridState.classList.add('offgrid');
-                    gridLabel.innerText = "MIMO SIETE (Blackout) — Prevádzka z batérie";
-                } else {
-                    gridState.classList.remove('offgrid');
-                    gridLabel.innerText = "Pripojené k distribučnej sieti — Systém prenáša prebytky";
-                }
-
             } catch (err) {}
         }
 
-        async function fetchMeterData() {
-            const devId = metaEl.getAttribute('data-device-id');
-            try {
-                const response = await fetch(`${basePath}/api/device/${devId}/meter`);
-                const data = await response.json();
-                if (data.status === 'success' && data.meter) {
-                    const m = data.meter;
-                    document.getElementById('flowGridVal').innerText = `${Math.round(m.grid_import_w || m.grid_export_w)} W`;
-                }
-            } catch (err) {}
-        }
-
-        // Functional bindings for Meter Mode, Manual Override, and AI models
-        async function setMeterMode(mode) {
-            document.querySelectorAll('#meterModeGrid .control-btn').forEach(btn => btn.classList.remove('active'));
-            const customSet = document.getElementById('customSettings');
-            if (customSet) customSet.style.display = (mode === 'CUSTOM') ? 'block' : 'none';
-
-            const activeBtnId = {
-                UNLIMITED: 'btnMeterUnlimited',
-                SELF_CONSUMPTION: 'btnMeterSelf',
-                ZERO: 'btnMeterZero',
-                PLUS: 'btnMeterPlus',
-                SMART: 'btnMeterSmart',
-                CUSTOM: 'btnMeterCustom'
-            }[mode];
-            const btn = document.getElementById(activeBtnId);
-            if (btn) btn.classList.add('active');
-
-            try {
-                const devId = metaEl.getAttribute('data-device-id');
-                await fetch(`${basePath}/api/device/${devId}/meter`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({control_mode: mode})
-                });
-            } catch(e) {}
-        }
-
-        async function setManualOverride(mode) {
-            document.querySelectorAll('#sectionControl .control-btn').forEach(btn => btn.classList.remove('active'));
-            const activeBtnId = {
-                AUTO: 'btnOverrideAuto',
-                ON: 'btnOverrideOn',
-                OFF: 'btnOverrideOff'
-            }[mode];
-            const btn = document.getElementById(activeBtnId);
-            if (btn) btn.classList.add('active');
-
-            try {
-                const devId = metaEl.getAttribute('data-device-id');
-                await fetch(`${basePath}/api/device/${devId}/control`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({action: 'override', value: mode})
-                });
-            } catch(e) {}
-        }
-
-        async function setAiModel(id) {
-            document.querySelectorAll('.ai-model-card').forEach((card, idx) => {
-                card.classList.remove('active');
-                const check = document.getElementById('aiModelCheck' + (idx + 1));
-                if (check) check.classList.add('hidden');
-            });
-
-            const activeCard = document.getElementById('aiModel' + id);
-            if (activeCard) activeCard.classList.add('active');
-            const activeCheck = document.getElementById('aiModelCheck' + id);
-            if (activeCheck) activeCheck.classList.remove('hidden');
-
-            try {
-                const devId = metaEl.getAttribute('data-device-id');
-                await fetch(`${basePath}/api/device/${devId}/model`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({model_id: id})
-                });
-            } catch(e) {}
-        }
-
-        // Relay simulation toggles
-        function toggleRelayState(relayId) {
-            const label = document.getElementById('relayStatus' + relayId);
-            if (!label) return;
-            if (label.innerText === 'ZOPNUTÉ') {
-                label.innerText = 'VYPNUTÉ';
-                label.classList.remove('active');
-            } else {
-                label.innerText = 'ZOPNUTÉ';
-                label.classList.add('active');
-            }
-        }
-
-        // Holiday Management SafeGuard module
-        function toggleHolidayModeState(checked) {
-            const knob = document.getElementById('holidayToggleKnob');
-            const notice = document.getElementById('holidayActiveNotice');
-            if (checked) {
-                if (knob) {
-                    knob.style.transform = 'translateX(24px)';
-                    knob.style.background = 'var(--accent-battery)';
-                }
-                if (notice) notice.classList.remove('hidden');
-            } else {
-                if (knob) {
-                    knob.style.transform = 'translateX(0px)';
-                    knob.style.background = '#4b5563';
-                }
-                if (notice) notice.classList.add('hidden');
-            }
-        }
-
-        async function saveHolidayParams() {
-            const isEnabled = document.getElementById('holidayEnabled').checked;
-            const payload = {
-                enabled: isEnabled,
-                until: document.getElementById('holidayUntilInput').value,
-                preheat_hours: parseInt(document.getElementById('holidayPreheatHours').value),
-                min_temp: parseFloat(document.getElementById('holidayMinTemp').value),
-                max_temp: parseFloat(document.getElementById('holidayMaxTemp').value),
-                min_soc: parseInt(document.getElementById('holidayMinSoc').value)
-            };
-            try {
-                const devId = metaEl.getAttribute('data-device-id');
-                await fetch(`${basePath}/api/device/${devId}/holiday-mode`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-            } catch(e) {}
-        }
-
-        // Terminal CMD logic
-        function handleCliKey(e) {
-            if (e.key === 'Enter') executeCliCommand();
-        }
-
-        function executeCliCommand() {
-            const input = document.getElementById('cliInput');
-            const command = input.value.trim();
-            if (!command) return;
-            input.value = '';
-
-            const consoleBox = document.getElementById('cliOutput');
-            const timestamp = new Date().toLocaleTimeString('sk-SK');
-            consoleBox.innerHTML += `<div class="terminal-log-row" style="color:#ffffff;">[${timestamp}] $ ${command}</div>`;
-
-            setTimeout(() => {
-                if (command.startsWith('read')) {
-                    consoleBox.innerHTML += `<div class="terminal-log-row" style="color:var(--accent-battery);">[${timestamp}] Modbus Read OK: Value = 230 V</div>`;
-                } else {
-                    consoleBox.innerHTML += `<div class="terminal-log-row" style="color:var(--accent-warn);">[${timestamp}] CMD Error or invalid syntax.</div>`;
-                }
-                consoleBox.scrollTop = consoleBox.scrollHeight;
-            }, 300);
-        }
-
-        // Theme controllers
+        // Theme Adaptive Controllers
         function toggleTheme() {
             const isLight = document.body.classList.toggle('light-mode');
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
@@ -1676,9 +1018,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchTelemetry();
-            fetchMeterData();
             setInterval(fetchTelemetry, 8000);
-            setInterval(fetchMeterData, 10000);
         });
     </script>
 </body>
