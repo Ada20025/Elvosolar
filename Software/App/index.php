@@ -597,6 +597,133 @@ elseif ($path === '/api/user/devices' && $method === 'GET') {
     send_json(['status' => 'success', 'devices' => $result]);
 }
 
+// --- DEVICE SETTINGS (min/max hodnoty, mody) ---
+elseif ($path === '/api/user/device-settings' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    
+    $stmt = $pdo->prepare("SELECT id, name, brand_id FROM devices WHERE user_id = ? ORDER BY id");
+    $stmt->execute([$_SESSION['user_id']]);
+    $devices = $stmt->fetchAll();
+    
+    $result = [];
+    foreach ($devices as $dev) {
+        $settings_file = __DIR__ . '/cache_device_settings_' . $dev['id'] . '.json';
+        $settings = [
+            'min_power_w' => 0,
+            'max_power_w' => 10000,
+            'min_soc_pct' => 10,
+            'max_soc_pct' => 90,
+            'auto_mode' => 'SMART',
+            'night_sleep' => false,
+            'target_temp' => 22.0,
+            'group_id' => 0,
+        ];
+        if (file_exists($settings_file)) {
+            $cached = json_decode(file_get_contents($settings_file), true);
+            if ($cached) $settings = array_merge($settings, $cached);
+        }
+        $result[] = [
+            'device_id' => $dev['id'],
+            'name' => $dev['name'],
+            'brand_id' => $dev['brand_id'],
+            'settings' => $settings,
+        ];
+    }
+    send_json(['status' => 'success', 'devices' => $result]);
+}
+
+// --- SAVE DEVICE SETTINGS (jedno alebo vsetky) ---
+elseif ($path === '/api/user/device-settings' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    $data = get_json_input();
+    
+    $device_ids = $data['device_ids'] ?? []; // pole ID alebo 'all'
+    $settings = $data['settings'] ?? [];
+    
+    if (empty($device_ids) || empty($settings)) {
+        send_json(['status' => 'error', 'message' => 'Chybaju device_ids alebo settings'], 400);
+    }
+    
+    // Ak 'all', nastav pre vsetky
+    if ($device_ids === 'all' || (is_array($device_ids) && in_array('all', $device_ids))) {
+        $stmt = $pdo->prepare("SELECT id FROM devices WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $device_ids = array_column($stmt->fetchAll(), 'id');
+    }
+    
+    $saved = 0;
+    foreach ($device_ids as $did) {
+        $did = intval($did);
+        // Over ze to patri userovi
+        $stmt = $pdo->prepare("SELECT id FROM devices WHERE id = ? AND user_id = ?");
+        $stmt->execute([$did, $_SESSION['user_id']]);
+        if (!$stmt->fetch()) continue;
+        
+        $settings_file = __DIR__ . '/cache_device_settings_' . $did . '.json';
+        $existing = [];
+        if (file_exists($settings_file)) {
+            $existing = json_decode(file_get_contents($settings_file), true) ?? [];
+        }
+        $merged = array_merge($existing, $settings);
+        file_put_contents($settings_file, json_encode($merged, JSON_PRETTY_PRINT));
+        
+        // Posli prikaz na CM5
+        $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
+        $stmt->execute([$did]);
+        $dev = $stmt->fetch();
+        if ($dev) {
+            $config = array_merge(['action' => 'update_settings'], $settings);
+            $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')")
+                ->execute([$dev['serial_number'], json_encode($config)]);
+        }
+        $saved++;
+    }
+    
+    send_json(['status' => 'success', 'saved' => $saved, 'message' => "Nastavenia ulozene pre $saved zariadeni"]);
+}
+
+// --- DEVICE GROUPS ---
+elseif ($path === '/api/user/device-groups' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    $groups_file = __DIR__ . '/cache_groups_' . $_SESSION['user_id'] . '.json';
+    $groups = [];
+    if (file_exists($groups_file)) {
+        $groups = json_decode(file_get_contents($groups_file), true) ?? [];
+    }
+    send_json(['status' => 'success', 'groups' => $groups]);
+}
+
+elseif ($path === '/api/user/device-groups' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    $data = get_json_input();
+    $groups_file = __DIR__ . '/cache_groups_' . $_SESSION['user_id'] . '.json';
+    $groups = file_exists($groups_file) ? (json_decode(file_get_contents($groups_file), true) ?? []) : [];
+    
+    $action = $data['action'] ?? 'save';
+    if ($action === 'create') {
+        $groups[] = [
+            'id' => count($groups) + 1,
+            'name' => $data['name'] ?? 'Skupina',
+            'device_ids' => $data['device_ids'] ?? [],
+        ];
+    } elseif ($action === 'delete') {
+        $gid = intval($data['group_id'] ?? 0);
+        $groups = array_filter($groups, fn($g) => $g['id'] !== $gid);
+        $groups = array_values($groups);
+    } elseif ($action === 'save') {
+        $gid = intval($data['group_id'] ?? 0);
+        foreach ($groups as &$g) {
+            if ($g['id'] === $gid) {
+                $g['name'] = $data['name'] ?? $g['name'];
+                $g['device_ids'] = $data['device_ids'] ?? $g['device_ids'];
+                break;
+            }
+        }
+    }
+    file_put_contents($groups_file, json_encode($groups, JSON_PRETTY_PRINT));
+    send_json(['status' => 'success', 'groups' => $groups]);
+}
+
 // --- CHANGE PASSWORD ---
 elseif ($path === '/api/user/change-password' && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);

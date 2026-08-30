@@ -859,6 +859,30 @@
             </div>
             <?php endforeach; ?>
         </div>
+
+        <!-- CONTROL PANEL -->
+        <div id="controlPanel" style="margin-top:40px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <div>
+                    <h2 style="font-size:18px;font-weight:900;color:var(--text-primary);letter-spacing:-.3px;">🎛️ Ovládanie</h2>
+                    <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Nastavenia pre všetky zariadenia alebo jednotlivo</p>
+                </div>
+                <button onclick="openSettingsModal('all')" id="btnSetAll" style="display:none;padding:8px 16px;border-radius:10px;font-size:11px;font-weight:700;background:linear-gradient(135deg,#6366f1,#3b82f6);color:white;border:none;cursor:pointer;transition:all 0.2s;">
+                    ⚙️ Nastaviť pre všetky
+                </button>
+            </div>
+n            <!-- Groups -->
+            <div id="groupsContainer" style="display:none;margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;">Skupiny</span>
+                    <button onclick="createGroup()" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border-card);cursor:pointer;">+ Pridať</button>
+                </div>
+                <div id="groupsList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+            </div>
+
+            <!-- Device settings cards -->
+            <div id="settingsCards" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:16px;"></div>
+        </div>
     </main>
 
     <footer class="footer">
@@ -1205,6 +1229,231 @@
                 });
             });
         });
+
+        // === CONTROL PANEL ===
+        let allDeviceSettings = [];
+        let allGroups = [];
+
+        async function loadControlPanel() {
+            try {
+                const res = await fetch(`${basePath}/api/user/device-settings`, {credentials: 'same-origin'});
+                const data = await res.json();
+                if (data.status === 'success') {
+                    allDeviceSettings = data.devices;
+                    renderControlPanel();
+                }
+            } catch(e) {}
+
+            try {
+                const res = await fetch(`${basePath}/api/user/device-groups`, {credentials: 'same-origin'});
+                const data = await res.json();
+                if (data.status === 'success') {
+                    allGroups = data.groups;
+                    renderGroups();
+                }
+            } catch(e) {}
+        }
+
+        function renderControlPanel() {
+            const container = document.getElementById('settingsCards');
+            const btnAll = document.getElementById('btnSetAll');
+            if (!container) return;
+
+            if (allDeviceSettings.length > 1) {
+                btnAll.style.display = 'block';
+            }
+
+            container.innerHTML = allDeviceSettings.map(dev => {
+                const s = dev.settings;
+                const modeLabel = s.auto_mode === 'SMART' ? '🤖 Smart' : s.auto_mode === 'ON' ? '🟢 Zapnuté' : '🔴 Vypnuté';
+                const modeColor = s.auto_mode === 'SMART' ? '#6366f1' : s.auto_mode === 'ON' ? '#10b981' : '#f43f5e';
+                return `
+                    <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:20px;transition:all 0.3s;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <div>
+                                <div style="font-size:13px;font-weight:800;color:var(--text-primary);">${dev.name}</div>
+                                <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${dev.brand_id}</div>
+                            </div>
+                            <span style="padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;background:${modeColor}20;color:${modeColor};border:1px solid ${modeColor}30;">${modeLabel}</span>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                            <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:10px;padding:10px;">
+                                <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Min výkon</div>
+                                <div style="font-size:16px;font-weight:900;color:#3b82f6;font-family:'JetBrains Mono',monospace;">${s.min_power_w} W</div>
+                            </div>
+                            <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:10px;padding:10px;">
+                                <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Max výkon</div>
+                                <div style="font-size:16px;font-weight:900;color:#f59e0b;font-family:'JetBrains Mono',monospace;">${s.max_power_w} W</div>
+                            </div>
+                            <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:10px;padding:10px;">
+                                <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Min SOC</div>
+                                <div style="font-size:16px;font-weight:900;color:#10b981;font-family:'JetBrains Mono',monospace;">${s.min_soc_pct}%</div>
+                            </div>
+                            <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:10px;padding:10px;">
+                                <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Max SOC</div>
+                                <div style="font-size:16px;font-weight:900;color:#f43f5e;font-family:'JetBrains Mono',monospace;">${s.max_soc_pct}%</div>
+                            </div>
+                        </div>
+
+                        <button onclick="openSettingsModal(${dev.device_id})" style="width:100%;padding:10px;border-radius:10px;font-size:11px;font-weight:700;background:var(--bg-card-hover);color:var(--text-primary);border:1px solid var(--border-card);cursor:pointer;transition:all 0.2s;">
+                            ⚙️ Nastaviť
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderGroups() {
+            const container = document.getElementById('groupsContainer');
+            const list = document.getElementById('groupsList');
+            if (!container || !list) return;
+            if (allGroups.length > 0) {
+                container.style.display = 'block';
+                list.innerHTML = allGroups.map(g => `
+                    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:8px;font-size:11px;color:var(--text-primary);">
+                        <span style="font-weight:700;">${g.name}</span>
+                        <span style="font-size:9px;color:var(--text-muted);">(${g.device_ids.length} zariadení)</span>
+                        <button onclick="openSettingsModal('group-${g.id}')" style="margin-left:4px;padding:2px 6px;border-radius:4px;font-size:9px;background:var(--bg-card-hover);color:var(--text-secondary);border:none;cursor:pointer;">⚙️</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function openSettingsModal(target) {
+            // target: device_id, 'all', alebo 'group-ID'
+            let devices = [];
+            let title = '';
+
+            if (target === 'all') {
+                devices = allDeviceSettings;
+                title = 'Nastavenia pre všetky zariadenia';
+            } else if (typeof target === 'string' && target.startsWith('group-')) {
+                const gid = parseInt(target.split('-')[1]);
+                const group = allGroups.find(g => g.id === gid);
+                if (group) {
+                    devices = allDeviceSettings.filter(d => group.device_ids.includes(d.device_id));
+                    title = `Nastavenia skupiny: ${group.name}`;
+                }
+            } else {
+                devices = allDeviceSettings.filter(d => d.device_id == target);
+                title = devices.length > 0 ? `Nastavenia: ${devices[0].name}` : 'Nastavenia';
+            }
+
+            if (devices.length === 0) return;
+            const s = devices[0].settings;
+            const deviceIds = devices.map(d => d.device_id);
+
+            const modal = document.createElement('div');
+            modal.id = 'settingsModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+            modal.innerHTML = `
+                <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:20px;padding:28px;max-width:420px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
+                    <h3 style="font-size:16px;font-weight:900;color:var(--text-primary);margin-bottom:4px;">${title}</h3>
+                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:20px;">Upravte hodnoty a stlačte Uložiť</p>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                        <div>
+                            <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Min výkon (W)</label>
+                            <input id="modalMinPower" type="number" value="${s.min_power_w}" min="0" max="50000" style="width:100%;background:var(--bg-primary);border:1px solid var(--border-card);border-radius:8px;padding:10px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;outline:none;">
+                        </div>
+                        <div>
+                            <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Max výkon (W)</label>
+                            <input id="modalMaxPower" type="number" value="${s.max_power_w}" min="0" max="50000" style="width:100%;background:var(--bg-primary);border:1px solid var(--border-card);border-radius:8px;padding:10px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;outline:none;">
+                        </div>
+                        <div>
+                            <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Min SOC (%)</label>
+                            <input id="modalMinSoc" type="number" value="${s.min_soc_pct}" min="0" max="100" style="width:100%;background:var(--bg-primary);border:1px solid var(--border-card);border-radius:8px;padding:10px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;outline:none;">
+                        </div>
+                        <div>
+                            <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Max SOC (%)</label>
+                            <input id="modalMaxSoc" type="number" value="${s.max_soc_pct}" min="0" max="100" style="width:100%;background:var(--bg-primary);border:1px solid var(--border-card);border-radius:8px;padding:10px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;outline:none;">
+                        </div>
+                    </div>
+n                    <div style="margin-bottom:16px;">
+                        <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Režim</label>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+                            <button onclick="setModalMode('SMART')" id="modeSmart" style="padding:8px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid ${s.auto_mode==='SMART'?'#6366f1':'var(--border-card)'};background:${s.auto_mode==='SMART'?'rgba(99,102,241,0.1)':'var(--bg-primary)'};color:var(--text-primary);cursor:pointer;">🤖 Smart</button>
+                            <button onclick="setModalMode('ON')" id="modeOn" style="padding:8px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid ${s.auto_mode==='ON'?'#10b981':'var(--border-card)'};background:${s.auto_mode==='ON'?'rgba(16,185,129,0.1)':'var(--bg-primary)'};color:var(--text-primary);cursor:pointer;">🟢 Zapnuté</button>
+                            <button onclick="setModalMode('OFF')" id="modeOff" style="padding:8px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid ${s.auto_mode==='OFF'?'#f43f5e':'var(--border-card)'};background:${s.auto_mode==='OFF'?'rgba(244,63,94,0.1)':'var(--bg-primary)'};color:var(--text-primary);cursor:pointer;">🔴 Vypnuté</button>
+                        </div>
+                    </div>
+n                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">
+                        <input type="checkbox" id="modalNightSleep" ${s.night_sleep ? 'checked' : ''} style="accent-color:#6366f1;width:16px;height:16px;">
+                        <span style="font-size:12px;font-weight:600;color:var(--text-primary);">Nočný spánok (vypnúť LED)</span>
+                    </label>
+n                    <div style="display:flex;gap:8px;">
+                        <button onclick="document.getElementById('settingsModal').remove()" style="flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border-card);cursor:pointer;">Zrušiť</button>
+                        <button onclick="saveDeviceSettings(${JSON.stringify(deviceIds).replace(/"/g, '&quot;')})" style="flex:2;padding:10px;border-radius:10px;font-size:12px;font-weight:700;background:linear-gradient(135deg,#6366f1,#3b82f6);color:white;border:none;cursor:pointer;">Uložiť</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        let currentModalMode = '';
+        function setModalMode(mode) {
+            currentModalMode = mode;
+            ['Smart', 'On', 'Off'].forEach(m => {
+                const btn = document.getElementById('mode' + m);
+                if (btn) {
+                    const isActive = m.toLowerCase() === mode.toLowerCase() || (m === 'Smart' && mode === 'SMART') || (m === 'On' && mode === 'ON') || (m === 'Off' && mode === 'OFF');
+                    const colors = {Smart: '#6366f1', On: '#10b981', Off: '#f43f5e'};
+                    const c = colors[m];
+                    btn.style.borderColor = isActive ? c : 'var(--border-card)';
+                    btn.style.background = isActive ? `${c}15` : 'var(--bg-primary)';
+                }
+            });
+        }
+
+        async function saveDeviceSettings(deviceIds) {
+            const settings = {
+                min_power_w: parseInt(document.getElementById('modalMinPower').value) || 0,
+                max_power_w: parseInt(document.getElementById('modalMaxPower').value) || 10000,
+                min_soc_pct: parseInt(document.getElementById('modalMinSoc').value) || 10,
+                max_soc_pct: parseInt(document.getElementById('modalMaxSoc').value) || 90,
+                auto_mode: currentModalMode || 'SMART',
+                night_sleep: document.getElementById('modalNightSleep').checked,
+            };
+
+            try {
+                const res = await fetch(`${basePath}/api/user/device-settings`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ device_ids: deviceIds, settings })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Uložené', data.message, 'success');
+                    document.getElementById('settingsModal').remove();
+                    loadControlPanel();
+                } else {
+                    showToast('Chyba', data.message, 'error');
+                }
+            } catch(e) {
+                showToast('Chyba', 'Nepodarilo sa uložiť', 'error');
+            }
+        }
+
+        async function createGroup() {
+            const name = prompt('Názov skupiny:');
+            if (!name) return;
+            try {
+                await fetch(`${basePath}/api/user/device-groups`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ action: 'create', name, device_ids: allDeviceSettings.map(d => d.device_id) })
+                });
+                loadControlPanel();
+            } catch(e) {}
+        }
+
+        // Nacitaj control panel po nacitani stranky
+        loadControlPanel();
     </script>
 </body>
 </html>
