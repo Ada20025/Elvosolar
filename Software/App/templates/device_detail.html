@@ -177,7 +177,79 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;hei
 <div class="phone-mockup"><div class="phone-header"><span>9:41</span><span class="title">Prehľad nákladov</span><span>📶 🔋</span></div><div class="phone-body"><div style="text-align:center;margin-bottom:12px;"><div style="font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:4px;">Ušetrené náklady</div><div style="font-size:24px;font-weight:900;color:#3b82f6;font-family:'JetBrains Mono',monospace;" id="appLiveSavedCost">3,37 €</div></div><div style="height:80px;background:rgba(0,0,0,.3);border-radius:10px;border:1px solid rgba(255,255,255,.03);padding:8px;display:flex;align-items:flex-end;justify-content:space-between;gap:3px;"><div style="width:100%;background:rgba(59,130,246,.1);height:30%;border-radius:3px 3px 0 0;"></div><div style="width:100%;background:rgba(59,130,246,.2);height:45%;border-radius:3px 3px 0 0;"></div><div style="width:100%;background:rgba(59,130,246,.35);height:15%;border-radius:3px 3px 0 0;"></div><div style="width:100%;background:#3b82f6;height:68%;border-radius:3px 3px 0 0;position:relative;"><span style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:7px;font-weight:800;color:#3b82f6;">16h</span></div><div style="width:100%;background:rgba(59,130,246,.25);height:25%;border-radius:3px 3px 0 0;"></div><div style="width:100%;background:rgba(59,130,246,.12);height:12%;border-radius:3px 3px 0 0;"></div></div><p style="font-size:9px;color:#475569;margin-top:10px;line-height:1.5;">Analýza tokov prebieha asynchrónne.</p></div><div class="phone-footer">Automatická aktualizácia</div></div>
 <div class="phone-mockup"><div class="phone-header"><span>9:41</span><span class="title">Upraviť bojler</span><span>📶 🔋</span></div><div class="phone-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;"><div onclick="toggleDialTemp()" style="width:120px;height:120px;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="112" height="112" style="transform:rotate(-90deg);"><circle cx="56" cy="56" r="48" stroke="rgba(255,255,255,.06)" stroke-width="5" fill="transparent"/><circle id="appCircularDialProgress" cx="56" cy="56" r="48" stroke="#3b82f6" stroke-width="5" stroke-dasharray="301" stroke-dashoffset="100" fill="transparent" style="transition:stroke-dashoffset .4s;"/></svg><div style="position:absolute;text-align:center;"><div style="font-size:20px;font-weight:900;color:#f8fafc;font-family:'JetBrains Mono',monospace;" id="appDialTempDisplay">65°C</div><div style="font-size:7px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#475569;">Cieľ ohrevu</div></div></div><div class="temp-grid" style="width:100%;margin-top:12px;"><div class="temp-card"><div class="label">Zo siete</div><div class="value" style="color:#94a3b8;">22°C</div></div><div class="temp-card" style="border-color:rgba(59,130,246,.15);"><div class="label">Z FVE</div><div class="value" style="color:#3b82f6;">27°C</div></div></div></div><div class="phone-footer">Kliknutím prepínate (50/65/75°C)</div></div>
 </div></section>
-<section id="sectionHoliday" class="section"><div class="card" style="padding:28px;"><div class="holiday-header"><div class="holiday-info"><span class="holiday-icon">🌴</span><div class="holiday-text"><h3>Dovolenka & Príprava pred príchodom</h3><p>Automaticky odstaví kúrenie a vodu počas neprítomnosti a spustí ohrev pred návratom.</p></div></div><label class="toggle"><input type="checkbox" id="holidayEnabled" onchange="toggleHolidayModeState(this.checked)"><span class="toggle-slider"></span></label></div><div id="holidayActiveNotice" class="holiday-notice hidden"><span class="icon">✈️</span><div class="text"><h4 id="holidayNoticeTitle">Dovolenka aktívna</h4><p id="holidayNoticeDesc">Dom je v hlbokej úspore.</p></div></div><div class="form-row"><div style="display:flex;flex-direction:column;gap:16px;"><div><label class="form-label">Dátum a čas príchodu domov *</label><input type="datetime-local" id="holidayUntilInput" onchange="saveHolidayModeParams()" class="form-input"></div><div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span class="form-label" style="margin:0;">Predstih spustenia ohrevu</span><span id="preheatVal" style="font-size:10px;font-weight:800;color:#3b82f6;font-family:'JetBrains Mono',monospace;">6 hodín</span></div><input type="range" id="holidayPreheatHours" min="2" max="24" value="6" oninput="document.getElementById('preheatVal').innerText = this.value + ' hodín'" onchange="saveHolidayModeParams()"></div></div><div class="card" style="background:rgba(2,6,23,.5);border:1px solid rgba(255,255,255,.03);"><div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:14px;">Cieľové hodnoty pri návrate</div><div style="display:flex;flex-direction:column;gap:14px;"><div><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:10px;color:#64748b;">Teplota v dome:</span><span id="targetTempText" style="font-size:10px;font-weight:800;color:#f59e0b;font-family:'JetBrains Mono',monospace;">22.0 °C</span></div><input type="range" id="holidayTargetTemp" min="18" max="25" step="0.5" value="22" oninput="document.getElementById('targetTempText').innerText = parseFloat(this.value).toFixed(1) + ' °C'" onchange="saveHolidayModeParams()"></div><div><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:10px;color:#64748b;">Teplota vody (Bojler):</span><span id="targetBoilerText" style="font-size:10px;font-weight:800;color:#6366f1;font-family:'JetBrains Mono',monospace;">50 °C</span></div><input type="range" id="holidayTargetBoiler" min="40" max="75" value="50" oninput="document.getElementById('targetBoilerText').innerText = this.value + ' °C'" onchange="saveHolidayModeParams()"></div></div></div></div></div></section>
+<section id="sectionHoliday" class="section">
+<div class="card" style="padding:28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:32px;">🌴</span>
+            <div>
+                <h3 style="font-size:16px;font-weight:900;color:#f8fafc;">Dovolenka</h3>
+                <p style="font-size:11px;color:#64748b;margin-top:2px;">Automaticky spravuje energiu počas neprítomnosti</p>
+            </div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="holidayEnabled" onchange="toggleHolidayModeState(this.checked)"><span class="toggle-slider"></span></label>
+    </div>
+
+    <div id="holidayActiveNotice" class="holiday-notice hidden" style="padding:16px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);border-radius:14px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:24px;">✈️</span>
+        <div>
+            <h4 id="holidayNoticeTitle" style="font-size:13px;font-weight:800;color:#3b82f6;">Dovolenka aktívna</h4>
+            <p id="holidayNoticeDesc" style="font-size:11px;color:#64748b;">Dom je v hlbokej úspore.</p>
+        </div>
+    </div>
+
+    <!-- Datumy -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div>
+            <label class="form-label">📅 Odchod z domu</label>
+            <input type="datetime-local" id="holidayFromInput" onchange="saveHolidayModeParams()" class="form-input">
+        </div>
+        <div>
+            <label class="form-label">🏠 Príchod domov *</label>
+            <input type="datetime-local" id="holidayUntilInput" onchange="saveHolidayModeParams()" class="form-input">
+        </div>
+    </div>
+
+    <!-- Predstih -->
+    <div style="background:rgba(2,6,23,.5);border:1px solid rgba(255,255,255,.03);border-radius:14px;padding:20px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;">⏰ Predstih spustenia ohrevu</span>
+            <span id="preheatVal" style="font-size:12px;font-weight:800;color:#3b82f6;font-family:'JetBrains Mono',monospace;">6 hodín</span>
+        </div>
+        <input type="range" id="holidayPreheatHours" min="1" max="24" value="6" oninput="document.getElementById('preheatVal').innerText = this.value + ' hodín'" onchange="saveHolidayModeParams()">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#334155;margin-top:4px;">
+            <span>1h</span><span>6h</span><span>12h</span><span>24h</span>
+        </div>
+    </div>
+
+    <!-- Ciele -->
+    <div style="background:rgba(2,6,23,.5);border:1px solid rgba(255,255,255,.03);border-radius:14px;padding:20px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:16px;">🎯 Cieľové hodnoty pri návrate</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="font-size:11px;color:#64748b;">🏠 Teplota v dome</span>
+                    <span id="targetTempText" style="font-size:13px;font-weight:800;color:#f59e0b;font-family:'JetBrains Mono',monospace;">22.0 °C</span>
+                </div>
+                <input type="range" id="holidayTargetTemp" min="16" max="28" step="0.5" value="22" oninput="document.getElementById('targetTempText').innerText = parseFloat(this.value).toFixed(1) + ' °C'" onchange="saveHolidayModeParams()">
+                <div style="display:flex;justify-content:space-between;font-size:9px;color:#334155;margin-top:4px;">
+                    <span>16°C</span><span>22°C</span><span>28°C</span>
+                </div>
+            </div>
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="font-size:11px;color:#64748b;">♨️ Teplota vody (Bojler)</span>
+                    <span id="targetBoilerText" style="font-size:13px;font-weight:800;color:#6366f1;font-family:'JetBrains Mono',monospace;">50 °C</span>
+                </div>
+                <input type="range" id="holidayTargetBoiler" min="35" max="80" value="50" oninput="document.getElementById('targetBoilerText').innerText = this.value + ' °C'" onchange="saveHolidayModeParams()">
+                <div style="display:flex;justify-content:space-between;font-size:9px;color:#334155;margin-top:4px;">
+                    <span>35°C</span><span>55°C</span><span>80°C</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
 <section id="sectionTerminal" class="section"><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
 <div class="terminal-box"><div class="terminal-header"><span class="terminal-title">Interaktívny Modbus terminál</span><div class="terminal-badge"><span class="dot"></span> LIVE</div></div><div id="cliOutput" class="terminal-output"><div style="color:#334155;">[System] Terminálové jadro CM5 Pro aktívne na /dev/ttyAMA4</div><div style="color:#334155;">[System] Príkazy: "read &lt;reg&gt;", "write &lt;reg&gt; &lt;val&gt;", "restart_services", "clear_logs"</div></div><div class="terminal-input-row"><span class="terminal-prompt">&gt;_</span><input type="text" id="cliInput" onkeydown="handleCliKey(event)" placeholder="read 1000..." class="terminal-input"><button onclick="executeCliCommand()" class="terminal-submit">Spustiť</button></div></div>
 <div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#f8fafc;">HDMI Diagnostický náhľad</span><span style="padding:3px 10px;border-radius:8px;font-size:9px;font-weight:700;color:#6366f1;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);font-family:'JetBrains Mono',monospace;">LIVE STREAM</span></div><div class="hdmi-box"><div class="hdmi-placeholder"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><div class="label">HDMI Video rozhranie</div><div class="desc">Simulovaná odozva Waveshare CM5. Video server pripravený prenášať mjpeg signál.</div></div></div></div></div>
