@@ -653,6 +653,33 @@ elseif ($path === '/api/user/device-settings' && $method === 'GET') {
     send_json(['status' => 'success', 'devices' => $result]);
 }
 
+// --- RENAME DEVICE ---
+elseif (preg_match('#^/api/device/(\d+)/rename$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    $device_id = $matches[1];
+    $data = get_json_input();
+    $new_name = trim($data['name'] ?? '');
+    if (!$new_name) send_json(['status' => 'error', 'message' => 'Nazov je povinny'], 400);
+    
+    // Over ze patri userovi
+    $stmt = $pdo->prepare("SELECT id FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    if (!$stmt->fetch()) send_json(['status' => 'error', 'message' => 'Zariadenie nenajdene'], 404);
+    
+    $pdo->prepare("UPDATE devices SET name = ? WHERE id = ?")->execute([$new_name, $device_id]);
+    
+    // Posli na CM5
+    $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
+    $stmt->execute([$device_id]);
+    $dev = $stmt->fetch();
+    if ($dev) {
+        $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')")
+            ->execute([$dev['serial_number'], json_encode(['action' => 'set_name', 'name' => $new_name])]);
+    }
+    
+    send_json(['status' => 'success', 'name' => $new_name]);
+}
+
 // --- SAVE DEVICE SETTINGS (jedno alebo vsetky) ---
 elseif ($path === '/api/user/device-settings' && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);

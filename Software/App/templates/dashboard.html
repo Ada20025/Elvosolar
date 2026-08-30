@@ -742,8 +742,19 @@
             <a href="<?php echo $base_path; ?>/dashboard" class="header-brand">
                 <img src="/templates/ElvosolarLogo.png" alt="ElvoControl" style="height:38px;width:auto;border-radius:10px;filter:drop-shadow(0 0 8px rgba(99,102,241,.3));">
                 <div>
-                    <div class="brand-text">ElvoControl</div>
-                    <div class="brand-tag">SMART EMS</div>
+                    <div class="brand-text" id="deviceNameHeader" style="display:flex;align-items:center;gap:6px;">
+                        <?php 
+                        $first_device_name = 'ElvoControl';
+                        if (!empty($devices) && isset($devices[0]['name'])) {
+                            $first_device_name = htmlspecialchars($devices[0]['name']);
+                        }
+                        echo $first_device_name;
+                        ?>
+                        <button onclick="event.preventDefault();openRenameModal()" style="background:none;border:none;cursor:pointer;padding:2px;font-size:12px;opacity:0.6;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                            ✏️
+                        </button>
+                    </div>
+                    <div class="brand-tag">SMART EMS<?php if (!empty($devices)): ?><span style="margin-left:6px;font-size:8px;color:#64748b;">SN: <?php echo htmlspecialchars($devices[0]['serial_number'] ?? ''); ?></span><?php endif; ?></div>
                 </div>
             </a>
 
@@ -1010,8 +1021,23 @@
 
         // Rename
         function openRenameModal(btn) {
-            document.getElementById('rename-device-id').value = btn.getAttribute('data-id');
-            document.getElementById('rename-device-input').value = btn.getAttribute('data-name');
+            if (btn && btn.getAttribute) {
+                // Volane z device card
+                document.getElementById('rename-device-id').value = btn.getAttribute('data-id');
+                document.getElementById('rename-device-input').value = btn.getAttribute('data-name');
+            } else {
+                // Volane z header - prve zariadenie
+                const firstCard = document.querySelector('.device-card');
+                if (firstCard) {
+                    const id = firstCard.id.replace('card-', '');
+                    const nameEl = document.getElementById('name-display-' + id);
+                    document.getElementById('rename-device-id').value = id;
+                    document.getElementById('rename-device-input').value = nameEl ? nameEl.textContent.trim() : '';
+                } else {
+                    document.getElementById('rename-device-id').value = '';
+                    document.getElementById('rename-device-input').value = '';
+                }
+            }
             document.getElementById('rename-modal').classList.add('active');
         }
 
