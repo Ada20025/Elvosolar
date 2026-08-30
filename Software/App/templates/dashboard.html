@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Riadiace centrum | Biok Smart EMS</title>
-    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <link class="brand-favicon" rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
     <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -99,11 +99,17 @@
             align-items: center;
         }
 
-        /* Brand Left: Real Elvosolar Logo */
-        .header-brand-left {
+        /* Brand Left: Real Elvosolar Logo and Local Station Info Badge */
+        .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
+            justify-content: flex-start;
+        }
+
+        .brand-logo-link {
+            display: flex;
+            align-items: center;
             text-decoration: none;
         }
 
@@ -117,6 +123,25 @@
 
         .brand-logo-img-left:hover {
             transform: scale(1.02);
+        }
+
+        /* Brush Edit local renamed button */
+        .rename-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 3px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .rename-btn:hover {
+            color: var(--accent-battery);
+            background: rgba(255, 255, 255, 0.05);
+            transform: scale(1.1);
         }
 
         .header-brand-center {
@@ -941,10 +966,50 @@
     <header class="header">
         <div class="header-inner">
             
-            <!-- Brand Left: Real Elvosolar Logo -->
-            <a href="https://elvosolar.sk/" target="_blank" class="header-brand-left">
-                <img src="/templates/ElvosolarLogo.png" alt="Elvosolar" class="brand-logo-img-left">
-            </a>
+            <!-- Brand Left: Real Elvosolar Logo and Local Station Info Badge -->
+            <div class="header-left">
+                <a href="https://elvosolar.sk/" target="_blank" class="brand-logo-link">
+                    <img src="/templates/ElvosolarLogo.png" alt="Elvosolar" class="brand-logo-img-left">
+                </a>
+
+                <!-- Check if there is only one device (Info static pill with paintbrush rename) -->
+                <?php if (!isset($devices) || count($devices) <= 1): ?>
+                    <div class="sys-indicator" style="gap: 8px; padding: 8px 12px; background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.15);">
+                        <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-battery);"></i>
+                        <span id="singleDeviceLabel" style="font-weight: 800; color: var(--text-primary);">Biok Box v4</span>
+                        <!-- Paintbrush icon for local browser renaming -->
+                        <button onclick="triggerLocalRename(event)" class="rename-btn" title="Premenovať lokálne">
+                            <i data-lucide="brush" style="width:12px;height:12px;"></i>
+                        </button>
+                    </div>
+                <?php else: ?>
+                    <!-- Multiple devices dropdown -->
+                    <div class="station-dropdown-container">
+                        <button id="deviceSelectDropdownBtn" class="sys-indicator station-dropdown-trigger" onclick="toggleDeviceDropdown(event)">
+                            <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-battery);"></i>
+                            <span id="activeStationName"><?php echo htmlspecialchars($devices[0]['name']); ?></span>
+                            <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
+                        </button>
+                        <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
+                            <button onclick="selectActiveDevice(this, 'all', 'Všetky stanice')" class="station-dropdown-item">
+                                <span style="display:flex;align-items:center;gap:8px;">
+                                    <i data-lucide="grid" style="width:14px;height:14px;"></i> Všetky stanice
+                                </span>
+                            </button>
+                            <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
+                            <?php foreach ($devices as $dev): ?>
+                                <button onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" class="station-dropdown-item">
+                                    <span style="display:flex;align-items:center;gap:8px;">
+                                        <i data-lucide="box" style="width:14px;height:14px;"></i>
+                                        <span><?php echo htmlspecialchars($dev['name']); ?></span>
+                                    </span>
+                                    <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
 
             <!-- Centralized Brand Platform Logotype -->
             <div class="header-brand-center">
@@ -1467,6 +1532,30 @@
             if (uDropdown) uDropdown.classList.add('hidden');
         });
 
+        // Local browser renaming trigger
+        function triggerLocalRename(e) {
+            e.stopPropagation();
+            const labelEl = document.getElementById('singleDeviceLabel');
+            if (!labelEl) return;
+
+            const oldName = labelEl.innerText;
+            const newName = prompt("Zadajte nový lokálny názov pre toto zariadenie:", oldName);
+            if (newName !== null && newName.trim() !== "") {
+                const cleanName = newName.trim();
+                labelEl.innerText = cleanName;
+                localStorage.setItem('local_biok_device_name', cleanName);
+            }
+        }
+
+        // Apply local device name if already saved in browser
+        (function loadLocalDeviceName() {
+            const savedLocalName = localStorage.getItem('local_biok_device_name');
+            const labelEl = document.getElementById('singleDeviceLabel');
+            if (savedLocalName && labelEl) {
+                labelEl.innerText = savedLocalName;
+            }
+        })();
+
         function switchTab(tabId) {
             const sections = {
                 dashboard: 'sectionDashboard',
@@ -1556,8 +1645,7 @@
                     }
                 }
 
-                // Simulate/Bind inverter 3 communication failure dynamically for demo purposes
-                // If battery is extremely low or grid import is high, simulate communication failure
+                // Simulate/Bind inverter 3 communication status
                 const invRow3 = document.getElementById('invRow3');
                 const invDot3 = document.getElementById('invDot3');
                 const invStatusLabel3 = document.getElementById('invStatusLabel3');
@@ -1567,7 +1655,6 @@
                     invStatusLabel3.innerText = "CHYBA ZÁPISU";
                     invStatusLabel3.style.color = "var(--accent-warn)";
                 } else {
-                    // Normal state simulated toggle
                     invDot3.className = "pulse-dot online";
                     invStatusLabel3.innerText = "ONLINE";
                     invStatusLabel3.style.color = "var(--accent-battery)";
