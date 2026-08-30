@@ -161,18 +161,9 @@
             transition: all 0.2s;
         }
 
-        /* Dynamic Connection Indicator Styling */
-        .conn-indicator-sim {
-            border-color: rgba(245, 158, 11, 0.2);
-            color: var(--accent-solar);
-        }
         .conn-indicator-wifi {
             border-color: rgba(16, 185, 129, 0.2);
             color: var(--accent-battery);
-        }
-        .conn-indicator-eth {
-            border-color: rgba(59, 130, 246, 0.2);
-            color: var(--accent-grid);
         }
 
         /* Dynamic Custom Wi-Fi / LTE Strength Indicator Bars */
@@ -195,9 +186,6 @@
         .wifi-signal-bars .bar-3 { height: 8px; }
         .wifi-signal-bars .bar-4 { height: 10px; }
 
-        .wifi-signal-bars.strength-1 .bar-1 { background: currentColor; }
-        .wifi-signal-bars.strength-2 .bar-1, .wifi-signal-bars.strength-2 .bar-2 { background: currentColor; }
-        .wifi-signal-bars.strength-3 .bar-1, .wifi-signal-bars.strength-3 .bar-2, .wifi-signal-bars.strength-3 .bar-3 { background: currentColor; }
         .wifi-signal-bars.strength-4 .bar-1, .wifi-signal-bars.strength-4 .bar-2, .wifi-signal-bars.strength-4 .bar-3, .wifi-signal-bars.strength-4 .bar-4 { background: currentColor; }
 
         /* Dropdowns */
@@ -264,7 +252,6 @@
             z-index: 120;
         }
 
-        /* Light mode dropdown styling adaptation */
         body.light-mode .user-dropdown-card,
         body.light-mode .station-dropdown-menu {
             background: #ffffff;
@@ -401,15 +388,8 @@
             transition: opacity 0.2s;
         }
 
-        .legend-item.inactive {
-            opacity: 0.3;
-        }
-
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 3px;
-        }
+        .legend-item.inactive { opacity: 0.3; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
         /* Sliders / Limit controllers */
         .range-slider-container {
@@ -458,9 +438,7 @@
             transition: all 0.2s;
         }
 
-        .input-styled:focus {
-            border-color: var(--accent-saved);
-        }
+        .input-styled:focus { border-color: var(--accent-saved); }
 
         /* SVG Graph Styles */
         .graph-line {
@@ -469,25 +447,91 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Footer */
-        .footer {
-            border-top: 1px solid var(--border-card);
-            padding: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-            color: var(--text-muted);
-            max-width: 1400px;
-            margin: 40px auto 0 auto;
+        .graph-avg-line {
+            stroke-dasharray: 6 4;
+            stroke-width: 1.5;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
         }
 
-        .hidden { display: none !important; }
+        /* Fullscreen Modal Override Confirmation overlay */
+        .modal-fullscreen-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.9);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-fullscreen-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-fullscreen-card {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--accent-warn);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(244, 63, 94, 0.15);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-fullscreen-overlay.active .modal-fullscreen-card {
+            transform: scale(1);
+        }
+
+        /* SafeGuard Luxury Dial Module */
+        .safeguard-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: center;
+        }
 
         @media (max-width: 768px) {
+            .safeguard-container { grid-template-columns: 1fr; }
             .header-inner { grid-template-columns: 1fr auto; }
             .header-center-brand { display: none; }
             .footer { flex-direction: column; gap: 12px; }
+        }
+
+        .safeguard-dial-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .safeguard-circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.03);
+            stroke-width: 8;
+        }
+
+        .safeguard-circle-glow {
+            fill: none;
+            stroke: var(--accent-battery);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 440;
+            stroke-dashoffset: 440;
+            transition: stroke-dashoffset 1s ease, stroke 0.5s ease;
         }
     </style>
 </head>
@@ -500,6 +544,23 @@
          data-base-path="<?php echo htmlspecialchars($base_path); ?>"
          data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>"
          class="hidden"></div>
+
+    <!-- Fullscreen Emergency Confirmation Modal -->
+    <div id="emergencyConfirmModal" class="modal-fullscreen-overlay">
+        <div class="modal-fullscreen-card">
+            <div style="width:70px; height:70px; border-radius:50%; background:rgba(244,63,94,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 24px auto; border: 1.5px solid var(--accent-warn);">
+                <i data-lucide="shield-alert" style="color:var(--accent-warn); width:32px; height:32px;"></i>
+            </div>
+            <h2 style="font-size:22px; font-weight:900; letter-spacing:-0.5px; margin-bottom:12px;">Núdzové Odpojenie FVE</h2>
+            <p style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:32px;">
+                Potvrdením tejto akcie dôjde k okamžitému prerušeniu dodávok do meničov a prepnutiu sústavy do bezpečného havarijného režimu. Želáte si pokračovať?
+            </p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <button onclick="dismissEmergencyModal()" class="control-btn" style="padding:14px; font-size:12px;">Zrušiť</button>
+                <button onclick="confirmEmergencyShutdown()" class="control-btn" style="padding:14px; font-size:12px; background:var(--accent-warn); color:white; border-color:var(--accent-warn);">Aktivovať</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Header -->
     <header class="header">
@@ -675,11 +736,11 @@
                         </div>
                     </div>
 
-                    <!-- Modern Interactive SVG Multi-Graph (Production, Consumption, Battery, Spot Price) -->
+                    <!-- Modern Interactive SVG Multi-Graph (Now replacing the flow schema) -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="trending-up"></i> Komplexná Analytika tokov (24h)</span>
-                            <span style="font-size:10px;font-weight:700;color:var(--accent-saved);">INTERAKTÍVNA LEGENDA</span>
+                            <span class="card-title-styled"><i data-lucide="trending-up"></i> Komplexná Analytika tokov (OKTE Spot vs Toky)</span>
+                            <span style="font-size:10px;font-weight:700;color:var(--accent-saved);">INTEKRATÍVNE KRIVKY</span>
                         </div>
 
                         <div class="chart-legend">
@@ -689,16 +750,15 @@
                             <div class="legend-item" id="legendHome" onclick="toggleSeries('home')">
                                 <span class="legend-dot" style="background:var(--accent-grid);"></span> Spotreba Domu
                             </div>
-                            <div class="legend-item" id="legendSoc" onclick="toggleSeries('soc')">
-                                <span class="legend-dot" style="background:var(--accent-battery);"></span> Batéria SOC
-                            </div>
                             <div class="legend-item" id="legendOkte" onclick="toggleSeries('okte')">
-                                <span class="legend-dot" style="background:var(--accent-saved);"></span> Cena OKTE
+                                <span class="legend-dot" style="background:var(--accent-saved);"></span> Cena OKTE (€/MWh)
+                            </div>
+                            <div class="legend-item" id="legendAvg" onclick="toggleSeries('avg')">
+                                <span style="display:inline-block; width:15px; border-bottom: 2px dashed #94a3b8; height:1px; margin-right:4px;"></span> Denný priemer OKTE
                             </div>
                         </div>
 
                         <div class="chart-box">
-                            <!-- Real-time SVG Multi-Series Plotter -->
                             <svg viewBox="0 0 500 220" style="width:100%; height:100%; overflow:visible;">
                                 <!-- Grid lines -->
                                 <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(255,255,255,0.05)" />
@@ -707,71 +767,71 @@
                                 <line x1="0" y1="170" x2="500" y2="170" stroke="rgba(255,255,255,0.05)" />
                                 <line x1="0" y1="220" x2="500" y2="220" stroke="rgba(255,255,255,0.1)" />
 
-                                <!-- Series 1: Solar Production -->
+                                <!-- Series 1: Solar Production spline -->
                                 <path id="lineFve" d="M 0,220 C 100,200 150,50 250,30 C 350,10 400,200 500,220" class="graph-line" stroke="var(--accent-solar)" />
-                                <!-- Series 2: Home consumption -->
+                                <!-- Series 2: Home consumption spline -->
                                 <path id="lineHome" d="M 0,160 C 100,120 180,180 250,150 C 320,120 400,80 500,100" class="graph-line" stroke="var(--accent-grid)" />
-                                <!-- Series 3: Battery SOC -->
-                                <path id="lineSoc" d="M 0,190 Q 150,110 250,80 T 500,60" class="graph-line" stroke="var(--accent-battery)" />
-                                <!-- Series 4: Spot OKTE Price -->
-                                <path id="lineOkte" d="M 0,90 Q 120,40 250,110 T 500,150" class="graph-line" stroke="var(--accent-saved)" />
+                                <!-- Series 3: Spot OKTE Price curves -->
+                                <path id="lineOkte" d="M 0,110 Q 120,40 250,140 T 500,170" class="graph-line" stroke="var(--accent-saved)" />
+                                <!-- Series 4: Horizontálny denný priemer OKTE -->
+                                <line id="lineAvg" x1="0" y1="110" x2="500" y2="110" class="graph-line graph-avg-line" stroke="#94a3b8" />
                             </svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column (OKTE Price tracker & quick alerts) -->
+                <!-- Right Column (OKTE Price tracker & parameters) -->
                 <div>
                     <!-- OKTE spot live monitor -->
                     <div class="glass-card" style="border-color:var(--accent-saved); background:linear-gradient(135deg, rgba(15,23,42,0.9), rgba(129,140,248,0.03));">
                         <div class="card-header-styled">
-                            <span class="card-title-styled" style="color:var(--accent-saved);"><i data-lucide="trending-up"></i> Burzové Ceny OKTE (Aktuálne)</span>
-                            <span style="font-size:9px;font-weight:800;color:var(--accent-saved);background:rgba(129,140,248,0.15);padding:4px 8px;border-radius:6px;">SPOT MARKET</span>
+                            <span class="card-title-styled" style="color:var(--accent-saved);"><i data-lucide="trending-up"></i> Spotové ceny OKTE</span>
+                            <span style="font-size:9px;font-weight:800;color:var(--accent-saved);background:rgba(129,140,248,0.15);padding:4px 8px;border-radius:6px;">LIVE MARKET</span>
                         </div>
 
                         <div style="text-align:center;padding:12px 0;">
-                            <span style="font-size:10px;font-weight:800;letter-spacing:1px;color:var(--text-secondary);text-transform:uppercase;display:block;">AKTUÁLNA TRHOVÁ TARIFA</span>
-                            <span style="font-size:36px;font-weight:900;color:var(--text-primary);letter-spacing:-1px;display:block;margin-top:4px;" class="font-mono" id="okteSpotPrice">58.20 €</span>
+                            <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;">AKTUÁLNA CENA</span>
+                            <span style="font-size:36px;font-weight:900;color:var(--text-primary);letter-spacing:-1px;display:block;margin-top:4px;" class="font-mono">58.20 €</span>
                             <span style="font-size:11px;color:var(--accent-battery);font-weight:700;margin-top:6px;display:inline-block;padding:4px 10px;background:rgba(16,185,129,0.08);border-radius:6px;">
                                 <i data-lucide="trending-down" style="width:12px;height:12px;vertical-align:middle;"></i> Výhodná nákupná cena
                             </span>
                         </div>
+                    </div>
 
-                        <div style="height:1px;background:var(--border-card);margin:16px 0;"></div>
-
-                        <!-- Dynamic OKTE spot price settings thresholds sliders -->
-                        <div class="range-slider-container">
-                            <div class="range-slider-header">
-                                <span class="range-slider-title">LIMIT PRE VYBÍJANIE BATÉRIE</span>
-                                <span class="range-slider-val" id="limitOkteDischargeVal">70 €</span>
+                    <!-- System parameters list -->
+                    <div class="glass-card">
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="info"></i> Diagnostika striedača</span>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:14px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Teplota striedača</span>
+                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashInverterTemp">42.5 °C</span>
                             </div>
-                            <input type="range" id="limitOkteDischarge" min="10" max="150" value="70" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('limitOkteDischargeVal').innerText = this.value + ' €'">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Účinnosť systému (Cos φ)</span>
+                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashCosPhi">0.98</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Celková výroba doteraz</span>
+                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';color:var(--accent-solar);" id="dashTotalProduced">1,248 kWh</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Sieťová frekvencia</span>
+                                <span style="font-size:13px;font-weight:700;font-family:'JetBrains Mono';" id="dashLiveFreq">50.01 Hz</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Safety shutdown -->
-                    <div class="glass-card">
+                    <!-- Safety shutdown activator -->
+                    <div class="glass-card" id="safeguardShutdownWidget">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="shield-alert"></i> Bezpečnostné Nastavenia</span>
+                            <span class="card-title-styled"><i data-lucide="zap-off"></i> Havarijné stavy</span>
                         </div>
-
-                        <!-- Maximum boiler temperature adjustable slider -->
-                        <div class="range-slider-container">
-                            <div class="range-slider-header">
-                                <span class="range-slider-title">MAX TEPLOTA BOJLERA</span>
-                                <span class="range-slider-val" id="maxBoilerTempVal">65 °C</span>
-                            </div>
-                            <input type="range" id="maxBoilerTempSlider" min="40" max="85" value="65" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('maxBoilerTempVal').innerText = this.value + ' °C'">
-                        </div>
-
-                        <!-- Maximum Solar panel temperature limiter -->
-                        <div class="range-slider-container">
-                            <div class="range-slider-header">
-                                <span class="range-slider-title">MAX LIMIT TEPLOTY PANELOV</span>
-                                <span class="range-slider-val" id="maxSolarTempVal">80 °C</span>
-                            </div>
-                            <input type="range" id="maxSolarTempSlider" min="50" max="110" value="80" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('maxSolarTempVal').innerText = this.value + ' °C'">
-                        </div>
+                        <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">V prípade havarijnej situácie môžete meniče okamžite odpojiť.</p>
+                        <button onclick="triggerEmergencyShutdownModal()" id="btnEmergencyAction" class="control-btn" style="width:100%;background:rgba(244,63,94,0.1);border-color:var(--accent-warn);color:var(--accent-warn);">
+                            <i data-lucide="shield-alert" style="width:16px;height:16px;"></i> NÚDZOVÉ ODSTAVENIE
+                        </button>
                     </div>
                 </div>
 
@@ -804,10 +864,6 @@
                         <i data-lucide="cog"></i> Vlastný režim
                     </button>
                 </div>
-
-                <div id="meterModeDesc" style="padding:14px 18px;border-radius:12px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:24px;">
-                    Smart AI: Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
-                </div>
             </div>
         </section>
 
@@ -834,30 +890,75 @@
             </div>
         </section>
 
-        <!-- Tab 4: HOLIDAY SAFEGUARD -->
+        <!-- Tab 4: PRE-DESIGNED ULTRA LUXURY HOLIDAY RE-DESIGN -->
         <section id="sectionHoliday" class="view-section">
-            <div class="glass-card" style="border:1.5px solid var(--accent-grid);background:linear-gradient(135deg,rgba(15,23,42,0.8),rgba(99,102,241,0.06));">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-                    <div style="display:flex;align-items:center;gap:14px;">
-                        <i data-lucide="shield-check" style="color:var(--accent-saved);width:22px;height:22px;"></i>
-                        <div>
-                            <span style="font-size:9px;font-weight:900;color:var(--accent-saved);text-transform:uppercase;">SAFEGUARD EMS SHIELD</span>
-                            <h3 style="font-size:18px;font-weight:900;">SafeGuard EMS — Inteligentná Dovolenka</h3>
+            <div class="glass-card" style="border:1.5px solid var(--accent-grid); background:linear-gradient(135deg,rgba(10,15,30,0.95),rgba(99,102,241,0.03)); padding:40px;">
+                
+                <div class="safeguard-container">
+                    
+                    <!-- Left Column: Settings and info dials -->
+                    <div style="display:flex; flex-direction:column; gap:20px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:48px; height:48px; border-radius:12px; background:rgba(99,102,241,0.15); display:flex; align-items:center; justify-content:center; border: 1.5px solid rgba(99,102,241,0.3);">
+                                <i data-lucide="shield-check" style="color:var(--accent-saved); width:24px; height:24px;"></i>
+                            </div>
+                            <div>
+                                <span style="font-size:9px; font-weight:900; color:var(--accent-saved); letter-spacing:1px; text-transform:uppercase;">SAFEGUARD ACTIVE SHIELD</span>
+                                <h3 style="font-size:20px; font-weight:900; letter-spacing:-0.5px; margin-top:2px;">Dovolenkový Ochranný Režim</h3>
+                            </div>
+                        </div>
+
+                        <div class="holiday-grid">
+                            <div>
+                                <label style="font-size:9px; font-weight:800; color:var(--text-secondary); display:block; margin-bottom:6px;">DÁTUM ODCHODU</label>
+                                <input type="datetime-local" id="holidayFromInput" class="input-styled">
+                            </div>
+                            <div>
+                                <label style="font-size:9px; font-weight:800; color:var(--text-secondary); display:block; margin-bottom:6px;">DÁTUM NÁVRATU</label>
+                                <input type="datetime-local" id="holidayUntilInput" class="input-styled">
+                            </div>
+                        </div>
+
+                        <!-- Climate parameters adjustment range sliders -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-header">
+                                <span class="range-slider-title">MINIMÁLNA STRÁŽNA TEPLOTA</span>
+                                <span class="range-slider-val" id="safeguardMinTempVal">16 °C</span>
+                            </div>
+                            <input type="range" id="safeguardMinTempSlider" min="5" max="22" value="16" style="width:100%; height:4px; cursor:pointer;" oninput="document.getElementById('safeguardMinTempVal').innerText = this.value + ' °C'; updateSafeguardDial();">
+                        </div>
+
+                        <div class="range-slider-container">
+                            <div class="range-slider-header">
+                                <span class="range-slider-title">MAXIMÁLNA STRÁŽNA TEPLOTA</span>
+                                <span class="range-slider-val" id="safeguardMaxTempVal">32 °C</span>
+                            </div>
+                            <input type="range" id="safeguardMaxTempSlider" min="25" max="42" value="32" style="width:100%; height:4px; cursor:pointer;" oninput="document.getElementById('safeguardMaxTempVal').innerText = this.value + ' °C'; updateSafeguardDial();">
                         </div>
                     </div>
-                    <input type="checkbox" id="holidayEnabled" style="transform: scale(1.3); cursor:pointer;">
+
+                    <!-- Right Column: Premium Status Indicator Dial (1000% Prettier) -->
+                    <div style="text-align:center;">
+                        <div class="safeguard-dial-wrapper">
+                            <svg width="180" height="180" viewBox="0 0 180 180" style="position:absolute; transform: rotate(-90deg);">
+                                <circle class="safeguard-circle-bg" cx="90" cy="90" r="70"></circle>
+                                <circle id="safeguardProgressCircle" class="safeguard-circle-glow" cx="90" cy="90" r="70"></circle>
+                            </svg>
+                            <div style="text-align:center; z-index:5;">
+                                <i data-lucide="shield" style="color:var(--accent-battery); width:32px; height:32px; margin-bottom:6px;"></i>
+                                <div style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">KLIMATICKÝ ŠTÍT</div>
+                                <div style="font-size:20px; font-weight:900; color:var(--text-primary); margin-top:4px;" id="shieldStatusText">AKTÍVNY</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:20px; display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:10px; background:rgba(16,185,129,0.08); border: 1.5px solid rgba(16,185,129,0.25);">
+                            <span style="width:6px; height:6px; border-radius:50%; background:var(--accent-battery); box-shadow:0 0 8px var(--accent-battery);"></span>
+                            <span style="font-size:11px; font-weight:800; color:var(--accent-battery);">Budova je plne chránená</span>
+                        </div>
+                    </div>
+
                 </div>
 
-                <div class="holiday-grid">
-                    <div>
-                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;">DÁTUM ODCHODU</label>
-                        <input type="datetime-local" id="holidayFromInput" class="input-styled">
-                    </div>
-                    <div>
-                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;">DÁTUM NÁVRATU</label>
-                        <input type="datetime-local" id="holidayUntilInput" class="input-styled">
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -878,7 +979,7 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
-        // Dropdown toggle triggers
+        // Dropdowns
         function toggleDeviceDropdown(e) {
             e.stopPropagation();
             document.getElementById('deviceDropdownMenu').classList.toggle('hidden');
@@ -896,8 +997,8 @@
             if (dDropdown) dDropdown.classList.add('hidden');
         });
 
-        // Toggle visibility of Graph Series dynamically via clicking legend items
-        const seriesVisibility = { fve: true, home: true, soc: true, okte: true };
+        // Graph curves visibility toggler
+        const seriesVisibility = { fve: true, home: true, okte: true, avg: true };
         
         function toggleSeries(seriesName) {
             const line = document.getElementById('line' + seriesName.charAt(0).toUpperCase() + seriesName.slice(1));
@@ -914,6 +1015,73 @@
                 line.style.opacity = '0';
                 legendItem.classList.add('inactive');
             }
+        }
+
+        // Fullscreen Confirmation overrides handlers
+        function triggerEmergencyShutdownModal() {
+            const btn = document.getElementById('btnEmergencyAction');
+            if (btn && btn.innerText.includes('ZNOVU SPUSTIŤ')) {
+                // If already stopped, turn back on directly
+                confirmEmergencyShutdown(false);
+            } else {
+                // Open confirmation dialog
+                document.getElementById('emergencyConfirmModal').classList.add('active');
+            }
+        }
+
+        function dismissEmergencyModal() {
+            document.getElementById('emergencyConfirmModal').classList.remove('active');
+        }
+
+        async function confirmEmergencyShutdown(isStopping = true) {
+            dismissEmergencyModal();
+            const btn = document.getElementById('btnEmergencyAction');
+            
+            if (isStopping) {
+                // Set system visually into shut-down state
+                if (btn) {
+                    btn.innerHTML = `<i data-lucide="power" style="width:16px;height:16px;"></i> ZNOVU SPUSTIŤ SYSTÉM`;
+                    btn.style.background = 'rgba(16, 185, 129, 0.1)';
+                    btn.style.borderColor = 'var(--accent-battery)';
+                    btn.style.color = 'var(--accent-battery)';
+                }
+                document.getElementById('powerSourceText').innerText = "ODSTAVENÉ — Bezpečnostné núdzové odpojenie aktívne!";
+                document.getElementById('powerSourceStatus').className = "power-source-badge offgrid";
+            } else {
+                // Restore back to normal
+                if (btn) {
+                    btn.innerHTML = `<i data-lucide="shield-alert" style="width:16px;height:16px;"></i> NÚDZOVÉ ODSTAVENIE`;
+                    btn.style.background = 'rgba(244, 63, 94, 0.1)';
+                    btn.style.borderColor = 'var(--accent-warn)';
+                    btn.style.color = 'var(--accent-warn)';
+                }
+                document.getElementById('powerSourceText').innerText = "Pripojené k distribučnej sieti — Systém prenáša prebytky";
+                document.getElementById('powerSourceStatus').className = "power-source-badge";
+            }
+            lucide.createIcons();
+
+            try {
+                const devId = metaEl.getAttribute('data-device-id');
+                await fetch(`${basePath}/api/device/${devId}/control`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action: 'override', value: isStopping ? 'OFF' : 'AUTO'})
+                });
+            } catch(e) {}
+        }
+
+        // Animated circular dial config for Holiday Safeguard module
+        function updateSafeguardDial() {
+            const min = parseFloat(document.getElementById('safeguardMinTempSlider').value);
+            const max = parseFloat(document.getElementById('safeguardMaxTempSlider').value);
+            const circle = document.getElementById('safeguardProgressCircle');
+            if (!circle) return;
+
+            // Simple scale percentage formula based on values
+            const pct = Math.min(100, Math.max(10, ((max - min) / 37) * 100));
+            const circumference = 440; // 2 * pi * r (70)
+            const offset = circumference - (pct / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
         }
 
         // Tab selection controller
@@ -943,6 +1111,10 @@
             if (activeSec) activeSec.classList.add('active');
             if (activeBtn) activeBtn.classList.add('active');
 
+            if (tabId === 'holiday') {
+                setTimeout(updateSafeguardDial, 50);
+            }
+
             lucide.createIcons();
         }
 
@@ -953,7 +1125,7 @@
             fetchTelemetry();
         }
 
-        // Real-time simulated & integrated values generator
+        // Real-time telemetry values processor
         async function fetchTelemetry() {
             const devId = metaEl.getAttribute('data-device-id');
             try {
@@ -966,42 +1138,25 @@
                 document.getElementById('dashTotalSaved').innerText = `${data.total_saved_eur.toFixed(2)} €`;
                 document.getElementById('dashLiveFreq').innerText = `${data.freq.toFixed(2)} Hz`;
 
-                // Update CM5 internal device battery metrics
+                // Device internal battery
                 const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : 98;
                 document.getElementById('deviceBatterySoc').innerText = `${deviceBatPct}%`;
 
-                // Single connection type badge parser
-                const connectionTypeIcon = document.getElementById('connectionTypeIcon');
-                const connectionTypeText = document.getElementById('connectionTypeText');
+                // Update signal metrics
+                const wifiSignalPct = data.wifi_signal !== undefined ? Math.round(data.wifi_signal) : 84;
                 const wifiBars = document.getElementById('wifiBars');
-                
-                if (data.connection_type === 'sim') {
-                    connectionTypeIcon.setAttribute('data-lucide', 'signal');
-                    connectionTypeText.innerText = 'SIM LTE';
-                    document.getElementById('primaryConnectionIndicator').className = 'sys-indicator conn-indicator-sim';
-                } else if (data.connection_type === 'ethernet') {
-                    connectionTypeIcon.setAttribute('data-lucide', 'cable');
-                    connectionTypeText.innerText = 'Ethernet';
-                    document.getElementById('primaryConnectionIndicator').className = 'sys-indicator conn-indicator-eth';
-                    if (wifiBars) wifiBars.classList.add('hidden');
-                } else {
-                    connectionTypeIcon.setAttribute('data-lucide', 'wifi');
-                    connectionTypeText.innerText = 'Wi-Fi';
-                    document.getElementById('primaryConnectionIndicator').className = 'sys-indicator conn-indicator-wifi';
-                    if (wifiBars) wifiBars.classList.remove('hidden');
+                if (wifiBars) {
+                    wifiBars.className = 'wifi-signal-bars';
+                    if (wifiSignalPct >= 75) wifiBars.classList.add('strength-4');
                 }
+                document.getElementById('connectionTypeText').innerText = `${wifiSignalPct}%`;
 
                 lucide.createIcons();
-
-                // Plot graphics scaling limits
-                document.getElementById('dashBatteryBar').style.width = `${Math.round(data.avg_live_soc)}%`;
-                document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
-                document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
 
             } catch (err) {}
         }
 
-        // Theme Adaptive Controllers
+        // Theme adapter config
         function toggleTheme() {
             const isLight = document.body.classList.toggle('light-mode');
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
@@ -1019,6 +1174,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchTelemetry();
             setInterval(fetchTelemetry, 8000);
+            updateSafeguardDial();
         });
     </script>
 </body>
