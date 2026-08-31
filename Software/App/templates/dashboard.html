@@ -196,6 +196,69 @@
             transition: all 0.2s;
         }
 
+        /* Station permanent dropdown centered */
+        .station-dropdown-container {
+            position: relative;
+        }
+
+        .station-dropdown-trigger {
+            cursor: pointer;
+            background: rgba(16, 185, 129, 0.06);
+            border-color: rgba(16, 185, 129, 0.2);
+            color: var(--text-primary);
+            font-weight: 800;
+        }
+
+        .station-dropdown-trigger:hover {
+            background: rgba(16, 185, 129, 0.12);
+        }
+
+        .station-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #05070f;
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 6px;
+            min-width: 280px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            z-index: 130;
+        }
+
+        .station-dropdown-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 11px 15px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        .station-dropdown-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .station-dropdown-item .sn-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8px;
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
         /* Wi-Fi Strength Indicator Bars */
         .wifi-signal-bars {
             display: inline-flex;
@@ -449,12 +512,44 @@
             background: rgba(255, 255, 255, 0.01);
             border: 1px solid rgba(255, 255, 255, 0.03);
             border-radius: 12px;
-            padding: 10px 14px;
+            padding: 11px 14px;
+            cursor: pointer;
             transition: all 0.2s;
         }
 
         .inverter-status-row:hover {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        /* Inverter Details Expandable Box */
+        .inverter-details-box {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            padding: 0 14px;
+            border-radius: 12px;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            transition: max-height 0.25s ease-out, opacity 0.2s ease-out, padding 0.2s, border-color 0.2s;
+        }
+
+        .inverter-details-box.expanded {
+            max-height: 120px;
+            opacity: 1;
+            padding: 12px 14px;
+            border-color: var(--border-card);
+        }
+
+        .inv-chevron {
+            transition: transform 0.2s;
+        }
+
+        .inv-chevron.rotated {
+            transform: rotate(180deg);
         }
 
         .pulse-dot {
@@ -780,61 +875,6 @@
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
         }
 
-        /* Terminal Styling */
-        .terminal-box {
-            background: #010409;
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            overflow: hidden;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .terminal-console-header {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-card);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .terminal-log-output {
-            height: 250px;
-            padding: 16px;
-            overflow-y: auto;
-            color: #38bdf8;
-            font-size: 12px;
-            line-height: 1.6;
-        }
-
-        .terminal-log-row { margin-bottom: 6px; }
-
-        .terminal-input-bar {
-            display: flex;
-            border-top: 1px solid var(--border-card);
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .terminal-prompt-label { padding: 14px; color: var(--accent-battery); font-weight: 700; }
-        .terminal-raw-input {
-            flex: 1;
-            background: none;
-            border: none;
-            outline: none;
-            color: var(--text-primary);
-            padding: 14px 0;
-            font-family: inherit;
-            font-size: 12px;
-        }
-
-        .terminal-send-btn {
-            background: none;
-            border: none;
-            color: var(--accent-battery);
-            padding: 0 18px;
-            cursor: pointer;
-        }
-
         .hidden { display: none !important; }
     </style>
 </head>
@@ -852,7 +892,7 @@
     <header class="header">
         <div class="header-inner">
             
-            <!-- Brand Left: Elvosolar Logo + Smart EMS Tagline (repositioned to Left) -->
+            <!-- Brand Left: Elvosolar Logo + Smart EMS Tagline -->
             <div class="header-left">
                 <a href="https://elvosolar.sk/" target="_blank" class="brand-logo-link">
                     <img src="/templates/ElvosolarLogo.png" alt="Elvosolar" class="brand-logo-img-left">
@@ -863,32 +903,17 @@
                 </a>
             </div>
 
-            <!-- Centered Device/Station Widget (repositioned to Center) -->
+            <!-- Centered Device/Station Permanent Dropdown Widget -->
             <div class="header-brand-center">
-                <?php if (!isset($devices) || count($devices) <= 1): ?>
-                    <div class="sys-indicator" style="gap: 8px; padding: 10px 18px; background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.15); border-radius: 16px;">
+                <div class="station-dropdown-container">
+                    <button id="deviceSelectDropdownBtn" class="sys-indicator station-dropdown-trigger" style="padding: 10px 18px; border-radius: 16px; gap: 8px;" onclick="toggleDeviceDropdown(event)">
                         <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-battery);"></i>
                         <span id="singleDeviceLabel" style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Biok Box v4</span>
-                        <!-- Paintbrush icon for local browser renaming -->
-                        <button onclick="triggerLocalRename(event)" class="rename-btn" title="Premenovať lokálne">
-                            <i data-lucide="brush" style="width:13px;height:13px;"></i>
-                        </button>
-                    </div>
-                <?php else: ?>
-                    <!-- Multiple devices dropdown -->
-                    <div class="station-dropdown-container">
-                        <button id="deviceSelectDropdownBtn" class="sys-indicator station-dropdown-trigger" style="padding: 10px 18px; border-radius: 16px;" onclick="toggleDeviceDropdown(event)">
-                            <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-battery);"></i>
-                            <span id="activeStationName" style="font-size: 14px;"><?php echo htmlspecialchars($devices[0]['name']); ?></span>
-                            <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
-                        </button>
-                        <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
-                            <button onclick="selectActiveDevice(this, 'all', 'Všetky stanice')" class="station-dropdown-item">
-                                <span style="display:flex;align-items:center;gap:8px;">
-                                    <i data-lucide="grid" style="width:14px;height:14px;"></i> Všetky stanice
-                                </span>
-                            </button>
-                            <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
+                        <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
+                    </button>
+                    <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
+                        <!-- Devices Listing loop -->
+                        <?php if (isset($devices) && count($devices) > 0): ?>
                             <?php foreach ($devices as $dev): ?>
                                 <button onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" class="station-dropdown-item">
                                     <span style="display:flex;align-items:center;gap:8px;">
@@ -898,9 +923,33 @@
                                     <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
                                 </button>
                             <?php endforeach; ?>
-                        </div>
+                        <?php else: ?>
+                            <!-- Fallback default unit -->
+                            <button onclick="selectActiveDevice(this, '1', 'Biok Box v4')" class="station-dropdown-item">
+                                <span style="display:flex;align-items:center;gap:8px;">
+                                    <i data-lucide="box" style="width:14px;height:14px;"></i>
+                                    <span>Biok Box v4</span>
+                                </span>
+                                <span class="sn-badge">SN: 843102</span>
+                            </button>
+                        <?php endif; ?>
+
+                        <div style="height:1px;background:var(--border-card);margin:6px 0;"></div>
+                        
+                        <!-- Permanent "Párovať nové zariadenie" action button -->
+                        <button onclick="pairNewDevice(event)" class="station-dropdown-item" style="color: var(--accent-battery);">
+                            <span style="display:flex;align-items:center;gap:8px; font-weight: 800;">
+                                <i data-lucide="plus-circle" style="width:14px;height:14px;color:var(--accent-battery);"></i>
+                                Párovať nové zariadenie
+                            </span>
+                        </button>
                     </div>
-                <?php endif; ?>
+                </div>
+
+                <!-- Local Renaming Brush Button next to dropdown -->
+                <button onclick="triggerLocalRename(event)" class="rename-btn" style="margin-left: 4px;" title="Premenovať lokálne">
+                    <i data-lucide="brush" style="width:13px;height:13px;"></i>
+                </button>
             </div>
 
             <!-- Right Side Dynamic Indicator Panel -->
@@ -1112,7 +1161,7 @@
                     </div>
 
                     <!-- Inverters System Diagnostics Card (Zariadenia / Striedače) -->
-                    <div class="diagnostic-bus-card">
+                    <div class="diagnostic-bus-card" id="invertersDiagContainer">
                         <div class="bus-header">
                             <span style="font-size:11px;font-weight:800;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
                                 <i data-lucide="layers" style="color:var(--accent-battery);width:14px;height:14px;"></i> Striedače &amp; Zbernica
@@ -1120,40 +1169,96 @@
                             <span class="font-mono" style="font-size:9px;color:var(--accent-battery);font-weight:700;">RS485 OK</span>
                         </div>
 
-                        <!-- Inverter 1 Status (Green/OK) -->
-                        <div class="inverter-status-row">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <span class="pulse-dot online"></span>
-                                <div style="display:flex;flex-direction:column;">
-                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Solax X3 Hybrid</span>
-                                    <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 01</span>
+                        <!-- Inverter 1 -->
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div class="inverter-status-row" onclick="toggleInverterDetails('invDetails1', 'invChevron1')">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span class="pulse-dot online"></span>
+                                    <div style="display:flex;flex-direction:column;">
+                                        <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Solax X3 Hybrid</span>
+                                        <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 01</span>
+                                    </div>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span class="font-mono" style="font-size:11px;font-weight:700;color:var(--accent-battery);">ONLINE</span>
+                                    <i data-lucide="chevron-down" id="invChevron1" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
                                 </div>
                             </div>
-                            <span class="font-mono" style="font-size:11px;font-weight:700;color:var(--accent-battery);">ONLINE</span>
+                            <!-- Inverter 1 Details -->
+                            <div id="invDetails1" class="inverter-details-box">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Teplota striedača:</span>
+                                    <strong class="font-mono">42.8 °C</strong>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Účinnosť striedača:</span>
+                                    <strong class="font-mono" style="color:var(--accent-battery);">97.6%</strong>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Denná výroba:</span>
+                                    <strong class="font-mono">14.2 kWh</strong>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Inverter 2 Status (Green/OK) -->
-                        <div class="inverter-status-row">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <span class="pulse-dot online"></span>
-                                <div style="display:flex;flex-direction:column;">
-                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Solax X3 Aux</span>
-                                    <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 02</span>
+                        <!-- Inverter 2 -->
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div class="inverter-status-row" onclick="toggleInverterDetails('invDetails2', 'invChevron2')">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span class="pulse-dot online"></span>
+                                    <div style="display:flex;flex-direction:column;">
+                                        <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Solax X3 Aux</span>
+                                        <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 02</span>
+                                    </div>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span class="font-mono" style="font-size:11px;font-weight:700;color:var(--accent-battery);">ONLINE</span>
+                                    <i data-lucide="chevron-down" id="invChevron2" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
                                 </div>
                             </div>
-                            <span class="font-mono" style="font-size:11px;font-weight:700;color:var(--accent-battery);">ONLINE</span>
+                            <!-- Inverter 2 Details -->
+                            <div id="invDetails2" class="inverter-details-box">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Teplota striedača:</span>
+                                    <strong class="font-mono">39.2 °C</strong>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Účinnosť striedača:</span>
+                                    <strong class="font-mono" style="color:var(--accent-battery);">98.1%</strong>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Denná výroba:</span>
+                                    <strong class="font-mono">8.6 kWh</strong>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Inverter 3 Status (Fault/Red warning if command fail or inactive) -->
-                        <div class="inverter-status-row" id="invRow3">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <span class="pulse-dot offline" id="invDot3"></span>
-                                <div style="display:flex;flex-direction:column;">
-                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Backup Charger</span>
-                                    <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 03</span>
+                        <!-- Inverter 3 -->
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div class="inverter-status-row" id="invRow3" onclick="toggleInverterDetails('invDetails3', 'invChevron3')">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span class="pulse-dot offline" id="invDot3"></span>
+                                    <div style="display:flex;flex-direction:column;">
+                                        <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Backup Charger</span>
+                                        <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 03</span>
+                                    </div>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span class="font-mono" id="invStatusLabel3" style="font-size:11px;font-weight:700;color:var(--accent-warn);">BEZ ODOZVY</span>
+                                    <i data-lucide="chevron-down" id="invChevron3" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
                                 </div>
                             </div>
-                            <span class="font-mono" id="invStatusLabel3" style="font-size:11px;font-weight:700;color:var(--accent-warn);">BEZ ODOZVY</span>
+                            <!-- Inverter 3 Details -->
+                            <div id="invDetails3" class="inverter-details-box">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Teplota striedača:</span>
+                                    <strong class="font-mono">--.- °C</strong>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span style="color:var(--text-secondary);">Dôvod výpadku:</span>
+                                    <strong class="font-mono" style="color:var(--accent-warn);">Timeout RS485</strong>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Dynamic communication diagnostic info -->
@@ -1405,6 +1510,12 @@
 
         let elvoChart;
 
+        function toggleDeviceDropdown(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('deviceDropdownMenu');
+            if (dropdown) dropdown.classList.toggle('hidden');
+        }
+
         function toggleUserDropdown(e) {
             e.stopPropagation();
             const dropdown = document.getElementById('userDropdownMenu');
@@ -1413,8 +1524,38 @@
 
         document.addEventListener('click', (e) => {
             const uDropdown = document.getElementById('userDropdownMenu');
+            const dDropdown = document.getElementById('deviceDropdownMenu');
             if (uDropdown) uDropdown.classList.add('hidden');
+            if (dDropdown) dDropdown.classList.add('hidden');
         });
+
+        // Pair new device handler
+        function pairNewDevice(e) {
+            e.stopPropagation();
+            const dDropdown = document.getElementById('deviceDropdownMenu');
+            if (dDropdown) dDropdown.classList.add('hidden');
+            
+            const serialNumber = prompt("Zadajte sériové číslo (S/N) nového zariadenia na párovanie:");
+            if (serialNumber !== null && serialNumber.trim() !== "") {
+                alert("Požiadavka na registráciu odoslaná. Zariadenie s S/N " + serialNumber.trim() + " sa overuje.");
+            }
+        }
+
+        // Accordion Inverter Detail handler
+        function toggleInverterDetails(detailsId, chevronId) {
+            const detailBox = document.getElementById(detailsId);
+            const chevron = document.getElementById(chevronId);
+            if (!detailBox) return;
+
+            const isExpanded = detailBox.classList.toggle('expanded');
+            if (chevron) {
+                if (isExpanded) {
+                    chevron.classList.add('rotated');
+                } else {
+                    chevron.classList.remove('rotated');
+                }
+            }
+        }
 
         // Local browser renaming trigger
         function triggerLocalRename(e) {
@@ -1437,6 +1578,23 @@
             const labelEl = document.getElementById('singleDeviceLabel');
             if (savedLocalName && labelEl) {
                 labelEl.innerText = savedLocalName;
+            }
+        })();
+
+        // Check if there is only 1 inverter connected, if yes, auto-expand forever
+        (function handleSingleInverterAutoExpand() {
+            const container = document.getElementById('invertersDiagContainer');
+            if (!container) return;
+            const rows = container.querySelectorAll('.inverter-status-row');
+            if (rows.length === 1) {
+                const firstDetails = container.querySelector('.inverter-details-box');
+                const firstChevron = container.querySelector('.inv-chevron');
+                if (firstDetails) {
+                    firstDetails.classList.add('expanded');
+                    // Lock click interaction
+                    rows[0].removeAttribute('onclick');
+                }
+                if (firstChevron) firstChevron.classList.add('hidden');
             }
         })();
 
@@ -1535,13 +1693,17 @@
                 const invStatusLabel3 = document.getElementById('invStatusLabel3');
                 
                 if (data.grid_outage || data.avg_live_soc < 20) {
-                    invDot3.className = "pulse-dot offline";
-                    invStatusLabel3.innerText = "CHYBA ZÁPISU";
-                    invStatusLabel3.style.color = "var(--accent-warn)";
+                    if (invDot3) invDot3.className = "pulse-dot offline";
+                    if (invStatusLabel3) {
+                        invStatusLabel3.innerText = "CHYBA ZÁPISU";
+                        invStatusLabel3.style.color = "var(--accent-warn)";
+                    }
                 } else {
-                    invDot3.className = "pulse-dot online";
-                    invStatusLabel3.innerText = "ONLINE";
-                    invStatusLabel3.style.color = "var(--accent-battery)";
+                    if (invDot3) invDot3.className = "pulse-dot online";
+                    if (invStatusLabel3) {
+                        invStatusLabel3.innerText = "ONLINE";
+                        invStatusLabel3.style.color = "var(--accent-battery)";
+                    }
                 }
 
                 lucide.createIcons();
