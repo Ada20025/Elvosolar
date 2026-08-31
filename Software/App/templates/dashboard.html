@@ -62,7 +62,8 @@
         body.light-mode .control-btn.active {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(59, 130, 246, 0.08));
             border-color: var(--accent-battery);
-            color: var(--accent-battery);        }
+            color: var(--accent-battery);
+        }
         body.light-mode .station-dropdown-menu,
         body.light-mode .user-dropdown-card {
             background: #ffffff;
@@ -89,8 +90,6 @@
 
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-
-
         /* Symmetrical Premium Header */
         .header {
             position: sticky;
@@ -113,31 +112,11 @@
             align-items: center;
         }
 
-        /* Brand Left: Elvosolar Logo + Smart EMS Tagline */
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            justify-content: flex-start;
-        }
-
         .brand-logo-link {
             display: flex;
             align-items: center;
             gap: 12px;
             text-decoration: none;
-        }
-
-        .brand-logo-img-left {
-            height: 38px;
-            width: auto;
-            border-radius: 6px;
-            filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.2));
-            transition: transform 0.2s;
-        }
-
-        .brand-logo-img-left:hover {
-            transform: scale(1.02);
         }
 
         .brand-text-container {
@@ -161,41 +140,6 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Brush Edit local renamed button */
-        .rename-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            padding: 3px;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .rename-btn:hover {
-            color: var(--accent-battery);
-            background: rgba(255, 255, 255, 0.05);
-            transform: scale(1.1);
-        }
-
-        /* Centered Device/Station Widget */
-        .header-brand-center {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            justify-content: center;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
         .sys-indicator {
             display: flex;
             align-items: center;
@@ -210,21 +154,8 @@
             transition: all 0.2s;
         }
 
-        /* Station permanent dropdown centered */
         .station-dropdown-container {
             position: relative;
-        }
-
-        .station-dropdown-trigger {
-            cursor: pointer;
-            background: rgba(16, 185, 129, 0.06);
-            border-color: rgba(16, 185, 129, 0.2);
-            color: var(--text-primary);
-            font-weight: 800;
-        }
-
-        .station-dropdown-trigger:hover {
-            background: rgba(16, 185, 129, 0.12);
         }
 
         .station-dropdown-menu {
@@ -273,7 +204,6 @@
             color: var(--text-muted);
         }
 
-        /* Wi-Fi Strength Indicator Bars */
         .wifi-signal-bars {
             display: inline-flex;
             align-items: flex-end;
@@ -300,19 +230,6 @@
 
         .user-profile-container {
             position: relative;
-        }
-
-        .user-trigger-btn {
-            cursor: pointer;
-            user-select: none;
-            background: rgba(16, 185, 129, 0.06);
-            border-color: rgba(16, 185, 129, 0.2);
-            color: var(--text-primary);
-        }
-
-        .user-trigger-btn:hover {
-            background: rgba(16, 185, 129, 0.1);
-            border-color: rgba(16, 185, 129, 0.4);
         }
 
         .user-dropdown-card {
@@ -469,7 +386,7 @@
             gap: 8px;
         }
 
-        /* OKTE Widget Styles (Sleek & Smaller) */
+        /* OKTE Widget Styles */
         .okte-mini-card {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(5, 7, 15, 0.6) 100%);
             border: 1px solid rgba(245, 158, 11, 0.25);
@@ -499,7 +416,7 @@
             letter-spacing: 1px;
         }
 
-        /* Premium Inverters System Diagnostics Card */
+        /* Diagnostic Card */
         .diagnostic-bus-card {
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.55) 0%, rgba(5, 7, 15, 0.8) 100%);
             border: 1px solid var(--border-card);
@@ -535,7 +452,6 @@
             background: rgba(255, 255, 255, 0.04);
         }
 
-        /* Inverter Details Expandable Box */
         .inverter-details-box {
             overflow: hidden;
             max-height: 0;
@@ -589,106 +505,16 @@
             50% { opacity: 0.3; }
         }
 
-        /* Energy Flow Graphic */
-        .flow-container {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 20px;
-            border: 1px solid var(--border-card);
-            padding: 40px 20px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            overflow: hidden;
-            gap: 16px;
-        }
-
-        .flow-node {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            z-index: 5;
-            flex: 1;
-            text-align: center;
-            position: relative;
-        }
-
-        .flow-icon-circle {
-            width: 58px;
-            height: 58px;
-            border-radius: 50%;
-            background: rgba(10, 14, 26, 0.95);
-            border: 2px solid var(--node-color, var(--text-muted));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--node-color, var(--text-muted));
-            box-shadow: 0 0 25px rgba(0,0,0,0.6);
-            transition: all 0.3s;
-        }
-
-        .flow-node.active .flow-icon-circle {
-            box-shadow: 0 0 25px var(--node-color);
-            background: var(--node-bg, rgba(255,255,255,0.05));
-        }
-
-        .flow-node-title {
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }
-
-        .flow-node-value {
-            font-size: 13px;
-            font-weight: 900;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text-primary);
-        }
-
-        /* Animated connection path lines */
-        .flow-lines-overlay {
-            position: absolute;
-            top: 68px;
-            left: 10%;
-            right: 10%;
-            height: 2px;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .flow-animated-line {
-            position: absolute;
-            top: 0;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, var(--accent-battery), transparent);
-            background-size: 200% 100%;
-            opacity: 0.25;
-            width: 100%;
-        }
-
-        .flow-node.active ~ .flow-animated-line {
-            opacity: 0.6;
-            animation: flowGlowLine 2s linear infinite;
-        }
-
-        @keyframes flowGlowLine {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
         /* Metrics grid styles */
-        .metrics-grid-4 {
+        .metrics-grid-3 {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             margin-bottom: 24px;
         }
 
         @media (max-width: 768px) {
-            .metrics-grid-4 { grid-template-columns: repeat(2, 1fr); }
+            .metrics-grid-3 { grid-template-columns: 1fr; }
         }
 
         .metric-card {
@@ -746,15 +572,22 @@
             transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        /* Dynamic Columns Layout */
+        .flexible-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .flexible-grid { grid-template-columns: 1fr; }
+        }
+
         /* Controls overrides */
         .control-btn-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr;
             gap: 12px;
-        }
-
-        @media (max-width: 500px) {
-            .control-btn-grid { grid-template-columns: 1fr; }
         }
 
         .control-btn {
@@ -787,14 +620,6 @@
             box-shadow: 0 4px 20px rgba(16, 185, 129, 0.12);
         }
 
-        .relays-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        @media (max-width: 600px) { .relays-container { grid-template-columns: 1fr; } }
-
         .relay-item-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-card);
@@ -822,26 +647,6 @@
         .relay-indicator.active {
             background: rgba(16, 185, 129, 0.15);
             color: var(--accent-battery);
-        }
-
-        .power-source-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 12px;
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            color: var(--accent-battery);
-            font-size: 12px;
-            font-weight: 800;
-            margin-bottom: 24px;
-        }
-
-        .power-source-badge.offgrid {
-            background: rgba(245, 158, 11, 0.08);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-            color: var(--accent-solar);
         }
 
         /* AI Models */
@@ -905,7 +710,7 @@
 
     <!-- Header -->
     <header class="header">
-        <div class="header-inner" style="grid-template-columns: auto 1fr auto; height: 64px;">
+        <div class="header-inner">
             
             <!-- Logo -->
             <div style="display:flex;align-items:center;gap:10px;">
@@ -922,7 +727,7 @@
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
                 <div class="station-dropdown-container">
                     <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.2s;">
-                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);">ElvoControll</span>
+                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);">ElvoControl</span>
                         <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
                     </button>
                     <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
@@ -937,10 +742,10 @@
                                 </button>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <button onclick="selectActiveDevice(this, '1', 'ElvoControll')" class="station-dropdown-item">
+                            <button onclick="selectActiveDevice(this, '1', 'ElvoControl')" class="station-dropdown-item">
                                 <span style="display:flex;align-items:center;gap:8px;">
                                     <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-                                    <span>ElvoControll</span>
+                                    <span>ElvoControl</span>
                                 </span>
                                 <span class="sn-badge">SN: ---</span>
                             </button>
@@ -981,19 +786,17 @@
                         <div style="width:24px;height:24px;background:linear-gradient(135deg,#6366f1,#3b82f6);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                             <span style="font-size:10px;font-weight:900;color:white;"><?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?></span>
                         </div>
-                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
+                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Adam'); ?></span>
                     </button>
                     <div id="userDropdownMenu" class="user-dropdown-card hidden">
                         <button onclick="toggleTheme()" class="user-dropdown-btn">
                             <i data-lucide="sun" style="width:14px;height:14px;"></i>
                             <span id="themeLabel">Svetlý režim</span>
                         </button>
-                        <a href="<?php echo $base_path; ?>/profile" style="text-decoration:none;">
-                            <button class="user-dropdown-btn">
-                                <i data-lucide="settings" style="width:14px;height:14px;"></i>
-                                <span>Nastavenia</span>
-                            </button>
-                        </a>
+                        <button onclick="switchTab('profile')" class="user-dropdown-btn">
+                            <i data-lucide="settings" style="width:14px;height:14px;"></i>
+                            <span>Nastavenia</span>
+                        </button>
                         <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
                         <a href="<?php echo $base_path; ?>/logout" style="text-decoration:none;">
                             <button class="user-dropdown-btn" style="color:var(--accent-warn);">
@@ -1020,13 +823,12 @@
                 <i data-lucide="sliders" style="width:14px;height:14px;"></i> Riadenie & Relé
             </button>
             <button onclick="switchTab('holiday')" id="tabBtnHoliday" class="nav-tab">
-                <i data-lucide="palm-tree" style="width:14px;height:14px;"></i> Dovolenka
+                <i data-lucide="umbrella" style="width:14px;height:14px;color:#10b981;"></i> Dovolenka
+                <span style="font-size:8px;font-weight:900;background:var(--accent-warn);color:white;padding:1px 5px;border-radius:4px;margin-left:4px;letter-spacing:0.5px;">BETA</span>
             </button>
-            <?php if (isset($is_admin) && $is_admin): ?>
-            <button onclick="switchTab('terminal')" id="tabBtnTerminal" class="nav-tab">
-                <i data-lucide="terminal" style="width:14px;height:14px;"></i> Terminál
+            <button onclick="switchTab('profile')" id="tabBtnProfile" class="nav-tab hidden">
+                <i data-lucide="user" style="width:14px;height:14px;"></i> Profil
             </button>
-            <?php endif; ?>
         </div>
     </nav>
 
@@ -1039,8 +841,8 @@
                 
                 <div style="display:flex;flex-direction:column;gap:24px;">
                     
-                    <!-- Core Telemetry Grid -->
-                    <div class="metrics-grid-4">
+                    <!-- Core Telemetry Grid (3-column layout as requested) -->
+                    <div class="metrics-grid-3">
                         <div class="metric-card" style="--line-color: var(--accent-solar);">
                             <span class="metric-label-styled"><i data-lucide="sun" style="width:12px;height:12px;color:var(--accent-solar);"></i> Výkon FVE</span>
                             <span class="metric-value-styled text-solar" id="dashLivePower">0 W</span>
@@ -1064,11 +866,6 @@
                                 <div id="dashConsumptionBar" class="metric-bar-fill"></div>
                             </div>
                         </div>
-
-                        <div class="metric-card" style="--line-color: var(--accent-saved);">
-                            <span class="metric-label-styled"><i data-lucide="banknote" style="width:12px;height:12px;color:var(--accent-saved);"></i> Celková Úspora</span>
-                            <span class="metric-value-styled text-saved" id="dashTotalSaved">0.00 €</span>
-                        </div>
                     </div>
 
                     <!-- Combined Analytics Chart -->
@@ -1085,15 +882,16 @@
                         </div>
                     </div>
 
-
-
-
-
-
                 </div>
 
-                <!-- Right Sidebar (OKTE Spot Price & Inverters Diagnostic) -->
+                <!-- Right Sidebar -->
                 <div>
+                    <!-- Celková Úspora Card (Moved from left telemetry grid as annotated) -->
+                    <div class="metric-card" style="--line-color: var(--accent-saved); margin-bottom: 20px; padding: 22px;">
+                        <span class="metric-label-styled"><i data-lucide="banknote" style="width:14px;height:14px;color:var(--accent-saved);"></i> Celková Úspora</span>
+                        <span class="metric-value-styled text-saved" id="dashTotalSaved" style="font-size: 32px; font-weight: 900; line-height: 1.2;">0.00 €</span>
+                    </div>
+
                     <!-- OKTE Mini Spotlight Widget -->
                     <div class="okte-mini-card">
                         <div class="okte-header">
@@ -1152,38 +950,106 @@
 
         <!-- Tab 2: SMART METER & AI REGULATION -->
         <section id="sectionMeter" class="view-section">
-            <div class="glass-card">
-                <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="cpu"></i> Regulačné Algoritmy & Výber Režimu</span>
+            <div class="flexible-grid">
+                
+                <!-- Left Side: Simplified 3-Mode Selector (Zap/Vyp/Smart AI as requested) -->
+                <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="cpu"></i> Regulačné Algoritmy & Výber Režimu</span>
+                        </div>
+                        <div class="control-btn-grid" id="meterModeGrid" style="margin-bottom:24px; display: grid; grid-template-columns: 1fr; gap: 12px;">
+                            <button onclick="setMeterMode('UNLIMITED')" id="btnMeterUnlimited" class="control-btn">
+                                <i data-lucide="zap"></i> Zapnúť
+                            </button>
+                            <button onclick="setMeterMode('ZERO')" id="btnMeterZero" class="control-btn">
+                                <i data-lucide="power"></i> Vypnúť
+                            </button>
+                            <button onclick="setMeterMode('SMART')" id="btnMeterSmart" class="control-btn active">
+                                <i data-lucide="brain"></i> Smart AI
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="meterModeDesc" style="padding:16px 20px;border-radius:16px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;">
+                        <strong>Smart AI:</strong> Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
+                    </div>
                 </div>
-                <div class="control-btn-grid" id="meterModeGrid" style="margin-bottom:24px;">
-                    <button onclick="setMeterMode('UNLIMITED')" id="btnMeterUnlimited" class="control-btn">
-                        <i data-lucide="zap"></i> Bez limitu
-                    </button>
-                    <button onclick="setMeterMode('SELF_CONSUMPTION')" id="btnMeterSelf" class="control-btn">
-                        <i data-lucide="home"></i> Vlastná spotreba
-                    </button>
-                    <button onclick="setMeterMode('ZERO')" id="btnMeterZero" class="control-btn">
-                        <i data-lucide="scale"></i> Nulový prepad
-                    </button>
-                    <button onclick="setMeterMode('PLUS')" id="btnMeterPlus" class="control-btn">
-                        <i data-lucide="trending-up"></i> Prebytkový režim
-                    </button>
-                    <button onclick="setMeterMode('SMART')" id="btnMeterSmart" class="control-btn active">
-                        <i data-lucide="brain"></i> Smart AI
-                    </button>
-                    <button onclick="setMeterMode('CUSTOM')" id="btnMeterCustom" class="control-btn">
-                        <i data-lucide="cog"></i> Vlastný režim
+
+                <!-- Right Side: Moved Min/Max & SOC Settings panel (From Tab 3 as annotated) -->
+                <div class="glass-card">
+                    <div class="card-header-styled">
+                        <span class="card-title-styled"><i data-lucide="settings"></i> Nastavenia Výkonu</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px; margin-bottom: 16px;">
+                        <!-- Min Power -->
+                        <div style="text-align:center;">
+                            <div style="position:relative;width:90px;height:90px;margin:0 auto 10px;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
+                                    <circle id="minPowerArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-battery)" stroke-width="6" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="minPowerVal" style="font-size:15px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">0</span>
+                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);">W MIN</span>
+                                </div>
+                            </div>
+                            <input type="range" id="settingsMinPower" min="0" max="5000" step="100" value="0" oninput="updateGearWheel('min', this.value)" style="width:100%;height:3px;accent-color:var(--accent-battery);cursor:pointer;">
+                        </div>
+                        <!-- Max Power -->
+                        <div style="text-align:center;">
+                            <div style="position:relative;width:90px;height:90px;margin:0 auto 10px;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
+                                    <circle id="maxPowerArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-solar)" stroke-width="6" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="132" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="maxPowerVal" style="font-size:15px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">10000</span>
+                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);">W MAX</span>
+                                </div>
+                            </div>
+                            <input type="range" id="settingsMaxPower" min="500" max="15000" step="500" value="10000" oninput="updateGearWheel('max', this.value)" style="width:100%;height:3px;accent-color:var(--accent-solar);cursor:pointer;">
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px; margin-bottom: 20px;">
+                        <!-- Min SOC -->
+                        <div style="text-align:center;">
+                            <div style="position:relative;width:75px;height:75px;margin:0 auto 6px;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                                    <circle id="minSocArc2" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-grid)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="211" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="minSocVal2" style="font-size:13px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">10%</span>
+                                </div>
+                            </div>
+                            <span style="font-size:8px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">SOC MIN</span>
+                            <input type="range" id="settingsMinSoc" min="5" max="50" step="5" value="10" oninput="updateGearWheel('minSoc', this.value)" style="width:100%;height:3px;accent-color:var(--accent-grid);cursor:pointer;">
+                        </div>
+                        <!-- Max SOC -->
+                        <div style="text-align:center;">
+                            <div style="position:relative;width:75px;height:75px;margin:0 auto 6px;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                                    <circle id="maxSocArc2" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-saved)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="13" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="maxSocVal2" style="font-size:13px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">95%</span>
+                                </div>
+                            </div>
+                            <span style="font-size:8px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">SOC MAX</span>
+                            <input type="range" id="settingsMaxSoc" min="50" max="100" step="5" value="95" oninput="updateGearWheel('maxSoc', this.value)" style="width:100%;height:3px;accent-color:var(--accent-saved);cursor:pointer;">
+                        </div>
+                    </div>
+                    <button onclick="saveSettings()" style="width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--accent-battery),var(--accent-grid));color:white;font-size:12px;font-weight:800;border:none;cursor:pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                        Uložiť nastavenia
                     </button>
                 </div>
 
-                <div id="meterModeDesc" style="padding:14px 18px;border-radius:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:24px;">
-                    Smart AI: Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
-                </div>
             </div>
 
             <!-- AI regulation pricing models (1-5) based on OKTE spot price -->
-            <div class="glass-card">
+            <div class="glass-card" style="margin-top: 24px;">
                 <div class="card-header-styled">
                     <span class="card-title-styled"><i data-lucide="wallet"></i> Autonómne Cenové Modely (OKTE)</span>
                     <span style="font-size:9px;font-weight:800;color:var(--accent-solar);background:rgba(245,158,11,0.15);padding:4px 8px;border-radius:6px;">SPOT MANAGEMENT</span>
@@ -1255,193 +1121,91 @@
 
         <!-- Tab 3: CONTROLS & RELAYS -->
         <section id="sectionControl" class="view-section">
-            <!-- Zap/Vyp hlavny switch -->
-            <div class="glass-card" id="powerToggleCard">
-                <div style="display:flex;align-items:center;justify-content:space-between;">
-                    <div style="display:flex;align-items:center;gap:16px;">
-                        <div style="width:52px;height:52px;border-radius:14px;background:rgba(16,185,129,0.12);border:2px solid var(--accent-battery);display:flex;align-items:center;justify-content:center;transition:all 0.3s;" id="powerToggleIcon">
-                            <i data-lucide="power" style="width:24px;height:24px;color:var(--accent-battery);"></i>
+            <div style="display: flex; flex-direction: column; gap: 24px; max-width: 800px; margin: 0 auto;">
+                
+                <!-- Vaše relé / zariadenia -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header-styled">
+                        <span class="card-title-styled"><i data-lucide="toggle-left"></i> Vaše relé</span>
+                        <button onclick="addRelay()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--accent-battery);font-size:11px;font-weight:800;transition:all 0.2s;">
+                            <i data-lucide="plus" style="width:14px;height:14px;"></i> Pridať Relé
+                        </button>
+                    </div>
+                    
+                    <div id="myRelaysList" style="display:flex;flex-direction:column;gap:12px;">
+                        <!-- Relay Item 1 -->
+                        <div class="relay-item-card" style="text-align:left; padding: 18px 20px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                                <div style="display:flex;align-items:center;gap:14px;">
+                                    <i data-lucide="flame" style="width:24px;height:24px;color:var(--accent-solar);"></i>
+                                    <div>
+                                        <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">Bojler TÚV</span>
+                                        <span style="font-size:10px;color:var(--text-muted);">Shelly 1PM · 2000W</span>
+                                    </div>
+                                </div>
+                                <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+                                    <input type="checkbox" checked onchange="toggleRelay(1)" style="opacity:0;width:0;height:0;">
+                                    <span style="position:absolute;inset:0;background:var(--accent-battery);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:white;margin:3px 0 0 23px;transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
+                                </label>
+                            </div>
                         </div>
-                        <div>
-                            <span style="font-size:16px;font-weight:900;color:var(--text-primary);display:block;">Riadenie výroby</span>
-                            <span style="font-size:11px;color:var(--text-secondary);" id="powerToggleLabel">Systém aktívne riadi spotrebu a výrobu</span>
+                        <!-- Relay Item 2 -->
+                        <div class="relay-item-card" style="text-align:left; padding: 18px 20px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                                <div style="display:flex;align-items:center;gap:14px;">
+                                    <i data-lucide="droplet" style="width:24px;height:24px;color:var(--accent-grid);"></i>
+                                    <div>
+                                        <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">Filtrácia bazéna</span>
+                                        <span style="font-size:10px;color:var(--text-muted);">Shelly Duo · 150W</span>
+                                    </div>
+                                </div>
+                                <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+                                    <input type="checkbox" onchange="toggleRelay(2)" style="opacity:0;width:0;height:0;">
+                                    <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:#4b5563;margin:3px;transition:all 0.3s;display:block;"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Relay Item 3 -->
+                        <div class="relay-item-card" style="text-align:left; padding: 18px 20px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                                <div style="display:flex;align-items:center;gap:14px;">
+                                    <i data-lucide="wind" style="width:24px;height:24px;color:var(--accent-battery);"></i>
+                                    <div>
+                                        <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">Klimatizácia</span>
+                                        <span style="font-size:10px;color:var(--text-muted);">GPIO Relé · 1200W</span>
+                                    </div>
+                                </div>
+                                <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+                                    <input type="checkbox" onchange="toggleRelay(3)" style="opacity:0;width:0;height:0;">
+                                    <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:#4b5563;margin:3px;transition:all 0.3s;display:block;"></span></span>
+                                </label>
+                            </div>
                         </div>
                     </div>
-                    <label style="position:relative;width:60px;height:32px;cursor:pointer;">
-                        <input type="checkbox" id="powerToggle" onchange="togglePowerState(this.checked)" checked style="opacity:0;width:0;height:0;">
-                        <span style="position:absolute;inset:0;background:var(--accent-battery);border-radius:16px;transition:all 0.3s;"><span style="width:24px;height:24px;border-radius:50%;background:white;margin:4px 0 0 32px;transition:all 0.3s;display:block;box-shadow:0 2px 8px rgba(0,0,0,0.3);" id="powerToggleKnob"></span></span>
-                    </label>
+
+                    <div id="noRelaysHint" style="text-align:center;padding:24px;display:none;">
+                        <i data-lucide="plus-circle" style="width:32px;height:32px;color:var(--text-muted);margin:0 auto 10px;"></i>
+                        <p style="font-size:12px;color:var(--text-muted);">Nemáte pridané žiadne relé</p>
+                        <button onclick="addRelay()" style="margin-top:12px;padding:8px 16px;border-radius:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:11px;font-weight:800;cursor:pointer;">+ Pridať Relé</button>
+                    </div>
                 </div>
+
+                <!-- Custom Hint Text (As requested) -->
+                <div style="text-align: center; padding: 12px; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                    * Ak si pridám relé, okamžite sa zobrazí v zozname s plnou funkčnosťou.
+                </div>
+
             </div>
-
-            <!-- 2-column layout: Vaše relé + AI & Nastavenia -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" id="controlModesCard">
-
-            <!-- LEFT: Vaše relé / zariadenia -->
-            <div class="glass-card" style="margin-bottom:0;">
-                <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="toggle-left"></i> Vaše relé</span>
-                    <button onclick="addRelay()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--accent-battery);font-size:10px;font-weight:800;transition:all 0.2s;">
-                        <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať Relé
-                    </button>
-                </div>
-                <div id="myRelaysList" style="display:flex;flex-direction:column;gap:10px;">
-                    <div class="relay-item-card" style="text-align:left;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <i data-lucide="flame" style="width:20px;height:20px;color:var(--accent-solar);"></i>
-                                <div><span style="font-size:12px;font-weight:800;display:block;">Bojler TÚV</span><span style="font-size:9px;color:var(--text-muted);">Shelly 1PM · 2000W</span></div>
-                            </div>
-                            <label style="position:relative;width:44px;height:24px;cursor:pointer;">
-                                <input type="checkbox" checked onchange="toggleRelay(1)" style="opacity:0;width:0;height:0;">
-                                <span style="position:absolute;inset:0;background:var(--accent-battery);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:white;margin:3px 0 0 23px;transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="relay-item-card" style="text-align:left;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <i data-lucide="droplet" style="width:20px;height:20px;color:var(--accent-grid);"></i>
-                                <div><span style="font-size:12px;font-weight:800;display:block;">Filtrácia bazéna</span><span style="font-size:9px;color:var(--text-muted);">Shelly Duo · 150W</span></div>
-                            </div>
-                            <label style="position:relative;width:44px;height:24px;cursor:pointer;">
-                                <input type="checkbox" onchange="toggleRelay(2)" style="opacity:0;width:0;height:0;">
-                                <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:#4b5563;margin:3px;transition:all 0.3s;display:block;"></span></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="relay-item-card" style="text-align:left;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <i data-lucide="wind" style="width:20px;height:20px;color:var(--accent-battery);"></i>
-                                <div><span style="font-size:12px;font-weight:800;display:block;">Klimatizácia</span><span style="font-size:9px;color:var(--text-muted);">GPIO Relé · 1200W</span></div>
-                            </div>
-                            <label style="position:relative;width:44px;height:24px;cursor:pointer;">
-                                <input type="checkbox" onchange="toggleRelay(3)" style="opacity:0;width:0;height:0;">
-                                <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:#4b5563;margin:3px;transition:all 0.3s;display:block;"></span></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div id="noRelaysHint" style="text-align:center;padding:16px;display:none;">
-                    <i data-lucide="plus-circle" style="width:28px;height:28px;color:var(--text-muted);margin:0 auto 6px;"></i>
-                    <p style="font-size:11px;color:var(--text-muted);">Nemáte pridané žiadne relé</p>
-                    <button onclick="addRelay()" style="margin-top:8px;padding:7px 14px;border-radius:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:10px;font-weight:800;cursor:pointer;">+ Pridať Relé</button>
-                </div>
-            </div>
-
-            <!-- RIGHT: AI Režim + Nastavenia (gear wheels) -->
-            <div class="glass-card" style="margin-bottom:0;">
-                <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="brain"></i> AI Riadenie</span>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="riadenieGrid">
-                    <button onclick="setControlMode('SMART')" id="btnCtrlSmart" class="control-btn active">
-                        <i data-lucide="brain" style="width:18px;height:18px;"></i>
-                        <span>Smart AI</span>
-                    </button>
-                    <button onclick="setControlMode('ON')" id="btnCtrlOn" class="control-btn">
-                        <i data-lucide="zap" style="width:18px;height:18px;"></i>
-                        <span>Zapnúť</span>
-                    </button>
-                    <button onclick="setControlMode('OFF')" id="btnCtrlOff" class="control-btn">
-                        <i data-lucide="power-off" style="width:18px;height:18px;"></i>
-                        <span>Vypnúť</span>
-                    </button>
-                    <button onclick="setControlMode('SELF')" id="btnCtrlSelf" class="control-btn">
-                        <i data-lucide="home" style="width:18px;height:18px;"></i>
-                        <span>Vlastná spotreba</span>
-                    </button>
-                    <button onclick="setControlMode('ZERO')" id="btnCtrlZero" class="control-btn">
-                        <i data-lucide="scale" style="width:18px;height:18px;"></i>
-                        <span>Nulový prepad</span>
-                    </button>
-                    <button onclick="setControlMode('CUSTOM')" id="btnCtrlCustom" class="control-btn">
-                        <i data-lucide="wrench" style="width:18px;height:18px;"></i>
-                        <span>Vlastný</span>
-                    </button>
-                </div>
-                <div id="controlModeDesc" style="margin-top:12px;padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:11px;color:var(--text-secondary);line-height:1.5;">
-                    🤖 Smart AI — Autonómne riadenie na základe predpovede, spotreby a OKTE cien.
-                </div>
-
-                <!-- Min/Max gear wheel settings -->
-                <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:14px;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                        <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Nastavenia výkonu</span>
-                        <i data-lucide="settings" style="width:14px;height:14px;color:var(--text-muted);"></i>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div style="text-align:center;">
-                            <div style="position:relative;width:80px;height:80px;margin:0 auto 6px;">
-                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
-                                    <circle id="minPowerArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-battery)" stroke-width="6" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264" style="transition:stroke-dashoffset 0.5s ease;"/>
-                                </svg>
-                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                    <span id="minPowerVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">0</span>
-                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);">W MIN</span>
-                                </div>
-                            </div>
-                            <input type="range" id="settingsMinPower" min="0" max="5000" step="100" value="0" oninput="updateGearWheel('min', this.value)" style="width:100%;height:3px;accent-color:var(--accent-battery);cursor:pointer;">
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="position:relative;width:80px;height:80px;margin:0 auto 6px;">
-                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
-                                    <circle id="maxPowerArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-solar)" stroke-width="6" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="132" style="transition:stroke-dashoffset 0.5s ease;"/>
-                                </svg>
-                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                    <span id="maxPowerVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">10000</span>
-                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);">W MAX</span>
-                                </div>
-                            </div>
-                            <input type="range" id="settingsMaxPower" min="500" max="15000" step="500" value="10000" oninput="updateGearWheel('max', this.value)" style="width:100%;height:3px;accent-color:var(--accent-solar);cursor:pointer;">
-                        </div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
-                        <div style="text-align:center;">
-                            <div style="position:relative;width:60px;height:60px;margin:0 auto 4px;">
-                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-                                    <circle id="minSocArc2" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-grid)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="211" style="transition:stroke-dashoffset 0.5s ease;"/>
-                                </svg>
-                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                    <span id="minSocVal2" style="font-size:12px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">10%</span>
-                                </div>
-                            </div>
-                            <span style="font-size:8px;font-weight:700;color:var(--text-muted);">SOC MIN</span>
-                            <input type="range" id="settingsMinSoc" min="5" max="50" step="5" value="10" oninput="updateGearWheel('minSoc', this.value)" style="width:100%;height:3px;accent-color:var(--accent-grid);cursor:pointer;">
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="position:relative;width:60px;height:60px;margin:0 auto 4px;">
-                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-                                    <circle id="maxSocArc2" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-saved)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="13" style="transition:stroke-dashoffset 0.5s ease;"/>
-                                </svg>
-                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                    <span id="maxSocVal2" style="font-size:12px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">95%</span>
-                                </div>
-                            </div>
-                            <span style="font-size:8px;font-weight:700;color:var(--text-muted);">SOC MAX</span>
-                            <input type="range" id="settingsMaxSoc" min="50" max="100" step="5" value="95" oninput="updateGearWheel('maxSoc', this.value)" style="width:100%;height:3px;accent-color:var(--accent-saved);cursor:pointer;">
-                        </div>
-                    </div>
-                    <button onclick="saveSettings()" style="margin-top:12px;width:100%;padding:10px;border-radius:10px;background:linear-gradient(135deg,var(--accent-battery),var(--accent-grid));color:white;font-size:11px;font-weight:800;border:none;cursor:pointer;">Uložiť nastavenia</button>
-                </div>
-            </div>
-            </div><!-- end 2-column grid -->
-
         </section>
 
         <!-- Tab 4: PRE-DESIGNED ULTRA HOLIDAY SAFEGUARD EMS MODULE -->
         <section id="sectionHoliday" class="view-section">
-            <div class="glass-card" style="border:1.5px solid var(--accent-battery);background:linear-gradient(135deg,rgba(15,23,42,0.8),rgba(16,185,129,0.06));">
+            <div class="glass-card" style="border:1.5px solid var(--accent-battery);background:linear-gradient(135deg,rgba(15,23,42,0.8),rgba(16,185,129,0.06)); max-width: 900px; margin: 0 auto;">
                 
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
                     <div style="display:flex;align-items:center;gap:14px;">
                         <div style="width:44px;height:44px;border-radius:12px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;">
-                            <i data-lucide="shield-check" style="color:var(--accent-battery);width:22px;height:22px;"></i>
+                            <i data-lucide="umbrella" style="color:var(--accent-battery);width:22px;height:22px;"></i>
                         </div>
                         <div>
                             <span style="font-size:9px;font-weight:900;letter-spacing:1px;color:var(--accent-battery);text-transform:uppercase;display:block;">BEZPEČNOSTNÝ EMS ASISTENT</span>
@@ -1462,43 +1226,51 @@
                     </div>
                 </div>
 
-                <div class="holiday-grid" style="margin-bottom:24px;">
-                    <div>
-                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">DÁTUM A ČAS ODCHODU</label>
-                        <input type="datetime-local" id="holidayFromInput" class="input-styled">
+                <!-- Symmetric 2-Column Holiday Layout (od / do / nastavenia) -->
+                <div class="flexible-grid" style="margin-bottom: 24px;">
+                    
+                    <!-- Left Side (od / departure / SOC target) -->
+                    <div style="display: flex; flex-direction: column; gap: 20px; padding: 20px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-card); border-radius: 18px;">
+                        <div>
+                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:10px;letter-spacing:0.5px;">DÁTUM A ČAS ODCHODU (OD)</label>
+                            <input type="datetime-local" id="holidayFromInput" class="input-styled">
+                        </div>
+                        
+                        <div style="text-align:center;padding:16px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:14px;">
+                            <div style="position:relative;width:95px;height:95px;margin:0 auto;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                                    <circle id="gaugeSocArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-battery)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="53" style="transition:stroke-dashoffset 1s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="gaugeSocVal" style="font-size:20px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">80%</span>
+                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">CIEĽ SOC (DO)</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">DÁTUM A ČAS NÁVRATU</label>
-                        <input type="datetime-local" id="holidayUntilInput" class="input-styled">
-                    </div>
-                </div>
 
-                <!-- Live Gauges -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
-                    <div style="text-align:center;padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
-                        <div style="position:relative;width:100px;height:100px;margin:0 auto 12px;">
-                            <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-                                <circle id="gaugeSocArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-battery)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="53" style="transition:stroke-dashoffset 1s ease;"/>
-                            </svg>
-                            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                <span id="gaugeSocVal" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">80%</span>
-                                <span style="font-size:8px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">SOC</span>
+                    <!-- Right Side (Návrat / Settings) -->
+                    <div style="display: flex; flex-direction: column; gap: 20px; padding: 20px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-card); border-radius: 18px;">
+                        <div>
+                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:10px;letter-spacing:0.5px;">DÁTUM A ČAS NÁVRATU</label>
+                            <input type="datetime-local" id="holidayUntilInput" class="input-styled">
+                        </div>
+                        
+                        <div style="text-align:center;padding:16px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:14px;">
+                            <div style="position:relative;width:95px;height:95px;margin:0 auto;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                                    <circle id="gaugeTempArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-solar)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="185" style="transition:stroke-dashoffset 1s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="gaugeTempVal" style="font-size:20px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">32°C</span>
+                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">TEPLOTA DOMU</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div style="text-align:center;padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
-                        <div style="position:relative;width:100px;height:100px;margin:0 auto 12px;">
-                            <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-                                <circle id="gaugeTempArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-solar)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="185" style="transition:stroke-dashoffset 1s ease;"/>
-                            </svg>
-                            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                <span id="gaugeTempVal" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">32°C</span>
-                                <span style="font-size:8px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Teplota</span>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
 
                 <div style="background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;padding:20px;">
@@ -1509,9 +1281,153 @@
                     <input type="range" id="holidayMinSoc" min="10" max="50" step="5" value="20" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('minSocDisplay').innerText = this.value + '% SOC'">
                 </div>
 
-                <button onclick="saveHolidayParams()" style="margin-top:20px;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg, var(--accent-grid), var(--accent-battery));color:white;font-size:12px;font-weight:800;border:none;cursor:pointer;transition:all 0.2s;">
+                <!-- Simplified Save Button -->
+                <button onclick="saveHolidayParams()" style="margin-top:20px;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg, var(--accent-grid), var(--accent-battery));color:white;font-size:12px;font-weight:800;border:none;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                     ULOŽIŤ BEZPEČNOSTNÝ PROTOKOL DOVOLENKY
                 </button>
+            </div>
+        </section>
+
+        <!-- Tab 5: MÔJ PROFIL & NASTAVENIA (As designed on Image 5) -->
+        <section id="sectionProfile" class="view-section">
+            <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+                
+                <!-- Back Button -->
+                <div>
+                    <button onclick="switchTab('dashboard')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px;">
+                        <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Návrat na prehľad
+                    </button>
+                </div>
+
+                <div class="flexible-grid">
+                    
+                    <!-- Left Column: Profile Card + Email notifications -->
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        
+                        <!-- Profil -->
+                        <div class="glass-card" style="margin-bottom: 0;">
+                            <div class="card-header-styled">
+                                <span class="card-title-styled"><i data-lucide="user"></i> Profil</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                                <div style="position: relative; width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #3b82f6); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);">
+                                    <span style="font-size: 24px; font-weight: 900; color: white;">A</span>
+                                </div>
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 800; color: var(--text-primary);">Adam</h4>
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px;">adam.dzurko5@gmail.com</span>
+                                    <span style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 2px;">Člen od 2016-08-26 10:56:35</span>
+                                </div>
+                            </div>
+                            
+                            <div style="border-top: 1px solid var(--border-card); padding-top: 16px;">
+                                <span style="font-size: 10px; font-weight: 800; color: var(--text-secondary); display: block; margin-bottom: 10px; letter-spacing: 0.5px;">MOJE ZARIADENIA</span>
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(0,0,0,0.15); border: 1px solid var(--border-card); border-radius: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <i data-lucide="cpu" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                                        <span style="font-size: 12px; font-weight: 700;">ElvoControl</span>
+                                    </div>
+                                    <span style="font-size: 8px; font-weight: 800; color: var(--accent-warn); background: rgba(244,63,94,0.12); padding: 2px 6px; border-radius: 4px;">OFFLINE</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Notifications -->
+                        <div class="glass-card" style="margin-bottom: 0;">
+                            <div class="card-header-styled">
+                                <span class="card-title-styled"><i data-lucide="mail"></i> Email Notifikácie</span>
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 14px;">
+                                <!-- Item 1 -->
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+                                    <div>
+                                        <span style="font-size: 12px; font-weight: 800; color: var(--text-primary); display: block;">Nové zariadenie</span>
+                                        <span style="font-size: 10px; color: var(--text-muted);">Oznámenie keď sa pridá nové zariadenie.</span>
+                                    </div>
+                                    <input type="checkbox" checked style="accent-color: var(--accent-battery); cursor: pointer; width: 16px; height: 16px;">
+                                </div>
+                                <!-- Item 2 -->
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border-card); padding-top: 14px;">
+                                    <div>
+                                        <span style="font-size: 12px; font-weight: 800; color: var(--text-primary); display: block;">Porucha zariadenia</span>
+                                        <span style="font-size: 10px; color: var(--text-muted);">Upozornenie pri chybe alebo offline stave.</span>
+                                    </div>
+                                    <input type="checkbox" checked style="accent-color: var(--accent-battery); cursor: pointer; width: 16px; height: 16px;">
+                                </div>
+                                <!-- Item 3 -->
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border-card); padding-top: 14px;">
+                                    <div>
+                                        <span style="font-size: 12px; font-weight: 800; color: var(--text-primary); display: block;">Denný report</span>
+                                        <span style="font-size: 10px; color: var(--text-muted);">Súhrn výroby a spotreby za deň.</span>
+                                    </div>
+                                    <input type="checkbox" style="accent-color: var(--accent-battery); cursor: pointer; width: 16px; height: 16px;">
+                                </div>
+                                <!-- Item 4 -->
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border-card); padding-top: 14px;">
+                                    <div>
+                                        <span style="font-size: 12px; font-weight: 800; color: var(--text-primary); display: block;">Negatívna cena OKTE</span>
+                                        <span style="font-size: 10px; color: var(--text-muted);">Upozornenie keď je cena elektriny záporná.</span>
+                                    </div>
+                                    <input type="checkbox" checked style="accent-color: var(--accent-battery); cursor: pointer; width: 16px; height: 16px;">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Settings + Device pairing -->
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        
+                        <div class="glass-card" style="margin-bottom: 0;">
+                            <div class="card-header-styled">
+                                <span class="card-title-styled"><i data-lucide="settings"></i> Nastavenie</span>
+                                <button onclick="pairNewDevice(event)" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--accent-battery); font-size: 11px; font-weight: 800; transition: all 0.2s;">
+                                    <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Pridať zariadenie
+                                </button>
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-card); border-radius: 12px;">
+                                    <div>
+                                        <span style="font-size: 12px; font-weight: 800; color: var(--text-primary); display: block;">ElvoControl (Predvolené)</span>
+                                        <span style="font-size: 10px; color: var(--text-muted);">CMS-DEFAULT · 2.1</span>
+                                    </div>
+                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 700;">Offline</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Change Password -->
+                        <div class="glass-card" style="margin-bottom: 0;">
+                            <div class="card-header-styled">
+                                <span class="card-title-styled"><i data-lucide="lock"></i> Zmena hesla</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <input type="password" placeholder="Aktuálne heslo" class="input-styled">
+                                <input type="password" placeholder="Nové heslo (min. 6 znakov)" class="input-styled">
+                                <input type="password" placeholder="Zopakujte nové heslo" class="input-styled">
+                                <button style="width: 100%; padding: 12px; border-radius: 10px; background: var(--accent-battery); border: none; color: white; font-weight: 800; cursor: pointer; font-size: 12px; margin-top: 6px;">
+                                    Zmeniť heslo
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Test Email Section -->
+                <div class="glass-card">
+                    <div class="card-header-styled">
+                        <span class="card-title-styled"><i data-lucide="mail"></i> Test emailu</span>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 14px;">Odošle testovací email na tvoju adresu cez Resend API.</p>
+                    <button style="width: 100%; padding: 14px; border-radius: 12px; background: #818cf8; border: none; color: white; font-weight: 800; cursor: pointer; font-size: 12px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                        Odoslať testovací email
+                    </button>
+                </div>
+
             </div>
         </section>
 
@@ -1540,8 +1456,6 @@
 
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
-
-
 
         function toggleDeviceDropdown(e) {
             e.stopPropagation();
@@ -1649,12 +1563,7 @@
             const deviceName = data.name || brandName;
             const power = data.total_live_power || 0;
             const soc = data.avg_live_soc || 0;
-            const temp = data.temp || 0;
-            const freq = data.freq || 50;
-            const totalKwh = data.total_kwh || 0;
-            const totalSaved = data.total_saved_eur || 0;
             const isOnline = power > 0 || soc > 0;
-            const override = data.manual_override || 'AUTO';
 
             nameEl.textContent = deviceName || 'ElvoControl';
             if (infoEl) {
@@ -1664,49 +1573,22 @@
                 parts.push(Math.round(soc) + '% SOC');
                 infoEl.textContent = parts.join(' · ');
             }
-
         }
-
-
-
-        // Local browser renaming trigger
-        function triggerLocalRename(e) {
-            e.stopPropagation();
-            const labelEl = document.getElementById('singleDeviceLabel');
-            if (!labelEl) return;
-
-            const oldName = labelEl.innerText;
-            const newName = prompt("Zadajte nový lokálny názov pre toto zariadenie:", oldName);
-            if (newName !== null && newName.trim() !== "") {
-                const cleanName = newName.trim();
-                labelEl.innerText = cleanName;
-                localStorage.setItem('local_biok_device_name', cleanName);
-            }
-        }
-
-        // Apply local device name if already saved in browser
-        (function loadLocalDeviceName() {
-            const savedLocalName = localStorage.getItem('local_biok_device_name');
-            const labelEl = document.getElementById('singleDeviceLabel');
-            if (savedLocalName && labelEl) {
-                labelEl.innerText = savedLocalName;
-            }
-        })();
-
-
 
         function switchTab(tabId) {
             const sections = {
                 dashboard: 'sectionDashboard',
                 meter: 'sectionMeter',
                 control: 'sectionControl',
-                holiday: 'sectionHoliday'
+                holiday: 'sectionHoliday',
+                profile: 'sectionProfile'
             };
             const buttons = {
                 dashboard: 'tabBtnDashboard',
                 meter: 'tabBtnMeter',
                 control: 'tabBtnControl',
-                holiday: 'tabBtnHoliday'
+                holiday: 'tabBtnHoliday',
+                profile: 'tabBtnProfile'
             };
 
             Object.keys(sections).forEach(key => {
@@ -1775,7 +1657,6 @@
                     tempGauge.textContent = `${Math.round(temp)}°C`;
                     tempArc.setAttribute('stroke-dashoffset', 264 - (264 * Math.min(temp, 80) / 80));
                 }
-                setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
 
                 const connectionTypeIcon = document.getElementById('connectionTypeIcon');
                 const connectionTypeText = document.getElementById('connectionTypeText');
@@ -1801,8 +1682,6 @@
 
                 lucide.createIcons();
 
-
-
                 // Update inverters in sidebar
                 updateInvertersList(data);
                 // Update chart header
@@ -1812,17 +1691,13 @@
                 document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
                 document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
 
-                // Grid status (powerSourceStatus removed from UI)
-
-                // Update live chart if it exists (FVE dataset)
+                // Update live chart
                 if (elvoChart && elvoChart.data && elvoChart.data.datasets) {
-                    // Find FVE dataset (by label)
                     const fveDs = elvoChart.data.datasets.find(ds => ds.label && ds.label.includes('FVE'));
                     if (fveDs) {
                         const now = new Date().toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
                         elvoChart.data.labels.push(now);
                         fveDs.data.push(Math.round(data.total_live_power));
-                        // Also push nulls for other datasets to keep alignment
                         elvoChart.data.datasets.forEach(ds => {
                             if (ds !== fveDs) ds.data.push(null);
                         });
@@ -1844,8 +1719,6 @@
                 const data = await response.json();
                 if (data.status === 'success' && data.meter) {
                     const m = data.meter;
-
-                    
                     if (m.okte_price !== undefined) {
                         document.getElementById('okteSpotPrice').innerText = m.okte_price.toFixed(2);
                     }
@@ -1857,12 +1730,10 @@
             document.querySelectorAll('#meterModeGrid .control-btn').forEach(btn => btn.classList.remove('active'));
             const activeBtnId = {
                 UNLIMITED: 'btnMeterUnlimited',
-                SELF_CONSUMPTION: 'btnMeterSelf',
                 ZERO: 'btnMeterZero',
-                PLUS: 'btnMeterPlus',
-                SMART: 'btnMeterSmart',
-                CUSTOM: 'btnMeterCustom'
-            }[mode];
+                SMART: 'btnMeterSmart'
+            }[mode] || 'btnMeterSmart';
+            
             const btn = document.getElementById(activeBtnId);
             if (btn) btn.classList.add('active');
 
@@ -1872,26 +1743,6 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({control_mode: mode})
-                });
-            } catch(e) {}
-        }
-
-        async function setManualOverride(mode) {
-            document.querySelectorAll('#sectionControl .control-btn').forEach(btn => btn.classList.remove('active'));
-            const activeBtnId = {
-                AUTO: 'btnOverrideAuto',
-                ON: 'btnOverrideOn',
-                OFF: 'btnOverrideOff'
-            }[mode];
-            const btn = document.getElementById(activeBtnId);
-            if (btn) btn.classList.add('active');
-
-            try {
-                const devId = metaEl.getAttribute('data-device-id');
-                await fetch(`${basePath}/api/device/${devId}/control`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({action: 'override', value: mode})
                 });
             } catch(e) {}
         }
@@ -1918,104 +1769,61 @@
             } catch(e) {}
         }
 
-        function toggleRelayState(relayId) {}
-
         function addRelay() {
             const name = prompt('Názov relé (napr. Bojler, Klima, LED):');
             if (!name) return;
             const type = prompt('Typ zariadenia (Shelly/GPIO/HTTP):', 'Shelly');
             if (!type) return;
-            const container = document.querySelector('.relays-container');
+            const container = document.getElementById('myRelaysList');
             const count = container.querySelectorAll('.relay-item-card').length + 1;
-            const colors = ['var(--accent-solar)', 'var(--accent-grid)', 'var(--accent-battery)', '#a855f7'];
-            const icons = ['flame', 'droplet', 'wind', 'lightbulb'];
-            const color = colors[count % colors.length];
-            const icon = icons[count % icons.length];
+            
             const card = document.createElement('div');
             card.className = 'relay-item-card';
-            card.innerHTML = `<i data-lucide="${icon}" style="width:24px;height:24px;color:${color};"></i>
-                <span style="font-size:12px;font-weight:800;">${name}</span>
-                <span style="font-size:10px;color:var(--text-muted);">${type}</span>
-                <span id="relayStatus${count}" class="relay-indicator">VYP</span>
-                <button onclick="toggleRelay(${count})" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť</button>`;
+            card.style.padding = '18px 20px';
+            card.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <i data-lucide="lightbulb" style="width:24px;height:24px;color:var(--accent-solar);"></i>
+                        <div>
+                            <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">${name}</span>
+                            <span style="font-size:10px;color:var(--text-muted);">${type} · 1000W</span>
+                        </div>
+                    </div>
+                    <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+                        <input type="checkbox" onchange="toggleRelay(${count})" style="opacity:0;width:0;height:0;">
+                        <span id="relayStatusContainer${count}" style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:12px;transition:all 0.3s;"><span id="relayKnob${count}" style="width:18px;height:18px;border-radius:50%;background:#4b5563;margin:3px;transition:all 0.3s;display:block;"></span></span>
+                    </label>
+                </div>
+            `;
             container.appendChild(card);
             lucide.createIcons();
         }
 
         function toggleRelay(relayId) {
-            const label = document.getElementById('relayStatus' + relayId);
-            if (!label) return;
-            const isOn = label.innerText === 'ZAP';
-            label.innerText = isOn ? 'VYP' : 'ZAP';
-            label.classList.toggle('active', !isOn);
+            const container = document.getElementById('relayStatusContainer' + relayId);
+            const knob = document.getElementById('relayKnob' + relayId);
+            if (!container || !knob) return;
+
+            const isCurrentlyOn = container.style.backgroundColor === 'var(--accent-battery)';
+            if (isCurrentlyOn) {
+                container.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                knob.style.transform = 'translateX(0)';
+                knob.style.backgroundColor = '#4b5563';
+            } else {
+                container.style.backgroundColor = 'var(--accent-battery)';
+                knob.style.transform = 'translateX(19px)';
+                knob.style.backgroundColor = 'white';
+            }
+
             try {
                 const devId = metaEl.getAttribute('data-device-id');
                 fetch(`${basePath}/api/device/${devId}/relay`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({relay_id: relayId, state: isOn ? 'OFF' : 'ON'})
+                    body: JSON.stringify({relay_id: relayId, state: isCurrentlyOn ? 'OFF' : 'ON'})
                 });
             } catch(e) {}
         }
-
-        function togglePowerState(checked) {
-            const icon = document.getElementById('powerToggleIcon');
-            const label = document.getElementById('powerToggleLabel');
-            const knob = document.getElementById('powerToggleKnob');
-            if (checked) {
-                icon.style.borderColor = 'var(--accent-battery)';
-                icon.style.background = 'rgba(16,185,129,0.12)';
-                label.innerText = 'Systém aktívne riadi spotrebu a výrobu';
-                knob.style.marginLeft = '32px';
-                knob.style.background = 'white';
-                icon.parentElement.querySelector('i').style.color = 'var(--accent-battery)';
-            } else {
-                icon.style.borderColor = 'var(--accent-warn)';
-                icon.style.background = 'rgba(244,63,94,0.12)';
-                label.innerText = 'Systém vypnutý — riadenie pozastavené';
-                knob.style.marginLeft = '4px';
-                knob.style.background = '#4b5563';
-                icon.parentElement.querySelector('i').style.color = 'var(--accent-warn)';
-            }
-            try {
-                const devId = metaEl.getAttribute('data-device-id');
-                fetch(`${basePath}/api/device/${devId}/control`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({action: 'power', value: checked ? 'ON' : 'OFF'})
-                });
-            } catch(e) {}
-        }
-
-        const modeDescs = {
-            SMART: '🤖 Smart AI — Autonómne riadenie na základe predpovede, spotreby a OKTE cien.',
-            ON: '⚡ Zapnúť — Systém núti nabíjanie batérie zo siete.',
-            OFF: '🔴 Vypnúť — Systém núti vybíjanie batérie do siete.',
-            SELF: '🏠 Vlastná spotreba — Minimálny odber/prebytok zo siete.',
-            ZERO: '⚖️ Nulový prepad — Žiadny prebytok do distribučnej siete.',
-            CUSTOM: '🔧 Vlastný — Manuálne nastavenie min/max výkonu a SOC limitov.'
-        };
-
-        function setControlMode(mode) {
-            document.querySelectorAll('#riadenieGrid .control-btn').forEach(btn => btn.classList.remove('active'));
-            const btnMap = {SMART:'btnCtrlSmart',ON:'btnCtrlOn',OFF:'btnCtrlOff',SELF:'btnCtrlSelf',ZERO:'btnCtrlZero',CUSTOM:'btnCtrlCustom'};
-            const btn = document.getElementById(btnMap[mode]);
-            if (btn) btn.classList.add('active');
-            const desc = document.getElementById('controlModeDesc');
-            if (desc) desc.innerText = modeDescs[mode] || '';
-            if (mode === 'CUSTOM') { /* settings are now inline */ }
-            try {
-                const devId = metaEl.getAttribute('data-device-id');
-                fetch(`${basePath}/api/device/${devId}/meter`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({control_mode: mode})
-                });
-            } catch(e) {}
-        }
-
-        function openSettingsModal() { /* settings are now inline */ }
-        function closeSettingsModal() { /* settings are now inline */ }
 
         function updateGearWheel(type, value) {
             const v = parseInt(value);
@@ -2039,8 +1847,7 @@
                 min_power_w: parseInt(document.getElementById('settingsMinPower').value),
                 max_power_w: parseInt(document.getElementById('settingsMaxPower').value),
                 min_soc_pct: parseInt(document.getElementById('settingsMinSoc').value),
-                max_soc_pct: parseInt(document.getElementById('settingsMaxSoc').value),
-                night_sleep: document.getElementById('settingsNightSleep').checked,
+                max_soc_pct: parseInt(document.getElementById('settingsMaxSoc').value)
             };
             try {
                 const devId = metaEl.getAttribute('data-device-id');
@@ -2049,15 +1856,9 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({device_ids: [parseInt(devId)], settings: settings})
                 });
-                closeSettingsModal();
+                alert('Nastavenia úspešne uložené.');
             } catch(e) {}
         }
-
-        // Slider live update
-        document.getElementById('settingsMinPower').addEventListener('input', function() { document.getElementById('settingsMinPowerVal').innerText = this.value + ' W'; });
-        document.getElementById('settingsMaxPower').addEventListener('input', function() { document.getElementById('settingsMaxPowerVal').innerText = this.value + ' W'; });
-        document.getElementById('settingsMinSoc').addEventListener('input', function() { document.getElementById('settingsMinSocVal').innerText = this.value + '%'; });
-        document.getElementById('settingsMaxSoc').addEventListener('input', function() { document.getElementById('settingsMaxSocVal').innerText = this.value + '%'; });
 
         function toggleHolidayModeState(checked) {
             const knob = document.getElementById('holidayToggleKnob');
@@ -2091,6 +1892,7 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
                 });
+                alert('Bezpečnostný dovolenkový protokol bol aktívne zapísaný.');
             } catch(e) {}
         }
 
@@ -2108,10 +1910,8 @@
             }
         })();
 
-        // Chart + OKTE data
         async function fetchOktePrices() {
             try {
-                // Bez parametrov - endpoint automaticky urci 24h/48h
                 const r = await fetch(`${basePath}/api/okte/prices`);
                 const d = await r.json();
                 if (d.status === 'success' && d.okte && d.okte.prices) {
@@ -2121,10 +1921,10 @@
             } catch(e) {}
             return null;
         }
+
         function updateOkteWidget(okte) {
             const el = document.getElementById('okteSpotPrice');
             if (el && okte.prices && okte.prices.length > 0) {
-                // Najdi aktualnu cenu podla hodiny
                 const now = new Date();
                 const currentHour = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
                 let found = okte.prices[okte.prices.length - 1];
@@ -2139,22 +1939,12 @@
             if (minEl) minEl.innerText = (okte.min || 0).toFixed(2) + ' €/MWh';
             if (maxEl) maxEl.innerText = (okte.max || 0).toFixed(2) + ' €/MWh';
             if (avgEl) avgEl.innerText = (okte.avg || 0).toFixed(2) + ' €/MWh';
-            // Badge
+            
             const badge = document.querySelector('.okte-badge');
             if (badge) badge.innerText = okte.range_type === '48h' ? '48 HODÍN' : '24 HODINY';
         }
 
-        // Compute dynamic 24h/48h range
-        function getTimeRange() {
-            const now = new Date();
-            const hour = now.getHours();
-            // Po 13:00 - ukaz 48h (dnes + zajtra)
-            if (hour >= 13) {
-                return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate()), to: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2) };
-            }
-            // Do 13:00 - ukaz 24h (vcera + dnes)
-            return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1), to: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) };
-        }        let elvoChart = null;
+        let elvoChart = null;
 
         function initCombinedChart(data, okteData) {
             const ctx = document.getElementById('elvoChart');
@@ -2167,21 +1957,18 @@
             const now = new Date();
             const currentHHMM = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
 
-            // Build unified labels from OKTE (00:00 to 23:45)
             let labels = [];
             let oktePrices = [];
-            let predictionLine = []; // Predpoved osvitu (watt z krivky)
+            let predictionLine = [];
 
             if (hasOkte) {
                 okteData.prices.forEach(p => {
                     labels.push(p.hour);
                     oktePrices.push(p.price);
-                    // Simple prediction: OKTE price as proxy for irradiance pattern
                     predictionLine.push(null);
                 });
             }
 
-            // Map device data onto OKTE timeline
             let fveData = [];
             let socData = [];
             let avgFveLine = [];
@@ -2211,22 +1998,17 @@
                 oktePrices = [];
             }
 
-            // Average FVE line
             const validFve = fveData.filter(v => v !== null);
             const avgFve = validFve.length > 0 ? validFve.reduce((a,b)=>a+b,0) / validFve.length : 0;
             avgFveLine = fveData.map(v => v !== null ? Math.round(avgFve) : null);
 
-            // Generate prediction curve (solar bell curve based on history pattern)
-            // Only for hours AFTER current time
             if (hasOkte && hasDevice && validFve.length > 3) {
                 const maxFve = Math.max(...validFve);
                 predictionLine = labels.map((l, i) => {
                     const parts = l.split(':');
                     const hour = parseInt(parts[0]) + parseInt(parts[1]) / 60;
-                    // Solar bell: peak at 13:00, zero before 6 and after 20
                     if (hour < 5.5 || hour > 20.5) return null;
-                    // Check if this is in the future
-                    if (l <= currentHHMM && fveData[i] !== null) return null; // Past - real data exists
+                    if (l <= currentHHMM && fveData[i] !== null) return null;
                     const peak = 13;
                     const sigma = 4.5;
                     const solar = maxFve * Math.exp(-0.5 * Math.pow((hour - peak) / sigma, 2));
@@ -2238,7 +2020,6 @@
 
             const datasets = [];
 
-            // OKTE prices (purple line)
             if (hasOkte) {
                 datasets.push({
                     label: 'OKTE Spot (€/MWh)',
@@ -2250,7 +2031,6 @@
                 });
             }
 
-            // FVE production (orange) - always show
             datasets.push({
                 label: 'FVE Výroba (W)',
                 data: fveData,
@@ -2267,15 +2047,14 @@
                 pointRadius: 0, fill: false, spanGaps: true,
             });
             datasets.push({
-                    label: 'SOC (%)',
-                    data: socData,
-                    borderColor: '#10b981',
-                    backgroundColor: 'transparent',
-                    borderWidth: 1.5, borderDash: [4, 4], yAxisID: 'yPercent',
-                    tension: 0.4, pointRadius: 0, spanGaps: true,
-                });
+                label: 'SOC (%)',
+                data: socData,
+                borderColor: '#10b981',
+                backgroundColor: 'transparent',
+                borderWidth: 1.5, borderDash: [4, 4], yAxisID: 'yPercent',
+                tension: 0.4, pointRadius: 0, spanGaps: true,
+            });
 
-            // Prediction curve (dotted orange, future only)
             const hasPrediction = predictionLine.some(v => v !== null);
             if (hasPrediction) {
                 datasets.push({
@@ -2284,12 +2063,7 @@
                     borderColor: 'rgba(245, 158, 11, 0.4)',
                     borderWidth: 2, borderDash: [4, 4], yAxisID: 'yPower',
                     pointRadius: 0, fill: false, spanGaps: true,
-                    segment: { borderDash: ctx2 => [4, 4] },
                 });
-            }
-
-            if (datasets.length === 0) {
-                datasets.push({ label: 'Žiadne dáta', data: [0], borderColor: '#6b7280', borderWidth: 1 });
             }
 
             elvoChart = new Chart(ctx, {
@@ -2299,37 +2073,22 @@
                     responsive: true, maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { display: true, position: 'top', labels: { color: '#9ca3af', font: { family: 'Plus Jakarta Sans', size: 10, weight: '700' }, padding: 12, usePointStyle: true, pointStyle: 'line', cursor: 'pointer' }, onClick: function(e, legendItem, legend) { const idx = legendItem.datasetIndex; const ci = legend.chart; const meta = ci.getDatasetMeta(idx); meta.hidden = meta.hidden === null ? !ci.data.datasets[idx].hidden : null; ci.update(); }, onHover: function(e, legendItem) { e.native.target.style.cursor = 'pointer'; } },
+                        legend: { display: true, position: 'top', labels: { color: '#9ca3af', font: { family: 'Plus Jakarta Sans', size: 10, weight: '700' }, padding: 12, usePointStyle: true, pointStyle: 'line' } },
                         tooltip: {
                             mode: 'index', intersect: false,
                             backgroundColor: 'rgba(10, 15, 30, 0.95)',
                             titleColor: '#f9fafb', bodyColor: '#d1d5db',
                             borderColor: 'rgba(99,102,241,0.3)', borderWidth: 1,
                             cornerRadius: 12, padding: 12,
-                            titleFont: { family: 'JetBrains Mono', size: 11, weight: '700' },
-                            bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
-                            bodySpacing: 5, usePointStyle: true,
                             callbacks: {
                                 label: function(ctx) {
                                     const v = ctx.parsed.y;
                                     if (ctx.dataset.label.includes('OKTE')) return 'OKTE: ' + v.toFixed(2) + ' €/MWh';
                                     if (ctx.dataset.label.includes('SOC')) return 'SOC: ' + v + '%';
-                                    if (ctx.dataset.label.includes('Predpoveď')) return 'Predpoveď: ' + v + ' W';
-                                    if (ctx.dataset.label.includes('Priemer')) return 'Priemer: ' + v + ' W';
                                     return ctx.dataset.label + ': ' + v + ' W';
                                 }
                             }
-                        },
-                        annotation: hasPrediction ? {
-                            annotations: {
-                                nowLine: {
-                                    type: 'line',
-                                    xMin: currentHHMM, xMax: currentHHMM,
-                                    borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderDash: [4, 4],
-                                    label: { content: 'TERAZ', display: true, position: 'start', color: '#6b7280', font: { size: 8 } }
-                                }
-                            }
-                        } : {}
+                        }
                     },
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 24, autoSkip: true } },
@@ -2351,16 +2110,8 @@
                     }
                 }
             });
-
-            // Badge
-            const badge = document.getElementById('chartBadge');
-            if (badge) {
-                const hasPred = predictionLine.some(v => v !== null);
-                badge.innerText = hasPred ? 'S PREDPOVEĎOU' : (okteData && okteData.range_type === '48h' ? '48 HODÍN' : '24 HODINY');
-            }
         }
 
-        // Auto-refresh OKTE + chart
         async function refreshDashboard() {
             const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
             const [telemetry, okte] = await Promise.all([
@@ -2372,25 +2123,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Populate devices list in Riadenie tab
-            populateMyDevices();
-            // Skryt relay sekciu ak neni zariadenie
-            const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids') || '[]') : [];
-            if (deviceIds.length === 0) {
-                const relays = document.getElementById('relaysSection');
-                if (relays) relays.classList.add('hidden');
-                document.getElementById('noDevicesHint').classList.remove('hidden');
-                document.getElementById('myDevicesList').classList.add('hidden');
-            } else {
-                document.getElementById('noDevicesHint').classList.add('hidden');
-                document.getElementById('myDevicesList').classList.remove('hidden');
-            }
-            // Load theme
-            if (localStorage.getItem('elvoTheme') === 'light') {
-                document.body.classList.add('light-mode');
-                const lbl = document.getElementById('themeLabel');
-                if (lbl) lbl.textContent = 'Tmavý režim';
-            }
             refreshDashboard();
             fetchTelemetry();
             fetchMeterData();
@@ -2398,40 +2130,6 @@
             setInterval(fetchMeterData, 10000);
             setInterval(refreshDashboard, 300000);
         });
-
-        function populateMyDevices() {
-            const list = document.getElementById('myDevicesList');
-            if (!list) return;
-            const devIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids') || '[]') : [];
-            const firstId = metaEl ? metaEl.getAttribute('data-device-id') : null;
-            // Build from PHP data in dropdown
-            const dropdownBtns = document.querySelectorAll('.station-dropdown-item');
-            let html = '';
-            dropdownBtns.forEach(btn => {
-                const onclick = btn.getAttribute('onclick') || '';
-                const idMatch = onclick.match(/selectActiveDevice\(this,\s*'([^']+)'/);
-                const nameMatch = btn.querySelector('span:nth-child(1) span');
-                if (idMatch && nameMatch) {
-                    const isActive = idMatch[1] === firstId;
-                    html += `<div onclick="selectActiveDevice(null,'${idMatch[1]}','${nameMatch.textContent}')" style="padding:12px;border-radius:12px;background:${isActive ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)'};border:1px solid ${isActive ? 'rgba(16,185,129,0.3)' : 'var(--border-card)'};cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:32px;height:32px;border-radius:8px;background:${isActive ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)'};display:flex;align-items:center;justify-content:center;">
-                                <i data-lucide="cpu" style="width:16px;height:16px;color:${isActive ? 'var(--accent-battery)' : 'var(--text-muted)'};"></i>
-                            </div>
-                            <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">${nameMatch.textContent}</div>
-                                <div style="font-size:9px;color:var(--text-muted);">${isActive ? 'Aktívne' : 'Kliknite pre aktiváciu'}</div>
-                            </div>
-                        </div>
-                        ${isActive ? '<span style="font-size:8px;font-weight:800;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,0.15);color:var(--accent-battery);">ONLINE</span>' : ''}
-                    </div>`;
-                }
-            });
-            if (html) {
-                list.innerHTML = html;
-                if (typeof lucide !== 'undefined') lucide.createIcons();
-            }
-        }
     </script>
 </body>
 </html>
