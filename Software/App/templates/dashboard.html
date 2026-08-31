@@ -1131,116 +1131,26 @@
                         </div>
                     </div>
 
-                    <!-- Inverters System Diagnostics Card (Zariadenia / Striedače) -->
+                    <!-- Inverters System Diagnostics Card (dynamic) -->
                     <div class="diagnostic-bus-card" id="invertersDiagContainer">
                         <div class="bus-header">
                             <span style="font-size:11px;font-weight:800;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
                                 <i data-lucide="layers" style="color:var(--accent-battery);width:14px;height:14px;"></i> Striedače &amp; Zbernica
                             </span>
-                            <span class="font-mono" style="font-size:9px;color:var(--accent-battery);font-weight:700;">RS485 OK</span>
+                            <span class="font-mono" id="busStatus" style="font-size:9px;color:var(--accent-battery);font-weight:700;">--</span>
                         </div>
-
-                        <!-- Inverter 1 -->
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <div class="inverter-status-row" onclick="toggleInverterDetails('invDetails1', 'invChevron1')">
-                                <div style="display:flex;align-items:center;gap:10px;">
-                                    <span class="pulse-dot online"></span>
-                                    <div style="display:flex;flex-direction:column;">
-                                        <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Solax X3 Hybrid</span>
-                                        <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 01</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:6px;">
-                                    <span class="font-mono" style="font-size:11px;font-weight:700;color:var(--accent-battery);">ONLINE</span>
-                                    <i data-lucide="chevron-down" id="invChevron1" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
-                                </div>
-                            </div>
-                            <!-- Inverter 1 Details -->
-                            <div id="invDetails1" class="inverter-details-box">
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--text-secondary);">Teplota striedača:</span>
-                                    <strong class="font-mono">42.8 °C</strong>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--text-secondary);">Účinnosť striedača:</span>
-                                    <strong class="font-mono" style="color:var(--accent-battery);">97.6%</strong>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--text-secondary);">Denná výroba:</span>
-                                    <strong class="font-mono">14.2 kWh</strong>
-                                </div>
-                            </div>
+                        <div id="invertersList">
+                            <!-- Dynamicky naplneny JavaScriptom -->
+                            <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:11px;">Načítavam zariadenia...</div>
                         </div>
-
-                        <!-- Inverter 2 -->
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <div class="inverter-status-row" onclick="toggleInverterDetails('invDetails2', 'invChevron2')">
-                                <div style="display:flex;align-items:center;gap:10px;">
-                                    <span class="pulse-dot online"></span>
-                                    <div style="display:flex;flex-direction:column;">
-                                        <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Solax X3 Aux</span>
-                                        <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 02</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:6px;">
-                                    <span class="font-mono" style="font-size:11px;font-weight:700;color:var(--accent-battery);">ONLINE</span>
-                                    <i data-lucide="chevron-down" id="invChevron2" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
-                                </div>
-                            </div>
-                            <!-- Inverter 2 Details -->
-                            <div id="invDetails2" class="inverter-details-box">
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--text-secondary);">Teplota striedača:</span>
-                                    <strong class="font-mono">39.2 °C</strong>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--text-secondary);">Účinnosť striedača:</span>
-                                    <strong class="font-mono" style="color:var(--accent-battery);">98.1%</strong>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--text-secondary);">Denná výroba:</span>
-                                    <strong class="font-mono">8.6 kWh</strong>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Inverter 3 -->
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <div class="inverter-status-row" id="invRow3" onclick="toggleInverterDetails('invDetails3', 'invChevron3')">
-                                <div style="display:flex;align-items:center;gap:10px;">
-                                    <span class="pulse-dot offline" id="invDot3"></span>
-                                    <div style="display:flex;flex-direction:column;">
-                                        <span style="font-size:12px;font-weight:800;color:var(--text-primary);">Backup Charger</span>
-                                        <span class="font-mono" style="font-size:9px;color:var(--text-muted);">MODBUS ID: 03</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:6px;">
-                                    <span class="font-mono" id="invStatusLabel3" style="font-size:11px;font-weight:700;color:var(--accent-warn);">BEZ ODOZVY</span>
-                                    <i data-lucide="chevron-down" id="invChevron3" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
-                                </div>
-                            </div>
-                            <!-- Inverter 3 Details -->
-                            <div id="invDetails3" class="inverter-details-box">
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--text-secondary);">Teplota striedača:</span>
-                                    <strong class="font-mono">--.- °C</strong>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--text-secondary);">Dôvod výpadku:</span>
-                                    <strong class="font-mono" style="color:var(--accent-warn);">Timeout RS485</strong>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Dynamic communication diagnostic info -->
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255, 255, 255, 0.05);padding-top:12px;font-size:10px;color:var(--text-secondary);">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:12px;font-size:10px;color:var(--text-secondary);">
                             <div style="display:flex;flex-direction:column;gap:2px;">
                                 <span>Latencia zbernice:</span>
-                                <strong class="font-mono" style="color:var(--text-primary);">12 ms</strong>
+                                <strong class="font-mono" style="color:var(--text-primary);" id="busLatency">-- ms</strong>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:2px;text-align:right;">
-                                <span>Chybovosť paketov:</span>
-                                <strong class="font-mono" style="color:var(--accent-battery);">0.00%</strong>
+                                <span>Výroba dnes:</span>
+                                <strong class="font-mono" style="color:var(--accent-battery);" id="dailyProduction">-- kWh</strong>
                             </div>
                         </div>
                     </div>
@@ -1602,15 +1512,57 @@
             const detailBox = document.getElementById(detailsId);
             const chevron = document.getElementById(chevronId);
             if (!detailBox) return;
-
             const isExpanded = detailBox.classList.toggle('expanded');
-            if (chevron) {
-                if (isExpanded) {
-                    chevron.classList.add('rotated');
-                } else {
-                    chevron.classList.remove('rotated');
-                }
-            }
+            if (chevron) chevron.classList.toggle('rotated', isExpanded);
+        }
+
+        // Build inverters list from device data
+        function updateInvertersList(data) {
+            const container = document.getElementById('invertersList');
+            if (!container) return;
+            const busStatus = document.getElementById('busStatus');
+            const busLatency = document.getElementById('busLatency');
+            const dailyProd = document.getElementById('dailyProduction');
+
+            const brand = data.brand_id || data.brand || '';
+            const model = data.model_id || data.model || '';
+            const name = data.name || brand + ' ' + model;
+            const temp = data.temp || 0;
+            const power = data.total_live_power || 0;
+            const soc = data.avg_live_soc || 0;
+            const isOnline = power > 0 || soc > 0;
+            const totalKwh = data.total_kwh || 0;
+
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <div class="inverter-status-row" onclick="toggleInverterDetails('invD1', 'invC1')">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span class="pulse-dot ${isOnline ? 'online' : 'offline'}"></span>
+                            <div style="display:flex;flex-direction:column;">
+                                <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${name || 'Zariadenie'}</span>
+                                <span class="font-mono" style="font-size:9px;color:var(--text-muted);">SN: ${data.serial_number || '---'}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span class="font-mono" style="font-size:11px;font-weight:700;color:${isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)'};">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                            <i data-lucide="chevron-down" id="invC1" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
+                        </div>
+                    </div>
+                    <div id="invD1" class="inverter-details-box">
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon FVE:</span><strong class="font-mono">${Math.round(power)} W</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Teplota:</span><strong class="font-mono">${temp.toFixed(1)} °C</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC batérie:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(soc)}%</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Denná výroba:</span><strong class="font-mono">${totalKwh.toFixed(1)} kWh</strong></div>
+                    </div>
+                </div>
+            `;
+
+            if (busStatus) busStatus.textContent = isOnline ? 'RS485 OK' : 'OFFLINE';
+            if (busStatus) busStatus.style.color = isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)';
+            if (busLatency) busLatency.textContent = isOnline ? '12 ms' : '-- ms';
+            if (dailyProd) dailyProd.textContent = totalKwh.toFixed(1) + ' kWh';
+
+            lucide.createIcons();
         }
 
         // Local browser renaming trigger
@@ -1637,22 +1589,7 @@
             }
         })();
 
-        // Check if there is only 1 inverter connected, if yes, auto-expand forever
-        (function handleSingleInverterAutoExpand() {
-            const container = document.getElementById('invertersDiagContainer');
-            if (!container) return;
-            const rows = container.querySelectorAll('.inverter-status-row');
-            if (rows.length === 1) {
-                const firstDetails = container.querySelector('.inverter-details-box');
-                const firstChevron = container.querySelector('.inv-chevron');
-                if (firstDetails) {
-                    firstDetails.classList.add('expanded');
-                    // Lock click interaction
-                    rows[0].removeAttribute('onclick');
-                }
-                if (firstChevron) firstChevron.classList.add('hidden');
-            }
-        })();
+
 
         function switchTab(tabId) {
             const sections = {
@@ -1743,30 +1680,14 @@
                     }
                 }
 
-                // Simulate/Bind inverter 3 communication status
-                const invRow3 = document.getElementById('invRow3');
-                const invDot3 = document.getElementById('invDot3');
-                const invStatusLabel3 = document.getElementById('invStatusLabel3');
-                
-                if (data.grid_outage || data.avg_live_soc < 20) {
-                    if (invDot3) invDot3.className = "pulse-dot offline";
-                    if (invStatusLabel3) {
-                        invStatusLabel3.innerText = "CHYBA ZÁPISU";
-                        invStatusLabel3.style.color = "var(--accent-warn)";
-                    }
-                } else {
-                    if (invDot3) invDot3.className = "pulse-dot online";
-                    if (invStatusLabel3) {
-                        invStatusLabel3.innerText = "ONLINE";
-                        invStatusLabel3.style.color = "var(--accent-battery)";
-                    }
-                }
-
                 lucide.createIcons();
 
                 document.getElementById('flowFveVal').innerText = `${Math.round(data.total_live_power)} W`;
                 document.getElementById('flowBatVal').innerText = `${Math.round(data.avg_live_soc)}%`;
                 document.getElementById('flowHomeVal').innerText = `${Math.round(data.consumption || 0)} W`;
+
+                // Update inverter diagnostics
+                updateInvertersList(data);
 
                 document.getElementById('dashBatteryBar').style.width = `${Math.round(data.avg_live_soc)}%`;
                 document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
