@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Riadiace centrum | Smart EMS</title>
+    <title>ElvoControl</title>
     <link class="brand-favicon" rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
     <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -92,10 +92,10 @@
         .header-inner {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 0 24px;
-            height: 80px;
+            padding: 0 20px;
+            height: 64px;
             display: grid;
-            grid-template-columns: 1.2fr auto 1.2fr;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
         }
 
@@ -362,15 +362,15 @@
         .nav-tab {
             background: none;
             border: none;
-            border-bottom: 3px solid transparent;
-            padding: 18px 22px;
-            font-size: 12px;
+            border-bottom: 2px solid transparent;
+            padding: 14px 18px;
+            font-size: 11px;
             font-weight: 800;
             color: var(--text-secondary);
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             letter-spacing: 0.3px;
             transition: all 0.2s;
         }
@@ -890,118 +890,84 @@
 
     <!-- Header -->
     <header class="header">
-        <div class="header-inner">
+        <div class="header-inner" style="grid-template-columns: auto 1fr auto; height: 64px;">
             
-            <!-- Brand Left: Elvosolar Logo + Smart EMS Tagline -->
-            <div class="header-left">
-                <a href="https://elvosolar.sk/" target="_blank" class="brand-logo-link">
-                    <img src="/templates/ElvosolarLogo.png" alt="Elvosolar" class="brand-logo-img-left">
-                    <div class="brand-text-container">
-                        <span class="brand-title">Elvosolar</span>
-                        <span class="brand-tagline">SMART EMS PLATFORM</span>
-                    </div>
-                </a>
+            <!-- Logo -->
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:linear-gradient(135deg,#10b981,#3b82f6);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(16,185,129,0.3);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div style="display:flex;flex-direction:column;">
+                    <span style="font-size:15px;font-weight:900;color:var(--text-primary);line-height:1.2;">ElvoControl</span>
+                    <span style="font-size:8px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent-battery);font-family:'JetBrains Mono',monospace;">SMART EMS</span>
+                </div>
             </div>
 
-            <!-- Centered Device/Station Permanent Dropdown Widget -->
-            <div class="header-brand-center">
+            <!-- Center: Device Name -->
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
                 <div class="station-dropdown-container">
-                    <button id="deviceSelectDropdownBtn" class="sys-indicator station-dropdown-trigger" style="padding: 10px 18px; border-radius: 16px; gap: 8px;" onclick="toggleDeviceDropdown(event)">
-                        <i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-battery);"></i>
-                        <span id="singleDeviceLabel" style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Biok Box v4</span>
-                        <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
+                    <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.2s;">
+                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);">ElvoControll</span>
+                        <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
                     </button>
                     <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
-                        <!-- Devices Listing loop -->
                         <?php if (isset($devices) && count($devices) > 0): ?>
                             <?php foreach ($devices as $dev): ?>
                                 <button onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" class="station-dropdown-item">
                                     <span style="display:flex;align-items:center;gap:8px;">
-                                        <i data-lucide="box" style="width:14px;height:14px;"></i>
+                                        <i data-lucide="cpu" style="width:14px;height:14px;"></i>
                                         <span><?php echo htmlspecialchars($dev['name']); ?></span>
                                     </span>
                                     <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
                                 </button>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <!-- Fallback default unit -->
-                            <button onclick="selectActiveDevice(this, '1', 'Biok Box v4')" class="station-dropdown-item">
+                            <button onclick="selectActiveDevice(this, '1', 'ElvoControll')" class="station-dropdown-item">
                                 <span style="display:flex;align-items:center;gap:8px;">
-                                    <i data-lucide="box" style="width:14px;height:14px;"></i>
-                                    <span>Biok Box v4</span>
+                                    <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+                                    <span>ElvoControll</span>
                                 </span>
-                                <span class="sn-badge">SN: 843102</span>
+                                <span class="sn-badge">SN: ---</span>
                             </button>
                         <?php endif; ?>
-
                         <div style="height:1px;background:var(--border-card);margin:6px 0;"></div>
-                        
-                        <!-- Permanent "Párovať nové zariadenie" action button -->
-                        <button onclick="pairNewDevice(event)" class="station-dropdown-item" style="color: var(--accent-battery);">
-                            <span style="display:flex;align-items:center;gap:8px; font-weight: 800;">
+                        <button onclick="pairNewDevice(event)" class="station-dropdown-item" style="color:var(--accent-battery);">
+                            <span style="display:flex;align-items:center;gap:8px;font-weight:800;">
                                 <i data-lucide="plus-circle" style="width:14px;height:14px;color:var(--accent-battery);"></i>
-                                Párovať nové zariadenie
+                                Pridať zariadenie
                             </span>
                         </button>
                     </div>
                 </div>
-
-                <!-- Local Renaming Brush Button next to dropdown -->
-                <button onclick="triggerLocalRename(event)" class="rename-btn" style="margin-left: 4px;" title="Premenovať lokálne">
-                    <i data-lucide="brush" style="width:13px;height:13px;"></i>
-                </button>
             </div>
 
-            <!-- Right Side Dynamic Indicator Panel -->
-            <div class="header-right">
-                
-                <!-- System Backup SOC -->
-                <div class="sys-indicator">
-                    <i id="deviceBatteryIcon" data-lucide="battery" style="width:14px;height:14px;"></i>
-                    <span style="opacity: 0.7; font-size:9px; text-transform:uppercase;">Sys:</span>
+            <!-- Right: User -->
+            <div style="display:flex;align-items:center;gap:8px;">
+                <!-- Online indicator -->
+                <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);font-size:10px;font-weight:700;color:var(--accent-battery);">
+                    <span class="pulse-dot online" style="width:6px;height:6px;"></span>
                     <span id="deviceBatterySoc" class="font-mono">--%</span>
                 </div>
-
-                <!-- Adaptive Connection Indicator -->
-                <div class="sys-indicator connection-header-pill" id="primaryConnectionIndicator">
-                    <i id="connectionTypeIcon" data-lucide="wifi" style="width:14px;height:14px;"></i>
-                    <span id="connectionTypeText" class="font-mono">Wi-Fi</span>
-                    <div id="wifiBars" class="wifi-signal-bars">
-                        <span class="bar bar-1"></span>
-                        <span class="bar bar-2"></span>
-                        <span class="bar bar-3"></span>
-                        <span class="bar bar-4"></span>
-                    </div>
-                </div>
-
-                <!-- Profile trigger dropdown -->
+                <!-- User avatar -->
                 <div class="user-profile-container">
-                    <button id="userMenuBtn" class="sys-indicator user-trigger-btn" onclick="toggleUserDropdown(event)">
-                        <i data-lucide="user" style="width:13px;height:13px;"></i>
-                        <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Adam'); ?></span>
-                        <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:0.6;"></i>
+                    <button id="userMenuBtn" onclick="toggleUserDropdown(event)" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);cursor:pointer;font-size:12px;font-weight:700;color:var(--text-primary);">
+                        <div style="width:24px;height:24px;background:linear-gradient(135deg,#6366f1,#3b82f6);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:10px;font-weight:900;color:white;"><?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?></span>
+                        </div>
+                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
                     </button>
-
                     <div id="userDropdownMenu" class="user-dropdown-card hidden">
                         <button onclick="toggleTheme()" class="user-dropdown-btn">
                             <i data-lucide="sun" style="width:14px;height:14px;"></i>
                             <span id="themeLabel">Svetlý režim</span>
                         </button>
-                        <button onclick="sendVerificationEmail()" class="user-dropdown-btn">
-                            <i data-lucide="mail" style="width:14px;height:14px;"></i>
-                            <span>Overiť e-mail</span>
-                        </button>
-                        <button onclick="requestPushPermission()" class="user-dropdown-btn">
-                            <i data-lucide="bell" style="width:14px;height:14px;"></i>
-                            <span>Notifikácie</span>
-                        </button>
-                        <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
                         <a href="<?php echo $base_path; ?>/profile" style="text-decoration:none;">
                             <button class="user-dropdown-btn">
                                 <i data-lucide="settings" style="width:14px;height:14px;"></i>
-                                <span>Nastavenia profilu</span>
+                                <span>Nastavenia</span>
                             </button>
                         </a>
+                        <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
                         <a href="<?php echo $base_path; ?>/logout" style="text-decoration:none;">
                             <button class="user-dropdown-btn" style="color:var(--accent-warn);">
                                 <i data-lucide="log-out" style="width:14px;height:14px;"></i>
@@ -1010,7 +976,6 @@
                         </a>
                     </div>
                 </div>
-
             </div>
         </div>
     </header>
