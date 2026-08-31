@@ -457,6 +457,98 @@ function get_slovak_day_info_php($date_str = null) {
     ];
 }
 
+// --- OKTE SPOT CENY - realne data z API ---
+function fetch_okte_prices($date_from = null, $date_to = null) {
+    if (!$date_from) $date_from = date('Y-m-d');
+    if (!$date_to) $date_to = date('Y-m-d');
+    
+    $cache_file = __DIR__ . '/cache_okte_' . $date_from . '_' . $date_to . '.json';
+    
+    // Cache na 15 minut
+    if (file_exists($cache_file) && (time() - filemtime($cache_file)) < 900) {
+        return json_decode(file_get_contents($cache_file), true);
+    }
+    
+    $url = 'https://isot.okte.sk/api/v1/dam/results?deliveryDayFrom=' . $date_from . '&deliveryDayTo=' . $date_to;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => ['Accept: application/json'],
+    ]);
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($http_code !== 200 || !$response) {
+        error_log("[OKTE] API zlyhalo ($http_code)");
+        return null;
+    }
+    
+    $data = json_decode($response, true);
+    if (!is_array($data)) return null;
+    
+    // Transformuj na format pre graf: [{hour: '00:00', price: 85.5}, ...]
+    $prices = [];
+    $total = 0;
+    $count = 0;
+    $min = PHP_INT_MAX;
+    $max = PHP_INT_MIN;
+    
+    foreach ($data as $entry) {
+        $price = $entry['price'] ?? null;
+        if ($price === null) continue;
+        
+        $delivery_start = $entry['deliveryStart'] ?? '';
+        if (!$delivery_start) continue;
+        
+        $ts = strtotime($delivery_start);
+        $hour = date('H:i', $ts);
+        $price_eur = round($price, 2); // OKTE API vracia priamo v EUR/MWh
+        
+        $prices[] = [
+            'hour' => $hour,
+            'price' => $price_eur,
+            'timestamp' => $ts,
+            'period' => $entry['period'] ?? 0,
+        ];
+        
+        $total += $price_eur;
+        $count++;
+        if ($price_eur < $min) $min = $price_eur;
+        if ($price_eur > $max) $max = $price_eur;
+    }
+    
+    $result = [
+        'date_from' => $date_from,
+        'date_to' => $date_to,
+        'prices' => $prices,
+        'avg' => $count > 0 ? round($total / $count, 2) : 0,
+        'min' => $count > 0 ? $min : 0,
+        'max' => $count > 0 ? $max : 0,
+        'count' => $count,
+        'fetched_at' => date('c'),
+    ];
+    
+    @file_put_contents($cache_file, json_encode($result, JSON_PRETTY_PRINT));
+    return $result;
+}
+
+// Automaticke nacitanie OKTE pri starte (pozadi)
+function ensure_okte_cache() {
+    $today = date('Y-m-d');
+    $tomorrow = date('Y-m-d', strtotime('+1 day'));
+    $yesterday = date('Y-m-d', strtotime('-1 day'));
+    
+    // Dnes + zajtra
+    fetch_okte_prices($today, $tomorrow);
+    // Vcera (ak este neni)
+    $yesterday_cache = __DIR__ . '/cache_okte_' . $yesterday . '_' . $yesterday . '.json';
+    if (!file_exists($yesterday_cache)) {
+        fetch_okte_prices($yesterday, $yesterday);
+    }
+}
+
 function get_device_ai_cache_file($device_id) {
     return __DIR__ . '/cache_ai_device_' . intval($device_id) . '.json';
 }
@@ -1175,6 +1267,12 @@ elseif (preg_match('#^/api/device/([0-9]+)/telemetry$#', $path, $matches) && $me
         'manual_override' => $device['manual_override'] ?? 'AUTO',
         'temp' => $latest ? (float)$latest['temp'] : 25.0,
         'freq' => $latest ? (float)$latest['freq'] : 50.0,
+        'connection_type' => $device['connection_type'] ?? 'wifi',
+        'wifi_signal' => (float)($device['wifi_signal'] ?? 84),
+        'ethernet_active' => ($device['connection_type'] ?? '') === 'ethernet',
+        'grid_import_w' => 0.0,
+        'grid_export_w' => 0.0,
+        'consumption' => (float)($device['house_consumption_w'] ?? 0),
         'ai_info' => $ai_state
     ]);
 }
@@ -1928,8 +2026,38 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     send_json(['status' => 'success']);
 }
 
+// --- OKTE SPOT CENY API ---
+elseif ($path === '/api/okte/prices' && $method === 'GET') {
+    $hour = (int)date('H');
+    // Po 13:00 - ukaz 48h (dnes + zajtra), inak 24h (vcera + dnes)
+    if ($hour >= 13) {
+        $from = date('Y-m-d');
+        $to = date('Y-m-d', strtotime('+1 day'));
+    } else {
+        $from = date('Y-m-d', strtotime('-1 day'));
+        $to = date('Y-m-d', strtotime('+1 day'));
+    }
+    // Allow manual override
+    if (!empty($_GET['from'])) $from = $_GET['from'];
+    if (!empty($_GET['to'])) $to = $_GET['to'];
+    
+    $data = fetch_okte_prices($from, $to);
+    if ($data) {
+        // Pridaj rozsah pre frontend
+        $data['range_type'] = ($hour >= 13) ? '48h' : '24h';
+        send_json(['status' => 'success', 'okte' => $data]);
+    } else {
+        send_json(['status' => 'error', 'message' => 'OKTE API nedostupne'], 503);
+    }
+}
+
 // --- HEALTHCHECK (pre Railway - NIKDY NEBLOKUJE) ---
 elseif ($path === '/healthcheck' || $path === '/health') {
+    // Nacitaj OKTE cache na pozadi pri prvej poziadavke
+    if (!isset($_GET['_okte_loaded'])) {
+        @ignore_user_abort(true);
+        ensure_okte_cache();
+    }
     send_json(['status' => 'ok', 'time' => date('c')]);
 }
 
