@@ -1044,31 +1044,21 @@
                         </div>
                     </div>
 
-                    <!-- OKTE Spot Price Bar Chart -->
+                    <!-- Combined Analytics Chart -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="bar-chart-3"></i> OKTE Spot Ceny</span>
-                            <span id="okteChartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">24 HODINY</span>
+                            <span class="card-title-styled"><i data-lucide="line-chart"></i> Prehľad Výkonu, Cien a Predpovede</span>
+                            <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">INTERAKTÍVNE</span>
                         </div>
-                        <div style="position:relative;height:220px;width:100%;">
-                            <canvas id="okteBarChart"></canvas>
+                        <div style="position:relative;height:320px;width:100%;">
+                            <canvas id="elvoChart"></canvas>
                         </div>
-                        <div style="display:flex;gap:16px;margin-top:12px;font-size:10px;color:var(--text-muted);">
-                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#10b981;"></span> Lacné (&lt;50€)</span>
-                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#f59e0b;"></span> Normálne (50-100€)</span>
-                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#3b82f6;"></span> Vyššie (100-150€)</span>
-                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#f43f5e;"></span> Špička (&gt;150€)</span>
-                        </div>
-                    </div>
-
-                    <!-- Device Telemetry Chart -->
-                    <div class="glass-card" id="deviceChartCard">
-                        <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="activity"></i> Výroba a Batéria</span>
-                            <span style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-battery);background:rgba(16,185,129,0.12);padding:4px 8px;border-radius:6px;">LIVE</span>
-                        </div>
-                        <div style="position:relative;height:200px;width:100%;">
-                            <canvas id="deviceTelemetryChart"></canvas>
+                        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:9px;color:var(--text-muted);">
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:2px;background:#f59e0b;border-radius:2px;"></span> FVE výroba</span>
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:2px;background:rgba(245,158,11,0.35);border-radius:2px;border-top:1px dashed #f59e0b;"></span> Priemer FVE</span>
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:2px;background:#818cf8;border-radius:2px;"></span> OKTE cena</span>
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:2px;background:rgba(245,158,11,0.25);border-radius:2px;border-top:2px dotted #f59e0b;"></span> Predpoveď osvitu</span>
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:2px;background:#10b981;border-radius:2px;border-top:1px dashed #10b981;"></span> SOC batérie</span>
                         </div>
                     </div>
 
@@ -1574,7 +1564,7 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
-        let elvoChart = null; // legacy, replaced by okteChart + deviceChart
+
 
         function toggleDeviceDropdown(e) {
             e.stopPropagation();
@@ -1692,9 +1682,8 @@
 
             lucide.createIcons();
 
-            if (tabId === 'dashboard') {
-                if (okteChart) okteChart.resize();
-                if (deviceChart) deviceChart.resize();
+            if (tabId === 'dashboard' && elvoChart) {
+                elvoChart.resize();
             }
         }
 
@@ -1794,18 +1783,24 @@
                     gridLabel.innerText = "Pripojené k distribučnej sieti — Systém prenáša prebytky";
                 }
 
-                // Update device chart if it exists
-                if (deviceChart && deviceChart.data && deviceChart.data.labels) {
-                    const now = new Date().toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-                    deviceChart.data.labels.push(now);
-                    deviceChart.data.datasets[0].data.push(Math.round(data.total_live_power));
-                    deviceChart.data.datasets[1].data.push(Math.round(data.total_live_power > 0 ? data.total_live_power : 0));
-                    deviceChart.data.datasets[2].data.push(Math.round(data.avg_live_soc));
-                    if (deviceChart.data.labels.length > 48) {
-                        deviceChart.data.labels.shift();
-                        deviceChart.data.datasets.forEach(ds => ds.data.shift());
+                // Update live chart if it exists (FVE dataset)
+                if (elvoChart && elvoChart.data && elvoChart.data.datasets) {
+                    // Find FVE dataset (by label)
+                    const fveDs = elvoChart.data.datasets.find(ds => ds.label && ds.label.includes('FVE'));
+                    if (fveDs) {
+                        const now = new Date().toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+                        elvoChart.data.labels.push(now);
+                        fveDs.data.push(Math.round(data.total_live_power));
+                        // Also push nulls for other datasets to keep alignment
+                        elvoChart.data.datasets.forEach(ds => {
+                            if (ds !== fveDs) ds.data.push(null);
+                        });
+                        if (elvoChart.data.labels.length > 96) {
+                            elvoChart.data.labels.shift();
+                            elvoChart.data.datasets.forEach(ds => ds.data.shift());
+                        }
+                        elvoChart.update('none');
                     }
-                    deviceChart.update('none');
                 }
 
             } catch (err) {}
@@ -2095,217 +2090,223 @@
             }
             // Do 13:00 - ukaz 24h (vcera + dnes)
             return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1), to: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) };
-        }        let okteChart = null;
-        let deviceChart = null;
+        }        let elvoChart = null;
 
-        function getOkteBarColor(price) {
-            if (price < 50) return '#10b981';
-            if (price < 100) return '#f59e0b';
-            if (price < 150) return '#3b82f6';
-            return '#f43f5e';
-        }
-
-        function initOkteBarChart(okteData) {
-            const ctx = document.getElementById('okteBarChart');
+        function initCombinedChart(data, okteData) {
+            const ctx = document.getElementById('elvoChart');
             if (!ctx) return;
-            if (okteChart) okteChart.destroy();
+            if (elvoChart) elvoChart.destroy();
 
-            const hasData = okteData && okteData.prices && okteData.prices.length > 0;
+            const history = data && data.history ? data.history : [];
+            const hasDevice = history.length > 0;
+            const hasOkte = okteData && okteData.prices && okteData.prices.length > 0;
             const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const currentHHMM = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
 
+            // Build unified labels from OKTE (00:00 to 23:45)
             let labels = [];
-            let prices = [];
-            let barColors = [];
+            let oktePrices = [];
+            let predictionLine = []; // Predpoved osvitu (watt z krivky)
 
-            if (hasData) {
+            if (hasOkte) {
                 okteData.prices.forEach(p => {
-                    // Parse HH:MM
-                    const parts = p.hour.split(':');
-                    const pMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
                     labels.push(p.hour);
-                    prices.push(p.price);
-                    barColors.push(getOkteBarColor(p.price));
+                    oktePrices.push(p.price);
+                    // Simple prediction: OKTE price as proxy for irradiance pattern
+                    predictionLine.push(null);
                 });
             }
 
-            if (labels.length === 0) { labels = ['--']; prices = [0]; barColors = ['#6b7280']; }
+            // Map device data onto OKTE timeline
+            let fveData = [];
+            let socData = [];
+            let avgFveLine = [];
 
-            // Average line
-            const avg = okteData ? okteData.avg : 0;
-            const avgLine = prices.map(() => avg);
+            if (hasDevice && hasOkte) {
+                fveData = labels.map(l => {
+                    const match = history.find(h => {
+                        const d = new Date(h.timestamp * 1000 || h.timestamp);
+                        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') === l;
+                    });
+                    return match ? (match.power_ac || 0) : null;
+                });
+                socData = labels.map(l => {
+                    const match = history.find(h => {
+                        const d = new Date(h.timestamp * 1000 || h.timestamp);
+                        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') === l;
+                    });
+                    return match ? (match.battery_soc || 0) : null;
+                });
+            } else if (hasDevice) {
+                labels = history.map(h => {
+                    const d = new Date(h.timestamp * 1000 || h.timestamp);
+                    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+                });
+                fveData = history.map(h => h.power_ac || 0);
+                socData = history.map(h => h.battery_soc || 0);
+                oktePrices = [];
+            }
 
-            okteChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'OKTE (€/MWh)',
-                            data: prices,
-                            backgroundColor: barColors,
-                            borderRadius: 3,
-                            borderSkipped: false,
-                            barPercentage: 0.85,
-                            categoryPercentage: 0.9,
-                        },
-                        {
-                            label: 'Priemer',
-                            data: avgLine,
-                            type: 'line',
-                            borderColor: 'rgba(255,255,255,0.25)',
-                            borderWidth: 1.5,
-                            borderDash: [6, 4],
-                            pointRadius: 0,
-                            fill: false,
-                            order: 0,
-                        }
-                    ]
-                },
+            // Average FVE line
+            const validFve = fveData.filter(v => v !== null);
+            const avgFve = validFve.length > 0 ? validFve.reduce((a,b)=>a+b,0) / validFve.length : 0;
+            avgFveLine = fveData.map(v => v !== null ? Math.round(avgFve) : null);
+
+            // Generate prediction curve (solar bell curve based on history pattern)
+            // Only for hours AFTER current time
+            if (hasOkte && hasDevice && validFve.length > 3) {
+                const maxFve = Math.max(...validFve);
+                predictionLine = labels.map((l, i) => {
+                    const parts = l.split(':');
+                    const hour = parseInt(parts[0]) + parseInt(parts[1]) / 60;
+                    // Solar bell: peak at 13:00, zero before 6 and after 20
+                    if (hour < 5.5 || hour > 20.5) return null;
+                    // Check if this is in the future
+                    if (l <= currentHHMM && fveData[i] !== null) return null; // Past - real data exists
+                    const peak = 13;
+                    const sigma = 4.5;
+                    const solar = maxFve * Math.exp(-0.5 * Math.pow((hour - peak) / sigma, 2));
+                    return Math.round(solar);
+                });
+            }
+
+            if (labels.length === 0) labels = ['--'];
+
+            const datasets = [];
+
+            // OKTE prices (purple line)
+            if (hasOkte) {
+                datasets.push({
+                    label: 'OKTE Spot (€/MWh)',
+                    data: oktePrices,
+                    borderColor: '#818cf8',
+                    backgroundColor: 'rgba(129, 140, 248, 0.04)',
+                    borderWidth: 2, yAxisID: 'yPrice', tension: 0.4, fill: true,
+                    pointRadius: 0, pointHoverRadius: 4,
+                });
+            }
+
+            // FVE production (orange)
+            if (hasDevice) {
+                datasets.push({
+                    label: 'FVE Výroba (W)',
+                    data: fveData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.06)',
+                    borderWidth: 2.5, yAxisID: 'yPower', tension: 0.4, fill: true,
+                    pointRadius: 0, pointHoverRadius: 4, spanGaps: true,
+                });
+                datasets.push({
+                    label: 'Priemer FVE',
+                    data: avgFveLine,
+                    borderColor: 'rgba(245, 158, 11, 0.35)',
+                    borderWidth: 1.5, borderDash: [8, 4], yAxisID: 'yPower',
+                    pointRadius: 0, fill: false, spanGaps: true,
+                });
+                datasets.push({
+                    label: 'SOC (%)',
+                    data: socData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5, borderDash: [4, 4], yAxisID: 'yPercent',
+                    tension: 0.4, pointRadius: 0, spanGaps: true,
+                });
+            }
+
+            // Prediction curve (dotted orange, future only)
+            const hasPrediction = predictionLine.some(v => v !== null);
+            if (hasPrediction) {
+                datasets.push({
+                    label: 'Predpoveď osvitu',
+                    data: predictionLine,
+                    borderColor: 'rgba(245, 158, 11, 0.4)',
+                    borderWidth: 2, borderDash: [4, 4], yAxisID: 'yPower',
+                    pointRadius: 0, fill: false, spanGaps: true,
+                    segment: { borderDash: ctx2 => [4, 4] },
+                });
+            }
+
+            if (datasets.length === 0) {
+                datasets.push({ label: 'Žiadne dáta', data: [0], borderColor: '#6b7280', borderWidth: 1 });
+            }
+
+            elvoChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            mode: 'index', intersect: false,
                             backgroundColor: 'rgba(10, 15, 30, 0.95)',
-                            titleColor: '#f9fafb',
-                            bodyColor: '#d1d5db',
-                            borderColor: 'rgba(99,102,241,0.3)',
-                            borderWidth: 1,
-                            cornerRadius: 10,
-                            padding: 10,
+                            titleColor: '#f9fafb', bodyColor: '#d1d5db',
+                            borderColor: 'rgba(99,102,241,0.3)', borderWidth: 1,
+                            cornerRadius: 12, padding: 12,
                             titleFont: { family: 'JetBrains Mono', size: 11, weight: '700' },
                             bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+                            bodySpacing: 5, usePointStyle: true,
                             callbacks: {
                                 label: function(ctx) {
-                                    if (ctx.datasetIndex === 0) return ctx.parsed.y.toFixed(2) + ' EUR/MWh';
-                                    return 'Priemer: ' + ctx.parsed.y.toFixed(2) + ' EUR/MWh';
+                                    const v = ctx.parsed.y;
+                                    if (ctx.dataset.label.includes('OKTE')) return 'OKTE: ' + v.toFixed(2) + ' €/MWh';
+                                    if (ctx.dataset.label.includes('SOC')) return 'SOC: ' + v + '%';
+                                    if (ctx.dataset.label.includes('Predpoveď')) return 'Predpoveď: ' + v + ' W';
+                                    if (ctx.dataset.label.includes('Priemer')) return 'Priemer: ' + v + ' W';
+                                    return ctx.dataset.label + ': ' + v + ' W';
                                 }
                             }
-                        }
+                        },
+                        annotation: hasPrediction ? {
+                            annotations: {
+                                nowLine: {
+                                    type: 'line',
+                                    xMin: currentHHMM, xMax: currentHHMM,
+                                    borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderDash: [4, 4],
+                                    label: { content: 'TERAZ', display: true, position: 'start', color: '#6b7280', font: { size: 8 } }
+                                }
+                            }
+                        } : {}
                     },
                     scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 8 }, maxTicksLimit: 24, autoSkip: true }
-                        },
-                        y: {
-                            position: 'left',
+                        x: { grid: { display: false }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 24, autoSkip: true } },
+                        yPower: {
+                            type: 'linear', position: 'left', display: hasDevice,
                             grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: '#f59e0b', font: { family: 'JetBrains Mono', size: 9 }, callback: v => (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) + 'W' }
+                        },
+                        yPercent: {
+                            type: 'linear', position: 'right', display: hasDevice,
+                            grid: { display: false }, min: 0, max: 100,
+                            ticks: { color: '#10b981', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '%' }
+                        },
+                        yPrice: {
+                            type: 'linear', position: hasDevice ? 'right' : 'left', display: hasOkte,
+                            grid: { display: false },
                             ticks: { color: '#818cf8', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '€' }
                         }
                     }
                 }
             });
 
-            // Update badge
-            const badge = document.getElementById('okteChartBadge');
-            if (badge && okteData) badge.innerText = okteData.range_type === '48h' ? '48 HODÍN' : '24 HODINY';
-        }
-
-        function initDeviceTelemetryChart(data) {
-            const ctx = document.getElementById('deviceTelemetryChart');
-            if (!ctx) return;
-            if (deviceChart) deviceChart.destroy();
-
-            const history = data && data.history ? data.history : [];
-            const hasData = history.length > 0;
-
-            if (!hasData) {
-                document.getElementById('deviceChartCard').classList.add('hidden');
-                return;
+            // Badge
+            const badge = document.getElementById('chartBadge');
+            if (badge) {
+                const hasPred = predictionLine.some(v => v !== null);
+                badge.innerText = hasPred ? 'S PREDPOVEĎOU' : (okteData && okteData.range_type === '48h' ? '48 HODÍN' : '24 HODINY');
             }
-            document.getElementById('deviceChartCard').classList.remove('hidden');
-
-            const labels = history.map(h => {
-                const d = new Date(h.timestamp * 1000 || h.timestamp);
-                return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-            });
-            const fve = history.map(h => h.power_ac || 0);
-            const soc = history.map(h => h.battery_soc || 0);
-
-            const avgFve = fve.length > 0 ? fve.reduce((a,b)=>a+b,0)/fve.length : 0;
-            const avgLine = fve.map(() => Math.round(avgFve));
-
-            deviceChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'FVE (W)',
-                            data: fve,
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245,158,11,0.06)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHoverRadius: 4,
-                            yAxisID: 'yW',
-                        },
-                        {
-                            label: 'Priemer',
-                            data: avgLine,
-                            borderColor: 'rgba(245,158,11,0.3)',
-                            borderWidth: 1,
-                            borderDash: [6,4],
-                            pointRadius: 0,
-                            fill: false,
-                            yAxisID: 'yW',
-                        },
-                        {
-                            label: 'SOC (%)',
-                            data: soc,
-                            borderColor: '#10b981',
-                            borderWidth: 1.5,
-                            borderDash: [4,4],
-                            pointRadius: 0,
-                            tension: 0.4,
-                            fill: false,
-                            yAxisID: 'ySoc',
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { display: true, position: 'top', labels: { color: '#9ca3af', font: { family: 'Plus Jakarta Sans', size: 10, weight: '700' }, padding: 10, usePointStyle: true, pointStyle: 'line' } },
-                        tooltip: {
-                            backgroundColor: 'rgba(10,15,30,0.95)',
-                            titleColor: '#f9fafb', bodyColor: '#d1d5db',
-                            borderColor: 'rgba(99,102,241,0.3)', borderWidth: 1,
-                            cornerRadius: 10, padding: 10,
-                            titleFont: { family: 'JetBrains Mono', size: 11 },
-                            bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
-                        }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 8 }, maxTicksLimit: 12 } },
-                        yW: { position: 'left', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#f59e0b', font: { family: 'JetBrains Mono', size: 9 }, callback: v => (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) + 'W' } },
-                        ySoc: { position: 'right', grid: { display: false }, min: 0, max: 100, ticks: { color: '#10b981', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '%' } }
-                    }
-                }
-            });
         }
 
-        // Auto-refresh OKTE + charts
+        // Auto-refresh OKTE + chart
         async function refreshDashboard() {
             const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
             const [telemetry, okte] = await Promise.all([
                 devId ? fetch(`${basePath}/api/device/${devId}/telemetry`).then(r=>r.json()).catch(()=>null) : null,
                 fetchOktePrices()
             ]);
-            if (okte) {
-                updateOkteWidget(okte);
-                initOkteBarChart(okte);
-            }
-            if (telemetry) {
-                initDeviceTelemetryChart(telemetry);
-            }
+            if (okte) updateOkteWidget(okte);
+            initCombinedChart(telemetry, okte);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
