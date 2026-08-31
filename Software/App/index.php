@@ -551,6 +551,7 @@ elseif ($path === '/login') {
                 setcookie(session_name(), session_id(), time() + $lifetime, '/');
             }
             
+            session_write_close();
             header("Location: " . $base_path . "/");
             exit;
         } else {
@@ -579,6 +580,7 @@ elseif ($path === '/register') {
                 . "<p style='color:#64748b;font-size:12px;margin-top:16px;'>Pre prístup k monitoringu fotovoltiky pripojte vašu riadiacu jednotku CM5.</p>"
             );
             flash('Účet vytvorený. Teraz sa môžete prihlásiť.', 'success');
+            session_write_close();
             header("Location: " . $base_path . "/login");
             exit;
         } catch (PDOException $e) {
@@ -1287,17 +1289,18 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
          . "<div style='text-align:center;margin:24px 0;'><span style='font-size:32px;font-weight:900;letter-spacing:8px;color:#3b82f6;font-family:monospace;background:#f1f5f9;padding:16px 32px;border-radius:12px;'>" . $code . "</span></div>"
          . "<p style='color:#64748b;font-size:12px;'>Kód platí 15 minút. Ak ste o obnovenie hesla nepožiadali, tento e-mail ignorujte.</p>";
     
-    // Vždy zobraz kód (email je bonus, nefunguje na Railway)
+    // Uloz vsetko do session NARAZ
     $_SESSION['reset_code'] = $code;
-    $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Váš overovací kód: <strong style="font-size:18px;color:#3b82f6;letter-spacing:4px;">' . $code . '</strong><br><small style="color:#64748b;">Zadajte ho vo formulári nižšie.</small>'];
-    
-    // Pokus o email (bonus)
-    @send_elvo_email($email, $subject, $title, $html);
-    
     $_SESSION['reset_email'] = $email;
     $_SESSION['reset_user_id'] = $user['id'];
     $_SESSION['reset_step'] = 2;
-    $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Overovací kód odoslaný na ' . $email];
+    $_SESSION['flash'] = [['category' => 'success', 'message' => 'Overovací kód odoslaný na <strong>' . htmlspecialchars($email) . '</strong>. Skontrolujte svoju schránku.']];
+    
+    // Pokus o email (Resend API)
+    @send_elvo_email($email, $subject, $title, $html);
+    
+    // EXPLICITNE uloz session PRED redirect
+    session_write_close();
     header('Location: ' . $base_path . '/forgot-password');
     exit;
 }
@@ -1354,6 +1357,7 @@ elseif ($path === '/verify-reset-code' && $method === 'POST') {
     unset($_SESSION['reset_email'], $_SESSION['reset_user_id'], $_SESSION['reset_step']);
     
     $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Heslo bolo úspešne zmenené! Môžete sa prihlásiť.'];
+    session_write_close();
     header('Location: ' . $base_path . '/login');
     exit;
 }
