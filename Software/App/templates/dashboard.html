@@ -2158,7 +2158,7 @@
                     responsive: true, maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { display: false },
+                        legend: { display: true, position: 'top', labels: { color: '#9ca3af', font: { family: 'Plus Jakarta Sans', size: 10, weight: '700' }, padding: 12, usePointStyle: true, pointStyle: 'line', cursor: 'pointer' }, onClick: function(e, legendItem, legend) { const idx = legendItem.datasetIndex; const ci = legend.chart; const meta = ci.getDatasetMeta(idx); meta.hidden = meta.hidden === null ? !ci.data.datasets[idx].hidden : null; ci.update(); }, onHover: function(e, legendItem) { e.native.target.style.cursor = 'pointer'; } },
                         tooltip: {
                             mode: 'index', intersect: false,
                             backgroundColor: 'rgba(10, 15, 30, 0.95)',
