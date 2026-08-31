@@ -547,9 +547,24 @@ elseif ($path === '/login') {
             $_SESSION['stay_logged_in'] = $stay;
             if ($stay) {
                 $lifetime = 90 * 24 * 3600; // 3 mesiace
-                // Nemozno volat session_set_cookie_params ked je session aktivna - pouzijeme setcookie
                 setcookie(session_name(), session_id(), time() + $lifetime, '/');
             }
+            
+            // Email notifikacia o prihlaseni
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+            $device = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            @send_elvo_email($user['email'], 'Nove prihlasenie do ElvoControl', 'Nove prihlasenie',
+                '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
+                . '<p>Niekto sa prave prihlasil do vaseho ElvoControl uctu:</p>'
+                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
+                . '<p>📧 Email: <strong>' . htmlspecialchars($user['email']) . '</strong></p>'
+                . '<p>🌐 IP adresa: <strong>' . htmlspecialchars($ip) . '</strong></p>'
+                . '<p>💻 Zariadenie: <strong>' . htmlspecialchars(substr($device, 0, 80)) . '</strong></p>'
+                . '<p>📅 Cas: <strong>' . date('d.m.Y H:i:s') . '</strong></p>'
+                . '</div>'
+                . '<p style="color:#ef4444;font-size:12px;">Ak ste sa neprihlasili vy, okamzite zmente heslo!</p>'
+                , '#6366f1'
+            );
             
             session_write_close();
             header("Location: " . $base_path . "/");
@@ -574,10 +589,21 @@ elseif ($path === '/register') {
             
             // Welcome email
             @send_elvo_email($email, "Vitajte v ElvoControl!", "Vitajte v ElvoControl, " . htmlspecialchars($username) . "!",
-                "<p>Váš účet bol úspešne vytvorený.</p>"
-                . "<p><strong>Prihlasovací e-mail:</strong> " . htmlspecialchars($email) . "</p>"
-                . "<p><a href='" . $base_path . "/login' style='display:inline-block;padding:12px 24px;background:#3b82f6;color:white;border-radius:8px;text-decoration:none;font-weight:bold;'>Prihlásiť sa</a></p>"
-                . "<p style='color:#64748b;font-size:12px;margin-top:16px;'>Pre prístup k monitoringu fotovoltiky pripojte vašu riadiacu jednotku CM5.</p>"
+                '<p>Ahoj <strong>' . htmlspecialchars($username) . '</strong>,</p>'
+                . '<p>Váš účet bol úspešne vytvorený. Vitajte v ElvoControl Smart EMS!</p>'
+                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;">'
+                . '<p>📧 <strong>Prihlasovací e-mail:</strong> ' . htmlspecialchars($email) . '</p>'
+                . '</div>'
+                . '<p style="margin-bottom:16px;">Čo ďalej?</p>'
+                . '<ol style="padding-left:20px;color:#475569;line-height:2;">'
+                . '<li>Pripojte riadiacu jednotku CM5 k internetu</li>'
+                . '<li>Otvorte setup wizard a nakonfigurujte zariadenie</li>'
+                . '<li>Pripojte RS485 kábel k vášmu striedaču</li>'
+                . '<li>Sledujte dáta v dashboarde</li>'
+                . '</ol>'
+                . '<p style="text-align:center;margin:24px 0;"><a href="' . $base_path . '/login" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#6366f1,#3b82f6);color:white;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;">Prihlásiť sa</a></p>'
+                . '<p style="color:#64748b;font-size:12px;">Ak potrebujete pomoc, kontaktujte nás na support@elvosolar.sk</p>'
+                , '#6366f1'
             );
             flash('Účet vytvorený. Teraz sa môžete prihlásiť.', 'success');
             session_write_close();
@@ -1231,15 +1257,23 @@ elseif ($path === '/api/devices/register' && $method === 'POST') {
         $user_email->execute([$user_id]);
         $u = $user_email->fetch();
         if ($u) {
-            @send_elvo_email($u['email'], 'Nové zariadenie v ElvoControl', 'Zariadenie bolo pridané',
+            @send_elvo_email($u['email'], 'Nové zariadenie v ElvoControl', '📦 Zariadenie bolo pridané',
                 '<p>Ahoj <strong>' . htmlspecialchars($u['username']) . '</strong>,</p>'
                 . '<p>Pridali ste nové zariadenie do ElvoControl:</p>'
-                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
-                . '<p>📦 Názov: <strong>' . htmlspecialchars($name) . '</strong></p>'
-                . '<p>🔢 Sériové číslo: <strong>' . htmlspecialchars($serial) . '</strong></p>'
-                . '<p>🏭 Značka: <strong>' . htmlspecialchars($brand) . ' ' . htmlspecialchars($model) . '</strong></p>'
+                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;">'
+                . '<p>📦 <strong>Názov:</strong> ' . htmlspecialchars($name) . '</p>'
+                . '<p>🔢 <strong>Sériové číslo:</strong> ' . htmlspecialchars($serial) . '</p>'
+                . '<p>🏭 <strong>Značka:</strong> ' . htmlspecialchars($brand) . ' ' . htmlspecialchars($model) . '</p>'
+                . '<p>📅 <strong>Čas:</strong> ' . date('d.m.Y H:i:s') . '</p>'
                 . '</div>'
-                . '<p style="color:#64748b;font-size:12px;">Zariadenie sa prihlási automaticky keď bude online.</p>'
+                . '<p style="margin-bottom:16px;">Čo ďalej?</p>'
+                . '<ol style="padding-left:20px;color:#475569;line-height:2;">'
+                . '<li>Uistite sa že CM5 je pripojený k internetu</li>'
+                . '<li>Pripojte RS485 kábel k striedaču</li>'
+                . '<li>Zariadenie sa automaticky zaregistruje keď bude online</li>'
+                . '</ol>'
+                . '<p style="text-align:center;margin:24px 0;"><a href="' . $base_path . '/dashboard" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#10b981,#3b82f6);color:white;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;">Otvoriť Dashboard</a></p>'
+                , '#10b981'
             );
         }
         
