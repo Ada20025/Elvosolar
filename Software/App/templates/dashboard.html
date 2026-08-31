@@ -36,18 +36,47 @@
         }
 
         body.light-mode {
-            --bg-primary: #f1f5f9;
+            --bg-primary: #f0f4f8;
             --bg-secondary: #ffffff;
-            --bg-card: rgba(255, 255, 255, 0.7);
-            --bg-card-hover: rgba(241, 245, 249, 0.95);
-            --border-color: rgba(99, 102, 241, 0.15);
-            --border-card: rgba(0, 0, 0, 0.08);
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-hover: rgba(241, 245, 249, 0.98);
+            --border-color: rgba(99, 102, 241, 0.12);
+            --border-card: rgba(0, 0, 0, 0.06);
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-muted: #94a3b8;
-            --header-bg: rgba(255, 255, 255, 0.85);
-            --shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+            --header-bg: rgba(255, 255, 255, 0.92);
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+            background: var(--bg-primary);
         }
+        body.light-mode .glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.95) 100%);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+        body.light-mode .control-btn {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            color: var(--text-secondary);
+        }
+        body.light-mode .control-btn.active {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(59, 130, 246, 0.08));
+            border-color: var(--accent-battery);
+            color: var(--accent-battery);        }
+        body.light-mode .station-dropdown-menu,
+        body.light-mode .user-dropdown-card {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+        }
+        body.light-mode .nav-tab { color: var(--text-secondary); }
+        body.light-mode .nav-tab.active { color: var(--accent-battery); }
+        body.light-mode .metric-card { background: rgba(255, 255, 255, 0.6); }
+        body.light-mode .okte-mini-card { background: linear-gradient(135deg, rgba(245, 158, 11, 0.04) 0%, rgba(255, 255, 255, 0.7) 100%); }
+        body.light-mode .diagnostic-bus-card { background: linear-gradient(135deg, rgba(241, 245, 249, 0.7) 0%, rgba(255, 255, 255, 0.9) 100%); }
+        body.light-mode .input-styled { background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.08); color: var(--text-primary); }
+        body.light-mode .flow-icon-circle { background: #ffffff; border: 2px solid var(--node-color); }
+        body.light-mode #settingsModal > div { background: #ffffff; }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -1247,15 +1276,35 @@
                 </div>
             </div>
 
-            <!-- Riadenie modes + gear -->
-            <div class="glass-card" id="controlModesCard">
+            <!-- 2-column layout: Vaše zariadenia + AI & Nastavenia -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" id="controlModesCard">
+            <!-- LEFT: Vaše zariadenie -->
+            <div class="glass-card" style="margin-bottom:0;">
+                <div class="card-header-styled">
+                    <span class="card-title-styled"><i data-lucide="cpu"></i> Vaše zariadenie</span>
+                    <button onclick="pairNewDevice(event)" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--accent-battery);font-size:10px;font-weight:800;transition:all 0.2s;">
+                        <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať
+                    </button>
+                </div>
+                <div id="myDevicesList" style="display:flex;flex-direction:column;gap:10px;">
+                    <!-- dynamic devices -->
+                </div>
+                <div id="noDevicesHint" style="text-align:center;padding:20px;">
+                    <i data-lucide="plus-circle" style="width:32px;height:32px;color:var(--text-muted);margin:0 auto 8px;"></i>
+                    <p style="font-size:11px;color:var(--text-muted);">Nemáte pridané žiadne zariadenie</p>
+                    <button onclick="pairNewDevice(event)" style="margin-top:10px;padding:8px 16px;border-radius:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:11px;font-weight:800;cursor:pointer;">+ Pridať zariadenie</button>
+                </div>
+            </div>
+
+            <!-- RIGHT: AI & Nastavenia -->
+            <div class="glass-card" style="margin-bottom:0;">
                 <div class="card-header-styled">
                     <span class="card-title-styled"><i data-lucide="sliders"></i> Režim riadenia</span>
                     <button onclick="openSettingsModal()" style="background:rgba(255,255,255,0.04);border:1px solid var(--border-card);border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:11px;font-weight:700;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent-solar)'" onmouseout="this.style.borderColor='var(--border-card)'">
                         <i data-lucide="settings" style="width:14px;height:14px;"></i> Nastavenia
                     </button>
                 </div>
-                <div class="control-btn-grid" id="riadenieGrid">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="riadenieGrid">
                     <button onclick="setControlMode('SMART')" id="btnCtrlSmart" class="control-btn active">
                         <i data-lucide="brain" style="width:20px;height:20px;"></i>
                         <span>🤖 Smart AI</span>
@@ -1285,12 +1334,18 @@
                     🤖 Smart AI — Autonómne riadenie na základe predpovede, spotreby a OKTE cien.
                 </div>
             </div>
+            </div><!-- end 2-column grid -->
 
-            <!-- Relays (skryte ak neni zariadenie) -->
+            <!-- Relays -->
             <div class="glass-card" id="relaysSection">
                 <div class="card-header-styled">
                     <span class="card-title-styled"><i data-lucide="toggle-left"></i> Ovládanie záťaží</span>
-                    <span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(168,85,247,0.15);color:#a855f7;font-weight:800;">BETA</span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(168,85,247,0.15);color:#a855f7;font-weight:800;">BETA</span>
+                        <button onclick="addRelay()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--accent-battery);font-size:10px;font-weight:800;transition:all 0.2s;">
+                            <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať Relé
+                        </button>
+                    </div>
                 </div>
                 <div class="relays-container">
                     <div class="relay-item-card">
@@ -1404,6 +1459,34 @@
                     <div>
                         <label style="font-size:9px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">DÁTUM A ČAS NÁVRATU</label>
                         <input type="datetime-local" id="holidayUntilInput" class="input-styled">
+                    </div>
+                </div>
+
+                <!-- Live Gauges -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+                    <div style="text-align:center;padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
+                        <div style="position:relative;width:100px;height:100px;margin:0 auto 12px;">
+                            <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                                <circle id="gaugeSocArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-battery)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="53" style="transition:stroke-dashoffset 1s ease;"/>
+                            </svg>
+                            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                <span id="gaugeSocVal" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">80%</span>
+                                <span style="font-size:8px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">SOC</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align:center;padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
+                        <div style="position:relative;width:100px;height:100px;margin:0 auto 12px;">
+                            <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                                <circle id="gaugeTempArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-solar)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="185" style="transition:stroke-dashoffset 1s ease;"/>
+                            </svg>
+                            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                <span id="gaugeTempVal" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">32°C</span>
+                                <span style="font-size:8px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Teplota</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1666,6 +1749,21 @@
 
                 const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : 98;
                 document.getElementById('deviceBatterySoc').innerText = `${deviceBatPct}%`;
+
+                // Update holiday gauges
+                const socGauge = document.getElementById('gaugeSocVal');
+                const socArc = document.getElementById('gaugeSocArc');
+                if (socGauge && socArc) {
+                    socGauge.textContent = `${Math.round(data.avg_live_soc || 0)}%`;
+                    socArc.setAttribute('stroke-dashoffset', 264 - (264 * (data.avg_live_soc || 0) / 100));
+                }
+                const tempGauge = document.getElementById('gaugeTempVal');
+                const tempArc = document.getElementById('gaugeTempArc');
+                if (tempGauge && tempArc) {
+                    const temp = data.inverter_temp || 32;
+                    tempGauge.textContent = `${Math.round(temp)}°C`;
+                    tempArc.setAttribute('stroke-dashoffset', 264 - (264 * Math.min(temp, 80) / 80));
+                }
                 setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
 
                 const connectionTypeIcon = document.getElementById('connectionTypeIcon');
@@ -1819,6 +1917,28 @@
         }
 
         function toggleRelayState(relayId) {}
+
+        function addRelay() {
+            const name = prompt('Názov relé (napr. Bojler, Klima, LED):');
+            if (!name) return;
+            const type = prompt('Typ zariadenia (Shelly/GPIO/HTTP):', 'Shelly');
+            if (!type) return;
+            const container = document.querySelector('.relays-container');
+            const count = container.querySelectorAll('.relay-item-card').length + 1;
+            const colors = ['var(--accent-solar)', 'var(--accent-grid)', 'var(--accent-battery)', '#a855f7'];
+            const icons = ['flame', 'droplet', 'wind', 'lightbulb'];
+            const color = colors[count % colors.length];
+            const icon = icons[count % icons.length];
+            const card = document.createElement('div');
+            card.className = 'relay-item-card';
+            card.innerHTML = `<i data-lucide="${icon}" style="width:24px;height:24px;color:${color};"></i>
+                <span style="font-size:12px;font-weight:800;">${name}</span>
+                <span style="font-size:10px;color:var(--text-muted);">${type}</span>
+                <span id="relayStatus${count}" class="relay-indicator">VYP</span>
+                <button onclick="toggleRelay(${count})" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť</button>`;
+            container.appendChild(card);
+            lucide.createIcons();
+        }
 
         function toggleRelay(relayId) {
             const label = document.getElementById('relayStatus' + relayId);
@@ -2239,19 +2359,66 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Populate devices list in Riadenie tab
+            populateMyDevices();
             // Skryt relay sekciu ak neni zariadenie
             const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids') || '[]') : [];
             if (deviceIds.length === 0) {
                 const relays = document.getElementById('relaysSection');
                 if (relays) relays.classList.add('hidden');
+                document.getElementById('noDevicesHint').classList.remove('hidden');
+                document.getElementById('myDevicesList').classList.add('hidden');
+            } else {
+                document.getElementById('noDevicesHint').classList.add('hidden');
+                document.getElementById('myDevicesList').classList.remove('hidden');
+            }
+            // Load theme
+            if (localStorage.getItem('elvoTheme') === 'light') {
+                document.body.classList.add('light-mode');
+                const lbl = document.getElementById('themeLabel');
+                if (lbl) lbl.textContent = 'Tmavý režim';
             }
             refreshDashboard();
             fetchTelemetry();
             fetchMeterData();
             setInterval(fetchTelemetry, 8000);
             setInterval(fetchMeterData, 10000);
-            setInterval(refreshDashboard, 300000); // 5 min
+            setInterval(refreshDashboard, 300000);
         });
+
+        function populateMyDevices() {
+            const list = document.getElementById('myDevicesList');
+            if (!list) return;
+            const devIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids') || '[]') : [];
+            const firstId = metaEl ? metaEl.getAttribute('data-device-id') : null;
+            // Build from PHP data in dropdown
+            const dropdownBtns = document.querySelectorAll('.station-dropdown-item');
+            let html = '';
+            dropdownBtns.forEach(btn => {
+                const onclick = btn.getAttribute('onclick') || '';
+                const idMatch = onclick.match(/selectActiveDevice\(this,\s*'([^']+)'/);
+                const nameMatch = btn.querySelector('span:nth-child(1) span');
+                if (idMatch && nameMatch) {
+                    const isActive = idMatch[1] === firstId;
+                    html += `<div onclick="selectActiveDevice(null,'${idMatch[1]}','${nameMatch.textContent}')" style="padding:12px;border-radius:12px;background:${isActive ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)'};border:1px solid ${isActive ? 'rgba(16,185,129,0.3)' : 'var(--border-card)'};cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="width:32px;height:32px;border-radius:8px;background:${isActive ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)'};display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="cpu" style="width:16px;height:16px;color:${isActive ? 'var(--accent-battery)' : 'var(--text-muted)'};"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">${nameMatch.textContent}</div>
+                                <div style="font-size:9px;color:var(--text-muted);">${isActive ? 'Aktívne' : 'Kliknite pre aktiváciu'}</div>
+                            </div>
+                        </div>
+                        ${isActive ? '<span style="font-size:8px;font-weight:800;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,0.15);color:var(--accent-battery);">ONLINE</span>' : ''}
+                    </div>`;
+                }
+            });
+            if (html) {
+                list.innerHTML = html;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
     </script>
 </body>
 </html>
