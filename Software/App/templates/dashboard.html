@@ -1060,43 +1060,7 @@
 
 
 
-                    <!-- Energy Flow Live Diagram -->
-                    <div class="glass-card">
-                        <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="activity"></i> Smer a Distribúcia Toku Energie</span>
-                            <span style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-battery);background:rgba(16,185,129,0.1);padding:4px 8px;border-radius:6px;">LIVE REFRESH</span>
-                        </div>
-                        
-                        <div class="flow-container">
-                            <div class="flow-node active" style="--node-color: var(--accent-solar); --node-bg: rgba(245, 158, 11, 0.1);">
-                                <div class="flow-icon-circle"><i data-lucide="sun"></i></div>
-                                <div class="flow-node-title">Fotovoltika</div>
-                                <div class="flow-node-value" id="flowFveVal">0 W</div>
-                            </div>
 
-                            <div class="flow-node active" style="--node-color: var(--accent-battery); --node-bg: rgba(16, 185, 129, 0.1);">
-                                <div class="flow-icon-circle"><i data-lucide="battery"></i></div>
-                                <div class="flow-node-title">Úložisko</div>
-                                <div class="flow-node-value" id="flowBatVal">0%</div>
-                            </div>
-
-                            <div class="flow-node active" style="--node-color: var(--text-primary); --node-bg: rgba(255, 255, 255, 0.05);">
-                                <div class="flow-icon-circle"><i data-lucide="home"></i></div>
-                                <div class="flow-node-title">Domácnosť</div>
-                                <div class="flow-node-value" id="flowHomeVal">0 W</div>
-                            </div>
-
-                            <div class="flow-node active" style="--node-color: var(--accent-grid); --node-bg: rgba(59, 130, 246, 0.1);">
-                                <div class="flow-icon-circle"><i data-lucide="plug"></i></div>
-                                <div class="flow-node-title">Distribúcia</div>
-                                <div class="flow-node-value" id="flowGridVal">0 W</div>
-                            </div>
-
-                            <div class="flow-lines-overlay">
-                                <div class="flow-animated-line"></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Right Sidebar (OKTE Spot Price & Inverters Diagnostic) -->
@@ -1648,9 +1612,7 @@
 
                 lucide.createIcons();
 
-                document.getElementById('flowFveVal').innerText = `${Math.round(data.total_live_power)} W`;
-                document.getElementById('flowBatVal').innerText = `${Math.round(data.avg_live_soc)}%`;
-                document.getElementById('flowHomeVal').innerText = `${Math.round(data.consumption || 0)} W`;
+
 
                 // Update chart header
                 updateChartHeader(data);
@@ -1700,7 +1662,7 @@
                 const data = await response.json();
                 if (data.status === 'success' && data.meter) {
                     const m = data.meter;
-                    document.getElementById('flowGridVal').innerText = `${Math.round(m.grid_import_w || m.grid_export_w)} W`;
+
                     
                     if (m.okte_price !== undefined) {
                         document.getElementById('okteSpotPrice').innerText = m.okte_price.toFixed(2);
