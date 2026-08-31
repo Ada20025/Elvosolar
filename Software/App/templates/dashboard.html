@@ -1047,24 +1047,18 @@
                     <!-- Combined Analytics Chart -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="line-chart"></i> Prehľad Výkonu, Cien a Predpovede</span>
-                            <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">INTERAKTÍVNE</span>
+                            <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">Prehľad</span></span>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <span id="chartDeviceInfo" style="font-size:9px;font-family:'JetBrains Mono';font-weight:700;color:var(--text-muted);"></span>
+                                <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">24 HODINY</span>
+                            </div>
                         </div>
                         <div style="position:relative;height:320px;width:100%;">
                             <canvas id="elvoChart"></canvas>
                         </div>
                     </div>
 
-                    <!-- Zariadenia (pripojene striedace) -->
-                    <div class="glass-card" id="devicesInfoCard">
-                        <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="cpu"></i> Pripojené zariadenia</span>
-                            <span id="devicesCount" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-battery);background:rgba(16,185,129,0.12);padding:4px 8px;border-radius:6px;">0 zariadení</span>
-                        </div>
-                        <div id="devicesInfoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
-                            <!-- Dynamicky naplnene -->
-                        </div>
-                    </div>
+
 
                     <!-- Energy Flow Live Diagram -->
                     <div class="glass-card">
@@ -1522,76 +1516,29 @@
         // Brand name map
         const brandNames = {'1':'HUAWEI','2':'FRONIUS','3':'GOODWE','4':'SOLAX','5':'VICTRON','6':'GROWATT','7':'SOFAR','8':'DEYE','9':'SUNGROW','10':'SOLIS','11':'HUAWEI SL','12':'GOODWE EZ'};
 
-        // Update devices info grid below chart
-        function updateDevicesInfoGrid(data) {
-            const grid = document.getElementById('devicesInfoGrid');
-            const countEl = document.getElementById('devicesCount');
-            if (!grid) return;
+        // Update chart header with device info
+        function updateChartHeader(data) {
+            const nameEl = document.getElementById('chartDeviceName');
+            const infoEl = document.getElementById('chartDeviceInfo');
+            if (!nameEl) return;
 
             const brandId = data.brand_id || '';
-            const brandName = brandNames[brandId] || data.brand || '---';
-            const model = data.model_id || data.model || '';
+            const brandName = brandNames[brandId] || data.brand || '';
             const deviceName = data.name || brandName;
             const power = data.total_live_power || 0;
             const soc = data.avg_live_soc || 0;
-            const temp = data.temp || 0;
-            const freq = data.freq || 50;
             const totalKwh = data.total_kwh || 0;
-            const totalSaved = data.total_saved_eur || 0;
             const isOnline = power > 0 || soc > 0;
-            const override = data.manual_override || 'AUTO';
 
-            if (countEl) countEl.textContent = isOnline ? '1 online' : '1 offline';
-
-            grid.innerHTML = `
-                <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-card);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,${isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)'});border:1px solid ${isOnline ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)'};display:flex;align-items:center;justify-content:center;">
-                                <i data-lucide="cpu" style="width:18px;height:18px;color:${isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)'};"></i>
-                            </div>
-                            <div>
-                                <div style="font-size:13px;font-weight:800;color:var(--text-primary);">${deviceName}</div>
-                                <div style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono';">${brandName} | SN: ${(data.serial_number || '---').slice(-8)}</div>
-                            </div>
-                        </div>
-                        <span style="font-size:9px;font-weight:800;padding:4px 8px;border-radius:6px;background:${isOnline ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'};color:${isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)'};">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-                        <div style="text-align:center;">
-                            <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;">Výkon</div>
-                            <div style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);">${power >= 1000 ? (power/1000).toFixed(1)+'k' : Math.round(power)} W</div>
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;">SOC</div>
-                            <div style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);">${Math.round(soc)}%</div>
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;">Teplota</div>
-                            <div style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:${temp > 60 ? 'var(--accent-warn)' : 'var(--text-primary)'};">${temp.toFixed(1)}°C</div>
-                        </div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid var(--border-card);padding-top:10px;">
-                        <div style="text-align:center;">
-                            <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;">Frekvencia</div>
-                            <div style="font-size:12px;font-weight:700;font-family:'JetBrains Mono';color:var(--text-primary);">${freq.toFixed(1)} Hz</div>
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;">Denná výroba</div>
-                            <div style="font-size:12px;font-weight:700;font-family:'JetBrains Mono';color:var(--text-primary);">${totalKwh.toFixed(1)} kWh</div>
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;">Úspora</div>
-                            <div style="font-size:12px;font-weight:700;font-family:'JetBrains Mono';color:var(--accent-saved);">${totalSaved.toFixed(2)} €</div>
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:8px;">
-                        <span style="font-size:9px;padding:3px 8px;border-radius:6px;background:rgba(99,102,241,0.1);color:var(--accent-saved);font-weight:700;">Režim: ${override}</span>
-                        <span style="font-size:9px;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,0.1);color:var(--accent-battery);font-weight:700;">RS485: ${isOnline ? 'OK' : 'TIMEOUT'}</span>
-                    </div>
-                </div>
-            `;
-            lucide.createIcons();
+            nameEl.textContent = deviceName || 'Prehľad';
+            if (infoEl) {
+                const parts = [];
+                if (brandName) parts.push(brandName);
+                if (isOnline) parts.push(Math.round(power) + 'W');
+                parts.push(Math.round(soc) + '% SOC');
+                parts.push(totalKwh.toFixed(1) + ' kWh');
+                infoEl.textContent = parts.join(' · ');
+            }
         }
 
         function updateInvertersList(data) {
@@ -1772,8 +1719,8 @@
 
                 // Update inverter diagnostics
                 updateInvertersList(data);
-                // Update devices info grid
-                updateDevicesInfoGrid(data);
+                // Update chart header
+                updateChartHeader(data);
 
                 document.getElementById('dashBatteryBar').style.width = `${Math.round(data.avg_live_soc)}%`;
                 document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
