@@ -1044,14 +1044,31 @@
                         </div>
                     </div>
 
-                    <!-- Large Analytics Graph -->
+                    <!-- OKTE Spot Price Bar Chart -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="line-chart"></i> Kombinovaný Prehľad Výkonu, Spotreby a Cien</span>
-                            <span style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-battery);background:rgba(16,185,129,0.12);padding:4px 8px;border-radius:6px;">INTERAKTÍVNE MERANIE</span>
+                            <span class="card-title-styled"><i data-lucide="bar-chart-3"></i> OKTE Spot Ceny</span>
+                            <span id="okteChartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">24 HODINY</span>
                         </div>
-                        <div style="position: relative; height: 350px; width: 100%;">
-                            <canvas id="elvoComplexChart"></canvas>
+                        <div style="position:relative;height:220px;width:100%;">
+                            <canvas id="okteBarChart"></canvas>
+                        </div>
+                        <div style="display:flex;gap:16px;margin-top:12px;font-size:10px;color:var(--text-muted);">
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#10b981;"></span> Lacné (&lt;50€)</span>
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#f59e0b;"></span> Normálne (50-100€)</span>
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#3b82f6;"></span> Vyššie (100-150€)</span>
+                            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#f43f5e;"></span> Špička (&gt;150€)</span>
+                        </div>
+                    </div>
+
+                    <!-- Device Telemetry Chart -->
+                    <div class="glass-card" id="deviceChartCard">
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="activity"></i> Výroba a Batéria</span>
+                            <span style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-battery);background:rgba(16,185,129,0.12);padding:4px 8px;border-radius:6px;">LIVE</span>
+                        </div>
+                        <div style="position:relative;height:200px;width:100%;">
+                            <canvas id="deviceTelemetryChart"></canvas>
                         </div>
                     </div>
 
@@ -1557,7 +1574,7 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
-        let elvoChart;
+        let elvoChart = null; // legacy, replaced by okteChart + deviceChart
 
         function toggleDeviceDropdown(e) {
             e.stopPropagation();
@@ -1675,8 +1692,9 @@
 
             lucide.createIcons();
 
-            if (tabId === 'dashboard' && elvoChart) {
-                elvoChart.resize();
+            if (tabId === 'dashboard') {
+                if (okteChart) okteChart.resize();
+                if (deviceChart) deviceChart.resize();
             }
         }
 
@@ -1776,22 +1794,18 @@
                     gridLabel.innerText = "Pripojené k distribučnej sieti — Systém prenáša prebytky";
                 }
 
-                // Append new points into chart live data stream
-                if (elvoChart) {
-                    const now = new Date().toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    elvoChart.data.labels.push(now);
-                    elvoChart.data.datasets[0].data.push(Math.round(data.total_live_power));
-                    elvoChart.data.datasets[1].data.push(Math.round(data.consumption || 0));
-                    elvoChart.data.datasets[2].data.push(Math.round(data.avg_live_soc));
-                    
-                    if (elvoChart.data.labels.length > 12) {
-                        elvoChart.data.labels.shift();
-                        elvoChart.data.datasets[0].data.shift();
-                        elvoChart.data.datasets[1].data.shift();
-                        elvoChart.data.datasets[2].data.shift();
-                        elvoChart.data.datasets[3].data.shift();
+                // Update device chart if it exists
+                if (deviceChart && deviceChart.data && deviceChart.data.labels) {
+                    const now = new Date().toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+                    deviceChart.data.labels.push(now);
+                    deviceChart.data.datasets[0].data.push(Math.round(data.total_live_power));
+                    deviceChart.data.datasets[1].data.push(Math.round(data.total_live_power > 0 ? data.total_live_power : 0));
+                    deviceChart.data.datasets[2].data.push(Math.round(data.avg_live_soc));
+                    if (deviceChart.data.labels.length > 48) {
+                        deviceChart.data.labels.shift();
+                        deviceChart.data.datasets.forEach(ds => ds.data.shift());
                     }
-                    elvoChart.update('none');
+                    deviceChart.update('none');
                 }
 
             } catch (err) {}
@@ -2081,136 +2095,217 @@
             }
             // Do 13:00 - ukaz 24h (vcera + dnes)
             return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1), to: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) };
+        }        let okteChart = null;
+        let deviceChart = null;
+
+        function getOkteBarColor(price) {
+            if (price < 50) return '#10b981';
+            if (price < 100) return '#f59e0b';
+            if (price < 150) return '#3b82f6';
+            return '#f43f5e';
         }
 
-        function initComplexAnalyticsChart(data, okteData) {
-            const ctx = document.getElementById('elvoComplexChart').getContext('2d');
-            const history = data && data.history ? data.history : [];
-            const hasDeviceData = history.length > 0;
-            const hasOkteData = okteData && okteData.prices && okteData.prices.length > 0;
+        function initOkteBarChart(okteData) {
+            const ctx = document.getElementById('okteBarChart');
+            if (!ctx) return;
+            if (okteChart) okteChart.destroy();
 
-            // Use OKTE labels as primary timeline
+            const hasData = okteData && okteData.prices && okteData.prices.length > 0;
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
             let labels = [];
-            let oktePrices = [];
-            let avgOkteLine = [];
-            
-            if (hasOkteData) {
-                labels = okteData.prices.map(p => p.hour);
-                oktePrices = okteData.prices.map(p => p.price);
-                const avgP = okteData.avg || 0;
-                avgOkteLine = oktePrices.map(() => avgP);
-            }
+            let prices = [];
+            let barColors = [];
 
-            // Map device history to OKTE timeline
-            let fveData = [];
-            let socData = [];
-            let consumptionData = [];
-            
-            if (hasDeviceData && hasOkteData) {
-                // Match by hour:MM
-                fveData = labels.map(l => {
-                    const match = history.find(h => {
-                        const d = new Date(h.timestamp * 1000 || h.timestamp);
-                        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') === l;
-                    });
-                    return match ? (match.power_ac || 0) : null;
-                });
-                socData = labels.map(l => {
-                    const match = history.find(h => {
-                        const d = new Date(h.timestamp * 1000 || h.timestamp);
-                        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') === l;
-                    });
-                    return match ? (match.battery_soc || 0) : null;
-                });
-            } else if (hasDeviceData) {
-                labels = history.map(h => {
-                    const d = new Date(h.timestamp * 1000 || h.timestamp);
-                    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-                });
-                fveData = history.map(h => h.power_ac || 0);
-                socData = history.map(h => h.battery_soc || 0);
-            }
-
-            const avgFve = fveData.filter(v=>v!==null).length > 0 ? fveData.filter(v=>v!==null).reduce((a,b)=>a+b,0)/fveData.filter(v=>v!==null).length : 0;
-            const avgFveLine = fveData.map(v => v !== null ? Math.round(avgFve) : null);
-
-            if (labels.length === 0) labels = ['--'];
-
-            const datasets = [];
-            
-            if (hasOkteData) {
-                datasets.push({
-                    label: 'OKTE Spot (€/MWh)',
-                    data: oktePrices,
-                    borderColor: '#818cf8',
-                    backgroundColor: 'rgba(129, 140, 248, 0.04)',
-                    borderWidth: 2, yAxisID: 'yPrice', tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 5,
-                });
-                datasets.push({
-                    label: 'Priemer OKTE',
-                    data: avgOkteLine,
-                    borderColor: 'rgba(129, 140, 248, 0.3)',
-                    borderWidth: 1.5, borderDash: [8, 4], yAxisID: 'yPrice', pointRadius: 0, fill: false,
-                });
-            }
-            if (hasDeviceData) {
-                datasets.push({
-                    label: 'Výkon FVE (W)',
-                    data: fveData,
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.05)',
-                    borderWidth: 2.5, yAxisID: 'yPower', tension: 0.4, fill: true,
-                    pointRadius: 0, pointHoverRadius: 5, spanGaps: true,
-                });
-                datasets.push({
-                    label: 'Priemer FVE',
-                    data: avgFveLine,
-                    borderColor: 'rgba(245, 158, 11, 0.3)',
-                    borderWidth: 1.5, borderDash: [8, 4], yAxisID: 'yPower', pointRadius: 0, fill: false, spanGaps: true,
-                });
-                datasets.push({
-                    label: 'SOC (%)',
-                    data: socData,
-                    borderColor: '#10b981',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2, borderDash: [5, 5], yAxisID: 'yPercent', tension: 0.4,
-                    pointRadius: 0, pointHoverRadius: 4, spanGaps: true,
+            if (hasData) {
+                okteData.prices.forEach(p => {
+                    // Parse HH:MM
+                    const parts = p.hour.split(':');
+                    const pMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                    labels.push(p.hour);
+                    prices.push(p.price);
+                    barColors.push(getOkteBarColor(p.price));
                 });
             }
 
-            if (datasets.length === 0) {
-                datasets.push({ label: 'Žiadne dáta', data: [0], borderColor: '#6b7280', borderWidth: 1 });
-            }
+            if (labels.length === 0) { labels = ['--']; prices = [0]; barColors = ['#6b7280']; }
 
-            elvoChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: labels, datasets: datasets },
+            // Average line
+            const avg = okteData ? okteData.avg : 0;
+            const avgLine = prices.map(() => avg);
+
+            okteChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'OKTE (€/MWh)',
+                            data: prices,
+                            backgroundColor: barColors,
+                            borderRadius: 3,
+                            borderSkipped: false,
+                            barPercentage: 0.85,
+                            categoryPercentage: 0.9,
+                        },
+                        {
+                            label: 'Priemer',
+                            data: avgLine,
+                            type: 'line',
+                            borderColor: 'rgba(255,255,255,0.25)',
+                            borderWidth: 1.5,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false,
+                            order: 0,
+                        }
+                    ]
+                },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: true, position: 'top', labels: { color: '#9ca3af', font: { family: 'Plus Jakarta Sans', size: 10, weight: '700' }, padding: 12, usePointStyle: true, pointStyle: 'line' } },
-                        tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(10, 15, 30, 0.95)', titleColor: '#f9fafb', bodyColor: '#d1d5db', borderColor: 'rgba(99, 102, 241, 0.3)', borderWidth: 1, cornerRadius: 12, padding: 12, titleFont: { family: 'JetBrains Mono', size: 12, weight: '700' }, bodyFont: { family: 'Plus Jakarta Sans', size: 12 }, bodySpacing: 6, usePointStyle: true }
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(10, 15, 30, 0.95)',
+                            titleColor: '#f9fafb',
+                            bodyColor: '#d1d5db',
+                            borderColor: 'rgba(99,102,241,0.3)',
+                            borderWidth: 1,
+                            cornerRadius: 10,
+                            padding: 10,
+                            titleFont: { family: 'JetBrains Mono', size: 11, weight: '700' },
+                            bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+                            callbacks: {
+                                label: function(ctx) {
+                                    if (ctx.datasetIndex === 0) return ctx.parsed.y.toFixed(2) + ' EUR/MWh';
+                                    return 'Priemer: ' + ctx.parsed.y.toFixed(2) + ' EUR/MWh';
+                                }
+                            }
+                        }
                     },
                     scales: {
-                        x: { grid: { display: false }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 24, autoSkip: true } },
-                        yPower: { type: 'linear', position: 'left', display: hasDeviceData, grid: { color: 'rgba(255, 255, 255, 0.02)' }, ticks: { color: '#f59e0b', font: { family: 'JetBrains Mono', size: 9 }, callback: v => (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) + 'W' } },
-                        yPercent: { type: 'linear', position: 'right', display: hasDeviceData, grid: { display: false }, min: 0, max: 100, ticks: { color: '#10b981', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '%' } },
-                        yPrice: { type: 'linear', position: hasDeviceData ? 'right' : 'left', display: hasOkteData, grid: { display: false }, ticks: { color: '#818cf8', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '€' } }
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 8 }, maxTicksLimit: 24, autoSkip: true }
+                        },
+                        y: {
+                            position: 'left',
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: '#818cf8', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '€' }
+                        }
+                    }
+                }
+            });
+
+            // Update badge
+            const badge = document.getElementById('okteChartBadge');
+            if (badge && okteData) badge.innerText = okteData.range_type === '48h' ? '48 HODÍN' : '24 HODINY';
+        }
+
+        function initDeviceTelemetryChart(data) {
+            const ctx = document.getElementById('deviceTelemetryChart');
+            if (!ctx) return;
+            if (deviceChart) deviceChart.destroy();
+
+            const history = data && data.history ? data.history : [];
+            const hasData = history.length > 0;
+
+            if (!hasData) {
+                document.getElementById('deviceChartCard').classList.add('hidden');
+                return;
+            }
+            document.getElementById('deviceChartCard').classList.remove('hidden');
+
+            const labels = history.map(h => {
+                const d = new Date(h.timestamp * 1000 || h.timestamp);
+                return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+            });
+            const fve = history.map(h => h.power_ac || 0);
+            const soc = history.map(h => h.battery_soc || 0);
+
+            const avgFve = fve.length > 0 ? fve.reduce((a,b)=>a+b,0)/fve.length : 0;
+            const avgLine = fve.map(() => Math.round(avgFve));
+
+            deviceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'FVE (W)',
+                            data: fve,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245,158,11,0.06)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            yAxisID: 'yW',
+                        },
+                        {
+                            label: 'Priemer',
+                            data: avgLine,
+                            borderColor: 'rgba(245,158,11,0.3)',
+                            borderWidth: 1,
+                            borderDash: [6,4],
+                            pointRadius: 0,
+                            fill: false,
+                            yAxisID: 'yW',
+                        },
+                        {
+                            label: 'SOC (%)',
+                            data: soc,
+                            borderColor: '#10b981',
+                            borderWidth: 1.5,
+                            borderDash: [4,4],
+                            pointRadius: 0,
+                            tension: 0.4,
+                            fill: false,
+                            yAxisID: 'ySoc',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: true, position: 'top', labels: { color: '#9ca3af', font: { family: 'Plus Jakarta Sans', size: 10, weight: '700' }, padding: 10, usePointStyle: true, pointStyle: 'line' } },
+                        tooltip: {
+                            backgroundColor: 'rgba(10,15,30,0.95)',
+                            titleColor: '#f9fafb', bodyColor: '#d1d5db',
+                            borderColor: 'rgba(99,102,241,0.3)', borderWidth: 1,
+                            cornerRadius: 10, padding: 10,
+                            titleFont: { family: 'JetBrains Mono', size: 11 },
+                            bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 8 }, maxTicksLimit: 12 } },
+                        yW: { position: 'left', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#f59e0b', font: { family: 'JetBrains Mono', size: 9 }, callback: v => (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) + 'W' } },
+                        ySoc: { position: 'right', grid: { display: false }, min: 0, max: 100, ticks: { color: '#10b981', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '%' } }
                     }
                 }
             });
         }
 
-        // Auto-refresh OKTE + chart
+        // Auto-refresh OKTE + charts
         async function refreshDashboard() {
             const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
             const [telemetry, okte] = await Promise.all([
                 devId ? fetch(`${basePath}/api/device/${devId}/telemetry`).then(r=>r.json()).catch(()=>null) : null,
                 fetchOktePrices()
             ]);
-            if (elvoChart) elvoChart.destroy();
-            initComplexAnalyticsChart(telemetry, okte);
+            if (okte) {
+                updateOkteWidget(okte);
+                initOkteBarChart(okte);
+            }
+            if (telemetry) {
+                initDeviceTelemetryChart(telemetry);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
