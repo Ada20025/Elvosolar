@@ -2117,24 +2117,23 @@
                 });
             }
 
-            // FVE production (orange)
-            if (hasDevice) {
-                datasets.push({
-                    label: 'FVE Výroba (W)',
-                    data: fveData,
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.06)',
-                    borderWidth: 2.5, yAxisID: 'yPower', tension: 0.4, fill: true,
-                    pointRadius: 0, pointHoverRadius: 4, spanGaps: true,
-                });
-                datasets.push({
-                    label: 'Priemer FVE',
-                    data: avgFveLine,
-                    borderColor: 'rgba(245, 158, 11, 0.35)',
-                    borderWidth: 1.5, borderDash: [8, 4], yAxisID: 'yPower',
-                    pointRadius: 0, fill: false, spanGaps: true,
-                });
-                datasets.push({
+            // FVE production (orange) - always show
+            datasets.push({
+                label: 'FVE Výroba (W)',
+                data: fveData,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.06)',
+                borderWidth: 2.5, yAxisID: 'yPower', tension: 0.4, fill: true,
+                pointRadius: 0, pointHoverRadius: 4, spanGaps: true,
+            });
+            datasets.push({
+                label: 'Priemer FVE',
+                data: avgFveLine,
+                borderColor: 'rgba(245, 158, 11, 0.35)',
+                borderWidth: 1.5, borderDash: [8, 4], yAxisID: 'yPower',
+                pointRadius: 0, fill: false, spanGaps: true,
+            });
+            datasets.push({
                     label: 'SOC (%)',
                     data: socData,
                     borderColor: '#10b981',
@@ -2142,7 +2141,6 @@
                     borderWidth: 1.5, borderDash: [4, 4], yAxisID: 'yPercent',
                     tension: 0.4, pointRadius: 0, spanGaps: true,
                 });
-            }
 
             // Prediction curve (dotted orange, future only)
             const hasPrediction = predictionLine.some(v => v !== null);
@@ -2208,7 +2206,7 @@
                             ticks: { color: '#f59e0b', font: { family: 'JetBrains Mono', size: 9 }, callback: v => (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) + 'W' }
                         },
                         yPercent: {
-                            type: 'linear', position: 'right', display: hasDevice,
+                            type: 'linear', position: 'right', display: true,
                             grid: { display: false }, min: 0, max: 100,
                             ticks: { color: '#10b981', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '%' }
                         },
