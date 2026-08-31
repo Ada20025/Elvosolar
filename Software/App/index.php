@@ -36,6 +36,27 @@ if (strpos($path, '/index.php') === 0) {
 }
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+// --- SESSION TIMEOUT: 30 min (default) alebo 90 dni (stay logged in) ---
+$stay_logged_in = $_SESSION['stay_logged_in'] ?? false;
+$timeout_seconds = $stay_logged_in ? (90 * 24 * 3600) : (30 * 60);
+
+// Neaplikuj timeout na API endpointy a setup/login stranky
+$no_timeout_paths = ['/login', '/register', '/forgot-password', '/verify-reset-code', '/setup', '/setup.html', '/api/cm5/poll', '/api/cm5/result', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/cm5/register', '/healthcheck', '/debug-resend', '/debug-env', '/debug-smtp', '/setup_database'];
+$apply_timeout = true;
+foreach ($no_timeout_paths as $ntp) {
+    if (strpos($path, $ntp) === 0) { $apply_timeout = false; break; }
+}
+
+if ($apply_timeout && isset($_SESSION['user_id'])) {
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout_seconds) {
+        session_unset();
+        session_destroy();
+        header("Location: " . $base_path . "/login");
+        exit;
+    }
+    $_SESSION['last_activity'] = time();
+}
+
 // --- CENTRÁLNA FUNKCIA NA ODOSIELANIE GRAFICKÝCH HTML E-MAILOV ---
 
 // Resend API helper
@@ -519,6 +540,17 @@ elseif ($path === '/login') {
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
+            $_SESSION['last_activity'] = time();
+            
+            // Stay logged in = 3 mesiace, inak 30 min
+            $stay = !empty($_POST['stay_logged_in']);
+            $_SESSION['stay_logged_in'] = $stay;
+            if ($stay) {
+                $lifetime = 90 * 24 * 3600; // 3 mesiace
+                session_set_cookie_params($lifetime);
+                setcookie(session_name(), session_id(), time() + $lifetime, '/');
+            }
+            
             header("Location: " . $base_path . "/");
             exit;
         } else {
