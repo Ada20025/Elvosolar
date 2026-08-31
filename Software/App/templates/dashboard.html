@@ -1063,9 +1063,7 @@
                         </div>
                     </div>
 
-                    <!-- Device Info Cards (under chart) -->
-                    <div id="deviceInfoSection" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
-                    </div>
+
 
 
 
@@ -1504,48 +1502,6 @@
                 infoEl.textContent = parts.join(' · ');
             }
 
-            // Device info cards below chart
-            const section = document.getElementById('deviceInfoSection');
-            if (section) {
-                section.innerHTML = `
-                    <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-card);border-radius:14px;padding:16px;">
-                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                            <div style="width:32px;height:32px;border-radius:8px;background:${isOnline ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'};border:1px solid ${isOnline ? 'rgba(16,185,129,0.25)' : 'rgba(244,63,94,0.25)'};display:flex;align-items:center;justify-content:center;">
-                                <i data-lucide="cpu" style="width:16px;height:16px;color:${isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)'};"></i>
-                            </div>
-                            <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceName}</div>
-                                <div style="font-size:8px;color:var(--text-muted);font-family:'JetBrains Mono';">${brandName} · ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</div>
-                            </div>
-                            <span style="margin-left:auto;font-size:8px;font-weight:800;padding:3px 6px;border-radius:5px;background:${isOnline ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'};color:${isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)'};">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-                        </div>
-                        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
-                            <div style="text-align:center;padding:8px;background:rgba(245,158,11,0.05);border-radius:8px;">
-                                <div style="font-size:8px;color:var(--text-muted);">Výkon</div>
-                                <div style="font-size:16px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);">${power >= 1000 ? (power/1000).toFixed(1)+'k' : Math.round(power)}W</div>
-                            </div>
-                            <div style="text-align:center;padding:8px;background:rgba(16,185,129,0.05);border-radius:8px;">
-                                <div style="font-size:8px;color:var(--text-muted);">SOC</div>
-                                <div style="font-size:16px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);">${Math.round(soc)}%</div>
-                            </div>
-                            <div style="text-align:center;padding:8px;background:rgba(99,102,241,0.05);border-radius:8px;">
-                                <div style="font-size:8px;color:var(--text-muted);">Teplota</div>
-                                <div style="font-size:16px;font-weight:900;font-family:'JetBrains Mono';color:${temp > 60 ? 'var(--accent-warn)' : 'var(--text-primary)'};">${temp.toFixed(1)}°C</div>
-                            </div>
-                            <div style="text-align:center;padding:8px;background:rgba(59,130,246,0.05);border-radius:8px;">
-                                <div style="font-size:8px;color:var(--text-muted);">Denná výroba</div>
-                                <div style="font-size:16px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">${totalKwh.toFixed(1)}kWh</div>
-                            </div>
-                        </div>
-                        <div style="display:flex;gap:6px;margin-top:10px;">
-                            <span style="font-size:8px;padding:3px 6px;border-radius:5px;background:rgba(129,140,248,0.1);color:var(--accent-saved);font-weight:700;">${override}</span>
-                            <span style="font-size:8px;padding:3px 6px;border-radius:5px;background:rgba(16,185,129,0.1);color:var(--accent-battery);font-weight:700;">RS485 ${isOnline ? 'OK' : 'OFFLINE'}</span>
-                            <span style="font-size:8px;padding:3px 6px;border-radius:5px;background:rgba(245,158,11,0.1);color:var(--accent-solar);font-weight:700;">${totalSaved.toFixed(2)}€</span>
-                        </div>
-                    </div>
-                `;
-                lucide.createIcons();
-            }
         }
 
 
