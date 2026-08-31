@@ -76,7 +76,7 @@
         body.light-mode .diagnostic-bus-card { background: linear-gradient(135deg, rgba(241, 245, 249, 0.7) 0%, rgba(255, 255, 255, 0.9) 100%); }
         body.light-mode .input-styled { background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.08); color: var(--text-primary); }
         body.light-mode .flow-icon-circle { background: #ffffff; border: 2px solid var(--node-color); }
-        body.light-mode #settingsModal > div { background: #ffffff; }
+        body.light-mode .gear-settings-panel { background: #ffffff; }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -1036,11 +1036,6 @@
                 
                 <div style="display:flex;flex-direction:column;gap:24px;">
                     
-                    <div id="powerSourceStatus" class="power-source-badge">
-                        <i data-lucide="plug-2" style="width:16px;height:16px;"></i>
-                        <span id="powerSourceText">Pripojené k distribučnej sieti — Systém prenáša prebytky</span>
-                    </div>
-
                     <!-- Core Telemetry Grid -->
                     <div class="metrics-grid-4">
                         <div class="metric-card" style="--line-color: var(--accent-solar);">
@@ -1060,7 +1055,7 @@
                         </div>
 
                         <div class="metric-card" style="--line-color: var(--accent-grid);">
-                            <span class="metric-label-styled"><i data-lucide="zap" style="width:12px;height:12px;color:var(--accent-grid);"></i> Spotreba Domu</span>
+                            <span class="metric-label-styled"><i data-lucide="activity" style="width:12px;height:12px;color:var(--accent-grid);"></i> Odber zo Siete</span>
                             <span class="metric-value-styled text-grid" id="dashConsumption">0 W</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashConsumptionBar" class="metric-bar-fill"></div>
@@ -1276,151 +1271,164 @@
                 </div>
             </div>
 
-            <!-- 2-column layout: Vaše zariadenia + AI & Nastavenia -->
+            <!-- 2-column layout: Vaše relé + AI & Nastavenia -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" id="controlModesCard">
-            <!-- LEFT: Vaše zariadenie -->
+
+            <!-- LEFT: Vaše relé / zariadenia -->
             <div class="glass-card" style="margin-bottom:0;">
                 <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="cpu"></i> Vaše zariadenie</span>
-                    <button onclick="pairNewDevice(event)" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--accent-battery);font-size:10px;font-weight:800;transition:all 0.2s;">
-                        <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať
+                    <span class="card-title-styled"><i data-lucide="toggle-left"></i> Vaše relé</span>
+                    <button onclick="addRelay()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--accent-battery);font-size:10px;font-weight:800;transition:all 0.2s;">
+                        <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať Relé
                     </button>
                 </div>
-                <div id="myDevicesList" style="display:flex;flex-direction:column;gap:10px;">
-                    <!-- dynamic devices -->
+                <div id="myRelaysList" style="display:flex;flex-direction:column;gap:10px;">
+                    <div class="relay-item-card" style="text-align:left;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <i data-lucide="flame" style="width:20px;height:20px;color:var(--accent-solar);"></i>
+                                <div><span style="font-size:12px;font-weight:800;display:block;">Bojler TÚV</span><span style="font-size:9px;color:var(--text-muted);">Shelly 1PM · 2000W</span></div>
+                            </div>
+                            <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+                                <input type="checkbox" checked onchange="toggleRelay(1)" style="opacity:0;width:0;height:0;">
+                                <span style="position:absolute;inset:0;background:var(--accent-battery);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:white;margin:3px 0 0 23px;transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="relay-item-card" style="text-align:left;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <i data-lucide="droplet" style="width:20px;height:20px;color:var(--accent-grid);"></i>
+                                <div><span style="font-size:12px;font-weight:800;display:block;">Filtrácia bazéna</span><span style="font-size:9px;color:var(--text-muted);">Shelly Duo · 150W</span></div>
+                            </div>
+                            <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+                                <input type="checkbox" onchange="toggleRelay(2)" style="opacity:0;width:0;height:0;">
+                                <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:#4b5563;margin:3px;transition:all 0.3s;display:block;"></span></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="relay-item-card" style="text-align:left;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <i data-lucide="wind" style="width:20px;height:20px;color:var(--accent-battery);"></i>
+                                <div><span style="font-size:12px;font-weight:800;display:block;">Klimatizácia</span><span style="font-size:9px;color:var(--text-muted);">GPIO Relé · 1200W</span></div>
+                            </div>
+                            <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+                                <input type="checkbox" onchange="toggleRelay(3)" style="opacity:0;width:0;height:0;">
+                                <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:#4b5563;margin:3px;transition:all 0.3s;display:block;"></span></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
-                <div id="noDevicesHint" style="text-align:center;padding:20px;">
-                    <i data-lucide="plus-circle" style="width:32px;height:32px;color:var(--text-muted);margin:0 auto 8px;"></i>
-                    <p style="font-size:11px;color:var(--text-muted);">Nemáte pridané žiadne zariadenie</p>
-                    <button onclick="pairNewDevice(event)" style="margin-top:10px;padding:8px 16px;border-radius:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:11px;font-weight:800;cursor:pointer;">+ Pridať zariadenie</button>
+                <div id="noRelaysHint" style="text-align:center;padding:16px;display:none;">
+                    <i data-lucide="plus-circle" style="width:28px;height:28px;color:var(--text-muted);margin:0 auto 6px;"></i>
+                    <p style="font-size:11px;color:var(--text-muted);">Nemáte pridané žiadne relé</p>
+                    <button onclick="addRelay()" style="margin-top:8px;padding:7px 14px;border-radius:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:10px;font-weight:800;cursor:pointer;">+ Pridať Relé</button>
                 </div>
             </div>
 
-            <!-- RIGHT: AI & Nastavenia -->
+            <!-- RIGHT: AI Režim + Nastavenia (gear wheels) -->
             <div class="glass-card" style="margin-bottom:0;">
                 <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="sliders"></i> Režim riadenia</span>
-                    <button onclick="openSettingsModal()" style="background:rgba(255,255,255,0.04);border:1px solid var(--border-card);border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:11px;font-weight:700;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent-solar)'" onmouseout="this.style.borderColor='var(--border-card)'">
-                        <i data-lucide="settings" style="width:14px;height:14px;"></i> Nastavenia
-                    </button>
+                    <span class="card-title-styled"><i data-lucide="brain"></i> AI Riadenie</span>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="riadenieGrid">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="riadenieGrid">
                     <button onclick="setControlMode('SMART')" id="btnCtrlSmart" class="control-btn active">
-                        <i data-lucide="brain" style="width:20px;height:20px;"></i>
-                        <span>🤖 Smart AI</span>
+                        <i data-lucide="brain" style="width:18px;height:18px;"></i>
+                        <span>Smart AI</span>
                     </button>
                     <button onclick="setControlMode('ON')" id="btnCtrlOn" class="control-btn">
-                        <i data-lucide="zap" style="width:20px;height:20px;"></i>
+                        <i data-lucide="zap" style="width:18px;height:18px;"></i>
                         <span>Zapnúť</span>
                     </button>
                     <button onclick="setControlMode('OFF')" id="btnCtrlOff" class="control-btn">
-                        <i data-lucide="power-off" style="width:20px;height:20px;"></i>
+                        <i data-lucide="power-off" style="width:18px;height:18px;"></i>
                         <span>Vypnúť</span>
                     </button>
                     <button onclick="setControlMode('SELF')" id="btnCtrlSelf" class="control-btn">
-                        <i data-lucide="home" style="width:20px;height:20px;"></i>
+                        <i data-lucide="home" style="width:18px;height:18px;"></i>
                         <span>Vlastná spotreba</span>
                     </button>
                     <button onclick="setControlMode('ZERO')" id="btnCtrlZero" class="control-btn">
-                        <i data-lucide="scale" style="width:20px;height:20px;"></i>
+                        <i data-lucide="scale" style="width:18px;height:18px;"></i>
                         <span>Nulový prepad</span>
                     </button>
                     <button onclick="setControlMode('CUSTOM')" id="btnCtrlCustom" class="control-btn">
-                        <i data-lucide="wrench" style="width:20px;height:20px;"></i>
+                        <i data-lucide="wrench" style="width:18px;height:18px;"></i>
                         <span>Vlastný</span>
                     </button>
                 </div>
-                <div id="controlModeDesc" style="margin-top:16px;padding:12px 16px;border-radius:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:12px;color:var(--text-secondary);line-height:1.5;">
+                <div id="controlModeDesc" style="margin-top:12px;padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:11px;color:var(--text-secondary);line-height:1.5;">
                     🤖 Smart AI — Autonómne riadenie na základe predpovede, spotreby a OKTE cien.
+                </div>
+
+                <!-- Min/Max gear wheel settings -->
+                <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:14px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Nastavenia výkonu</span>
+                        <i data-lucide="settings" style="width:14px;height:14px;color:var(--text-muted);"></i>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div style="text-align:center;">
+                            <div style="position:relative;width:80px;height:80px;margin:0 auto 6px;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
+                                    <circle id="minPowerArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-battery)" stroke-width="6" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="minPowerVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">0</span>
+                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);">W MIN</span>
+                                </div>
+                            </div>
+                            <input type="range" id="settingsMinPower" min="0" max="5000" step="100" value="0" oninput="updateGearWheel('min', this.value)" style="width:100%;height:3px;accent-color:var(--accent-battery);cursor:pointer;">
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="position:relative;width:80px;height:80px;margin:0 auto 6px;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
+                                    <circle id="maxPowerArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-solar)" stroke-width="6" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="132" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="maxPowerVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">10000</span>
+                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);">W MAX</span>
+                                </div>
+                            </div>
+                            <input type="range" id="settingsMaxPower" min="500" max="15000" step="500" value="10000" oninput="updateGearWheel('max', this.value)" style="width:100%;height:3px;accent-color:var(--accent-solar);cursor:pointer;">
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+                        <div style="text-align:center;">
+                            <div style="position:relative;width:60px;height:60px;margin:0 auto 4px;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                                    <circle id="minSocArc2" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-grid)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="211" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="minSocVal2" style="font-size:12px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">10%</span>
+                                </div>
+                            </div>
+                            <span style="font-size:8px;font-weight:700;color:var(--text-muted);">SOC MIN</span>
+                            <input type="range" id="settingsMinSoc" min="5" max="50" step="5" value="10" oninput="updateGearWheel('minSoc', this.value)" style="width:100%;height:3px;accent-color:var(--accent-grid);cursor:pointer;">
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="position:relative;width:60px;height:60px;margin:0 auto 4px;">
+                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                                    <circle id="maxSocArc2" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-saved)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="13" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                    <span id="maxSocVal2" style="font-size:12px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">95%</span>
+                                </div>
+                            </div>
+                            <span style="font-size:8px;font-weight:700;color:var(--text-muted);">SOC MAX</span>
+                            <input type="range" id="settingsMaxSoc" min="50" max="100" step="5" value="95" oninput="updateGearWheel('maxSoc', this.value)" style="width:100%;height:3px;accent-color:var(--accent-saved);cursor:pointer;">
+                        </div>
+                    </div>
+                    <button onclick="saveSettings()" style="margin-top:12px;width:100%;padding:10px;border-radius:10px;background:linear-gradient(135deg,var(--accent-battery),var(--accent-grid));color:white;font-size:11px;font-weight:800;border:none;cursor:pointer;">Uložiť nastavenia</button>
                 </div>
             </div>
             </div><!-- end 2-column grid -->
 
-            <!-- Relays -->
-            <div class="glass-card" id="relaysSection">
-                <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="toggle-left"></i> Ovládanie záťaží</span>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(168,85,247,0.15);color:#a855f7;font-weight:800;">BETA</span>
-                        <button onclick="addRelay()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--accent-battery);font-size:10px;font-weight:800;transition:all 0.2s;">
-                            <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať Relé
-                        </button>
-                    </div>
-                </div>
-                <div class="relays-container">
-                    <div class="relay-item-card">
-                        <i data-lucide="flame" style="width:24px;height:24px;color:var(--accent-solar);"></i>
-                        <span style="font-size:12px;font-weight:800;">Bojler TÚV</span>
-                        <span style="font-size:10px;color:var(--text-muted);">Shelly 1PM</span>
-                        <span id="relayStatus1" class="relay-indicator active">ZAP</span>
-                        <button onclick="toggleRelay(1)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť</button>
-                    </div>
-                    <div class="relay-item-card">
-                        <i data-lucide="droplet" style="width:24px;height:24px;color:var(--accent-grid);"></i>
-                        <span style="font-size:12px;font-weight:800;">Filtrácia bazéna</span>
-                        <span style="font-size:10px;color:var(--text-muted);">Shelly Duo</span>
-                        <span id="relayStatus2" class="relay-indicator">VYP</span>
-                        <button onclick="toggleRelay(2)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť</button>
-                    </div>
-                    <div class="relay-item-card">
-                        <i data-lucide="wind" style="width:24px;height:24px;color:var(--text-muted);"></i>
-                        <span style="font-size:12px;font-weight:800;">Klimatizácia</span>
-                        <span style="font-size:10px;color:var(--text-muted);">GPIO Relé</span>
-                        <span id="relayStatus3" class="relay-indicator">OFF</span>
-                        <button onclick="toggleRelay(3)" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings modal (hidden by default) -->
-            <div id="settingsModal" class="hidden" style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);">
-                <div style="background:#0a0f1e;border:1px solid var(--border-card);border-radius:24px;padding:32px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-                        <h3 style="font-size:18px;font-weight:900;color:var(--text-primary);">⚙️ Nastavenia riadenia</h3>
-                        <button onclick="closeSettingsModal()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;">✕</button>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:20px;">
-                        <div>
-                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">MINIMÁLNY VÝKON (W)</label>
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <input type="range" id="settingsMinPower" min="0" max="5000" step="100" value="0" style="flex:1;accent-color:var(--accent-battery);">
-                                <span class="font-mono" id="settingsMinPowerVal" style="font-size:13px;font-weight:700;color:var(--accent-battery);min-width:60px;">0 W</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">MAXIMÁLNY VÝKON (W)</label>
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <input type="range" id="settingsMaxPower" min="500" max="15000" step="500" value="10000" style="flex:1;accent-color:var(--accent-solar);">
-                                <span class="font-mono" id="settingsMaxPowerVal" style="font-size:13px;font-weight:700;color:var(--accent-solar);min-width:60px;">10000 W</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">MIN SOC BATÉRIE (%)</label>
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <input type="range" id="settingsMinSoc" min="5" max="50" step="5" value="10" style="flex:1;accent-color:var(--accent-grid);">
-                                <span class="font-mono" id="settingsMinSocVal" style="font-size:13px;font-weight:700;color:var(--accent-grid);min-width:60px;">10%</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:0.5px;">MAX SOC BATÉRIE (%)</label>
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <input type="range" id="settingsMaxSoc" min="50" max="100" step="5" value="95" style="flex:1;accent-color:var(--accent-saved);">
-                                <span class="font-mono" id="settingsMaxSocVal" style="font-size:13px;font-weight:700;color:var(--accent-saved);min-width:60px;">95%</span>
-                            </div>
-                        </div>
-                        <div style="display:flex;gap:12px;">
-                            <div style="flex:1;">
-                                <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:8px;">NOČNÝ REŽIM</label>
-                                <label style="position:relative;width:48px;height:26px;cursor:pointer;display:block;">
-                                    <input type="checkbox" id="settingsNightSleep" style="opacity:0;width:0;height:0;">
-                                    <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:13px;transition:all 0.3s;"><span style="width:20px;height:20px;border-radius:50%;background:#4b5563;margin:3px;transition:all 0.3s;display:block;"></span></span>
-                                </label>
-                            </div>
-                        </div>
-                        <button onclick="saveSettings()" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,var(--accent-battery),var(--accent-grid));color:white;font-size:13px;font-weight:800;border:none;cursor:pointer;">Uložiť nastavenia</button>
-                    </div>
-                </div>
-            </div>
         </section>
 
         <!-- Tab 4: PRE-DESIGNED ULTRA HOLIDAY SAFEGUARD EMS MODULE -->
@@ -1801,16 +1809,7 @@
                 document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
                 document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
 
-                const gridState = document.getElementById('powerSourceStatus');
-                const gridLabel = document.getElementById('powerSourceText');
-                
-                if (data.grid_outage || (data.consumption > 0 && data.total_live_power === 0 && data.grid_import_w === 0)) {
-                    gridState.classList.add('offgrid');
-                    gridLabel.innerText = "MIMO SIETE (Blackout) — Prevádzka z batérie";
-                } else {
-                    gridState.classList.remove('offgrid');
-                    gridLabel.innerText = "Pripojené k distribučnej sieti — Systém prenáša prebytky";
-                }
+                // Grid status (powerSourceStatus removed from UI)
 
                 // Update live chart if it exists (FVE dataset)
                 if (elvoChart && elvoChart.data && elvoChart.data.datasets) {
@@ -2001,7 +2000,7 @@
             if (btn) btn.classList.add('active');
             const desc = document.getElementById('controlModeDesc');
             if (desc) desc.innerText = modeDescs[mode] || '';
-            if (mode === 'CUSTOM') openSettingsModal();
+            if (mode === 'CUSTOM') { /* settings are now inline */ }
             try {
                 const devId = metaEl.getAttribute('data-device-id');
                 fetch(`${basePath}/api/device/${devId}/meter`, {
@@ -2012,13 +2011,24 @@
             } catch(e) {}
         }
 
-        function openSettingsModal() {
-            document.getElementById('settingsModal').classList.remove('hidden');
-            lucide.createIcons();
-        }
+        function openSettingsModal() { /* settings are now inline */ }
+        function closeSettingsModal() { /* settings are now inline */ }
 
-        function closeSettingsModal() {
-            document.getElementById('settingsModal').classList.add('hidden');
+        function updateGearWheel(type, value) {
+            const v = parseInt(value);
+            if (type === 'min') {
+                document.getElementById('minPowerVal').textContent = v;
+                document.getElementById('minPowerArc').setAttribute('stroke-dashoffset', 264 - (264 * v / 5000));
+            } else if (type === 'max') {
+                document.getElementById('maxPowerVal').textContent = v;
+                document.getElementById('maxPowerArc').setAttribute('stroke-dashoffset', 264 - (264 * v / 15000));
+            } else if (type === 'minSoc') {
+                document.getElementById('minSocVal2').textContent = v + '%';
+                document.getElementById('minSocArc2').setAttribute('stroke-dashoffset', 264 - (264 * v / 50));
+            } else if (type === 'maxSoc') {
+                document.getElementById('maxSocVal2').textContent = v + '%';
+                document.getElementById('maxSocArc2').setAttribute('stroke-dashoffset', 264 - (264 * v / 100));
+            }
         }
 
         async function saveSettings() {
@@ -2397,7 +2407,7 @@
             dropdownBtns.forEach(btn => {
                 const onclick = btn.getAttribute('onclick') || '';
                 const idMatch = onclick.match(/selectActiveDevice\(this,\s*'([^']+)'/);
-                const nameMatch = btn.querySelector('span:nth-child(1) span');
+                const nameMatch = btn.querySelector('span:nth-child(1) span');
                 if (idMatch && nameMatch) {
                     const isActive = idMatch[1] === firstId;
                     html += `<div onclick="selectActiveDevice(null,'${idMatch[1]}','${nameMatch.textContent}')" style="padding:12px;border-radius:12px;background:${isActive ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)'};border:1px solid ${isActive ? 'rgba(16,185,129,0.3)' : 'var(--border-card)'};cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s;">
