@@ -60,22 +60,7 @@
 
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        .bg-blur-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(160px);
-            opacity: 0.06;
-            pointer-events: none;
-            z-index: 0;
-            animation: orbFloat 25s ease-in-out infinite;
-        }
-        .bg-orb-1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--accent-grid), transparent 70%); top: -250px; left: -150px; }
-        .bg-orb-2 { width: 600px; height: 600px; background: radial-gradient(circle, var(--accent-saved), transparent 70%); bottom: -200px; right: -100px; }
 
-        @keyframes orbFloat {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(50px, -40px) scale(1.15); }
-        }
 
         /* Symmetrical Premium Header */
         .header {
@@ -879,8 +864,6 @@
     </style>
 </head>
 <body>
-    <div class="bg-blur-orb bg-orb-1"></div>
-    <div class="bg-blur-orb bg-orb-2"></div>
 
     <div id="php-metadata"
          data-device-id="<?php echo htmlspecialchars($devices[0]['id'] ?? 1); ?>"
@@ -2161,12 +2144,12 @@
                     data: oktePrices,
                     borderColor: '#818cf8',
                     backgroundColor: 'rgba(129, 140, 248, 0.04)',
-                    borderWidth: 2, yAxisID: 'yPrice', tension: 0.25, fill: true, pointRadius: 2,
+                    borderWidth: 2, yAxisID: 'yPrice', tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 5,
                 });
                 datasets.push({
                     label: 'Priemer OKTE',
                     data: avgOkteLine,
-                    borderColor: 'rgba(129, 140, 248, 0.35)',
+                    borderColor: 'rgba(129, 140, 248, 0.3)',
                     borderWidth: 1.5, borderDash: [8, 4], yAxisID: 'yPrice', pointRadius: 0, fill: false,
                 });
             }
@@ -2176,13 +2159,13 @@
                     data: fveData,
                     borderColor: '#f59e0b',
                     backgroundColor: 'rgba(245, 158, 11, 0.05)',
-                    borderWidth: 2.5, yAxisID: 'yPower', tension: 0.35, fill: true,
-                    pointRadius: labels.length < 30 ? 3 : 0, spanGaps: true,
+                    borderWidth: 2.5, yAxisID: 'yPower', tension: 0.4, fill: true,
+                    pointRadius: 0, pointHoverRadius: 5, spanGaps: true,
                 });
                 datasets.push({
                     label: 'Priemer FVE',
                     data: avgFveLine,
-                    borderColor: 'rgba(245, 158, 11, 0.35)',
+                    borderColor: 'rgba(245, 158, 11, 0.3)',
                     borderWidth: 1.5, borderDash: [8, 4], yAxisID: 'yPower', pointRadius: 0, fill: false, spanGaps: true,
                 });
                 datasets.push({
@@ -2190,8 +2173,8 @@
                     data: socData,
                     borderColor: '#10b981',
                     backgroundColor: 'transparent',
-                    borderWidth: 2, borderDash: [5, 5], yAxisID: 'yPercent', tension: 0.2,
-                    pointRadius: labels.length < 30 ? 2 : 0, spanGaps: true,
+                    borderWidth: 2, borderDash: [5, 5], yAxisID: 'yPercent', tension: 0.4,
+                    pointRadius: 0, pointHoverRadius: 4, spanGaps: true,
                 });
             }
 
@@ -2207,10 +2190,10 @@
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: true, position: 'top', labels: { color: '#9ca3af', font: { family: 'Plus Jakarta Sans', size: 10, weight: '700' }, padding: 12, usePointStyle: true, pointStyle: 'line' } },
-                        tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(5, 7, 15, 0.95)', titleColor: '#f9fafb', bodyColor: '#9ca3af', borderColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, titleFont: { family: 'JetBrains Mono', size: 11 }, bodyFont: { family: 'Plus Jakarta Sans', size: 11 } }
+                        tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(10, 15, 30, 0.95)', titleColor: '#f9fafb', bodyColor: '#d1d5db', borderColor: 'rgba(99, 102, 241, 0.3)', borderWidth: 1, cornerRadius: 12, padding: 12, titleFont: { family: 'JetBrains Mono', size: 12, weight: '700' }, bodyFont: { family: 'Plus Jakarta Sans', size: 12 }, bodySpacing: 6, usePointStyle: true }
                     },
                     scales: {
-                        x: { grid: { display: false }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 24 } },
+                        x: { grid: { display: false }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 24, autoSkip: true } },
                         yPower: { type: 'linear', position: 'left', display: hasDeviceData, grid: { color: 'rgba(255, 255, 255, 0.02)' }, ticks: { color: '#f59e0b', font: { family: 'JetBrains Mono', size: 9 }, callback: v => (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) + 'W' } },
                         yPercent: { type: 'linear', position: 'right', display: hasDeviceData, grid: { display: false }, min: 0, max: 100, ticks: { color: '#10b981', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '%' } },
                         yPrice: { type: 'linear', position: hasDeviceData ? 'right' : 'left', display: hasOkteData, grid: { display: false }, ticks: { color: '#818cf8', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '€' } }
