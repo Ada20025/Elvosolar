@@ -547,7 +547,7 @@ elseif ($path === '/login') {
             $_SESSION['stay_logged_in'] = $stay;
             if ($stay) {
                 $lifetime = 90 * 24 * 3600; // 3 mesiace
-                session_set_cookie_params($lifetime);
+                // Nemozno volat session_set_cookie_params ked je session aktivna - pouzijeme setcookie
                 setcookie(session_name(), session_id(), time() + $lifetime, '/');
             }
             
@@ -1250,8 +1250,9 @@ elseif ($path === '/api/devices/register' && $method === 'POST') {
 }
 
 elseif ($path === '/forgot-password' && $method === 'GET') {
-    $_SESSION['reset_step'] = 1;
-    render_template('forgot-password.html');
+    // Nedavaj reset_step=1 - nechaj session ako je (krok 1 alebo 2)
+    if (!isset($_SESSION['reset_step'])) $_SESSION['reset_step'] = 1;
+    render_template('forgot-password.html', ['flash' => get_flash_messages()]);
 }
 
 elseif ($path === '/forgot-password' && $method === 'POST') {
