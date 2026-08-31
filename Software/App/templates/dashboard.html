@@ -1095,6 +1095,28 @@
                         </div>
                     </div>
 
+                    <!-- Striedace (dynamic) -->
+                    <div class="diagnostic-bus-card" style="margin-top:16px;">
+                        <div class="bus-header">
+                            <span style="font-size:11px;font-weight:800;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
+                                <i data-lucide="layers" style="color:var(--accent-battery);width:14px;height:14px;"></i> <span id="invertersTitle">Striedače</span>
+                            </span>
+                            <span class="font-mono" id="busStatus" style="font-size:9px;color:var(--accent-battery);font-weight:700;">--</span>
+                        </div>
+                        <div id="invertersList">
+                            <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:11px;">Načítavam...</div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px;font-size:10px;color:var(--text-secondary);">
+                            <div style="display:flex;flex-direction:column;gap:2px;">
+                                <span>Latencia:</span>
+                                <strong class="font-mono" style="color:var(--text-primary);" id="busLatency">-- ms</strong>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:2px;text-align:right;">
+                                <span>Výroba:</span>
+                                <strong class="font-mono" style="color:var(--accent-battery);" id="dailyProduction">-- kWh</strong>
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
 
@@ -1470,7 +1492,59 @@
         // Brand name map
         const brandNames = {'1':'HUAWEI','2':'FRONIUS','3':'GOODWE','4':'SOLAX','5':'VICTRON','6':'GROWATT','7':'SOFAR','8':'DEYE','9':'SUNGROW','10':'SOLIS','11':'HUAWEI SL','12':'GOODWE EZ'};
 
-        // Update chart header with device info + cards below
+        // Update inverters list in sidebar
+        function updateInvertersList(data) {
+            const container = document.getElementById('invertersList');
+            if (!container) return;
+            const busStatus = document.getElementById('busStatus');
+            const busLatency = document.getElementById('busLatency');
+            const dailyProd = document.getElementById('dailyProduction');
+            const titleEl = document.getElementById('invertersTitle');
+
+            const brandId = data.brand_id || '';
+            const brandName = brandNames[brandId] || data.brand || 'Zariadenie';
+            const deviceName = data.name || brandName;
+            const temp = data.temp || 0;
+            const power = data.total_live_power || 0;
+            const soc = data.avg_live_soc || 0;
+            const isOnline = power > 0 || soc > 0;
+            const totalKwh = data.total_kwh || 0;
+
+            if (titleEl) titleEl.textContent = brandName;
+
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <div class="inverter-status-row" onclick="toggleInverterDetails('invD1', 'invC1')">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span class="pulse-dot ${isOnline ? 'online' : 'offline'}"></span>
+                            <div style="display:flex;flex-direction:column;">
+                                <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceName}</span>
+                                <span class="font-mono" style="font-size:9px;color:var(--text-muted);">${brandName} | ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span class="font-mono" style="font-size:10px;font-weight:700;color:${isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)'};">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                            <i data-lucide="chevron-down" id="invC1" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
+                        </div>
+                    </div>
+                    <div id="invD1" class="inverter-details-box">
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono">${Math.round(power)} W</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Teplota:</span><strong class="font-mono">${temp.toFixed(1)} °C</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(soc)}%</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono">${totalKwh.toFixed(1)} kWh</strong></div>
+                    </div>
+                </div>
+            `;
+
+            if (busStatus) busStatus.textContent = isOnline ? 'RS485 OK' : 'OFFLINE';
+            if (busStatus) busStatus.style.color = isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)';
+            if (busLatency) busLatency.textContent = isOnline ? '12 ms' : '-- ms';
+            if (dailyProd) dailyProd.textContent = totalKwh.toFixed(1) + ' kWh';
+
+            lucide.createIcons();
+        }
+
+        // Update chart header with device info
         function updateChartHeader(data) {
             const nameEl = document.getElementById('chartDeviceName');
             const infoEl = document.getElementById('chartDeviceInfo');
@@ -1620,6 +1694,8 @@
 
 
 
+                // Update inverters in sidebar
+                updateInvertersList(data);
                 // Update chart header
                 updateChartHeader(data);
 
