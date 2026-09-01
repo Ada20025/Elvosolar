@@ -872,8 +872,8 @@
                             <span class="card-title-styled" style="font-size:11px; color:var(--accent-battery);"><i data-lucide="terminal"></i> Live EMS System Log</span>
                         </div>
                         <div id="emsTerminalLog" class="terminal-panel">
-                            [00:00:01] Inicializácia energetického jadra CM5 úspešná.<br>
-                            [00:00:03] Načítavanie plánu 15-minútových sieťových intervalov...
+                            [00:00:01] Inicializácia EMS procesov CM5 prebehla v poriadku.<br>
+                            [00:00:03] Monitorovanie 15-minútových sieťových periód aktivované...
                         </div>
                     </div>
 
@@ -887,7 +887,7 @@
                         <span class="metric-value-styled text-saved" id="dashTotalSaved" style="font-size: 32px; font-weight: 900; line-height: 1.2;">0.00 €</span>
                     </div>
 
-                    <!-- Predpoveď počasia pre FVE (Nová vec) -->
+                    <!-- Predpoveď počasia pre FVE -->
                     <div class="weather-card">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <span style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Solárna Predpoveď</span>
@@ -896,7 +896,7 @@
                         <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
                             <i data-lucide="sun" style="width:28px; height:28px; color:var(--accent-solar);"></i>
                             <div>
-                                <span style="font-size:12px; font-weight:800; color:var(--text-primary); display:block;">Jasné až polooblačno</span>
+                                <span style="font-size:12px; font-weight:800; color:var(--text-primary); display:block;">Jasno / Polooblačno</span>
                                 <span style="font-size:10px; color:var(--text-muted); display:block;">Očakávaný svit: 8.2 hodiny dnes</span>
                             </div>
                         </div>
@@ -1050,8 +1050,19 @@
                 </div>
 
                 <!-- Right Column: AI Autonómne Cenové Modely (OKTE) -->
-                <div style="display: flex; flex-direction: column; gap: 24px;">
-                    <div class="glass-card" style="margin-bottom: 0;">
+                <div style="display: flex; flex-direction: column; gap: 24px; position:relative;">
+                    <div class="glass-card" style="margin-bottom: 0; position:relative;">
+                        
+                        <!-- Zámok cenových modelov, ak nie je vybrané Smart AI -->
+                        <div id="aiModelsLockOverlay" class="hidden" style="position:absolute; inset:0; background:rgba(2,4,10,0.92); backdrop-filter:blur(10px); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20; border-radius:24px; padding:20px; text-align:center;">
+                            <i data-lucide="lock" style="width:36px; height:36px; color:var(--accent-solar); margin-bottom:12px;"></i>
+                            <h5 style="font-size:14px; font-weight:800; color:var(--text-primary); letter-spacing:-0.2px;">Modely sú uzamknuté</h5>
+                            <p style="font-size:11px; color:var(--text-secondary); max-width:260px; margin-top:6px; margin-bottom:16px; line-height:1.4;">Autonómne cenové modely OKTE fungujú výhradne pri spustenom režime <strong>Smart AI</strong>.</p>
+                            <button onclick="setMeterMode('SMART')" style="background:linear-gradient(135deg, var(--accent-solar), var(--accent-battery)); border:none; color:white; padding:8px 16px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 6px 15px rgba(245,158,11,0.2);">
+                                Aktivovať Smart AI <i data-lucide="sparkles" style="width:12px; height:12px;"></i>
+                            </button>
+                        </div>
+
                         <div class="card-header-styled">
                             <span class="card-title-styled"><i data-lucide="wallet"></i> Autonómne Cenové Modely (OKTE)</span>
                             <span style="font-size:9px;font-weight:800;color:var(--accent-solar);background:rgba(245,158,11,0.15);padding:4px 8px;border-radius:6px;">SPOT MANAGEMENT</span>
@@ -1235,18 +1246,26 @@
 
                 <div class="flexible-grid">
                     <div style="display: flex; flex-direction: column; gap: 24px;">
-                        <!-- Profil Card -->
+                        <!-- Profil Card with Avatar Upload -->
                         <div class="glass-card" style="margin-bottom: 0;">
                             <div class="card-header-styled">
                                 <span class="card-title-styled"><i data-lucide="user"></i> Profil</span>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-                                <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: white;">
-                                    A
+                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+                                <!-- Interaktívny Avatar s glow podsvietením -->
+                                <div style="position: relative; width: 80px; height: 80px;">
+                                    <img id="profileAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid var(--accent-battery); box-shadow:0 0 15px rgba(16,185,129,0.2);">
+                                    <label for="avatarFileInput" style="position: absolute; bottom: 0; right: 0; width: 26px; height: 26px; background: var(--accent-battery); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--bg-primary); box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                                        <i data-lucide="camera" style="width:12px; height:12px; color:white;"></i>
+                                    </label>
+                                    <input type="file" id="avatarFileInput" accept="image/*" onchange="previewProfileImage(event)" class="hidden">
                                 </div>
                                 <div>
-                                    <h4 style="font-size: 16px; font-weight: 800;">Adam</h4>
+                                    <h4 style="font-size: 16px; font-weight: 800; color:var(--text-primary);" id="profileNameDisplay">Adam</h4>
                                     <span style="font-size: 11px; color: var(--text-muted); display: block;">adam.dzurko5@gmail.com</span>
+                                    <button onclick="document.getElementById('avatarFileInput').click()" style="background:none; border:none; color:var(--accent-battery); font-size:11px; font-weight:800; cursor:pointer; margin-top:6px; padding:0; display:flex; align-items:center; gap:4px;">
+                                        Zmeniť fotku profilu
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1340,6 +1359,7 @@
 
         let okteAvailable = true; // Globálny stav dostupnosti OKTE
         let simulatedHistoryData = []; // Globálna cache histórie
+        let activeControlMode = 'SMART'; // Sledovanie režimu riadenia
 
         // Zápis správ do emulovaného EMS terminálu
         function writeToTerminal(msg) {
@@ -1349,6 +1369,22 @@
                 const stamp = `[${now.toTimeString().split(' ')[0]}]`;
                 term.innerHTML += `<br>${stamp} ${msg}`;
                 term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        // Preview a upload profilového obrázku
+        function previewProfileImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatarImg = document.getElementById('profileAvatarImg');
+                    if (avatarImg) {
+                        avatarImg.src = e.target.result;
+                        writeToTerminal('Užívateľ úspešne aktualizoval svoj profilový obrázok.');
+                    }
+                };
+                reader.readAsDataURL(file);
             }
         }
 
@@ -1462,6 +1498,7 @@
         }
 
         async function setMeterMode(mode) {
+            activeControlMode = mode;
             document.querySelectorAll('#meterModeGrid .control-btn').forEach(btn => btn.classList.remove('active'));
             const activeBtnId = {
                 UNLIMITED: 'btnMeterUnlimited',
@@ -1471,6 +1508,18 @@
             
             const btn = document.getElementById(activeBtnId);
             if (btn) btn.classList.add('active');
+
+            // Zobrazenie alebo skrytie skleneného zámku pre AI modely
+            const lockOverlay = document.getElementById('aiModelsLockOverlay');
+            if (lockOverlay) {
+                if (mode === 'SMART') {
+                    lockOverlay.classList.add('hidden');
+                    writeToTerminal('Prepnuté na Smart AI. Cenové modely OKTE boli úspešne sprístupnené.');
+                } else {
+                    lockOverlay.classList.remove('hidden');
+                    writeToTerminal(`Prepnuté na manuálny režim (${mode}). Cenové modely boli preventívne uzamknuté.`);
+                }
+            }
 
             try {
                 const devId = metaEl.getAttribute('data-device-id');
@@ -1533,6 +1582,12 @@
         }
 
         async function setAiModel(id) {
+            // Bezpečnostná kontrola - ak nie je zapnuté Smart AI, voľba modelov je ignorovaná
+            if (activeControlMode !== 'SMART') {
+                writeToTerminal('Nepovolená akcia. Pre zmenu modelu musíte najskôr aktivovať Smart AI.');
+                return;
+            }
+
             document.querySelectorAll('.ai-model-card').forEach(card => card.classList.remove('active'));
             const selectedCard = document.getElementById(`aiModel${id}`);
             if (selectedCard) selectedCard.classList.add('active');
@@ -1590,6 +1645,7 @@
                 badgeEl.style.color = isAfter13 ? 'var(--accent-okte)' : 'var(--accent-solar)';
             }
 
+            let history = data && data.history ? data.history : [];
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             let simulatedHistory = [];
 
@@ -1699,11 +1755,9 @@
                     pointHoverRadius: 4,
                     yAxisID: 'y'
                 });
-            } else {
-                writeToTerminal('Výkon FVE je momentálne 0 W. Linka bola z grafu automaticky skrytá.');
             }
 
-            // Pridanie OKTE ceny iba ak sú dáta OKTE označené ako dostupné
+            // Pridanie OKTE ceny iba ak sú dáta OKTE dostupné
             if (okteAvailable) {
                 chartDatasets.push({
                     label: 'Cena OKTE (€/MWh)',
@@ -1719,7 +1773,7 @@
                     yAxisID: 'y1'
                 });
 
-                // Linka priemerných cien OKTE (Nová vec)
+                // Linka priemerných cien OKTE
                 chartDatasets.push({
                     label: `Priemer OKTE (${avgPrice.toFixed(1)} €)`,
                     data: avgDataPoints,
