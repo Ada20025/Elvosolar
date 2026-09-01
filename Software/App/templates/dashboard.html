@@ -32,6 +32,7 @@
             --accent-grid: #3b82f6;
             --accent-saved: #818cf8;
             --accent-warn: #f43f5e;
+            --accent-okte: #a855f7;
         }
 
         body.light-mode {
@@ -817,10 +818,10 @@
                     <!-- Combined Analytics Chart -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">Prehľad Výkonu</span></span>
+                            <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">Prehľad Výkonu & OKTE</span></span>
                             <div style="display:flex;gap:8px;align-items:center;">
                                 <span id="chartDeviceInfo" style="font-size:9px;font-family:'JetBrains Mono';font-weight:700;color:var(--text-muted);"></span>
-                                <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">24 HODINY</span>
+                                <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">--</span>
                             </div>
                         </div>
                         <div style="position:relative;height:320px;width:100%;">
@@ -1041,10 +1042,10 @@
                             <!-- Model 5 -->
                             <div class="ai-model-card" onclick="setAiModel('5')" id="aiModel5">
                                 <div style="display:flex;align-items:center;gap:12px;">
-                                    <i data-lucide="leaf" style="color:var(--accent-battery);width:20px;height:20px;"></i>
+                                    <i data-lucide="line-chart" style="color:var(--accent-okte);width:20px;height:20px;"></i>
                                     <div>
-                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: Inteligentný Eko-Balans</div>
-                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Chráni zdravie akumulátora a bráni mikrocyklom.</div>
+                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: Predpoveď & Asymetrický Bypass</div>
+                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Optimalizuje toky podľa 24h / 48h cenového plánu OKTE.</div>
                                     </div>
                                 </div>
                                 <i id="aiModelCheck5" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1466,7 +1467,7 @@
                 2: '💰 Arbitráž - predáva keď je drahšie ako priemer.',
                 3: '🔋 Nákup pod priemerom - lacno nabíja, v špičke vybíja.',
                 4: '📊 Kombinovaná arbitráž - nabíja lacno, predáva drahšie.',
-                5: '🌱 Inteligentný Eko-Balans - optimalizuje hĺbku cyklovania akumulátora, obmedzuje degradáciu a riadi systém ekologicky.'
+                5: '📈 Model 5: OKTE Predpoveď & Asymetrický Bypass - chráni a optimalizuje toky na základe 24h / 48h cenového plánu OKTE.'
             };
             const descEl = document.getElementById('aiModelDesc');
             if (descEl) {
@@ -1490,39 +1491,64 @@
             if (!ctx) return;
             if (elvoChart) elvoChart.destroy();
 
-            let history = data && data.history ? data.history : [];
-            
-            // Generovanie simulovanej baseline krivky, ak sú reálne dáta prázdne (oprava nefunkčného grafu)
-            if (history.length === 0) {
-                const now = Date.now();
-                for (let i = 24; i >= 0; i--) {
-                    const tempTime = now - (i * 3600 * 1000);
-                    const hour = new Date(tempTime).getHours();
-                    
-                    let simulatedSolar = 0;
-                    if (hour >= 6 && hour <= 18) {
-                        simulatedSolar = Math.round(Math.sin((hour - 6) / 12 * Math.PI) * 4200);
-                    }
-                    
-                    let simulatedCons = 400 + Math.round(Math.random() * 200);
-                    if (hour >= 7 && hour <= 9) simulatedCons += 1100;
-                    if (hour >= 17 && hour <= 21) simulatedCons += 1600;
+            const now = new Date();
+            const currentHour = now.getHours();
 
-                    history.push({
-                        timestamp: tempTime / 1000,
-                        power_ac: simulatedSolar,
-                        consumption: simulatedCons
-                    });
-                }
+            // Podmienka: OKTE zverejňuje ceny po 13:00 na ďalší deň -> prepnutie z 24h na 48h okno
+            const isAfter13 = currentHour >= 13;
+            const totalHours = isAfter13 ? 48 : 24;
+
+            // Výpočet popisku pre badge
+            const badgeEl = document.getElementById('chartBadge');
+            if (badgeEl) {
+                badgeEl.innerText = isAfter13 ? '48 HODÍN (DNES + ZAJTRA)' : '24 HODÍN (DNES)';
+                badgeEl.style.color = isAfter13 ? 'var(--accent-okte)' : 'var(--accent-solar)';
             }
 
-            const labels = history.map(h => {
-                const d = new Date(h.timestamp * 1000);
-                return d.getHours().toString().padStart(2, '0') + ':00';
-            });
+            let history = data && data.history ? data.history : [];
+            
+            // Generovanie časového radu od 00:00 aktuálneho dňa
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            let simulatedHistory = [];
 
-            const fveData = history.map(h => h.power_ac || 0);
-            const consData = history.map(h => h.consumption || 0);
+            for (let i = 0; i < totalHours; i++) {
+                const tempTime = new Date(startOfToday.getTime() + (i * 3600 * 1000));
+                const hour = tempTime.getHours();
+                const isTomorrow = i >= 24;
+
+                // FVE solar curve model
+                let solar = 0;
+                if (hour >= 6 && hour <= 18) {
+                    solar = Math.round(Math.sin((hour - 6) / 12 * Math.PI) * 4500);
+                    if (isTomorrow) solar = Math.round(solar * 0.95); // jemná korekcia pre zajtrajšok
+                }
+
+                // Domáca spotreba s odberovými špičkami ráno a večer
+                let cons = 350 + Math.round(Math.random() * 150);
+                if (hour >= 7 && hour <= 9) cons += 1200;
+                if (hour >= 17 && hour <= 21) cons += 1700;
+
+                // OKTE Spot price simulation s poobedným prepadom (solárna depresia)
+                let price = 82;
+                if (hour >= 7 && hour <= 10) price += 35;  // ranná špička
+                if (hour >= 11 && hour <= 15) price -= 48; // solárne minimum
+                if (hour >= 18 && hour <= 21) price += 55; // večerná špička
+                price += Math.sin(hour) * 8; // náhodné trhové vlnenie
+                price = Math.round(price * 10) / 10;
+
+                simulatedHistory.push({
+                    timestamp: tempTime.getTime() / 1000,
+                    power_ac: solar,
+                    consumption: cons,
+                    okte_price: price,
+                    label: (isTomorrow ? 'Zajtra ' : '') + hour.toString().padStart(2, '0') + ':00'
+                });
+            }
+
+            const labels = simulatedHistory.map(h => h.label);
+            const fveData = simulatedHistory.map(h => h.power_ac);
+            const consData = simulatedHistory.map(h => h.consumption);
+            const okteData = simulatedHistory.map(h => h.okte_price);
 
             elvoChart = new Chart(ctx, {
                 type: 'line',
@@ -1530,49 +1556,74 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: 'FVE Výroba (W)',
+                            label: 'Výkon FVE (W)',
                             data: fveData,
                             borderColor: '#f59e0b',
                             backgroundColor: 'rgba(245, 158, 11, 0.05)',
                             borderWidth: 2,
                             tension: 0.4,
                             fill: true,
-                            pointRadius: 0,
-                            pointHoverRadius: 4
+                            yAxisID: 'y'
                         },
                         {
-                            label: 'Spotreba (W)',
+                            label: 'Spotreba domu (W)',
                             data: consData,
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.05)',
                             borderWidth: 2,
                             tension: 0.4,
                             fill: true,
-                            pointRadius: 0,
-                            pointHoverRadius: 4
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Cena OKTE (€/MWh)',
+                            data: okteData,
+                            borderColor: '#a855f7',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.35,
+                            fill: false,
+                            yAxisID: 'y1'
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         legend: {
                             display: true,
                             labels: {
                                 color: '#9ca3af',
-                                font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' }
+                                font: { family: 'Plus Jakarta Sans', size: 10, weight: '700' }
                             }
                         }
                     },
                     scales: {
                         y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
                             grid: { color: 'rgba(255, 255, 255, 0.03)' },
-                            ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 10 } }
+                            ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 9 } },
+                            title: { display: true, text: 'Výkon (W)', color: '#9ca3af' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#a855f7', font: { family: 'JetBrains Mono', size: 9 } },
+                            title: { display: true, text: 'Cena (€/MWh)', color: '#a855f7' }
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 10 } }
+                            ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 9 } }
                         }
                     }
                 }
