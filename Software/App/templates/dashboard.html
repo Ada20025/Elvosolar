@@ -1493,10 +1493,10 @@
             const now = new Date();
             const currentHour = now.getHours();
 
-            // Predajné trhy OKTE sa zverejňujú po 13:00 na nasledujúci deň -> prepnutie na 48 hodín
+            // Prepnutie na 48 hodín po 13:00
             const isAfter13 = currentHour >= 13;
             const totalHours = isAfter13 ? 48 : 24;
-            const totalIntervals = totalHours * 4; // 15-minútové kroky (96 pre 24h, 192 pre 48h)
+            const totalIntervals = totalHours * 4; // 15-minútové kroky
 
             const badgeEl = document.getElementById('chartBadge');
             if (badgeEl) {
@@ -1514,7 +1514,7 @@
                 const min = tempTime.getMinutes();
                 const isTomorrow = i >= 96;
 
-                // FVE solar model kalkulovaný s plynulým nábehom po 15 minútach
+                // FVE plynulá krivka s drobným šumom rátaná po 15 minútach
                 let solar = 0;
                 if (hour >= 6 && hour <= 18) {
                     const minutesOfDay = hour * 60 + min;
@@ -1522,22 +1522,38 @@
                     const endMinutes = 18 * 60;
                     if (minutesOfDay >= startMinutes && minutesOfDay <= endMinutes) {
                         solar = Math.round(Math.sin((minutesOfDay - startMinutes) / (endMinutes - startMinutes) * Math.PI) * 4500);
-                        // Jemná šumová odchýlka pre realistickejší vzhľad
                         solar += Math.round((Math.random() - 0.5) * 120);
                         if (solar < 0) solar = 0;
                     }
                     if (isTomorrow) solar = Math.round(solar * 0.95);
                 }
 
-                // 15-minútové ceny OKTE simulujúce rannú a večernú špičku s poobedným poklesom
-                let price = 80;
-                if (hour >= 7 && hour <= 10) price += 35;  // ranná špička
-                if (hour >= 11 && hour <= 15) price -= 50; // poobedný prepad (kanibalizácia cien)
-                if (hour >= 18 && hour <= 21) price += 60; // večerná špička
-                
-                // Jemné 15-minútové fluktuácie cien
-                price += Math.sin(i / 2) * 4 + (Math.random() - 0.5) * 3;
-                price = Math.round(price * 100) / 100;
+                // Kalkulácia ceny OKTE – hodnota sa mení skokovo len na začiatku hodiny
+                let price = 85.0;
+                if (hour >= 0 && hour < 6) {
+                    price = 72.0; // Stabilná lacná noc
+                } else if (hour >= 6 && hour < 8) {
+                    price = 110.0;
+                } else if (hour >= 8 && hour < 11) {
+                    price = 148.0; // Ranný cenový vrchol
+                } else if (hour >= 11 && hour <= 14) {
+                    price = 18.0; // Prebytok FVE na trhu -> prepad ceny
+                } else if (hour === 15) {
+                    price = 55.0;
+                } else if (hour >= 16 && hour < 18) {
+                    price = 95.0;
+                } else if (hour >= 18 && hour < 21) {
+                    price = 182.0; // Večerná špička (najdrahšia elektrina)
+                } else if (hour >= 21 && hour < 23) {
+                    price = 105.0;
+                } else {
+                    price = 78.0;
+                }
+
+                // Drobná odchýlka cien pre zajtrajšok na zachovanie realizmu
+                if (isTomorrow) {
+                    price = Math.round((price * 0.96 + Math.sin(hour) * 4) * 10) / 10;
+                }
 
                 const timeLabel = hour.toString().padStart(2, '0') + ':' + min.toString().padStart(2, '0');
                 simulatedHistory.push({
@@ -1575,7 +1591,8 @@
                             borderColor: '#a855f7',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
-                            tension: 0.25,
+                            tension: 0,
+                            stepped: 'before', // Schodový priebeh linky (skoky na prelome hodín)
                             fill: false,
                             pointRadius: 0,
                             pointHoverRadius: 4,
