@@ -60,7 +60,6 @@
             position: relative;
         }
 
-        /* Prvky luxusného ambientného podsvietenia */
         .bg-glow-orb {
             position: absolute;
             width: 500px;
@@ -818,7 +817,7 @@
                     <!-- Combined Analytics Chart -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">Prehľad Výkonu & OKTE</span></span>
+                            <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">15-minútový priebeh OKTE & Výroby</span></span>
                             <div style="display:flex;gap:8px;align-items:center;">
                                 <span id="chartDeviceInfo" style="font-size:9px;font-family:'JetBrains Mono';font-weight:700;color:var(--text-muted);"></span>
                                 <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">--</span>
@@ -1042,10 +1041,10 @@
                             <!-- Model 5 -->
                             <div class="ai-model-card" onclick="setAiModel('5')" id="aiModel5">
                                 <div style="display:flex;align-items:center;gap:12px;">
-                                    <i data-lucide="line-chart" style="color:var(--accent-okte);width:20px;height:20px;"></i>
+                                    <i data-lucide="zap" style="color:var(--accent-okte);width:20px;height:20px;"></i>
                                     <div>
-                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: Predpoveď & Asymetrický Bypass</div>
-                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Optimalizuje toky podľa 24h / 48h cenového plánu OKTE.</div>
+                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: 15-minútová vnútrodenná optimalizácia</div>
+                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Reaguje na vnútrodenné výchylky cien v 15-minútových slotoch.</div>
                                     </div>
                                 </div>
                                 <i id="aiModelCheck5" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1467,7 +1466,7 @@
                 2: '💰 Arbitráž - predáva keď je drahšie ako priemer.',
                 3: '🔋 Nákup pod priemerom - lacno nabíja, v špičke vybíja.',
                 4: '📊 Kombinovaná arbitráž - nabíja lacno, predáva drahšie.',
-                5: '📈 Model 5: OKTE Predpoveď & Asymetrický Bypass - chráni a optimalizuje toky na základe 24h / 48h cenového plánu OKTE.'
+                5: '⚡ Model 5: 15-minútová vnútrodenná optimalizácia – priebežne vyhodnocuje vnútrodenné ceny a ukladá prebytočnú energiu v 15-minútových fázach.'
             };
             const descEl = document.getElementById('aiModelDesc');
             if (descEl) {
@@ -1494,60 +1493,63 @@
             const now = new Date();
             const currentHour = now.getHours();
 
-            // Podmienka: OKTE zverejňuje ceny po 13:00 na ďalší deň -> prepnutie z 24h na 48h okno
+            // Predajné trhy OKTE sa zverejňujú po 13:00 na nasledujúci deň -> prepnutie na 48 hodín
             const isAfter13 = currentHour >= 13;
             const totalHours = isAfter13 ? 48 : 24;
+            const totalIntervals = totalHours * 4; // 15-minútové kroky (96 pre 24h, 192 pre 48h)
 
-            // Výpočet popisku pre badge
             const badgeEl = document.getElementById('chartBadge');
             if (badgeEl) {
-                badgeEl.innerText = isAfter13 ? '48 HODÍN (DNES + ZAJTRA)' : '24 HODÍN (DNES)';
+                badgeEl.innerText = isAfter13 ? '48 HODÍN (192 INTERVALOV PO 15 MIN)' : '24 HODÍN (96 INTERVALOV PO 15 MIN)';
                 badgeEl.style.color = isAfter13 ? 'var(--accent-okte)' : 'var(--accent-solar)';
             }
 
             let history = data && data.history ? data.history : [];
-            
-            // Generovanie časového radu od 00:00 aktuálneho dňa
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             let simulatedHistory = [];
 
-            for (let i = 0; i < totalHours; i++) {
-                const tempTime = new Date(startOfToday.getTime() + (i * 3600 * 1000));
+            for (let i = 0; i < totalIntervals; i++) {
+                const tempTime = new Date(startOfToday.getTime() + (i * 15 * 60 * 1000));
                 const hour = tempTime.getHours();
-                const isTomorrow = i >= 24;
+                const min = tempTime.getMinutes();
+                const isTomorrow = i >= 96;
 
-                // FVE solar curve model
+                // FVE solar model kalkulovaný s plynulým nábehom po 15 minútach
                 let solar = 0;
                 if (hour >= 6 && hour <= 18) {
-                    solar = Math.round(Math.sin((hour - 6) / 12 * Math.PI) * 4500);
-                    if (isTomorrow) solar = Math.round(solar * 0.95); // jemná korekcia pre zajtrajšok
+                    const minutesOfDay = hour * 60 + min;
+                    const startMinutes = 6 * 60;
+                    const endMinutes = 18 * 60;
+                    if (minutesOfDay >= startMinutes && minutesOfDay <= endMinutes) {
+                        solar = Math.round(Math.sin((minutesOfDay - startMinutes) / (endMinutes - startMinutes) * Math.PI) * 4500);
+                        // Jemná šumová odchýlka pre realistickejší vzhľad
+                        solar += Math.round((Math.random() - 0.5) * 120);
+                        if (solar < 0) solar = 0;
+                    }
+                    if (isTomorrow) solar = Math.round(solar * 0.95);
                 }
 
-                // Domáca spotreba s odberovými špičkami ráno a večer
-                let cons = 350 + Math.round(Math.random() * 150);
-                if (hour >= 7 && hour <= 9) cons += 1200;
-                if (hour >= 17 && hour <= 21) cons += 1700;
-
-                // OKTE Spot price simulation s poobedným prepadom (solárna depresia)
-                let price = 82;
+                // 15-minútové ceny OKTE simulujúce rannú a večernú špičku s poobedným poklesom
+                let price = 80;
                 if (hour >= 7 && hour <= 10) price += 35;  // ranná špička
-                if (hour >= 11 && hour <= 15) price -= 48; // solárne minimum
-                if (hour >= 18 && hour <= 21) price += 55; // večerná špička
-                price += Math.sin(hour) * 8; // náhodné trhové vlnenie
-                price = Math.round(price * 10) / 10;
+                if (hour >= 11 && hour <= 15) price -= 50; // poobedný prepad (kanibalizácia cien)
+                if (hour >= 18 && hour <= 21) price += 60; // večerná špička
+                
+                // Jemné 15-minútové fluktuácie cien
+                price += Math.sin(i / 2) * 4 + (Math.random() - 0.5) * 3;
+                price = Math.round(price * 100) / 100;
 
+                const timeLabel = hour.toString().padStart(2, '0') + ':' + min.toString().padStart(2, '0');
                 simulatedHistory.push({
                     timestamp: tempTime.getTime() / 1000,
                     power_ac: solar,
-                    consumption: cons,
                     okte_price: price,
-                    label: (isTomorrow ? 'Zajtra ' : '') + hour.toString().padStart(2, '0') + ':00'
+                    label: (isTomorrow ? 'Zajtra ' : '') + timeLabel
                 });
             }
 
             const labels = simulatedHistory.map(h => h.label);
             const fveData = simulatedHistory.map(h => h.power_ac);
-            const consData = simulatedHistory.map(h => h.consumption);
             const okteData = simulatedHistory.map(h => h.okte_price);
 
             elvoChart = new Chart(ctx, {
@@ -1561,18 +1563,10 @@
                             borderColor: '#f59e0b',
                             backgroundColor: 'rgba(245, 158, 11, 0.05)',
                             borderWidth: 2,
-                            tension: 0.4,
+                            tension: 0.35,
                             fill: true,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Spotreba domu (W)',
-                            data: consData,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                            borderWidth: 2,
-                            tension: 0.4,
-                            fill: true,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
                             yAxisID: 'y'
                         },
                         {
@@ -1581,9 +1575,10 @@
                             borderColor: '#a855f7',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
-                            borderDash: [5, 5],
-                            tension: 0.35,
+                            tension: 0.25,
                             fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
                             yAxisID: 'y1'
                         }
                     ]
@@ -1623,7 +1618,12 @@
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 9 } }
+                            ticks: {
+                                autoSkip: true,
+                                maxTicksLimit: isAfter13 ? 16 : 12,
+                                color: '#9ca3af',
+                                font: { family: 'JetBrains Mono', size: 9 }
+                            }
                         }
                     }
                 }
