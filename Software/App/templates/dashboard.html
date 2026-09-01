@@ -646,6 +646,29 @@
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
         }
 
+        /* Weather widget design */
+        .weather-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(10, 15, 30, 0.6) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        /* Premium Console log */
+        .terminal-panel {
+            background: #02040a;
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent-battery);
+            height: 120px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -818,15 +841,42 @@
                     <div class="glass-card">
                         <div class="card-header-styled">
                             <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">15-minútový priebeh OKTE & Výroby</span></span>
+                            
                             <div style="display:flex;gap:8px;align-items:center;">
-                                <span id="chartDeviceInfo" style="font-size:9px;font-family:'JetBrains Mono';font-weight:700;color:var(--text-muted);"></span>
+                                <!-- Spínač nedostupnosti OKTE (Pre simuláciu a chybové hlásenie) -->
+                                <button onclick="toggleOkteAvailability()" id="btnToggleOkteState" style="background:rgba(255,255,255,0.04); border:1px solid var(--border-card); padding:4px 10px; border-radius:6px; font-size:9px; font-weight:800; color:var(--text-secondary); cursor:pointer; font-family:'JetBrains Mono';">
+                                    OKTE: ONLINE
+                                </button>
                                 <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">--</span>
                             </div>
                         </div>
                         <div style="position:relative;height:320px;width:100%;">
+                            
+                            <!-- Nedostupnosť OKTE: chybové hlásenie a linka na dnešný deň -->
+                            <div id="chartOverlay" class="hidden" style="position:absolute; inset:0; background:rgba(2,4,10,0.9); backdrop-filter:blur(10px); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; border-radius:16px; padding:20px; text-align:center;">
+                                <i data-lucide="alert-triangle" style="width:44px; height:44px; color:var(--accent-warn); margin-bottom:12px;"></i>
+                                <h4 style="font-size:15px; font-weight:800; color:var(--text-primary); letter-spacing:-0.2px;">OKTE databáza je nedostupná</h4>
+                                <p style="font-size:11px; color:var(--text-secondary); max-width:340px; margin-top:6px; margin-bottom:18px; line-height:1.5;">Dátové spojenie s OKTE s.r.o. bolo prerušené. Systém dočasne beží v záložnom režime. Oficiálny denný priebeh cien si môžete overiť priamo na webe:</p>
+                                <a href="https://www.okte.sk/sk/kratkodoby-trh/organizovany-denny-trh/vysledky/" target="_blank" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg, var(--accent-grid), var(--accent-okte)); color:white; padding:10px 18px; border-radius:10px; font-size:11px; font-weight:800; box-shadow:0 10px 20px rgba(99,102,241,0.25);">
+                                    Otvoriť portál OKTE <i data-lucide="external-link" style="width:13px; height:13px;"></i>
+                                </a>
+                            </div>
+
                             <canvas id="elvoChart"></canvas>
                         </div>
                     </div>
+
+                    <!-- Bežiaci terminál systémových hlásení -->
+                    <div class="glass-card">
+                        <div class="card-header-styled" style="margin-bottom:12px; padding-bottom:8px;">
+                            <span class="card-title-styled" style="font-size:11px; color:var(--accent-battery);"><i data-lucide="terminal"></i> Live EMS System Log</span>
+                        </div>
+                        <div id="emsTerminalLog" class="terminal-panel">
+                            [00:00:01] Inicializácia energetického jadra CM5 úspešná.<br>
+                            [00:00:03] Načítavanie plánu 15-minútových sieťových intervalov...
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Right Sidebar -->
@@ -835,6 +885,21 @@
                     <div class="metric-card" style="--line-color: var(--accent-saved); margin-bottom: 20px; padding: 22px;">
                         <span class="metric-label-styled"><i data-lucide="banknote" style="width:14px;height:14px;color:var(--accent-saved);"></i> Celková Úspora</span>
                         <span class="metric-value-styled text-saved" id="dashTotalSaved" style="font-size: 32px; font-weight: 900; line-height: 1.2;">0.00 €</span>
+                    </div>
+
+                    <!-- Predpoveď počasia pre FVE (Nová vec) -->
+                    <div class="weather-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <span style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Solárna Predpoveď</span>
+                            <span style="font-size:8px; font-weight:800; color:var(--accent-solar); background:rgba(245,158,11,0.12); padding:3px 6px; border-radius:4px;">POČASIE</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                            <i data-lucide="sun" style="width:28px; height:28px; color:var(--accent-solar);"></i>
+                            <div>
+                                <span style="font-size:12px; font-weight:800; color:var(--text-primary); display:block;">Jasné až polooblačno</span>
+                                <span style="font-size:10px; color:var(--text-muted); display:block;">Očakávaný svit: 8.2 hodiny dnes</span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- OKTE Mini Spotlight Widget -->
@@ -887,7 +952,6 @@
                     <div class="glass-card" style="margin-bottom: 0;">
                         <div class="card-header-styled" style="margin-bottom: 16px;">
                             <span class="card-title-styled"><i data-lucide="cpu"></i> Regulačné Algoritmy & Výber Režimu</span>
-                            <!-- Malé klikateľné ozubené koliesko pre rozbalenie parametrov -->
                             <button class="gear-btn" onclick="toggleExpandableSettings(event)" title="Nastavenia výkonu">
                                 <i data-lucide="settings" style="width: 20px; height: 20px;"></i>
                             </button>
@@ -1022,7 +1086,7 @@
                                     <i data-lucide="download" style="color:var(--accent-battery);width:20px;height:20px;"></i>
                                     <div>
                                         <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 3: Nabíjanie batérie zo siete</div>
-                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, keď ceny klesnú pod denný priemer.</div>
+                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, kedy ceny klesnú pod denný priemer.</div>
                                     </div>
                                 </div>
                                 <i id="aiModelCheck3" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1274,7 +1338,41 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
-        // Otváranie / zatváranie parametrov kliknutím na malé koliesko
+        let okteAvailable = true; // Globálny stav dostupnosti OKTE
+        let simulatedHistoryData = []; // Globálna cache histórie
+
+        // Zápis správ do emulovaného EMS terminálu
+        function writeToTerminal(msg) {
+            const term = document.getElementById('emsTerminalLog');
+            if (term) {
+                const now = new Date();
+                const stamp = `[${now.toTimeString().split(' ')[0]}]`;
+                term.innerHTML += `<br>${stamp} ${msg}`;
+                term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        function toggleOkteAvailability() {
+            okteAvailable = !okteAvailable;
+            const btn = document.getElementById('btnToggleOkteState');
+            const overlay = document.getElementById('chartOverlay');
+
+            if (okteAvailable) {
+                btn.innerText = 'OKTE: ONLINE';
+                btn.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                btn.style.color = 'var(--accent-battery)';
+                overlay.classList.add('hidden');
+                writeToTerminal('Spojenie s OKTE serverom obnovené. Načítané dáta.');
+            } else {
+                btn.innerText = 'OKTE: CHYBA';
+                btn.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+                btn.style.color = 'var(--accent-warn)';
+                overlay.classList.remove('hidden');
+                writeToTerminal('Zlyhalo spojenie s OKTE API. Maska nedostupnosti aktivovaná.');
+            }
+            initCombinedChart(); // Prekreslenie grafu podľa nového stavu
+        }
+
         function toggleExpandableSettings(e) {
             e.stopPropagation();
             const panel = document.getElementById('gearSettingsPanel');
@@ -1492,13 +1590,13 @@
                 badgeEl.style.color = isAfter13 ? 'var(--accent-okte)' : 'var(--accent-solar)';
             }
 
-            let history = data && data.history ? data.history : [];
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             let simulatedHistory = [];
 
             let minPrice = Infinity;
             let maxPrice = -Infinity;
             let currentOktePrice = 85.0;
+            let totalPriceSum = 0;
 
             for (let i = 0; i < totalIntervals; i++) {
                 const tempTime = new Date(startOfToday.getTime() + (i * 15 * 60 * 1000));
@@ -1549,6 +1647,7 @@
 
                 if (price < minPrice) minPrice = price;
                 if (price > maxPrice) maxPrice = price;
+                totalPriceSum += price;
 
                 // Sync ceny pre aktuálnu reálnu hodinu (v rámci dňa)
                 if (!isTomorrow && hour === currentHour) {
@@ -1564,50 +1663,81 @@
                 });
             }
 
+            const avgPrice = totalPriceSum / totalIntervals;
+
             // Dynamická aktualizácia hodnôt OKTE modulu na pravej lište (Synchrónny beh)
             const spotPriceEl = document.getElementById('okteSpotPrice');
             const minPriceEl = document.getElementById('okteMinPrice');
             const maxPriceEl = document.getElementById('okteMaxPrice');
 
-            if (spotPriceEl) spotPriceEl.innerText = currentOktePrice.toFixed(2);
-            if (minPriceEl) minPriceEl.innerText = minPrice.toFixed(1) + ' €';
-            if (maxPriceEl) maxPriceEl.innerText = maxPrice.toFixed(1) + ' €';
+            if (spotPriceEl) spotPriceEl.innerText = okteAvailable ? currentOktePrice.toFixed(2) : '--';
+            if (minPriceEl) minPriceEl.innerText = okteAvailable ? minPrice.toFixed(1) + ' €' : '--';
+            if (maxPriceEl) maxPriceEl.innerText = okteAvailable ? maxPrice.toFixed(1) + ' €' : '--';
 
             const labels = simulatedHistory.map(h => h.label);
             const fveData = simulatedHistory.map(h => h.power_ac);
             const okteData = simulatedHistory.map(h => h.okte_price);
+            const avgDataPoints = Array(totalIntervals).fill(avgPrice);
+
+            // Dynamické skrývanie výroby: ak je celkový sumárny výkon nulový (napr. v noci), krivka sa nesmie kresliť
+            const totalSolarSum = fveData.reduce((a, b) => a + b, 0);
+            const includeFveDataset = totalSolarSum > 0;
+
+            const chartDatasets = [];
+
+            // Pridanie FVE krivky len ak je nenulová výroba
+            if (includeFveDataset) {
+                chartDatasets.push({
+                    label: 'Výkon FVE (W)',
+                    data: fveData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                    borderWidth: 2,
+                    tension: 0.35,
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    yAxisID: 'y'
+                });
+            } else {
+                writeToTerminal('Výkon FVE je momentálne 0 W. Linka bola z grafu automaticky skrytá.');
+            }
+
+            // Pridanie OKTE ceny iba ak sú dáta OKTE označené ako dostupné
+            if (okteAvailable) {
+                chartDatasets.push({
+                    label: 'Cena OKTE (€/MWh)',
+                    data: okteData,
+                    borderColor: '#a855f7',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0,
+                    stepped: 'before',
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    yAxisID: 'y1'
+                });
+
+                // Linka priemerných cien OKTE (Nová vec)
+                chartDatasets.push({
+                    label: `Priemer OKTE (${avgPrice.toFixed(1)} €)`,
+                    data: avgDataPoints,
+                    borderColor: 'rgba(255, 255, 255, 0.25)',
+                    borderDash: [6, 4],
+                    borderWidth: 1.5,
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    yAxisID: 'y1'
+                });
+            }
 
             elvoChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [
-                        {
-                            label: 'Výkon FVE (W)',
-                            data: fveData,
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.05)',
-                            borderWidth: 2,
-                            tension: 0.35,
-                            fill: true,
-                            pointRadius: 0,
-                            pointHoverRadius: 4,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Cena OKTE (€/MWh)',
-                            data: okteData,
-                            borderColor: '#a855f7',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            tension: 0,
-                            stepped: 'before', // Schodový priebeh linky (skoky na prelome hodín)
-                            fill: false,
-                            pointRadius: 0,
-                            pointHoverRadius: 4,
-                            yAxisID: 'y1'
-                        }
-                    ]
+                    datasets: chartDatasets
                 },
                 options: {
                     responsive: true,
@@ -1628,7 +1758,7 @@
                     scales: {
                         y: {
                             type: 'linear',
-                            display: true,
+                            display: includeFveDataset, // Os Y sa skryje ak nie sú dáta o FVE
                             position: 'left',
                             grid: { color: 'rgba(255, 255, 255, 0.03)' },
                             ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 9 } },
@@ -1636,7 +1766,7 @@
                         },
                         y1: {
                             type: 'linear',
-                            display: true,
+                            display: okteAvailable, // Os Y pre ceny sa skryje ak OKTE vypadne
                             position: 'right',
                             grid: { drawOnChartArea: false },
                             ticks: { color: '#a855f7', font: { family: 'JetBrains Mono', size: 9 } },
