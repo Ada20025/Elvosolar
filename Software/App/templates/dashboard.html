@@ -846,7 +846,7 @@
                             <span class="okte-badge">AKTUALIZOVANÉ</span>
                         </div>
                         <div style="display:flex;align-items:baseline;gap:6px;">
-                            <span id="okteSpotPrice" class="font-mono" style="font-size:32px;font-weight:900;color:var(--text-primary);">84.60</span>
+                            <span id="okteSpotPrice" class="font-mono" style="font-size:32px;font-weight:900;color:var(--text-primary);">--</span>
                             <span style="font-size:12px;color:var(--text-secondary);font-weight:700;">€/MWh</span>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255, 255, 255, 0.06);padding-top:12px;font-size:11px;">
@@ -1037,17 +1037,6 @@
                                     </div>
                                 </div>
                                 <i id="aiModelCheck4" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                            </div>
-                            <!-- Model 5 -->
-                            <div class="ai-model-card" onclick="setAiModel('5')" id="aiModel5">
-                                <div style="display:flex;align-items:center;gap:12px;">
-                                    <i data-lucide="zap" style="color:var(--accent-okte);width:20px;height:20px;"></i>
-                                    <div>
-                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: 15-minútová vnútrodenná optimalizácia</div>
-                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Reaguje na vnútrodenné výchylky cien v 15-minútových slotoch.</div>
-                                    </div>
-                                </div>
-                                <i id="aiModelCheck5" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
                             </div>
                         </div>
 
@@ -1450,7 +1439,7 @@
             const selectedCard = document.getElementById(`aiModel${id}`);
             if (selectedCard) selectedCard.classList.add('active');
 
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 4; i++) {
                 const checkEl = document.getElementById(`aiModelCheck${i}`);
                 if (checkEl) {
                     if (i.toString() === id.toString()) {
@@ -1465,8 +1454,7 @@
                 1: '🛡️ Ochrana pred zápornou cenou - ON keď cena > 0€, OFF keď < 0€.',
                 2: '💰 Arbitráž - predáva keď je drahšie ako priemer.',
                 3: '🔋 Nákup pod priemerom - lacno nabíja, v špičke vybíja.',
-                4: '📊 Kombinovaná arbitráž - nabíja lacno, predáva drahšie.',
-                5: '⚡ Model 5: 15-minútová vnútrodenná optimalizácia – priebežne vyhodnocuje vnútrodenné ceny a ukladá prebytočnú energiu v 15-minútových fázach.'
+                4: '📊 Kombinovaná arbitráž - nabíja lacno, predáva drahšie.'
             };
             const descEl = document.getElementById('aiModelDesc');
             if (descEl) {
@@ -1507,6 +1495,10 @@
             let history = data && data.history ? data.history : [];
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             let simulatedHistory = [];
+
+            let minPrice = Infinity;
+            let maxPrice = -Infinity;
+            let currentOktePrice = 85.0;
 
             for (let i = 0; i < totalIntervals; i++) {
                 const tempTime = new Date(startOfToday.getTime() + (i * 15 * 60 * 1000));
@@ -1555,6 +1547,14 @@
                     price = Math.round((price * 0.96 + Math.sin(hour) * 4) * 10) / 10;
                 }
 
+                if (price < minPrice) minPrice = price;
+                if (price > maxPrice) maxPrice = price;
+
+                // Sync ceny pre aktuálnu reálnu hodinu (v rámci dňa)
+                if (!isTomorrow && hour === currentHour) {
+                    currentOktePrice = price;
+                }
+
                 const timeLabel = hour.toString().padStart(2, '0') + ':' + min.toString().padStart(2, '0');
                 simulatedHistory.push({
                     timestamp: tempTime.getTime() / 1000,
@@ -1563,6 +1563,15 @@
                     label: (isTomorrow ? 'Zajtra ' : '') + timeLabel
                 });
             }
+
+            // Dynamická aktualizácia hodnôt OKTE modulu na pravej lište (Synchrónny beh)
+            const spotPriceEl = document.getElementById('okteSpotPrice');
+            const minPriceEl = document.getElementById('okteMinPrice');
+            const maxPriceEl = document.getElementById('okteMaxPrice');
+
+            if (spotPriceEl) spotPriceEl.innerText = currentOktePrice.toFixed(2);
+            if (minPriceEl) minPriceEl.innerText = minPrice.toFixed(1) + ' €';
+            if (maxPriceEl) maxPriceEl.innerText = maxPrice.toFixed(1) + ' €';
 
             const labels = simulatedHistory.map(h => h.label);
             const fveData = simulatedHistory.map(h => h.power_ac);
