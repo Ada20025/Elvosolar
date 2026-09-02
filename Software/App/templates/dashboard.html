@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ElvoControl — Smart EMS</title>
+    <link class="brand-favicon" rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#02040a">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,17 +16,17 @@
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg-primary: #030712;
-            --bg-secondary: #090d16;
-            --bg-card: rgba(17, 24, 39, 0.6);
-            --bg-card-hover: rgba(31, 41, 55, 0.8);
+            --bg-primary: #02040a;
+            --bg-secondary: #05070f;
+            --bg-card: rgba(10, 15, 30, 0.45);
+            --bg-card-hover: rgba(20, 28, 55, 0.65);
             --border-color: rgba(99, 102, 241, 0.25);
-            --border-card: rgba(255, 255, 255, 0.08);
+            --border-card: rgba(255, 255, 255, 0.07);
             --text-primary: #f9fafb;
             --text-secondary: #9ca3af;
             --text-muted: #6b7280;
-            --header-bg: rgba(3, 7, 18, 0.85);
-            --shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            --header-bg: rgba(2, 4, 10, 0.85);
+            --shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
             --accent-solar: #f59e0b;
             --accent-battery: #10b981;
             --accent-grid: #3b82f6;
@@ -33,18 +38,18 @@
         }
 
         body.light-mode {
-            --bg-primary: #f1f5f9;
+            --bg-primary: #f0f4f8;
             --bg-secondary: #ffffff;
-            --bg-card: rgba(255, 255, 255, 0.9);
+            --bg-card: rgba(255, 255, 255, 0.85);
             --bg-card-hover: rgba(241, 245, 249, 0.98);
-            --border-color: rgba(99, 102, 241, 0.15);
-            --border-card: rgba(15, 23, 42, 0.08);
+            --border-color: rgba(99, 102, 241, 0.12);
+            --border-card: rgba(0, 0, 0, 0.06);
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-muted: #94a3b8;
-            --header-bg: rgba(255, 255, 255, 0.9);
-            --shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
-            --logo-glow: rgba(16, 185, 129, 0.2);
+            --header-bg: rgba(255, 255, 255, 0.92);
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+            --logo-glow: rgba(16, 185, 129, 0.15);
             --input-bg: #f8fafc;
         }
 
@@ -60,19 +65,19 @@
 
         .bg-glow-orb {
             position: absolute;
-            width: 600px;
-            height: 600px;
+            width: 500px;
+            height: 500px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.04), transparent 70%);
-            top: -150px;
-            right: -150px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.05), transparent 70%);
+            top: -100px;
+            right: -100px;
             z-index: 1;
             pointer-events: none;
         }
 
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Header */
+        /* Premium Header */
         .header {
             position: sticky;
             top: 0;
@@ -105,6 +110,7 @@
             width: 32px;
             height: 32px;
             filter: drop-shadow(0 0 8px var(--logo-glow));
+            transition: filter 0.3s;
         }
 
         .station-dropdown-container {
@@ -121,7 +127,7 @@
             border-radius: 18px;
             padding: 6px;
             min-width: 280px;
-            box-shadow: var(--shadow);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(25px);
             z-index: 130;
         }
@@ -324,8 +330,8 @@
 
         /* OKTE Widget Styles */
         .okte-mini-card {
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, var(--bg-card) 100%);
-            border: 1px solid rgba(168, 85, 247, 0.25);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, var(--bg-card) 100%);
+            border: 1px solid rgba(245, 158, 11, 0.25);
             border-radius: 20px;
             padding: 18px 20px;
             position: relative;
@@ -345,8 +351,8 @@
             font-size: 8px;
             font-family: 'JetBrains Mono', monospace;
             font-weight: 800;
-            color: var(--accent-okte);
-            background: rgba(168, 85, 247, 0.12);
+            color: var(--accent-solar);
+            background: rgba(245, 158, 11, 0.12);
             padding: 4px 8px;
             border-radius: 6px;
             letter-spacing: 1px;
@@ -369,6 +375,61 @@
             align-items: center;
             border-bottom: 1px solid var(--border-card);
             padding-bottom: 10px;
+        }
+
+        .inverter-status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 11px 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .inverter-status-row:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .inverter-details-box {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            padding: 0 14px;
+            border-radius: 12px;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            transition: max-height 0.25s ease-out, opacity 0.2s ease-out, padding 0.2s;
+        }
+
+        .inverter-details-box.expanded {
+            max-height: 120px;
+            opacity: 1;
+            padding: 12px 14px;
+            border-color: var(--border-card);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .pulse-dot.online {
+            background: var(--accent-battery);
+            box-shadow: 0 0 10px var(--accent-battery);
+        }
+
+        .pulse-dot.offline {
+            background: var(--accent-warn);
+            box-shadow: 0 0 10px var(--accent-warn);
         }
 
         /* Metrics Grid */
@@ -452,7 +513,7 @@
         }
 
         .expandable-settings-panel.open {
-            max-height: 500px;
+            max-height: 600px;
             opacity: 1;
             padding: 20px;
             margin-top: 16px;
@@ -518,19 +579,19 @@
         }
 
         .relay-item-card {
-            background: var(--bg-card);
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-card);
-            border-radius: 18px;
-            padding: 18px 20px;
+            border-radius: 14px;
+            padding: 14px 16px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            gap: 8px;
+            transition: all 0.2s;
         }
 
         .relay-item-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-color);
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(99, 102, 241, 0.15);
         }
 
         .ai-model-list { display: flex; flex-direction: column; gap: 8px; }
@@ -567,6 +628,12 @@
             .flexible-grid { grid-template-columns: 1fr; }
         }
 
+        .holiday-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
         .input-styled {
             width: 100%;
             background: var(--input-bg);
@@ -593,6 +660,59 @@
             border-radius: 20px;
             padding: 18px;
             margin-bottom: 20px;
+        }
+
+        /* iOS style toggle switches */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-card);
+        }
+        .switch-container:last-child {
+            border-bottom: none;
+        }
+        .switch-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .switch-control {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+        .switch-control input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .switch-slider {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: background 0.25s;
+        }
+        .switch-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #9ca3af;
+            left: 3px;
+            top: 3px;
+            transition: transform 0.25s, background 0.25s;
+        }
+        .switch-control input:checked + .switch-slider {
+            background: var(--accent-battery);
+        }
+        .switch-control input:checked + .switch-slider::before {
+            transform: translateX(20px);
+            background: white;
         }
 
         /* Premium Wheels (Gauges) Style with Arrow pointer */
@@ -663,6 +783,12 @@
 
     <div class="bg-glow-orb"></div>
 
+    <div id="php-metadata"
+         data-device-id="<?php echo htmlspecialchars($devices[0]['id'] ?? 1); ?>"
+         data-base-path="<?php echo htmlspecialchars($base_path); ?>"
+         data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>"
+         class="hidden"></div>
+
     <!-- Header -->
     <header class="header">
         <div class="header-inner">
@@ -694,13 +820,25 @@
                         <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
                     </button>
                     <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
-                        <button onclick="selectActiveDevice(this, '1', 'ElvoControl')" class="station-dropdown-item">
-                            <span style="display:flex;align-items:center;gap:8px;">
-                                <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-                                <span class="dev-dropdown-name-lbl">ElvoControl</span>
-                            </span>
-                            <span class="sn-badge" style="font-family: 'JetBrains Mono'; font-size: 10px;">SN: 894721</span>
-                        </button>
+                        <?php if (isset($devices) && count($devices) > 0): ?>
+                            <?php foreach ($devices as $dev): ?>
+                                <button onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" class="station-dropdown-item">
+                                    <span style="display:flex;align-items:center;gap:8px;">
+                                        <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+                                        <span class="dev-dropdown-name-lbl"><?php echo htmlspecialchars($dev['name']); ?></span>
+                                    </span>
+                                    <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
+                                </button>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <button onclick="selectActiveDevice(this, '1', 'ElvoControl')" class="station-dropdown-item">
+                                <span style="display:flex;align-items:center;gap:8px;">
+                                    <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+                                    <span class="dev-dropdown-name-lbl">ElvoControl</span>
+                                </span>
+                                <span class="sn-badge">SN: ---</span>
+                            </button>
+                        <?php endif; ?>
                         <div style="height:1px;background:var(--border-card);margin:6px 0;"></div>
                         <button onclick="window.location.href='setup.html'" class="station-dropdown-item" style="color:var(--accent-battery);">
                             <span style="display:flex;align-items:center;gap:8px;font-weight:800;">
@@ -725,11 +863,15 @@
                             <div class="bar bar-4"></div>
                         </div>
                     </div>
+                    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:10px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);font-size:10px;font-weight:700;color:var(--accent-grid);">
+                        <span class="pulse-dot online" style="width:6px;height:6px;"></span>
+                        <span id="deviceBatterySoc" class="font-mono">--%</span>
+                    </div>
                 </div>
                 <div class="user-profile-container">
                     <button id="userMenuBtn" onclick="toggleUserDropdown(event)" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);cursor:pointer;font-size:12px;font-weight:700;color:var(--text-primary);">
                         <img id="headerAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid var(--accent-battery);">
-                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="headerNameDisplay">Adam</span>
+                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="headerNameDisplay"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Adam'); ?></span>
                     </button>
                     <div id="userDropdownMenu" class="user-dropdown-card hidden">
                         <button onclick="toggleTheme()" class="user-dropdown-btn">
@@ -741,7 +883,7 @@
                             <span>Nastavenia</span>
                         </button>
                         <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
-                        <a href="/logout" style="text-decoration:none;">
+                        <a href="<?php echo $base_path; ?>/logout" style="text-decoration:none;">
                             <button class="user-dropdown-btn" style="color:var(--accent-warn);">
                                 <i data-lucide="log-out" style="width:14px;height:14px;"></i>
                                 <span>Odhlásiť sa</span>
@@ -764,6 +906,10 @@
             </button>
             <button onclick="switchTab('control')" id="tabBtnControl" class="nav-tab">
                 <i data-lucide="toggle-left" style="width:14px;height:14px;"></i> Relé
+            </button>
+            <button onclick="switchTab('holiday')" id="tabBtnHoliday" class="nav-tab">
+                <i data-lucide="umbrella" style="width:14px;height:14px;color:#10b981;"></i> Dovolenka
+                <span style="font-size:8px;font-weight:900;background:var(--accent-warn);color:white;padding:1px 5px;border-radius:4px;margin-left:4px;">BETA</span>
             </button>
             <button onclick="switchTab('profile')" id="tabBtnProfile" class="nav-tab">
                 <i data-lucide="user" style="width:14px;height:14px;"></i> Profil
@@ -861,6 +1007,29 @@
                             <div style="display:flex;flex-direction:column;text-align:right;">
                                 <span style="color:var(--text-muted);font-size:9px;text-transform:uppercase;">Maximum</span>
                                 <span class="font-mono" id="okteMaxPrice" style="color:var(--accent-warn);font-weight:700;">-- €</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Striedače -->
+                    <div class="diagnostic-bus-card" style="margin-top:16px;">
+                        <div class="bus-header">
+                            <span style="font-size:11px;font-weight:800;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
+                                <i data-lucide="layers" style="color:var(--accent-battery);width:14px;height:14px;"></i> <span id="invertersTitle">Striedače</span>
+                            </span>
+                            <span class="font-mono" id="busStatus" style="font-size:9px;color:var(--accent-battery);font-weight:700;">ZBERNICA OK</span>
+                        </div>
+                        <div id="invertersList" style="display:flex; flex-direction:column; gap:8px;">
+                            <div class="inverter-status-row" onclick="toggleInverterDetails(1)">
+                                <span style="font-size:11px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                    <span class="pulse-dot online"></span> Inverter 1 (Hybrid 10kW)
+                                </span>
+                                <i data-lucide="chevron-down" style="width:12px; height:12px; color:var(--text-muted);"></i>
+                            </div>
+                            <div id="invDetails1" class="inverter-details-box">
+                                <div style="display:flex; justify-content:space-between;"><span>Teplota:</span><strong>42.8 °C</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Sila signálu:</span><strong>-68 dBm</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Uptime:</span><strong>14 dní, 2 hod</strong></div>
                             </div>
                         </div>
                     </div>
@@ -979,7 +1148,7 @@
                                     <i data-lucide="trending-up" style="color:var(--accent-grid);width:20px;height:20px;"></i>
                                     <div>
                                         <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Predajná Arbitráž</div>
-                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do sietí iba počas cenových špičiek.</div>
+                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do siete iba počas špičiek.</div>
                                     </div>
                                 </div>
                                 <i id="aiModelCheck2" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1000,7 +1169,6 @@
                     </div>
                     
                     <div id="myRelaysList" style="display:flex;flex-direction:column;gap:16px;">
-                        <!-- Bojler TÚV -->
                         <div class="relay-item-card" id="relay1">
                             <div style="display:flex;align-items:center;gap:14px;">
                                 <div class="relay-icon-wrapper" style="width:44px; height:44px; border-radius:12px; background:rgba(245,158,11,0.08); display:flex; align-items:center; justify-content:center;">
@@ -1016,29 +1184,56 @@
                                 <span style="position:absolute;inset:0;background:var(--accent-battery);border-radius:13px;transition:all 0.3s;"><span style="width:20px;height:20px;border-radius:50%;background:white;margin:3px 0 0 25px;transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
                             </label>
                         </div>
-
-                        <!-- Nabíjacia Stanica EV -->
-                        <div class="relay-item-card" id="relay2">
-                            <div style="display:flex;align-items:center;gap:14px;">
-                                <div class="relay-icon-wrapper" style="width:44px; height:44px; border-radius:12px; background:rgba(59,130,246,0.08); display:flex; align-items:center; justify-content:center;">
-                                    <i data-lucide="zap" style="width:22px;height:22px;color:var(--accent-grid);" class="relay-icon"></i>
-                                </div>
-                                <div>
-                                    <span style="font-size:14px;font-weight:800;display:block;">EV Wallbox Nabíjačka</span>
-                                    <span style="font-size:11px;color:var(--text-muted);" id="relayDesc2">Spustí sa iba počas nízkej tarify OKTE (11 000 W)</span>
-                                </div>
-                            </div>
-                            <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                                <input type="checkbox" style="opacity:0;width:0;height:0;" onchange="toggleRelayLocal(2, this)">
-                                <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:13px;transition:all 0.3s;"><span style="width:20px;height:20px;border-radius:50%;background:white;margin:3px 0 0 3px;transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
-                            </label>
-                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Tab 4: PROFILE VIEW (Zjednotený & Vylepšený bez duplicít) -->
+        <!-- Tab 4: DOVOLENKA (Navrátená kompletná sekcia) -->
+        <section id="sectionHoliday" class="view-section">
+            <div class="glass-card" style="border:1.5px solid var(--accent-battery);background:linear-gradient(135deg,rgba(15,23,42,0.8),rgba(16,185,129,0.06)); max-width: 900px; margin: 0 auto;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div style="width:44px;height:44px;border-radius:12px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;">
+                            <i data-lucide="umbrella" style="color:var(--accent-battery);width:22px;height:22px;"></i>
+                        </div>
+                        <div>
+                            <span style="font-size:9px;font-weight:900;letter-spacing:1px;color:var(--accent-battery);text-transform:uppercase;display:block;">BEZPEČNOSTNÝ EMS ASISTENT</span>
+                            <h3 style="font-size:18px;font-weight:900;color:var(--text-primary);letter-spacing:-0.3px;margin-top:2px;">SafeGuard EMS — Inteligentná Dovolenka</h3>
+                        </div>
+                    </div>
+                    <label style="position:relative;width:52px;height:28px;cursor:pointer;">
+                        <input type="checkbox" id="holidayEnabled" onchange="toggleHolidayModeState(this.checked)" style="opacity:0;width:0;height:0;">
+                        <span style="position:absolute;inset:0;background:rgba(255,255,255,0.08);border:1px solid var(--border-card);border-radius:14px;transition:all 0.3s;display:flex;align-items:center;"><span style="width:20px;height:20px;border-radius:50%;background:#4b5563;margin-left:4px;transition:all 0.3s;display:block;" id="holidayToggleKnob"></span></span>
+                    </label>
+                </div>
+
+                <div class="flexible-grid" style="margin-bottom: 24px;">
+                    <div style="display: flex; flex-direction: column; gap: 20px; padding: 20px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-card); border-radius: 18px;">
+                        <div>
+                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:10px;letter-spacing:0.5px;">DÁTUM ODCHODU</label>
+                            <input type="datetime-local" id="holidayFromInput" class="input-styled">
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 20px; padding: 20px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-card); border-radius: 18px;">
+                        <div>
+                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:10px;letter-spacing:0.5px;">DÁTUM NÁVRATU</label>
+                            <input type="datetime-local" id="holidayUntilInput" class="input-styled">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;padding:20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;">Záložný SOC limit akumulátora</span>
+                        <span id="minSocDisplay" style="font-size:12px;font-weight:800;color:var(--accent-battery);font-family:'JetBrains Mono';">20% SOC</span>
+                    </div>
+                    <input type="range" id="holidayMinSoc" min="10" max="50" step="5" value="20" style="width:100%;height:4px;cursor:pointer;" oninput="document.getElementById('minSocDisplay').innerText = this.value + '% SOC'">
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 5: PROFILE VIEW (Zjednotený & Vylepšený bez duplicít) -->
         <section id="sectionProfile" class="view-section">
             <div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
                 
@@ -1113,6 +1308,29 @@
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
                                     <span style="color:var(--text-muted);">Lokálny názov:</span>
                                     <input type="text" id="deviceNameInput" value="ElvoControl" oninput="updateDeviceName(this.value)" style="background:transparent; border:none; border-bottom:1px solid transparent; color:var(--text-primary); text-align:right; font-weight:700; outline:none; width:120px;" onfocus="this.style.borderBottomColor='var(--accent-battery)'" onblur="this.style.borderBottomColor='transparent'">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nastavenia e-mailových notifikácií (Navrátené z Turn 1) -->
+                        <div class="glass-card" style="margin-bottom:0;">
+                            <div class="card-header-styled">
+                                <span class="card-title-styled"><i data-lucide="mail"></i> Emailové notifikácie</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <div class="switch-container">
+                                    <span class="switch-label">Povoliť notifikácie</span>
+                                    <label class="switch-control">
+                                        <input type="checkbox" id="prefEnableEmails" checked>
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="switch-container">
+                                    <span class="switch-label">Upozornenia na negatívne ceny OKTE</span>
+                                    <label class="switch-control">
+                                        <input type="checkbox" id="prefNegativeAlerts" checked>
+                                        <span class="switch-slider"></span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -1235,7 +1453,7 @@
             lucide.createIcons();
         }
 
-        // Kruhové riadiace kolesá (Gauges)
+        // Kruhové kolesá (Gauges)
         const gaugeSettings = {
             minPower: { min: 0, max: 5000, arcId: 'minPowerArc', arrowId: 'minPowerArrow', valId: 'minPowerVal', inputId: 'minPowerInput', sliderId: 'settingsMinPower' },
             maxPower: { min: 500, max: 15000, arcId: 'maxPowerArc', arrowId: 'maxPowerArrow', valId: 'maxPowerVal', inputId: 'maxPowerInput', sliderId: 'settingsMaxPower' }
@@ -1256,6 +1474,7 @@
             }
         }
 
+        // Prepísanie kliknutím na číslo pod šípkou
         function enableGaugeInput(key) {
             const setting = gaugeSettings[key];
             const textEl = document.getElementById(setting.valId);
@@ -1361,17 +1580,35 @@
 
         function toggleRelayLocal(id, checkbox) {
             const card = document.getElementById(`relay${id}`);
-            const iconWrapper = card.querySelector('.relay-icon-wrapper');
             const icon = card.querySelector('.relay-icon');
             const desc = document.getElementById(`relayDesc${id}`);
 
             if (checkbox.checked) {
-                icon.style.color = id === 1 ? 'var(--accent-solar)' : 'var(--accent-grid)';
-                if (id === 1) desc.innerText = 'Smart Relé Shelly · Spotreba: 2000 W';
-                if (id === 2) desc.innerText = 'Nabíjanie zapnuté manuálne (11 000 W)';
+                icon.style.color = 'var(--accent-solar)';
+                desc.innerText = 'Smart Relé Shelly · Spotreba: 2000 W';
             } else {
                 icon.style.color = 'var(--text-muted)';
                 desc.innerText = 'Zariadenie je momentálne odpojené / neaktívne';
+            }
+        }
+
+        function toggleInverterDetails(id) {
+            const el = document.getElementById(`invDetails${id}`);
+            if (el) el.classList.toggle('expanded');
+        }
+
+        function toggleHolidayModeState(checked) {
+            const knob = document.getElementById('holidayToggleKnob');
+            if (checked) {
+                if (knob) {
+                    knob.style.transform = 'translateX(24px)';
+                    knob.style.background = 'var(--accent-battery)';
+                }
+            } else {
+                if (knob) {
+                    knob.style.transform = 'translateX(0px)';
+                    knob.style.background = '#4b5563';
+                }
             }
         }
 
@@ -1396,10 +1633,18 @@
             document.getElementById('pwRepeatInput').value = '';
         }
 
+        function toggleExpandableSettings(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('gearSettingsPanel');
+            if (panel) {
+                panel.classList.toggle('open');
+            }
+        }
+
         // Navigácia a taby
         function switchTab(tabId) {
-            const sections = ['sectionDashboard', 'sectionMeter', 'sectionControl', 'sectionProfile'];
-            const buttons = ['tabBtnDashboard', 'tabBtnMeter', 'tabBtnControl', 'tabBtnProfile'];
+            const sections = ['sectionDashboard', 'sectionMeter', 'sectionControl', 'sectionHoliday', 'sectionProfile'];
+            const buttons = ['tabBtnDashboard', 'tabBtnMeter', 'tabBtnControl', 'tabBtnHoliday', 'tabBtnProfile'];
 
             sections.forEach(s => document.getElementById(s).classList.remove('active'));
             buttons.forEach(b => document.getElementById(b).classList.remove('active'));
