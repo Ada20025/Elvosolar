@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ElvoControl — Smart EMS</title>
+    <link class="brand-favicon" rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#02040a">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -28,7 +33,7 @@
             --accent-saved: #818cf8;
             --accent-warn: #f43f5e;
             --accent-okte: #a855f7;
-            --logo-glow: rgba(16, 185, 129, 0.4);
+            --logo-glow: rgba(16, 185, 129, 0.3);
             --input-bg: rgba(0, 0, 0, 0.25);
         }
 
@@ -95,18 +100,11 @@
             align-items: center;
         }
 
-        .brand-logo-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-        }
-
-        .logo-svg {
-            width: 32px;
+        .brand-logo-img {
             height: 32px;
-            filter: drop-shadow(0 0 8px var(--logo-glow));
-            transition: filter 0.3s;
+            width: auto;
+            border-radius: 6px;
+            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
         }
 
         .station-dropdown-container {
@@ -777,29 +775,19 @@
 
     <div class="bg-glow-orb"></div>
 
-    <div id="static-metadata"
-         data-device-id="1"
-         data-base-path="."
-         data-device-ids="[1,2]"
+    <div id="php-metadata"
+         data-device-id="<?php echo htmlspecialchars($devices[0]['id'] ?? 1); ?>"
+         data-base-path="<?php echo htmlspecialchars($base_path); ?>"
+         data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>"
          class="hidden"></div>
 
     <!-- Header -->
     <header class="header">
         <div class="header-inner">
             
-            <!-- Logo s bleskom a solar panelom v SVG -->
+            <!-- Logo s bleskom a solar panelom v SVG s navráteným pôvodným logom -->
             <div class="brand-logo-container">
-                <svg class="logo-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="6" y="6" width="52" height="52" rx="12" fill="url(#logoGrad)" stroke="#10b981" stroke-width="2"/>
-                    <path d="M16 16H28V28H16V16ZM36 16H48V28H36V16ZM16 36H28V48H16V36ZM36 36H48V48H36V36Z" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
-                    <path d="M35 14L22 35H32L29 50L42 29H32L35 14Z" fill="#10b981" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
-                    <defs>
-                        <linearGradient id="logoGrad" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#05070f"/>
-                            <stop offset="1" stop-color="#0a0f1e"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
+                <img src="/templates/ElvosolarLogo.png" alt="Elvosolar Logo" class="brand-logo-img">
                 <div style="display:flex;flex-direction:column;">
                     <span style="font-size:15px;font-weight:900;color:var(--text-primary);line-height:1.2;">ElvoControl</span>
                     <span style="font-size:8px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent-battery);font-family:'JetBrains Mono',monospace;">SMART EMS</span>
@@ -814,14 +802,27 @@
                         <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
                     </button>
                     <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
-                        <button onclick="selectActiveDevice(this, '1', 'ElvoControl')" class="station-dropdown-item">
-                            <span style="display:flex;align-items:center;gap:8px;">
-                                <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-                                <span class="dev-dropdown-name-lbl">ElvoControl</span>
-                            </span>
-                            <span class="sn-badge" style="font-family: 'JetBrains Mono'; font-size: 10px;">SN: 894721</span>
-                        </button>
+                        <?php if (isset($devices) && count($devices) > 0): ?>
+                            <?php foreach ($devices as $dev): ?>
+                                <button onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" class="station-dropdown-item">
+                                    <span style="display:flex;align-items:center;gap:8px;">
+                                        <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+                                        <span class="dev-dropdown-name-lbl"><?php echo htmlspecialchars($dev['name']); ?></span>
+                                    </span>
+                                    <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
+                                </button>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <button onclick="selectActiveDevice(this, '1', 'ElvoControl')" class="station-dropdown-item">
+                                <span style="display:flex;align-items:center;gap:8px;">
+                                    <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+                                    <span class="dev-dropdown-name-lbl">ElvoControl</span>
+                                </span>
+                                <span class="sn-badge">SN: ---</span>
+                            </button>
+                        <?php endif; ?>
                         <div style="height:1px;background:var(--border-card);margin:6px 0;"></div>
+                        <!-- Pridať zariadenie odkazuje priamo na setup.html -->
                         <button onclick="window.location.href='setup.html';" class="station-dropdown-item" style="color:var(--accent-battery);">
                             <span style="display:flex;align-items:center;gap:8px;font-weight:800;">
                                 <i data-lucide="plus-circle" style="width:14px;height:14px;color:var(--accent-battery);"></i>
@@ -853,11 +854,11 @@
                 <div class="user-profile-container">
                     <button id="userMenuBtn" onclick="toggleUserDropdown(event)" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);cursor:pointer;font-size:12px;font-weight:700;color:var(--text-primary);">
                         <img id="headerAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid var(--accent-battery);">
-                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="headerNameDisplay">Adam</span>
+                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="headerNameDisplay"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Adam'); ?></span>
                     </button>
                     <div id="userDropdownMenu" class="user-dropdown-card hidden">
                         <button onclick="toggleTheme()" class="user-dropdown-btn">
-                            <i data-lucide="sun" style="width:14px;height:14px;" id="themeIcon"></i>
+                            <i data-lucide="sun" style="width:14px;height:14px;"></i>
                             <span id="themeLabel">Svetlý režim</span>
                         </button>
                         <button onclick="switchTab('profile')" class="user-dropdown-btn">
@@ -865,7 +866,7 @@
                             <span>Nastavenia</span>
                         </button>
                         <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
-                        <a href="#" onclick="alert('Odhlásenie simulované');" style="text-decoration:none;">
+                        <a href="<?php echo $base_path; ?>/logout" style="text-decoration:none;">
                             <button class="user-dropdown-btn" style="color:var(--accent-warn);">
                                 <i data-lucide="log-out" style="width:14px;height:14px;"></i>
                                 <span>Odhlásiť sa</span>
@@ -911,25 +912,25 @@
                     <div class="metrics-grid-3">
                         <div class="metric-card" style="--line-color: var(--accent-solar);">
                             <span class="metric-label-styled"><i data-lucide="sun" style="width:12px;height:12px;color:var(--accent-solar);"></i> Výkon FVE</span>
-                            <span class="metric-value-styled text-solar" id="dashLivePower">3820 W</span>
+                            <span class="metric-value-styled text-solar" id="dashLivePower">0 W</span>
                             <div class="metric-indicator-bar">
-                                <div id="dashPowerBar" class="metric-bar-fill" style="width: 63%;"></div>
+                                <div id="dashPowerBar" class="metric-bar-fill"></div>
                             </div>
                         </div>
 
                         <div class="metric-card" style="--line-color: var(--accent-battery);">
                             <span class="metric-label-styled"><i data-lucide="battery-charging" style="width:12px;height:12px;color:var(--accent-battery);"></i> Kapacita Batérie</span>
-                            <span class="metric-value-styled text-battery" id="dashBatterySoc">84%</span>
+                            <span class="metric-value-styled text-battery" id="dashBatterySoc">0%</span>
                             <div class="metric-indicator-bar">
-                                <div id="dashBatteryBar" class="metric-bar-fill" style="width: 84%;"></div>
+                                <div id="dashBatteryBar" class="metric-bar-fill"></div>
                             </div>
                         </div>
 
                         <div class="metric-card" style="--line-color: var(--accent-grid);">
                             <span class="metric-label-styled"><i data-lucide="activity" style="width:12px;height:12px;color:var(--accent-grid);"></i> Odber zo Siete</span>
-                            <span class="metric-value-styled text-grid" id="dashConsumption">145 W</span>
+                            <span class="metric-value-styled text-grid" id="dashConsumption">0 W</span>
                             <div class="metric-indicator-bar">
-                                <div id="dashConsumptionBar" class="metric-bar-fill" style="width: 5%;"></div>
+                                <div id="dashConsumptionBar" class="metric-bar-fill"></div>
                             </div>
                         </div>
                     </div>
@@ -937,9 +938,17 @@
                     <!-- Combined Analytics Chart -->
                     <div class="glass-card">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">Hodinový priebeh spotových cien OKTE a Výroby</span></span>
+                            <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">15-minútový priebeh OKTE & Výroby</span></span>
                         </div>
                         <div style="position:relative;height:320px;width:100%;">
+                            <div id="chartOverlay" class="hidden" style="position:absolute; inset:0; background:rgba(2,4,10,0.9); backdrop-filter:blur(10px); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; border-radius:16px; padding:20px; text-align:center;">
+                                <i data-lucide="alert-triangle" style="width:44px; height:44px; color:var(--accent-warn); margin-bottom:12px;"></i>
+                                <h4 style="font-size:15px; font-weight:800; color:var(--text-primary); letter-spacing:-0.2px;">OKTE databáza je nedostupná</h4>
+                                <p style="font-size:11px; color:var(--text-secondary); max-width:340px; margin-top:6px; margin-bottom:18px; line-height:1.5;">Dátové spojenie s OKTE s.r.o. bolo prerušené.</p>
+                                <a href="https://www.okte.sk/sk/kratkodoby-trh/organizovany-denny-trh/vysledky/" target="_blank" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg, var(--accent-grid), var(--accent-okte)); color:white; padding:10px 18px; border-radius:10px; font-size:11px; font-weight:800; box-shadow:0 10px 20px rgba(99,102,241,0.25);">
+                                    Otvoriť portál OKTE <i data-lucide="external-link" style="width:13px; height:13px;"></i>
+                                </a>
+                            </div>
                             <canvas id="elvoChart"></canvas>
                         </div>
                     </div>
@@ -950,7 +959,7 @@
                     <!-- Celková Úspora -->
                     <div class="metric-card" style="--line-color: var(--accent-saved); margin-bottom: 20px; padding: 22px;">
                         <span class="metric-label-styled"><i data-lucide="banknote" style="width:14px;height:14px;color:var(--accent-saved);"></i> Celková Úspora</span>
-                        <span class="metric-value-styled text-saved" id="dashTotalSaved" style="font-size: 32px; font-weight: 900; line-height: 1.2;">1,248.50 €</span>
+                        <span class="metric-value-styled text-saved" id="dashTotalSaved" style="font-size: 32px; font-weight: 900; line-height: 1.2;">1248.50 €</span>
                     </div>
 
                     <!-- Predpoveď počasia pre FVE -->
@@ -1021,35 +1030,87 @@
 
         <!-- Tab 2: RIADENIE -->
         <section id="sectionMeter" class="view-section">
-            <div class="flexible-grid" style="max-width: 1200px; margin: 0 auto;">
+            <div class="dashboard-grid">
                 
-                <!-- Left Column: Zap / Vyp / AI & Configuration -->
+                <!-- Left Column (Vaše relé - Bojler / Klíma) -->
+                <div>
+                    <div class="glass-card">
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="toggle-left"></i> Vaše relé</span>
+                        </div>
+                        <div id="myRelaysList" style="display:flex; flex-direction:column; gap:16px;">
+                            <!-- Bojler TÚV -->
+                            <div class="relay-item-card" id="relay1">
+                                <div style="display:flex;align-items:center;gap:14px;">
+                                    <div class="relay-icon-wrapper" style="width:44px; height:44px; border-radius:12px; background:rgba(245,158,11,0.08); display:flex; align-items:center; justify-content:center;">
+                                        <i data-lucide="flame" style="width:22px;height:22px;color:var(--accent-solar);" class="relay-icon"></i>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:14px;font-weight:800;display:block;">Bojler TÚV (Ohrev vody)</span>
+                                        <span style="font-size:11px;color:var(--text-muted);" id="relayDesc1">Smart Relé Shelly · Spotreba: 2000 W</span>
+                                    </div>
+                                </div>
+                                <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+                                    <input type="checkbox" checked style="opacity:0;width:0;height:0;" onchange="toggleRelayLocal(1, this)">
+                                    <span style="position:absolute;inset:0;background:var(--accent-battery);border-radius:13px;transition:all 0.3s;"><span style="width:20px;height:20px;border-radius:50%;background:white;margin:3px 0 0 25px;transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
+                                </label>
+                            </div>
+
+                            <!-- Klimatizácia -->
+                            <div class="relay-item-card" id="relay2">
+                                <div style="display:flex;align-items:center;gap:14px;">
+                                    <div class="relay-icon-wrapper" style="width:44px; height:44px; border-radius:12px; background:rgba(59,130,246,0.08); display:flex; align-items:center; justify-content:center;">
+                                        <i data-lucide="wind" style="width:22px;height:22px;color:var(--accent-grid);" class="relay-icon"></i>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:14px;font-weight:800;display:block;">Klimatizácia (Klíma)</span>
+                                        <span style="font-size:11px;color:var(--text-muted);" id="relayDesc2">Spustí sa počas špičky OKTE tarify (1500 W)</span>
+                                    </div>
+                                </div>
+                                <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+                                    <input type="checkbox" style="opacity:0;width:0;height:0;" onchange="toggleRelayLocal(2, this)">
+                                    <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:13px;transition:all 0.3s;"><span style="width:20px;height:20px;border-radius:50%;background:white;margin:3px 0 0 3px;transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (Teplota & Iné nastavenia s interaktívnymi kruhmi) -->
                 <div style="display: flex; flex-direction: column; gap: 24px;">
                     <div class="glass-card" style="margin-bottom: 0;">
-                        <div class="card-header-styled" style="margin-bottom: 16px;">
-                            <span class="card-title-styled"><i data-lucide="cpu"></i> Regulačné Algoritmy & Výber Režimu</span>
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="settings"></i> Teplota & Iné nastavenia</span>
                             <button class="gear-btn" onclick="toggleExpandableSettings(event)" title="Nastavenia výkonu">
                                 <i data-lucide="settings" style="width: 20px; height: 20px;"></i>
                             </button>
                         </div>
 
-                        <!-- 3 Core Premium control buttons -->
-                        <div class="control-btn-grid" id="meterModeGrid" style="margin-bottom: 16px;">
-                            <button onclick="setMeterMode('UNLIMITED')" id="btnMeterUnlimited" class="control-btn">
-                                <i data-lucide="zap"></i> Zapnúť
-                            </button>
-                            <button onclick="setMeterMode('ZERO')" id="btnMeterZero" class="control-btn">
-                                <i data-lucide="power"></i> Vypnúť
-                            </button>
-                            <button onclick="setMeterMode('SMART')" id="btnMeterSmart" class="control-btn active">
-                                <i data-lucide="brain"></i> Smart AI
-                            </button>
+                        <!-- Teplota kruh (knob) hore -->
+                        <div style="display:flex; justify-content:center; margin-bottom:20px;">
+                            <div class="premium-gauge-wrapper">
+                                <span style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Požadovaná teplota</span>
+                                <div class="gauge-svg-box" id="gauge-temperature">
+                                    <svg viewBox="0 0 100 100" style="width:100%;height:100%;">
+                                        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
+                                        <circle id="tempArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-warn)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="125.6" style="transition:stroke-dashoffset 0.1s ease;"/>
+                                        <g id="tempArrow" class="gauge-arrow" style="transform-origin: 50px 50px; transform: rotate(0deg);">
+                                            <polygon points="50,14 46,24 54,24" fill="var(--accent-warn)"/>
+                                        </g>
+                                    </svg>
+                                </div>
+                                <div style="display:flex; flex-direction:column; align-items:center;">
+                                    <span id="tempText" class="gauge-interactive-value" onclick="enableGaugeInput('temperature')">50</span>
+                                    <input type="number" id="temperatureInput" class="gauge-text-input hidden" onblur="disableGaugeInput('temperature')" onkeydown="handleGaugeKey(event, 'temperature')">
+                                    <span style="font-size:8px;font-weight:700;color:var(--text-muted);margin-top:2px;">°C NASTAVENIE</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Klikateľný schovaný panel s interaktívnymi kruhmi (posuvnými ťahaním prsta / myšou) -->
+                        <!-- Klikateľný schovaný panel s ostatnými nastaveniami -->
                         <div id="gearSettingsPanel" class="expandable-settings-panel">
                             <div style="margin-bottom: 14px; border-bottom: 1px solid var(--border-card); padding-bottom: 10px;">
-                                <span style="font-size: 11px; font-weight: 800; color: var(--accent-battery); text-transform: uppercase;">Konfigurácia výkonových limitov (Ťahaj kruhy)</span>
+                                <span style="font-size: 11px; font-weight: 800; color: var(--accent-battery); text-transform: uppercase;">Výkonové & Kapacitné limity</span>
                             </div>
 
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px; margin-bottom: 16px;">
@@ -1132,128 +1193,27 @@
                                 Uložiť nastavenia
                             </button>
                         </div>
-
-                        <div id="meterModeDesc" style="padding:14px 18px;border-radius:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:16px;">
-                            Smart AI: Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column: AI Autonómne Cenové Modely (VŠETKY 4 MODELY) -->
-                <div style="display: flex; flex-direction: column; gap: 24px; position:relative;">
-                    <div class="glass-card" style="margin-bottom: 0; position:relative;">
-                        
-                        <div id="aiModelsLockOverlay" class="hidden" style="position:absolute; inset:0; background:rgba(2,4,10,0.92); backdrop-filter:blur(10px); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20; border-radius:24px; padding:20px; text-align:center;">
-                            <i data-lucide="lock" style="width:36px; height:36px; color:var(--accent-solar); margin-bottom:12px;"></i>
-                            <h5 style="font-size:14px; font-weight:800; color:var(--text-primary); letter-spacing:-0.2px;">Modely sú uzamknuté</h5>
-                            <p style="font-size:11px; color:var(--text-secondary); max-width:260px; margin-top:6px; margin-bottom:16px; line-height:1.4;">Autonómne cenové modely OKTE fungujú výhradne pri spustenom režime <strong>Smart AI</strong>.</p>
-                            <button onclick="setMeterMode('SMART')" style="background:linear-gradient(135deg, var(--accent-solar), var(--accent-battery)); border:none; color:white; padding:8px 16px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 6px 15px rgba(245,158,11,0.2);">
-                                Aktivovať Smart AI <i data-lucide="sparkles" style="width:12px; height:12px;"></i>
-                            </button>
-                        </div>
-
-                        <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="wallet"></i> Autonómne Cenové Modely (OKTE)</span>
-                            <span style="font-size:9px;font-weight:800;color:var(--accent-solar);background:rgba(245,158,11,0.15);padding:4px 8px;border-radius:6px;">SPOT MANAGEMENT</span>
-                        </div>
-
-                        <div class="ai-model-list">
-                            <!-- Model 1 -->
-                            <div class="ai-model-card active" onclick="setAiModel('1')" id="aiModel1">
-                                <div style="display:flex;align-items:center;gap:12px;">
-                                    <i data-lucide="shield-check" style="color:var(--accent-battery);width:20px;height:20px;"></i>
-                                    <div>
-                                        <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Model 1: Ochrana pred zápornými cenami</div>
-                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Výroba zakázaná pri cenách pod 0 €/MWh.</div>
-                                    </div>
-                                </div>
-                                <i id="aiModelCheck1" data-lucide="check" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                            </div>
-                            <!-- Model 2 -->
-                            <div class="ai-model-card" onclick="setAiModel('2')" id="aiModel2">
-                                <div style="display:flex;align-items:center;gap:12px;">
-                                    <i data-lucide="trending-up" style="color:var(--accent-grid);width:20px;height:20px;"></i>
-                                    <div>
-                                        <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Model 2: Predajná Arbitráž</div>
-                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do siete iba počas špičiek.</div>
-                                    </div>
-                                </div>
-                                <i id="aiModelCheck2" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                            </div>
-                            <!-- Model 3 -->
-                            <div class="ai-model-card" onclick="setAiModel('3')" id="aiModel3">
-                                <div style="display:flex;align-items:center;gap:12px;">
-                                    <i data-lucide="download" style="color:var(--accent-battery);width:20px;height:20px;"></i>
-                                    <div>
-                                        <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Model 3: Nabíjanie batérie zo siete</div>
-                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, kedy ceny klesnú pod denný priemer.</div>
-                                    </div>
-                                </div>
-                                <i id="aiModelCheck3" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                            </div>
-                            <!-- Model 4 -->
-                            <div class="ai-model-card" onclick="setAiModel('4')" id="aiModel4">
-                                <div style="display:flex;align-items:center;gap:12px;">
-                                    <i data-lucide="activity" style="color:var(--accent-warn);width:20px;height:20px;"></i>
-                                    <div>
-                                        <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Model 4: Kombinovaná arbitráž</div>
-                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Nabíja keď je lacno, vybíja keď je drahšie.</div>
-                                    </div>
-                                </div>
-                                <i id="aiModelCheck4" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
-                            </div>
-                        </div>
-
-                        <div id="aiModelDesc" style="margin-top: 16px; padding: 12px 16px; border-radius: 12px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.12); font-size: 11px; color: var(--text-secondary); line-height: 1.6;">
-                            🛡️ Ochrana pred zápornou cenou - ON keď cena > 0€, OFF keď < 0€.
-                        </div>
                     </div>
                 </div>
 
             </div>
         </section>
 
-        <!-- Tab 3: RELÉ -->
+        <!-- Tab 3: RELÉ (Makety pre bezchybné zobrazenie a dynamický klientsky zoznam) -->
         <section id="sectionControl" class="view-section">
             <div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
                 <div class="glass-card">
                     <div class="card-header-styled">
-                        <span class="card-title-styled"><i data-lucide="toggle-left"></i> Spárované spotrebiče</span>
+                        <span class="card-title-styled"><i data-lucide="toggle-left"></i> Pridať alebo Odstrániť relé</span>
                         <button onclick="openAddRelayModal()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--accent-battery);font-size:11px;font-weight:800;transition:all 0.2s;">
                             <i data-lucide="plus" style="width:14px;height:14px;"></i> Pridať Relé
                         </button>
                     </div>
                     
-                    <!-- Formular na pridanie noveho rele inline -->
-                    <div id="relayFormBlock" class="hidden" style="background:rgba(0,0,0,0.25); border:1px dashed var(--border-color); border-radius:16px; padding:18px; margin-bottom:20px; display:flex; flex-direction:column; gap:12px;">
-                        <span style="font-size:11px; font-weight:800; color:var(--accent-battery); text-transform:uppercase;">Nové relé rozhranie</span>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                            <input type="text" id="newRelayName" placeholder="Názov (napr. Bojler, Klimatizácia)" class="input-styled">
-                            <select id="newRelayType" class="input-styled" style="font-family:sans-serif;">
-                                <option value="flame">Bojler / Kúrenie</option>
-                                <option value="wind">Klimatizácia</option>
-                                <option value="zap">EV Nabíjačka</option>
-                                <option value="cpu">Iná smart záťaž</option>
-                            </select>
-                        </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                            <input type="number" id="newRelayPower" placeholder="Výkon (W)" class="input-styled">
-                            <input type="text" id="newRelayDevice" placeholder="Shelly IP / ID" class="input-styled">
-                        </div>
-                        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
-                            <button onclick="closeAddRelayModal()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:11px; font-weight:700; padding:6px 12px;">Zrušiť</button>
-                            <button onclick="addNewRelayAction()" style="background:var(--accent-battery); border:none; border-radius:8px; color:white; font-size:11px; font-weight:800; padding:6px 14px; cursor:pointer;">Uložiť a zapojiť</button>
-                        </div>
+                    <!-- Dynamic list of relays inside Tab 3 -->
+                    <div id="tab3RelaysList" style="display:flex;flex-direction:column;gap:12px;">
+                        <!-- Tab 3 relays get compiled dynamically here -->
                     </div>
-
-                    <!-- Dynamic list of relays -->
-                    <div id="myRelaysList" style="display:flex;flex-direction:column;gap:12px;">
-                        <!-- Relays are dynamically generated here -->
-                    </div>
-                </div>
-
-                <div style="text-align: center; padding: 12px; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
-                    * Zariadenia sú spárované priamo cez lokálny LAN API protokol na riadiacu bránu.
                 </div>
             </div>
         </section>
@@ -1284,18 +1244,6 @@
                             <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:10px;letter-spacing:0.5px;">DÁTUM A ČAS ODCHODU (OD)</label>
                             <input type="datetime-local" id="holidayFromInput" class="input-styled">
                         </div>
-                        <div style="text-align:center;padding:16px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:14px;">
-                            <div style="position:relative;width:90px;height:90px;margin:0 auto;">
-                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-                                    <circle id="gaugeSocArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-battery)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="53" style="transition:stroke-dashoffset 1s ease;"/>
-                                </svg>
-                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                    <span id="gaugeSocVal" style="font-size:18px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">80%</span>
-                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">CIEĽ SOC</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Return -->
@@ -1303,18 +1251,6 @@
                         <div>
                             <label style="font-size:10px;font-weight:800;color:var(--text-secondary);display:block;margin-bottom:10px;letter-spacing:0.5px;">DÁTUM A ČAS NÁVRATU</label>
                             <input type="datetime-local" id="holidayUntilInput" class="input-styled">
-                        </div>
-                        <div style="text-align:center;padding:16px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:14px;">
-                            <div style="position:relative;width:90px;height:90px;margin:0 auto;">
-                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-                                    <circle id="gaugeTempArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-solar)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="185" style="transition:stroke-dashoffset 1s ease;"/>
-                                </svg>
-                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                    <span id="gaugeTempVal" style="font-size:18px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">32°C</span>
-                                    <span style="font-size:7px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">TEPLOTA</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1333,127 +1269,149 @@
             </div>
         </section>
 
-        <!-- Tab 5: PROFILE VIEW -->
+        <!-- Tab 5: PROFILE VIEW (Zasiahnutý precíznou štruktúrou z mockupu 2) -->
         <section id="sectionProfile" class="view-section">
-            <div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+            <div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
                 
                 <div class="profile-container-grid">
                     
-                    <!-- Karta používateľa (Zjednotený profil čistý, bez duplicít a bez vnorenia loga do nej) -->
-                    <div class="glass-card" style="margin-bottom:0;">
-                        <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="user"></i> Profil Používateľa</span>
-                        </div>
-                        
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <div style="position: relative; width: 72px; height: 72px;">
-                                <img id="profileAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid var(--accent-battery);">
-                                <label for="avatarFileInput" style="position: absolute; bottom: 0; right: 0; width: 24px; height: 24px; background: var(--accent-battery); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--bg-primary);">
-                                    <i data-lucide="camera" style="width:12px; height:12px; color:white;"></i>
-                                </label>
-                                <input type="file" id="avatarFileInput" accept="image/*" onchange="previewProfileImage(event)" class="hidden">
-                            </div>
-                            <div>
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <input type="text" id="profileNameInput" value="Adam" oninput="updateProfileName(this.value)" style="background:transparent; border:none; border-bottom:1px solid transparent; color:var(--text-primary); font-size:16px; font-weight:800; outline:none; width: 140px;" onfocus="this.style.borderBottomColor='var(--accent-battery)'" onblur="this.style.borderBottomColor='transparent'">
-                                    <i data-lucide="edit-3" style="width:12px; height:12px; color:var(--text-muted);"></i>
-                                </div>
-                                <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top:2px;">adam.dzurko5@gmail.com</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Karta parametrov inštalácie (Už samostatná, žiadne vnorenia, žiadne duplicity) -->
-                    <div class="glass-card" style="margin-bottom:0;">
-                        <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="sun"></i> Parametre EMS inštalácie & Osvitu</span>
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:16px;">
-                            <div>
-                                <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:6px;">Lokalita pre predpoveď osvitu</label>
-                                <div style="display:flex; gap:8px;">
-                                    <input type="text" id="installationAddressInput" class="input-styled" value="Bratislava" placeholder="Zadajte mesto alebo súradnice">
-                                    <button onclick="updateAddressLocation()" style="background:var(--accent-battery); border:none; color:white; font-size:11px; font-weight:800; padding:10px 16px; border-radius:12px; cursor:pointer;">Nastaviť</button>
-                                </div>
-                            </div>
-
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                                <div>
-                                    <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:6px;">Výkon FVE (kWp)</label>
-                                    <input type="number" id="fveKwpInput" class="input-styled" value="5.2" step="0.1" oninput="calculateEstimatedProduction()">
-                                </div>
-                                <div>
-                                    <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:6px;">Účinnosť (%)</label>
-                                    <input type="number" id="fveEffInput" class="input-styled" value="85" step="1" oninput="calculateEstimatedProduction()">
-                                </div>
-                            </div>
-
-                            <div style="background:rgba(16, 185, 129, 0.04); border:1px solid var(--border-card); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:4px;">
-                                <span style="font-size:9px; font-weight:800; color:var(--accent-battery); text-transform:uppercase; letter-spacing:0.5px;">Predpokladaná ročná výroba</span>
-                                <span id="estAnnualProduction" style="font-size:15px; font-weight:900; font-family:'JetBrains Mono'; color:var(--text-primary);">4,641 kWh / rok</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Karta Brány a Zariadenia -->
+                    <!-- Left Column (Profil používateľa & Email notifikácie - "Profil & Niečo" pod ním) -->
                     <div style="display:flex; flex-direction:column; gap:24px;">
+                        <!-- Karta Profilu -->
                         <div class="glass-card" style="margin-bottom:0;">
                             <div class="card-header-styled">
-                                <span class="card-title-styled"><i data-lucide="cpu"></i> Smart Brána ElvoControl</span>
+                                <span class="card-title-styled"><i data-lucide="user"></i> Profil Používateľa</span>
                             </div>
-                            <div style="display:flex; flex-direction:column; gap:12px; font-size:12px;">
-                                <div style="display:flex; justify-content:space-between;">
-                                    <span style="color:var(--text-muted);">Sériové číslo (S/N):</span>
-                                    <span class="font-mono" style="font-weight:700; color:var(--accent-solar);">SN-EC5-894721-X</span>
+                            
+                            <div style="display: flex; align-items: center; gap: 20px;">
+                                <div style="position: relative; width: 72px; height: 72px;">
+                                    <img id="profileAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid var(--accent-battery);">
+                                    <label for="avatarFileInput" style="position: absolute; bottom: 0; right: 0; width: 24px; height: 24px; background: var(--accent-battery); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--bg-primary);">
+                                        <i data-lucide="camera" style="width:12px; height:12px; color:white;"></i>
+                                    </label>
+                                    <input type="file" id="avatarFileInput" accept="image/*" onchange="previewProfileImage(event)" class="hidden">
                                 </div>
-                                <div style="display:flex; justify-content:space-between;">
-                                    <span style="color:var(--text-muted);">Verzia firmvéru:</span>
-                                    <span class="font-mono">v4.0.1 (Stable)</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <span style="color:var(--text-muted);">Lokálny názov:</span>
-                                    <input type="text" id="deviceNameInput" value="ElvoControl" oninput="updateDeviceName(this.value)" style="background:transparent; border:none; border-bottom:1px solid transparent; color:var(--text-primary); text-align:right; font-weight:700; outline:none; width:120px;" onfocus="this.style.borderBottomColor='var(--accent-battery)'" onblur="this.style.borderBottomColor='transparent'">
+                                <div>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <input type="text" id="profileNameInput" value="Adam" oninput="updateProfileName(this.value)" style="background:transparent; border:none; border-bottom:1px solid transparent; color:var(--text-primary); font-size:16px; font-weight:800; outline:none; width: 140px;" onfocus="this.style.borderBottomColor='var(--accent-battery)'" onblur="this.style.borderBottomColor='transparent'">
+                                        <i data-lucide="edit-3" style="width:12px; height:12px; color:var(--text-muted);"></i>
+                                    </div>
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top:2px;">adam.dzurko5@gmail.com</span>
+                                    <span style="font-size: 10px; color: var(--accent-battery); display: block; margin-top:4px; font-weight:700;">Člen od 2016-08-26 10:56:35</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Nastavenia e-mailových notifikácií (Navrátené z Turn 1) -->
+                        <!-- Karta "Niečo" (Email notifikácie presne pod profilom) -->
                         <div class="glass-card" style="margin-bottom:0;">
                             <div class="card-header-styled">
                                 <span class="card-title-styled"><i data-lucide="mail"></i> Emailové notifikácie</span>
                             </div>
                             <div style="display: flex; flex-direction: column;">
                                 <div class="switch-container">
-                                    <span class="switch-label">Povoliť notifikácie</span>
+                                    <span class="switch-label">Nové zariadenie</span>
                                     <label class="switch-control">
-                                        <input type="checkbox" id="prefEnableEmails" checked>
+                                        <input type="checkbox" id="prefNewDevice" checked>
                                         <span class="switch-slider"></span>
                                     </label>
                                 </div>
                                 <div class="switch-container">
-                                    <span class="switch-label">Upozornenia na negatívne ceny OKTE</span>
+                                    <span class="switch-label">Porucha zariadenia</span>
                                     <label class="switch-control">
-                                        <input type="checkbox" id="prefNegativeAlerts" checked>
+                                        <input type="checkbox" id="prefFailure" checked>
                                         <span class="switch-slider"></span>
                                     </label>
                                 </div>
-                            </div>
-                        </div>
+                                <div class="switch-container">
+                                    <span class="switch-label">Denný report</span>
+                                    <label class="switch-control">
+                                        <input type="checkbox" id="prefDailyReport">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="switch-container">
+                                    <span class="switch-label">Negatívna cena OKTE</span>
+                                    <label class="switch-control">
+                                        <input type="checkbox" id="prefNegative" checked>
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
 
-                        <!-- Zmena hesla -->
-                        <div class="glass-card" style="margin-bottom: 0;">
-                            <div class="card-header-styled">
-                                <span class="card-title-styled"><i data-lucide="lock"></i> Zmena prístupového hesla</span>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <input type="password" id="pwOldInput" placeholder="Staré heslo" class="input-styled" style="font-size:11px;">
-                                <input type="password" id="pwNewInput" placeholder="Nové heslo" class="input-styled" style="font-size:11px;">
-                                <input type="password" id="pwRepeatInput" placeholder="Zopakovať heslo" class="input-styled" style="font-size:11px;">
-                                <button onclick="validateAndSavePassword()" style="width: 100%; padding: 12px; border-radius: 10px; background: var(--accent-battery); border: none; color: white; font-weight: 800; cursor: pointer; font-size:11px;">Aktualizovať heslo</button>
+                                <button onclick="saveSettings()" style="width:100%; margin-top: 18px; padding:12px; border-radius:10px; background:var(--accent-battery); color:white; font-size:11px; font-weight:800; border:none; cursor:pointer;">
+                                    Uložiť nastavenia
+                                </button>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Right Column (Správa pripojených zariadení s možnosťou pridania) -->
+                    <div style="display:flex; flex-direction:column; gap:24px;">
+                        <div class="glass-card" style="margin-bottom:0;">
+                            <div class="card-header-styled" style="padding-bottom:12px;">
+                                <span class="card-title-styled"><i data-lucide="cpu"></i> Moje zariadenia</span>
+                                <button onclick="window.location.href='setup.html'" style="background:var(--accent-grid); border:none; border-radius:8px; color:white; font-size:10px; font-weight:800; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                                    <i data-lucide="plus" style="width:12px; height:12px;"></i> Pridať zariadenie
+                                </button>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:12px; font-size:12px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px; background:rgba(255,255,255,0.01); border:1px solid var(--border-card); border-radius:12px;">
+                                    <div>
+                                        <span style="font-weight:800; display:block;">ElvoControl (S/N: 894721)</span>
+                                        <span style="font-size:10px; color:var(--text-muted);">CMS-DEFAULT · Verzia 2.1</span>
+                                    </div>
+                                    <span style="color:var(--accent-warn); font-weight:700; display:flex; align-items:center; gap:4px;"><span class="pulse-dot offline" style="width:6px; height:6px;"></span> Offline</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Parametre EMS Inštalácie / Osvitu presunuté sem na pravú stranu aby neboli duplicované -->
+                        <div class="glass-card" style="margin-bottom:0;">
+                            <div class="card-header-styled">
+                                <span class="card-title-styled"><i data-lucide="sun"></i> Parametre FVE & Osvit</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:16px;">
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                    <div>
+                                        <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:6px;">Výkon FVE (kWp)</label>
+                                        <input type="number" id="fveKwpInput" class="input-styled" value="5.2" step="0.1" oninput="calculateEstimatedProduction()">
+                                    </div>
+                                    <div>
+                                        <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:6px;">Účinnosť (%)</label>
+                                        <input type="number" id="fveEffInput" class="input-styled" value="85" step="1" oninput="calculateEstimatedProduction()">
+                                    </div>
+                                </div>
+                                <div style="background:rgba(16, 185, 129, 0.04); border:1px solid var(--border-card); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:4px;">
+                                    <span style="font-size:9px; font-weight:800; color:var(--accent-battery); text-transform:uppercase; letter-spacing:0.5px;">Predpokladaná ročná výroba</span>
+                                    <span id="estAnnualProduction" style="font-size:15px; font-weight:900; font-family:'JetBrains Mono'; color:var(--text-primary);">4,641 kWh / rok</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Zmena hesla -->
+                <div class="glass-card" style="margin-top: 24px;">
+                    <div class="card-header-styled">
+                        <span class="card-title-styled"><i data-lucide="lock"></i> Zmena prístupového hesla</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <input type="password" id="pwOldInput" placeholder="Aktuálne heslo" class="input-styled" style="font-size:11px;">
+                        <input type="password" id="pwNewInput" placeholder="Nové heslo (min. 6 znakov)" class="input-styled" style="font-size:11px;">
+                        <input type="password" id="pwRepeatInput" placeholder="Zopakujte nové heslo" class="input-styled" style="font-size:11px;">
+                        <button onclick="validateAndSavePassword()" style="width: 100%; padding: 12px; border-radius: 10px; background: var(--accent-battery); border: none; color: white; font-weight: 800; cursor: pointer; font-size:11px;">Zmeniť heslo</button>
+                    </div>
+                </div>
+
+                <!-- Test emailu -->
+                <div class="glass-card">
+                    <div class="card-header-styled">
+                        <span class="card-title-styled"><i data-lucide="mail"></i> Test e-mailu</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <span style="font-size:11px; color:var(--text-muted);">Odošle testovací email na tvoju adresu cez Resend API.</span>
+                        <button onclick="alert('Testovací email odoslaný')" style="width: 100%; padding: 12px; border-radius: 10px; background: var(--accent-okte); border: none; color: white; font-weight: 800; cursor: pointer; font-size:11px;">Odoslať test email</button>
+                    </div>
                 </div>
 
             </div>
@@ -1465,10 +1423,7 @@
     <footer style="border-top:1px solid var(--border-card);padding:20px 24px;margin-top:40px;">
         <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div style="display:flex;align-items:center;gap:12px;">
-                <svg style="width: 24px; height: 24px; filter: drop-shadow(0 0 4px var(--logo-glow));" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="6" y="6" width="52" height="52" rx="12" fill="#090d16" stroke="#10b981" stroke-width="2"/>
-                    <path d="M35 14L22 35H32L29 50L42 29H32L35 14Z" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
-                </svg>
+                <img src="/templates/ElvosolarLogo.png" alt="Elvosolar Logo" style="height:28px; width:auto; border-radius:6px; filter:drop-shadow(0 0 8px rgba(16,185,129,0.25));">
                 <div style="display:flex;flex-direction:column;">
                     <span style="font-size:11px;font-weight:800;color:var(--text-primary);" class="current-device-name-display">ElvoControl</span>
                     <span style="font-size:7px;font-weight:700;letter-spacing:1px;color:var(--accent-battery);font-family:'JetBrains Mono',monospace;">SMART EMS</span>
@@ -1500,16 +1455,17 @@
 
         // Definícia interaktívnych posuvných kruhov (Gauges) bez range inputov
         const gaugeSettings = {
-            minPower: { min: 0, max: 5000, value: 0, arcId: 'minPowerArc', arrowId: 'minPowerArrow', textId: 'minPowerText', inputId: 'minPowerInput', angleRange: 270, angleOffset: -135 },
-            maxPower: { min: 500, max: 15000, value: 10000, arcId: 'maxPowerArc', arrowId: 'maxPowerArrow', textId: 'maxPowerText', inputId: 'maxPowerInput', angleRange: 270, angleOffset: -135 },
-            minSoc: { min: 5, max: 50, value: 10, arcId: 'minSocArc', arrowId: 'minSocArrow', textId: 'minSocText', inputId: 'minSocInput', angleRange: 270, angleOffset: -135 },
-            maxSoc: { min: 50, max: 100, value: 95, arcId: 'maxSocArc', arrowId: 'maxSocArrow', textId: 'maxSocText', inputId: 'maxSocInput', angleRange: 270, angleOffset: -135 }
+            temperature: { min: 10, max: 90, value: 50, arcId: 'tempArc', arrowId: 'tempArrow', textId: 'tempText', inputId: 'temperatureInput', angleRange: 270, angleOffset: -135, sliderId: 'temperatureInput' },
+            minPower: { min: 0, max: 5000, value: 0, arcId: 'minPowerArc', arrowId: 'minPowerArrow', textId: 'minPowerText', inputId: 'minPowerInput', angleRange: 270, angleOffset: -135, sliderId: 'minPowerInput' },
+            maxPower: { min: 500, max: 15000, value: 10000, arcId: 'maxPowerArc', arrowId: 'maxPowerArrow', textId: 'maxPowerText', inputId: 'maxPowerInput', angleRange: 270, angleOffset: -135, sliderId: 'maxPowerInput' },
+            minSoc: { min: 5, max: 50, value: 10, arcId: 'minSocArc', arrowId: 'minSocArrow', textId: 'minSocText', inputId: 'minSocInput', angleRange: 270, angleOffset: -135, sliderId: 'minSocInput' },
+            maxSoc: { min: 50, max: 100, value: 95, arcId: 'maxSocArc', arrowId: 'maxSocArrow', textId: 'maxSocText', inputId: 'maxSocInput', angleRange: 270, angleOffset: -135, sliderId: 'maxSocInput' }
         };
 
         // Relays dynamic list
         let myRelays = [
             { id: 1, name: 'Smart Bojler TÚV', type: 'flame', power: 2000, device: 'Shelly Pro 3M', active: true },
-            { id: 2, name: 'Klimatizácia', type: 'wind', power: 1500, device: 'Shelly Plus 1PM', active: false }
+            { id: 2, name: 'Klimatizácia (Klíma)', type: 'wind', power: 1500, device: 'Shelly Plus 1PM', active: false }
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1586,7 +1542,7 @@
             lucide.createIcons();
         }
 
-        // Kruhový posuvník — Kompletná Drag & Drop matematika
+        // Kruhový posuvník — Nakalibrovaná plynulá drag & drop matematika
         function syncGaugeValue(key, val) {
             const setting = gaugeSettings[key];
             if (!setting) return;
@@ -1625,26 +1581,21 @@
 
             function updateFromCoords(clientX, clientY) {
                 const rect = container.getBoundingClientRect();
-                // Stred SVG kruhu
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
                 
-                // Uhol v radiánoch
                 const angleRad = Math.atan2(clientY - centerY, clientX - centerX);
                 let angleDeg = angleRad * (180 / Math.PI);
                 
-                // Normalizácia na 0 až 360 stupňov
                 angleDeg = (angleDeg + 360) % 360;
 
-                // Prepočet uhla na posuvný interval 270 stupňov (od -135deg do 135deg)
-                // Štart (min) je pri 135 stupňoch SVG rotácie, koniec (max) je pri 45 stupňoch.
+                // Nakalibrované plynulé ťahanie pod prstom
                 let relativeAngle = angleDeg - 135;
                 if (relativeAngle < 0) {
                     relativeAngle += 360;
                 }
 
                 if (relativeAngle > 270) {
-                    // Limitujeme blízko mŕtvej zóny
                     if (relativeAngle < 315) {
                         relativeAngle = 270;
                     } else {
@@ -1751,16 +1702,21 @@
         // Relays functions (Dynamic Array control)
         function renderRelays() {
             const listContainer = document.getElementById('myRelaysList');
-            if (!listContainer) return;
+            const tab3Container = document.getElementById('tab3RelaysList');
+            if (!listContainer || !tab3Container) return;
+            
             listContainer.innerHTML = '';
+            tab3Container.innerHTML = '';
 
             if (myRelays.length === 0) {
-                listContainer.innerHTML = `
+                const emptyHTML = `
                     <div style="text-align:center; padding:30px; color:var(--text-muted); border:1px dashed var(--border-card); border-radius:18px;">
                         <i data-lucide="info" style="width:32px; height:32px; stroke-width:1.5; margin-bottom:8px;"></i>
                         <span style="font-size:12px; display:block;">Nemáte pridané žiadne relé zariadenie.</span>
                     </div>
                 `;
+                listContainer.innerHTML = emptyHTML;
+                tab3Container.innerHTML = emptyHTML;
                 lucide.createIcons();
                 return;
             }
@@ -1772,29 +1728,31 @@
                 if (relay.type === 'zap') icon = 'zap';
                 if (relay.type === 'cpu') icon = 'cpu';
 
-                const card = document.createElement('div');
-                card.className = 'relay-item-card';
-                card.innerHTML = `
-                    <div style="display:flex;align-items:center;gap:14px;">
-                        <div style="width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid var(--border-card); display:flex; align-items:center; justify-content:center;">
-                            <i data-lucide="${icon}" style="width:20px;height:20px;color:${relay.active ? 'var(--accent-solar)' : 'var(--text-muted)'};"></i>
+                const cardHTML = `
+                    <div class="relay-item-card">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <div class="relay-icon-wrapper" style="width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid var(--border-card); display:flex; align-items:center; justify-content:center;">
+                                <i data-lucide="${icon}" style="width:20px;height:20px;color:${relay.active ? 'var(--accent-solar)' : 'var(--text-muted)'};" class="relay-icon"></i>
+                            </div>
+                            <div>
+                                <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">${relay.name}</span>
+                                <span style="font-size:10px;color:var(--text-muted);">${relay.device} · ${relay.power}W</span>
+                            </div>
                         </div>
-                        <div>
-                            <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">${relay.name}</span>
-                            <span style="font-size:10px;color:var(--text-muted);">${relay.device} · ${relay.power}W</span>
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <label style="position:relative;width:44px;height:24px;cursor:pointer;">
+                                <input type="checkbox" ${relay.active ? 'checked' : ''} onchange="toggleRelayState(${relay.id})">
+                                <span style="position:absolute;inset:0;background:${relay.active ? 'var(--accent-battery)' : 'rgba(255,255,255,0.1)'};border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:white;margin:3px 0 0 ${relay.active ? '23px' : '3px'};transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
+                            </label>
+                            <button onclick="removeRelay(${relay.id})" style="background:none; border:none; cursor:pointer; padding:6px; color:var(--accent-warn); display:flex; align-items:center; justify-content:center; transition:opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+                                <i data-lucide="trash-2" style="width:16px; height:16px;"></i>
+                            </button>
                         </div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:16px;">
-                        <label style="position:relative;width:44px;height:24px;cursor:pointer;">
-                            <input type="checkbox" ${relay.active ? 'checked' : ''} onchange="toggleRelayState(${relay.id})" style="opacity:0;width:0;height:0;">
-                            <span style="position:absolute;inset:0;background:${relay.active ? 'var(--accent-battery)' : 'rgba(255,255,255,0.1)'};border-radius:12px;transition:all 0.3s;"><span style="width:18px;height:18px;border-radius:50%;background:white;margin:3px 0 0 ${relay.active ? '23px' : '3px'};transition:all 0.3s;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></span></span>
-                        </label>
-                        <button onclick="removeRelay(${relay.id})" style="background:none; border:none; cursor:pointer; padding:6px; color:var(--accent-warn); display:flex; align-items:center; justify-content:center; transition:opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
-                            <i data-lucide="trash-2" style="width:16px; height:16px;"></i>
-                        </button>
                     </div>
                 `;
-                listContainer.appendChild(card);
+                
+                listContainer.insertAdjacentHTML('beforeend', cardHTML);
+                tab3Container.insertAdjacentHTML('beforeend', cardHTML);
             });
 
             lucide.createIcons();
@@ -1911,6 +1869,20 @@
             document.getElementById('okteSpotPrice').innerText = spotPrice.toFixed(2);
             document.getElementById('okteMinPrice').innerText = minPrice.toFixed(2) + ' €';
             document.getElementById('okteMaxPrice').innerText = maxPrice.toFixed(2) + ' €';
+        }
+
+        function toggleRelayLocal(id, checkbox) {
+            const card = document.getElementById(`relay${id}`);
+            const icon = card.querySelector('.relay-icon');
+            const desc = document.getElementById(`relayDesc${id}`);
+
+            if (checkbox.checked) {
+                icon.style.color = 'var(--accent-solar)';
+                desc.innerText = 'Smart Relé Shelly · Spotreba: 2000 W';
+            } else {
+                icon.style.color = 'var(--text-muted)';
+                desc.innerText = 'Zariadenie je momentálne odpojené / neaktívne';
+            }
         }
 
         function validateAndSavePassword() {
