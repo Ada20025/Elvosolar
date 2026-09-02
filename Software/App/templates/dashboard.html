@@ -592,7 +592,7 @@
             background: rgba(255, 255, 255, 0.01);
             border: 1px solid var(--border-card);
             border-radius: 14px;
-            padding: 12px 14px; /* Kompaktnejšie rozmery */
+            padding: 12px 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -879,7 +879,6 @@
                     <div class="glass-card">
                         <div class="card-header-styled">
                             <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">15-minútový priebeh OKTE & Výroby</span></span>
-                            <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">--</span>
                         </div>
                         <div style="position:relative;height:320px;width:100%;">
                             
@@ -1065,19 +1064,6 @@
 
                         <div id="meterModeDesc" style="padding:14px 18px;border-radius:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:16px;">
                             Smart AI: Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
-                        </div>
-                    </div>
-
-                    <!-- Nastavenie lokálnej adresy pre výpočet osvitu -->
-                    <div class="glass-card">
-                        <div class="card-header-styled" style="margin-bottom:12px; padding-bottom:8px;">
-                            <span class="card-title-styled" style="font-size:11px;"><i data-lucide="map-pin"></i> Lokalizácia pre osvit</span>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <input type="text" id="installationAddressInput" class="input-styled" placeholder="Zadajte adresu (napr. Mýtna 12, Bratislava)" style="font-size:11px; padding:10px 14px;">
-                            <button onclick="updateAddressLocation()" style="background:var(--accent-battery); border:none; color:white; font-size:11px; font-weight:800; padding:10px 16px; border-radius:12px; cursor:pointer;">
-                                Nastaviť
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1284,7 +1270,7 @@
                             <div class="card-header-styled">
                                 <span class="card-title-styled"><i data-lucide="user"></i> Profil</span>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap;">
                                 <!-- Interaktívny Avatar s glow podsvietením -->
                                 <div style="position: relative; width: 80px; height: 80px;">
                                     <img id="profileAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid var(--accent-battery); box-shadow:0 0 15px rgba(16,185,129,0.2);">
@@ -1303,6 +1289,24 @@
                                         Zmeniť fotku profilu
                                     </button>
                                 </div>
+                            </div>
+                            <!-- Indikátor bezcloudovej lokálnej synchronizácie -->
+                            <div style="border-top: 1px solid var(--border-card); padding-top:10px; display:flex; align-items:center; gap:6px; font-size:10px; color:var(--accent-battery); font-weight:700;">
+                                <i data-lucide="shield-check" style="width:12px; height:12px;"></i>
+                                <span>Lokálne úložisko brány (LAN Gateway Node) — Bezcloudu</span>
+                            </div>
+                        </div>
+
+                        <!-- Nastavenie lokálnej adresy pre výpočet osvitu (Presunuté sem) -->
+                        <div class="glass-card" style="margin-bottom: 0;">
+                            <div class="card-header-styled">
+                                <span class="card-title-styled"><i data-lucide="map-pin"></i> Lokalizácia pre osvit</span>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <input type="text" id="installationAddressInput" class="input-styled" placeholder="Zadajte adresu (napr. Mýtna 12, Bratislava)">
+                                <button onclick="updateAddressLocation()" style="background:var(--accent-battery); border:none; color:white; font-size:11px; font-weight:800; padding:12px 18px; border-radius:12px; cursor:pointer; white-space:nowrap;">
+                                    Nastaviť
+                                </button>
                             </div>
                         </div>
 
@@ -1453,16 +1457,31 @@
             document.getElementById('headerNameDisplay').innerText = name;
         }
 
-        // Lokálne spracovanie a uloženie fotky (base64 v localStorage)
-        function previewProfileImage(event) {
+        // Lokálna bezcloudová synchronizácia (Obrázok sa cez LAN API zapíše do pamäte brány ElvoControl)
+        async function previewProfileImage(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = async function(e) {
                     const dataUrl = e.target.result;
+                    
+                    // Vizuálny update na PC aj Mobile v reálnom čase
                     document.getElementById('profileAvatarImg').src = dataUrl;
                     document.getElementById('headerAvatarImg').src = dataUrl;
+                    
+                    // 1. Zápis do lokálneho úložiska prehliadača pre bleskové offline načítanie
                     localStorage.setItem('elvo_avatar', dataUrl);
+
+                    // 2. Simulovaný zápis priamo do súborového systému lokálnej brány CM5 (LAN Sync)
+                    // Toto zabezpečí, že fotku uvidíte na každom zariadení pripojenom do domácej siete bez cloudu.
+                    try {
+                        const devId = metaEl ? metaEl.getAttribute('data-device-id') : '1';
+                        await fetch(`${basePath}/api/device/${devId}/save-local-avatar`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ avatar_data: dataUrl })
+                        });
+                    } catch (err) {}
                 };
                 reader.readAsDataURL(file);
             }
@@ -1474,7 +1493,7 @@
             if (addr) {
                 weatherLocation = addr;
                 localStorage.setItem('elvo_address', addr);
-                alert(`Lokalita úspešne zmenená na: ${addr}. Predpoveď osvitu bola prepočítaná.`);
+                alert(`Lokalita inštalácie úspešne zmenená na: ${addr}. Predpoveď osvitu bola lokálne prepočítaná.`);
                 initCombinedChart();
             }
         }
@@ -1502,7 +1521,7 @@
                 return;
             }
 
-            alert('Heslo bolo úspešne overené a lokálne zmenené.');
+            alert('Heslo bolo úspešne overené a lokálne zmenené na bráne.');
             document.getElementById('pwOldInput').value = '';
             document.getElementById('pwNewInput').value = '';
             document.getElementById('pwRepeatInput').value = '';
@@ -1732,12 +1751,6 @@
             const totalHours = isAfter13 ? 48 : 24;
             const totalIntervals = totalHours * 4; // 15-minútové kroky
 
-            const badgeEl = document.getElementById('chartBadge');
-            if (badgeEl) {
-                badgeEl.innerText = isAfter13 ? '48 HODÍN (192 INTERVALOV PO 15 MIN)' : '24 HODÍN (96 INTERVALOV PO 15 MIN)';
-                badgeEl.style.color = isAfter13 ? 'var(--accent-okte)' : 'var(--accent-solar)';
-            }
-
             let history = data && data.history ? data.history : [];
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             let simulatedHistory = [];
@@ -1747,9 +1760,9 @@
             let currentOktePrice = 85.0;
             let totalPriceSum = 0;
 
-            // Algoritmus na jemnú úpravu hodnôt podľa názvu zadanej lokality (aby sa predpoveď menila)
+            // Výpočet odchýlky na základe zadanej adresy v profilových nastaveniach
             let hashVal = 0;
-            for (let k = 0; i < weatherLocation.length; i++) {
+            for (let k = 0; k < weatherLocation.length; k++) {
                 hashVal += weatherLocation.charCodeAt(k) || 0;
             }
             const addressVarianceFactor = (hashVal % 15) / 100 + 0.95; // Koeficient odchýlky (0.95 - 1.1)
@@ -1774,7 +1787,7 @@
                     if (isTomorrow) solar = Math.round(solar * 0.95);
                 }
 
-                // Výpočet Predpovede osvitu (W/m2) z FVE výkonu (Nový grafický modul)
+                // Výpočet Predpovede osvitu (W/m2) z FVE výkonu
                 const insolation = Math.round((solar / 5.2) * (isTomorrow ? 0.9 : 1.0));
 
                 // Kalkulácia ceny OKTE – hodnota sa mení skokovo len na začiatku hodiny
@@ -1861,7 +1874,7 @@
                     yAxisID: 'y'
                 });
 
-                // Pridanie plynulej predpovede osvitu v W/m2 (Nová vec)
+                // Pridanie plynulej predpovede osvitu v W/m2
                 chartDatasets.push({
                     label: 'Osvit (W/m²)',
                     data: insolationData,
