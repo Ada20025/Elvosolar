@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ElvoControl — Smart EMS</title>
-    <link class="brand-favicon" rel="icon" type="image/png" href="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#02040a">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -710,7 +706,7 @@
             background: white;
         }
 
-        /* Premium Wheels (Gauges) Style with Arrow pointer */
+        /* Interaktívne a plne posuvné (draggable) kruhy */
         .premium-gauge-wrapper {
             display: flex;
             flex-direction: column;
@@ -720,12 +716,15 @@
 
         .gauge-svg-box {
             position: relative;
-            width: 96px;
-            height: 96px;
+            width: 110px;
+            height: 110px;
+            cursor: pointer;
+            user-select: none;
+            touch-action: none;
         }
 
         .gauge-arrow {
-            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: transform 0.15s ease-out;
         }
 
         .gauge-interactive-value {
@@ -1047,40 +1046,37 @@
                             </button>
                         </div>
 
-                        <!-- Klikateľný schovaný panel s interaktívnymi kolesami, šípkami a možnosťou priameho zadania -->
+                        <!-- Klikateľný schovaný panel s interaktívnymi kruhmi (posuvnými ťahaním prsta / myšou) -->
                         <div id="gearSettingsPanel" class="expandable-settings-panel">
                             <div style="margin-bottom: 14px; border-bottom: 1px solid var(--border-card); padding-bottom: 10px;">
-                                <span style="font-size: 11px; font-weight: 800; color: var(--accent-battery); text-transform: uppercase;">Konfigurácia výkonových limitov</span>
+                                <span style="font-size: 11px; font-weight: 800; color: var(--accent-battery); text-transform: uppercase;">Konfigurácia výkonových limitov (Ťahaj kruhy)</span>
                             </div>
 
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px; margin-bottom: 16px;">
                                 <!-- Min Power Wheel -->
                                 <div class="premium-gauge-wrapper">
-                                    <div class="gauge-svg-box" onclick="focusGaugeInput('minPower')">
+                                    <div class="gauge-svg-box" id="gauge-minPower">
                                         <svg viewBox="0 0 100 100" style="width:100%;height:100%;">
                                             <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
-                                            <circle id="minPowerArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-battery)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition:stroke-dashoffset 0.5s ease;"/>
-                                            <!-- Pointer (Sipka) -->
+                                            <circle id="minPowerArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-battery)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition:stroke-dashoffset 0.1s ease;"/>
                                             <g id="minPowerArrow" class="gauge-arrow" style="transform-origin: 50px 50px; transform: rotate(-135deg);">
                                                 <polygon points="50,14 46,24 54,24" fill="var(--accent-battery)"/>
                                             </g>
                                         </svg>
                                     </div>
                                     <div style="display:flex; flex-direction:column; align-items:center;">
-                                        <!-- Klikateľná hodnota (vymieňa sa za input) -->
                                         <span id="minPowerText" class="gauge-interactive-value" onclick="enableGaugeInput('minPower')">0</span>
                                         <input type="number" id="minPowerInput" class="gauge-text-input hidden" onblur="disableGaugeInput('minPower')" onkeydown="handleGaugeKey(event, 'minPower')">
                                         <span style="font-size:7px;font-weight:700;color:var(--text-muted);margin-top:2px;">W MIN (Limit)</span>
                                     </div>
-                                    <input type="range" id="settingsMinPower" min="0" max="5000" step="100" value="0" oninput="syncGaugeFromSlider('minPower', this.value)" style="width:100%;height:3px;accent-color:var(--accent-battery);cursor:pointer;">
                                 </div>
 
                                 <!-- Max Power Wheel -->
                                 <div class="premium-gauge-wrapper">
-                                    <div class="gauge-svg-box" onclick="focusGaugeInput('maxPower')">
+                                    <div class="gauge-svg-box" id="gauge-maxPower">
                                         <svg viewBox="0 0 100 100" style="width:100%;height:100%;">
                                             <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" stroke-dasharray="4 3"/>
-                                            <circle id="maxPowerArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-solar)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="125.6" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                            <circle id="maxPowerArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-solar)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="125.6" style="transition:stroke-dashoffset 0.1s ease;"/>
                                             <g id="maxPowerArrow" class="gauge-arrow" style="transform-origin: 50px 50px; transform: rotate(45deg);">
                                                 <polygon points="50,14 46,24 54,24" fill="var(--accent-solar)"/>
                                             </g>
@@ -1091,17 +1087,16 @@
                                         <input type="number" id="maxPowerInput" class="gauge-text-input hidden" onblur="disableGaugeInput('maxPower')" onkeydown="handleGaugeKey(event, 'maxPower')">
                                         <span style="font-size:7px;font-weight:700;color:var(--text-muted);margin-top:2px;">W MAX (Limit)</span>
                                     </div>
-                                    <input type="range" id="settingsMaxPower" min="500" max="15000" step="500" value="10000" oninput="syncGaugeFromSlider('maxPower', this.value)" style="width:100%;height:3px;accent-color:var(--accent-solar);cursor:pointer;">
                                 </div>
                             </div>
 
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px; margin-bottom: 20px;">
                                 <!-- Min SOC Wheel -->
                                 <div class="premium-gauge-wrapper">
-                                    <div class="gauge-svg-box" onclick="focusGaugeInput('minSoc')">
+                                    <div class="gauge-svg-box" id="gauge-minSoc">
                                         <svg viewBox="0 0 100 100" style="width:100%;height:100%;">
                                             <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6"/>
-                                            <circle id="minSocArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-grid)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="200" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                            <circle id="minSocArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-grid)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="200" style="transition:stroke-dashoffset 0.1s ease;"/>
                                             <g id="minSocArrow" class="gauge-arrow" style="transform-origin: 50px 50px; transform: rotate(-81deg);">
                                                 <polygon points="50,14 46,24 54,24" fill="var(--accent-grid)"/>
                                             </g>
@@ -1112,15 +1107,14 @@
                                         <input type="number" id="minSocInput" class="gauge-text-input hidden" onblur="disableGaugeInput('minSoc')" onkeydown="handleGaugeKey(event, 'minSoc')">
                                         <span style="font-size:7px;font-weight:700;color:var(--text-muted);margin-top:2px;">SOC MIN %</span>
                                     </div>
-                                    <input type="range" id="settingsMinSoc" min="5" max="50" step="5" value="10" oninput="syncGaugeFromSlider('minSoc', this.value)" style="width:100%;height:3px;accent-color:var(--accent-grid);cursor:pointer;">
                                 </div>
 
                                 <!-- Max SOC Wheel -->
                                 <div class="premium-gauge-wrapper">
-                                    <div class="gauge-svg-box" onclick="focusGaugeInput('maxSoc')">
+                                    <div class="gauge-svg-box" id="gauge-maxSoc">
                                         <svg viewBox="0 0 100 100" style="width:100%;height:100%;">
                                             <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6"/>
-                                            <circle id="maxSocArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-saved)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="10" style="transition:stroke-dashoffset 0.5s ease;"/>
+                                            <circle id="maxSocArc" cx="50" cy="50" r="40" fill="none" stroke="var(--accent-saved)" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="10" style="transition:stroke-dashoffset 0.1s ease;"/>
                                             <g id="maxSocArrow" class="gauge-arrow" style="transform-origin: 50px 50px; transform: rotate(108deg);">
                                                 <polygon points="50,14 46,24 54,24" fill="var(--accent-saved)"/>
                                             </g>
@@ -1131,7 +1125,6 @@
                                         <input type="number" id="maxSocInput" class="gauge-text-input hidden" onblur="disableGaugeInput('maxSoc')" onkeydown="handleGaugeKey(event, 'maxSoc')">
                                         <span style="font-size:7px;font-weight:700;color:var(--text-muted);margin-top:2px;">SOC MAX %</span>
                                     </div>
-                                    <input type="range" id="settingsMaxSoc" min="50" max="100" step="5" value="95" oninput="syncGaugeFromSlider('maxSoc', this.value)" style="width:100%;height:3px;accent-color:var(--accent-saved);cursor:pointer;">
                                 </div>
                             </div>
 
@@ -1225,7 +1218,7 @@
             <div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
                 <div class="glass-card">
                     <div class="card-header-styled">
-                        <span class="card-title-styled"><i data-lucide="toggle-left"></i> Ovládané Relé & Záťaže</span>
+                        <span class="card-title-styled"><i data-lucide="toggle-left"></i> Spárované spotrebiče</span>
                         <button onclick="openAddRelayModal()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--accent-battery);font-size:11px;font-weight:800;transition:all 0.2s;">
                             <i data-lucide="plus" style="width:14px;height:14px;"></i> Pridať Relé
                         </button>
@@ -1340,19 +1333,19 @@
             </div>
         </section>
 
-        <!-- Tab 5: PROFILE VIEW (Zjednotený & Vylepšený bez duplicít) -->
+        <!-- Tab 5: PROFILE VIEW -->
         <section id="sectionProfile" class="view-section">
             <div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
                 
                 <div class="profile-container-grid">
                     
-                    <!-- Karta používateľa & inštalácie (Užívateľ má všetko pokope, žiadne duplicity) -->
+                    <!-- Karta používateľa (Zjednotený profil čistý, bez duplicít a bez vnorenia loga do nej) -->
                     <div class="glass-card" style="margin-bottom:0;">
                         <div class="card-header-styled">
-                            <span class="card-title-styled"><i data-lucide="user"></i> Identita & Parametre EMS inštalácie</span>
+                            <span class="card-title-styled"><i data-lucide="user"></i> Profil Používateľa</span>
                         </div>
                         
-                        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; gap: 20px;">
                             <div style="position: relative; width: 72px; height: 72px;">
                                 <img id="profileAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid var(--accent-battery);">
                                 <label for="avatarFileInput" style="position: absolute; bottom: 0; right: 0; width: 24px; height: 24px; background: var(--accent-battery); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--bg-primary);">
@@ -1368,9 +1361,14 @@
                                 <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top:2px;">adam.dzurko5@gmail.com</span>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Parametre lokálneho solárneho osvitu a výpočtov -->
-                        <div style="display:flex; flex-direction:column; gap:16px; border-top:1px solid var(--border-card); padding-top:20px;">
+                    <!-- Karta parametrov inštalácie (Už samostatná, žiadne vnorenia, žiadne duplicity) -->
+                    <div class="glass-card" style="margin-bottom:0;">
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="sun"></i> Parametre EMS inštalácie & Osvitu</span>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:16px;">
                             <div>
                                 <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:6px;">Lokalita pre predpoveď osvitu</label>
                                 <div style="display:flex; gap:8px;">
@@ -1500,12 +1498,12 @@
             156.1, 182.0, 164.5, 122.1, 98.4, 82.0
         ];
 
-        // Dynamic State for interactive gauges (circumference r=40 is 251.2)
+        // Definícia interaktívnych posuvných kruhov (Gauges) bez range inputov
         const gaugeSettings = {
-            minPower: { min: 0, max: 5000, value: 0, arcId: 'minPowerArc', arrowId: 'minPowerArrow', textId: 'minPowerText', inputId: 'minPowerInput', sliderId: 'settingsMinPower', angleRange: 270, angleOffset: -135 },
-            maxPower: { min: 500, max: 15000, value: 10000, arcId: 'maxPowerArc', arrowId: 'maxPowerArrow', textId: 'maxPowerText', inputId: 'maxPowerInput', sliderId: 'settingsMaxPower', angleRange: 270, angleOffset: -135 },
-            minSoc: { min: 5, max: 50, value: 10, arcId: 'minSocArc', arrowId: 'minSocArrow', textId: 'minSocText', inputId: 'minSocInput', sliderId: 'settingsMinSoc', angleRange: 270, angleOffset: -135 },
-            maxSoc: { min: 50, max: 100, value: 95, arcId: 'maxSocArc', arrowId: 'maxSocArrow', textId: 'maxSocText', inputId: 'maxSocInput', sliderId: 'settingsMaxSoc', angleRange: 270, angleOffset: -135 }
+            minPower: { min: 0, max: 5000, value: 0, arcId: 'minPowerArc', arrowId: 'minPowerArrow', textId: 'minPowerText', inputId: 'minPowerInput', angleRange: 270, angleOffset: -135 },
+            maxPower: { min: 500, max: 15000, value: 10000, arcId: 'maxPowerArc', arrowId: 'maxPowerArrow', textId: 'maxPowerText', inputId: 'maxPowerInput', angleRange: 270, angleOffset: -135 },
+            minSoc: { min: 5, max: 50, value: 10, arcId: 'minSocArc', arrowId: 'minSocArrow', textId: 'minSocText', inputId: 'minSocInput', angleRange: 270, angleOffset: -135 },
+            maxSoc: { min: 50, max: 100, value: 95, arcId: 'maxSocArc', arrowId: 'maxSocArrow', textId: 'maxSocText', inputId: 'maxSocInput', angleRange: 270, angleOffset: -135 }
         };
 
         // Relays dynamic list
@@ -1544,10 +1542,10 @@
             const savedEff = localStorage.getItem('elvo_eff') || '85';
             document.getElementById('fveEffInput').value = savedEff;
 
-            // Init interactive gauges
+            // Inicializácia kruhov a naviazanie posuvných (drag) eventov
             Object.keys(gaugeSettings).forEach(key => {
-                const sliderVal = document.getElementById(gaugeSettings[key].sliderId).value;
-                syncGaugeFromSlider(key, sliderVal);
+                syncGaugeValue(key, gaugeSettings[key].value);
+                setupInteractiveDrag(key);
             });
 
             const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -1567,7 +1565,7 @@
             setInterval(fetchTelemetry, 10000);
         });
 
-        // Theme Toggle Logic
+        // Téma a vzhľad
         function toggleTheme() {
             const isLight = document.body.classList.toggle('light-mode');
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
@@ -1588,32 +1586,110 @@
             lucide.createIcons();
         }
 
-        // Gauge Control & Sync Functions
-        function syncGaugeFromSlider(key, val) {
-            const numVal = parseInt(val);
+        // Kruhový posuvník — Kompletná Drag & Drop matematika
+        function syncGaugeValue(key, val) {
             const setting = gaugeSettings[key];
             if (!setting) return;
 
-            setting.value = numVal;
-            
-            // Text values updates
-            document.getElementById(setting.textId).innerText = numVal;
-            document.getElementById(setting.inputId).value = numVal;
+            val = parseInt(val);
+            if (isNaN(val)) val = setting.min;
+            if (val < setting.min) val = setting.min;
+            if (val > setting.max) val = setting.max;
 
-            // Mathematical calculation of arc offsets and pointer rotation angles (r = 40, circum = 251.2)
-            const range = setting.max - setting.min;
-            const pct = (numVal - setting.min) / range;
-            const dashOffset = 251.2 - (251.2 * pct);
+            setting.value = val;
             
+            // Sync textov a inputu
+            document.getElementById(setting.textId).innerText = val;
+            document.getElementById(setting.inputId).value = val;
+
+            const range = setting.max - setting.min;
+            const pct = (val - setting.min) / range;
+            
+            // Prstenec SVG offset (r = 40, circum = 251.2)
+            const dashOffset = 251.2 - (251.2 * pct);
             const arcEl = document.getElementById(setting.arcId);
             if (arcEl) arcEl.setAttribute('stroke-dashoffset', dashOffset);
 
-            // Calculate rotation pointer angle (degrees)
+            // Otočenie šípky (-135deg až 135deg)
             const angle = (pct * setting.angleRange) + setting.angleOffset;
             const arrowEl = document.getElementById(setting.arrowId);
             if (arrowEl) {
                 arrowEl.style.transform = `rotate(${angle}deg)`;
             }
+        }
+
+        // Detekcia ťahania a myši
+        function setupInteractiveDrag(key) {
+            const container = document.getElementById(`gauge-${key}`);
+            if (!container) return;
+
+            function updateFromCoords(clientX, clientY) {
+                const rect = container.getBoundingClientRect();
+                // Stred SVG kruhu
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                // Uhol v radiánoch
+                const angleRad = Math.atan2(clientY - centerY, clientX - centerX);
+                let angleDeg = angleRad * (180 / Math.PI);
+                
+                // Normalizácia na 0 až 360 stupňov
+                angleDeg = (angleDeg + 360) % 360;
+
+                // Prepočet uhla na posuvný interval 270 stupňov (od -135deg do 135deg)
+                // Štart (min) je pri 135 stupňoch SVG rotácie, koniec (max) je pri 45 stupňoch.
+                let relativeAngle = angleDeg - 135;
+                if (relativeAngle < 0) {
+                    relativeAngle += 360;
+                }
+
+                if (relativeAngle > 270) {
+                    // Limitujeme blízko mŕtvej zóny
+                    if (relativeAngle < 315) {
+                        relativeAngle = 270;
+                    } else {
+                        relativeAngle = 0;
+                    }
+                }
+
+                const pct = relativeAngle / 270;
+                const setting = gaugeSettings[key];
+                const value = Math.round(setting.min + pct * (setting.max - setting.min));
+                
+                syncGaugeValue(key, value);
+            }
+
+            let isDragging = false;
+
+            function onStart(e) {
+                isDragging = true;
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                updateFromCoords(clientX, clientY);
+                e.preventDefault();
+            }
+
+            function onMove(e) {
+                if (!isDragging) return;
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                if (clientX && clientY) {
+                    updateFromCoords(clientX, clientY);
+                }
+            }
+
+            function onEnd() {
+                isDragging = false;
+            }
+
+            container.addEventListener('mousedown', onStart);
+            container.addEventListener('touchstart', onStart, { passive: false });
+
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('touchmove', onMove, { passive: false });
+
+            window.addEventListener('mouseup', onEnd);
+            window.addEventListener('touchend', onEnd);
         }
 
         function enableGaugeInput(key) {
@@ -1634,14 +1710,7 @@
             const inputEl = document.getElementById(setting.inputId);
             let val = parseInt(inputEl.value);
 
-            // Validation range boundaries
-            if (isNaN(val)) val = setting.min;
-            if (val < setting.min) val = setting.min;
-            if (val > setting.max) val = setting.max;
-
-            // Align slider and gauge elements
-            document.getElementById(setting.sliderId).value = val;
-            syncGaugeFromSlider(key, val);
+            syncGaugeValue(key, val);
 
             inputEl.classList.add('hidden');
             document.getElementById(setting.textId).classList.remove('hidden');
@@ -1933,7 +2002,6 @@
         }
 
         function fetchTelemetry() {
-            // Simulácia klientskych hodnôt namiesto serverového LAN API
             const simulatedPower = Math.round(2000 + Math.random() * 2000);
             const simulatedBattery = Math.round(75 + Math.random() * 10);
             const simulatedConsumption = Math.round(100 + Math.random() * 200);
