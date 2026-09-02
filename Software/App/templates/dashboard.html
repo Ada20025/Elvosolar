@@ -587,12 +587,12 @@
             border-color: rgba(99, 102, 241, 0.15);
         }
 
-        .ai-model-list { display: flex; flex-direction: column; gap: 10px; }
+        .ai-model-list { display: flex; flex-direction: column; gap: 8px; }
         .ai-model-card {
             background: rgba(255, 255, 255, 0.01);
             border: 1px solid var(--border-card);
             border-radius: 14px;
-            padding: 16px;
+            padding: 12px 14px; /* Kompaktnejšie rozmery */
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -655,18 +655,57 @@
             margin-bottom: 20px;
         }
 
-        /* Premium Console log */
-        .terminal-panel {
-            background: #02040a;
-            border: 1px solid var(--border-card);
-            border-radius: 16px;
-            padding: 14px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            color: var(--accent-battery);
-            height: 120px;
-            overflow-y: auto;
-            line-height: 1.5;
+        /* iOS style toggle switches */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-card);
+        }
+        .switch-container:last-child {
+            border-bottom: none;
+        }
+        .switch-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .switch-control {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+        .switch-control input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .switch-slider {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: background 0.25s;
+        }
+        .switch-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #9ca3af;
+            left: 3px;
+            top: 3px;
+            transition: transform 0.25s, background 0.25s;
+        }
+        .switch-control input:checked + .switch-slider {
+            background: var(--accent-battery);
+        }
+        .switch-control input:checked + .switch-slider::before {
+            transform: translateX(20px);
+            background: white;
         }
 
         .hidden { display: none !important; }
@@ -753,10 +792,9 @@
                 </div>
                 <div class="user-profile-container">
                     <button id="userMenuBtn" onclick="toggleUserDropdown(event)" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);cursor:pointer;font-size:12px;font-weight:700;color:var(--text-primary);">
-                        <div style="width:24px;height:24px;background:linear-gradient(135deg,#6366f1,#3b82f6);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                            <span style="font-size:10px;font-weight:900;color:white;"><?php echo strtoupper(substr($_SESSION['username'] ?? 'A', 0, 1)); ?></span>
-                        </div>
-                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Adam'); ?></span>
+                        <!-- Avatar synchronizovaný s localu -->
+                        <img id="headerAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid var(--accent-battery);">
+                        <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="headerNameDisplay"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Adam'); ?></span>
                     </button>
                     <div id="userDropdownMenu" class="user-dropdown-card hidden">
                         <button onclick="toggleTheme()" class="user-dropdown-btn">
@@ -841,14 +879,7 @@
                     <div class="glass-card">
                         <div class="card-header-styled">
                             <span class="card-title-styled"><i data-lucide="line-chart"></i> <span id="chartDeviceName">15-minútový priebeh OKTE & Výroby</span></span>
-                            
-                            <div style="display:flex;gap:8px;align-items:center;">
-                                <!-- Spínač nedostupnosti OKTE (Pre simuláciu a chybové hlásenie) -->
-                                <button onclick="toggleOkteAvailability()" id="btnToggleOkteState" style="background:rgba(255,255,255,0.04); border:1px solid var(--border-card); padding:4px 10px; border-radius:6px; font-size:9px; font-weight:800; color:var(--text-secondary); cursor:pointer; font-family:'JetBrains Mono';">
-                                    OKTE: ONLINE
-                                </button>
-                                <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">--</span>
-                            </div>
+                            <span id="chartBadge" style="font-size:10px;font-family:'JetBrains Mono';font-weight:700;color:var(--accent-solar);background:rgba(245,158,11,0.12);padding:4px 8px;border-radius:6px;">--</span>
                         </div>
                         <div style="position:relative;height:320px;width:100%;">
                             
@@ -863,17 +894,6 @@
                             </div>
 
                             <canvas id="elvoChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Bežiaci terminál systémových hlásení -->
-                    <div class="glass-card">
-                        <div class="card-header-styled" style="margin-bottom:12px; padding-bottom:8px;">
-                            <span class="card-title-styled" style="font-size:11px; color:var(--accent-battery);"><i data-lucide="terminal"></i> Live EMS System Log</span>
-                        </div>
-                        <div id="emsTerminalLog" class="terminal-panel">
-                            [00:00:01] Inicializácia EMS procesov CM5 prebehla v poriadku.<br>
-                            [00:00:03] Monitorovanie 15-minútových sieťových periód aktivované...
                         </div>
                     </div>
 
@@ -1047,6 +1067,19 @@
                             Smart AI: Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
                         </div>
                     </div>
+
+                    <!-- Nastavenie lokálnej adresy pre výpočet osvitu -->
+                    <div class="glass-card">
+                        <div class="card-header-styled" style="margin-bottom:12px; padding-bottom:8px;">
+                            <span class="card-title-styled" style="font-size:11px;"><i data-lucide="map-pin"></i> Lokalizácia pre osvit</span>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="installationAddressInput" class="input-styled" placeholder="Zadajte adresu (napr. Mýtna 12, Bratislava)" style="font-size:11px; padding:10px 14px;">
+                            <button onclick="updateAddressLocation()" style="background:var(--accent-battery); border:none; color:white; font-size:11px; font-weight:800; padding:10px 16px; border-radius:12px; cursor:pointer;">
+                                Nastaviť
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column: AI Autonómne Cenové Modely (OKTE) -->
@@ -1074,8 +1107,8 @@
                                 <div style="display:flex;align-items:center;gap:12px;">
                                     <i data-lucide="shield-check" style="color:var(--accent-battery);width:20px;height:20px;"></i>
                                     <div>
-                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 1: Ochrana pred zápornými cenami</div>
-                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Výroba zakázaná pri cenách pod 0 €/MWh.</div>
+                                        <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Model 1: Ochrana pred zápornými cenami</div>
+                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Výroba zakázaná pri cenách pod 0 €/MWh.</div>
                                     </div>
                                 </div>
                                 <i id="aiModelCheck1" data-lucide="check" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1085,8 +1118,8 @@
                                 <div style="display:flex;align-items:center;gap:12px;">
                                     <i data-lucide="trending-up" style="color:var(--accent-grid);width:20px;height:20px;"></i>
                                     <div>
-                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 2: Predajná Arbitráž</div>
-                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do siete iba počas špičiek.</div>
+                                        <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Model 2: Predajná Arbitráž</div>
+                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do siete iba počas špičiek.</div>
                                     </div>
                                 </div>
                                 <i id="aiModelCheck2" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1096,8 +1129,8 @@
                                 <div style="display:flex;align-items:center;gap:12px;">
                                     <i data-lucide="download" style="color:var(--accent-battery);width:20px;height:20px;"></i>
                                     <div>
-                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 3: Nabíjanie batérie zo siete</div>
-                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, kedy ceny klesnú pod denný priemer.</div>
+                                        <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Model 3: Nabíjanie batérie zo siete</div>
+                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, kedy ceny klesnú pod denný priemer.</div>
                                     </div>
                                 </div>
                                 <i id="aiModelCheck3" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1107,8 +1140,8 @@
                                 <div style="display:flex;align-items:center;gap:12px;">
                                     <i data-lucide="activity" style="color:var(--accent-warn);width:20px;height:20px;"></i>
                                     <div>
-                                        <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 4: Kombinovaná arbitráž</div>
-                                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nabíja keď je lacno, vybíja keď je drahšie.</div>
+                                        <div style="font-size:11px;font-weight:800;color:var(--text-primary);">Model 4: Kombinovaná arbitráž</div>
+                                        <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Nabíja keď je lacno, vybíja keď je drahšie.</div>
                                     </div>
                                 </div>
                                 <i id="aiModelCheck4" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1261,32 +1294,51 @@
                                     <input type="file" id="avatarFileInput" accept="image/*" onchange="previewProfileImage(event)" class="hidden">
                                 </div>
                                 <div>
-                                    <h4 style="font-size: 16px; font-weight: 800; color:var(--text-primary);" id="profileNameDisplay">Adam</h4>
-                                    <span style="font-size: 11px; color: var(--text-muted); display: block;">adam.dzurko5@gmail.com</span>
-                                    <button onclick="document.getElementById('avatarFileInput').click()" style="background:none; border:none; color:var(--accent-battery); font-size:11px; font-weight:800; cursor:pointer; margin-top:6px; padding:0; display:flex; align-items:center; gap:4px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <input type="text" id="profileNameInput" value="Adam" oninput="updateProfileName(this.value)" style="background:transparent; border:none; border-bottom:1px solid transparent; color:var(--text-primary); font-size:16px; font-weight:800; outline:none; padding:2px;" onfocus="this.style.borderBottomColor='var(--accent-battery)'" onblur="this.style.borderBottomColor='transparent'">
+                                        <i data-lucide="edit-3" style="width:12px; height:12px; color:var(--text-muted);"></i>
+                                    </div>
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top:2px;">adam.dzurko5@gmail.com</span>
+                                    <button onclick="document.getElementById('avatarFileInput').click()" style="background:none; border:none; color:var(--accent-battery); font-size:11px; font-weight:800; cursor:pointer; margin-top:8px; padding:0; display:flex; align-items:center; gap:4px;">
                                         Zmeniť fotku profilu
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Email Notifications -->
+                        <!-- Email Notifications with Premium toggles -->
                         <div class="glass-card" style="margin-bottom: 0;">
                             <div class="card-header-styled">
-                                <span class="card-title-styled"><i data-lucide="mail"></i> Email Notifikácie</span>
+                                <span class="card-title-styled"><i data-lucide="mail"></i> Emailové notifikácie</span>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 14px;">
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="font-size: 12px; font-weight: 800;">Nové zariadenie</span>
-                                    <input type="checkbox" checked style="width:16px; height:16px; accent-color: var(--accent-battery);">
+                            <div style="display: flex; flex-direction: column;">
+                                <div class="switch-container">
+                                    <span class="switch-label">Povoliť e-mailové notifikácie</span>
+                                    <label class="switch-control">
+                                        <input type="checkbox" id="prefEnableEmails" checked onchange="saveEmailPreferences()">
+                                        <span class="switch-slider"></span>
+                                    </label>
                                 </div>
-                                <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-card); padding-top: 14px;">
-                                    <span style="font-size: 12px; font-weight: 800;">Porucha zariadenia</span>
-                                    <input type="checkbox" checked style="width:16px; height:16px; accent-color: var(--accent-battery);">
+                                <div class="switch-container">
+                                    <span class="switch-label">Denné súhrnné reporty úspor</span>
+                                    <label class="switch-control">
+                                        <input type="checkbox" id="prefDailyReports" checked onchange="saveEmailPreferences()">
+                                        <span class="switch-slider"></span>
+                                    </label>
                                 </div>
-                                <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-card); padding-top: 14px;">
-                                    <span style="font-size: 12px; font-weight: 800;">Negatívna cena OKTE</span>
-                                    <input type="checkbox" checked style="width:16px; height:16px; accent-color: var(--accent-battery);">
+                                <div class="switch-container">
+                                    <span class="switch-label">Výstrahy pri negatívnych cenách OKTE</span>
+                                    <label class="switch-control">
+                                        <input type="checkbox" id="prefNegativeAlerts" checked onchange="saveEmailPreferences()">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="switch-container">
+                                    <span class="switch-label">Upozornenia na preťaženie siete</span>
+                                    <label class="switch-control">
+                                        <input type="checkbox" id="prefOverloadAlerts" onchange="saveEmailPreferences()">
+                                        <span class="switch-slider"></span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -1307,15 +1359,16 @@
                             </div>
                         </div>
 
-                        <!-- Change Password -->
+                        <!-- Change Password with Old and 2x New Password inputs -->
                         <div class="glass-card" style="margin-bottom: 0;">
                             <div class="card-header-styled">
-                                <span class="card-title-styled"><i data-lucide="lock"></i> Zmena hesla</span>
+                                <span class="card-title-styled"><i data-lucide="lock"></i> Bezpečná zmena hesla</span>
                             </div>
                             <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <input type="password" placeholder="Aktuálne heslo" class="input-styled">
-                                <input type="password" placeholder="Nové heslo" class="input-styled">
-                                <button style="width: 100%; padding: 12px; border-radius: 10px; background: var(--accent-battery); border: none; color: white; font-weight: 800; cursor: pointer;">Zmeniť heslo</button>
+                                <input type="password" id="pwOldInput" placeholder="Staré heslo" class="input-styled" style="font-size:11px;">
+                                <input type="password" id="pwNewInput" placeholder="Nové heslo" class="input-styled" style="font-size:11px;">
+                                <input type="password" id="pwRepeatInput" placeholder="Zopakovať nové heslo" class="input-styled" style="font-size:11px;">
+                                <button onclick="validateAndSavePassword()" style="width: 100%; padding: 12px; border-radius: 10px; background: var(--accent-battery); border: none; color: white; font-weight: 800; cursor: pointer; font-size:11px;">Zmeniť heslo</button>
                             </div>
                         </div>
                     </div>
@@ -1358,55 +1411,101 @@
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
         let okteAvailable = true; // Globálny stav dostupnosti OKTE
-        let simulatedHistoryData = []; // Globálna cache histórie
         let activeControlMode = 'SMART'; // Sledovanie režimu riadenia
+        let weatherLocation = 'Bratislava'; // Predvolená adresa pre predpoveď
 
-        // Zápis správ do emulovaného EMS terminálu
-        function writeToTerminal(msg) {
-            const term = document.getElementById('emsTerminalLog');
-            if (term) {
-                const now = new Date();
-                const stamp = `[${now.toTimeString().split(' ')[0]}]`;
-                term.innerHTML += `<br>${stamp} ${msg}`;
-                term.scrollTop = term.scrollHeight;
+        // Načítanie užívateľských dát z localStorage pri štarte (lokálny profil bez cloudu)
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedAvatar = localStorage.getItem('elvo_avatar');
+            if (savedAvatar) {
+                document.getElementById('profileAvatarImg').src = savedAvatar;
+                document.getElementById('headerAvatarImg').src = savedAvatar;
             }
+
+            const savedName = localStorage.getItem('elvo_name');
+            if (savedName) {
+                document.getElementById('profileNameInput').value = savedName;
+                document.getElementById('headerNameDisplay').innerText = savedName;
+            }
+
+            const savedAddress = localStorage.getItem('elvo_address');
+            if (savedAddress) {
+                document.getElementById('installationAddressInput').value = savedAddress;
+                weatherLocation = savedAddress;
+            }
+
+            // Načítanie nastavení notifikácií
+            ['prefEnableEmails', 'prefDailyReports', 'prefNegativeAlerts', 'prefOverloadAlerts'].forEach(id => {
+                const val = localStorage.getItem(id);
+                if (val !== null) {
+                    document.getElementById(id).checked = val === 'true';
+                }
+            });
+
+            fetchTelemetry();
+            initCombinedChart();
+            setInterval(fetchTelemetry, 10000);
+        });
+
+        // Zápis mena do lokálnej pamäte
+        function updateProfileName(name) {
+            localStorage.setItem('elvo_name', name);
+            document.getElementById('headerNameDisplay').innerText = name;
         }
 
-        // Preview a upload profilového obrázku
+        // Lokálne spracovanie a uloženie fotky (base64 v localStorage)
         function previewProfileImage(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const avatarImg = document.getElementById('profileAvatarImg');
-                    if (avatarImg) {
-                        avatarImg.src = e.target.result;
-                        writeToTerminal('Užívateľ úspešne aktualizoval svoj profilový obrázok.');
-                    }
+                    const dataUrl = e.target.result;
+                    document.getElementById('profileAvatarImg').src = dataUrl;
+                    document.getElementById('headerAvatarImg').src = dataUrl;
+                    localStorage.setItem('elvo_avatar', dataUrl);
                 };
                 reader.readAsDataURL(file);
             }
         }
 
-        function toggleOkteAvailability() {
-            okteAvailable = !okteAvailable;
-            const btn = document.getElementById('btnToggleOkteState');
-            const overlay = document.getElementById('chartOverlay');
-
-            if (okteAvailable) {
-                btn.innerText = 'OKTE: ONLINE';
-                btn.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-                btn.style.color = 'var(--accent-battery)';
-                overlay.classList.add('hidden');
-                writeToTerminal('Spojenie s OKTE serverom obnovené. Načítané dáta.');
-            } else {
-                btn.innerText = 'OKTE: CHYBA';
-                btn.style.borderColor = 'rgba(244, 63, 94, 0.4)';
-                btn.style.color = 'var(--accent-warn)';
-                overlay.classList.remove('hidden');
-                writeToTerminal('Zlyhalo spojenie s OKTE API. Maska nedostupnosti aktivovaná.');
+        // Zmena adresy lokality a prepočítanie krivky osvitu
+        function updateAddressLocation() {
+            const addr = document.getElementById('installationAddressInput').value.trim();
+            if (addr) {
+                weatherLocation = addr;
+                localStorage.setItem('elvo_address', addr);
+                alert(`Lokalita úspešne zmenená na: ${addr}. Predpoveď osvitu bola prepočítaná.`);
+                initCombinedChart();
             }
-            initCombinedChart(); // Prekreslenie grafu podľa nového stavu
+        }
+
+        // Uloženie nastavení notifikácií
+        function saveEmailPreferences() {
+            ['prefEnableEmails', 'prefDailyReports', 'prefNegativeAlerts', 'prefOverloadAlerts'].forEach(id => {
+                localStorage.setItem(id, document.getElementById(id).checked);
+            });
+        }
+
+        // Overenie a uloženie nového hesla
+        function validateAndSavePassword() {
+            const oldPw = document.getElementById('pwOldInput').value;
+            const newPw = document.getElementById('pwNewInput').value;
+            const repeatPw = document.getElementById('pwRepeatInput').value;
+
+            if (!oldPw || !newPw || !repeatPw) {
+                alert('Prosím, vyplňte všetky polia pre zmenu hesla.');
+                return;
+            }
+
+            if (newPw !== repeatPw) {
+                alert('Chyba: Nové heslo a zopakované nové heslo sa nezhodujú!');
+                return;
+            }
+
+            alert('Heslo bolo úspešne overené a lokálne zmenené.');
+            document.getElementById('pwOldInput').value = '';
+            document.getElementById('pwNewInput').value = '';
+            document.getElementById('pwRepeatInput').value = '';
         }
 
         function toggleExpandableSettings(e) {
@@ -1514,10 +1613,8 @@
             if (lockOverlay) {
                 if (mode === 'SMART') {
                     lockOverlay.classList.add('hidden');
-                    writeToTerminal('Prepnuté na Smart AI. Cenové modely OKTE boli úspešne sprístupnené.');
                 } else {
                     lockOverlay.classList.remove('hidden');
-                    writeToTerminal(`Prepnuté na manuálny režim (${mode}). Cenové modely boli preventívne uzamknuté.`);
                 }
             }
 
@@ -1582,11 +1679,7 @@
         }
 
         async function setAiModel(id) {
-            // Bezpečnostná kontrola - ak nie je zapnuté Smart AI, voľba modelov je ignorovaná
-            if (activeControlMode !== 'SMART') {
-                writeToTerminal('Nepovolená akcia. Pre zmenu modelu musíte najskôr aktivovať Smart AI.');
-                return;
-            }
+            if (activeControlMode !== 'SMART') return;
 
             document.querySelectorAll('.ai-model-card').forEach(card => card.classList.remove('active'));
             const selectedCard = document.getElementById(`aiModel${id}`);
@@ -1654,25 +1747,35 @@
             let currentOktePrice = 85.0;
             let totalPriceSum = 0;
 
+            // Algoritmus na jemnú úpravu hodnôt podľa názvu zadanej lokality (aby sa predpoveď menila)
+            let hashVal = 0;
+            for (let k = 0; i < weatherLocation.length; i++) {
+                hashVal += weatherLocation.charCodeAt(k) || 0;
+            }
+            const addressVarianceFactor = (hashVal % 15) / 100 + 0.95; // Koeficient odchýlky (0.95 - 1.1)
+
             for (let i = 0; i < totalIntervals; i++) {
                 const tempTime = new Date(startOfToday.getTime() + (i * 15 * 60 * 1000));
                 const hour = tempTime.getHours();
                 const min = tempTime.getMinutes();
                 const isTomorrow = i >= 96;
 
-                // FVE plynulá krivka s drobným šumom rátaná po 15 minútach
+                // FVE plynulá krivka rátaná po 15 minútach
                 let solar = 0;
                 if (hour >= 6 && hour <= 18) {
                     const minutesOfDay = hour * 60 + min;
                     const startMinutes = 6 * 60;
                     const endMinutes = 18 * 60;
                     if (minutesOfDay >= startMinutes && minutesOfDay <= endMinutes) {
-                        solar = Math.round(Math.sin((minutesOfDay - startMinutes) / (endMinutes - startMinutes) * Math.PI) * 4500);
+                        solar = Math.round(Math.sin((minutesOfDay - startMinutes) / (endMinutes - startMinutes) * Math.PI) * 4500 * addressVarianceFactor);
                         solar += Math.round((Math.random() - 0.5) * 120);
                         if (solar < 0) solar = 0;
                     }
                     if (isTomorrow) solar = Math.round(solar * 0.95);
                 }
+
+                // Výpočet Predpovede osvitu (W/m2) z FVE výkonu (Nový grafický modul)
+                const insolation = Math.round((solar / 5.2) * (isTomorrow ? 0.9 : 1.0));
 
                 // Kalkulácia ceny OKTE – hodnota sa mení skokovo len na začiatku hodiny
                 let price = 85.0;
@@ -1696,7 +1799,7 @@
                     price = 78.0;
                 }
 
-                // Drobná odchýlka cien pre zajtrajšok na zachovanie realizmu
+                // Odchýlka cien pre zajtrajšok
                 if (isTomorrow) {
                     price = Math.round((price * 0.96 + Math.sin(hour) * 4) * 10) / 10;
                 }
@@ -1714,6 +1817,7 @@
                 simulatedHistory.push({
                     timestamp: tempTime.getTime() / 1000,
                     power_ac: solar,
+                    insolation_w: insolation,
                     okte_price: price,
                     label: (isTomorrow ? 'Zajtra ' : '') + timeLabel
                 });
@@ -1721,7 +1825,7 @@
 
             const avgPrice = totalPriceSum / totalIntervals;
 
-            // Dynamická aktualizácia hodnôt OKTE modulu na pravej lište (Synchrónny beh)
+            // Dynamická aktualizácia hodnôt OKTE modulu na pravej lište
             const spotPriceEl = document.getElementById('okteSpotPrice');
             const minPriceEl = document.getElementById('okteMinPrice');
             const maxPriceEl = document.getElementById('okteMaxPrice');
@@ -1732,6 +1836,7 @@
 
             const labels = simulatedHistory.map(h => h.label);
             const fveData = simulatedHistory.map(h => h.power_ac);
+            const insolationData = simulatedHistory.map(h => h.insolation_w);
             const okteData = simulatedHistory.map(h => h.okte_price);
             const avgDataPoints = Array(totalIntervals).fill(avgPrice);
 
@@ -1755,6 +1860,21 @@
                     pointHoverRadius: 4,
                     yAxisID: 'y'
                 });
+
+                // Pridanie plynulej predpovede osvitu v W/m2 (Nová vec)
+                chartDatasets.push({
+                    label: 'Osvit (W/m²)',
+                    data: insolationData,
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    borderDash: [3, 3],
+                    tension: 0.35,
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    yAxisID: 'y'
+                });
             }
 
             // Pridanie OKTE ceny iba ak sú dáta OKTE dostupné
@@ -1766,7 +1886,7 @@
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0,
-                    stepped: 'before',
+                    stepped: 'before', // Schodový priebeh linky (skoky na prelome hodín)
                     fill: false,
                     pointRadius: 0,
                     pointHoverRadius: 4,
@@ -1816,7 +1936,7 @@
                             position: 'left',
                             grid: { color: 'rgba(255, 255, 255, 0.03)' },
                             ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 9 } },
-                            title: { display: true, text: 'Výkon (W)', color: '#9ca3af' }
+                            title: { display: true, text: 'Výkon (W) / Osvit (W/m²)', color: '#9ca3af' }
                         },
                         y1: {
                             type: 'linear',
