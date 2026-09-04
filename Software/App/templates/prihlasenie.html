@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prihlásenie | ElvoControl</title>
+    <title>Prihlásenie | ElvoControll</title>
     <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#020617">
@@ -32,12 +32,18 @@
             background-size: cover;
             background-position: center;
             z-index: 0;
+            -webkit-background-size: cover;
+            background-attachment: fixed;
+            image-orientation: from-image;
         }
         .bg-photo::after {
             content: '';
             position: absolute;
             inset: 0;
             background: linear-gradient(135deg, rgba(2,6,23,.88), rgba(15,23,42,.82), rgba(99,102,241,.15));
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            .bg-photo { background-position: center 30%; }
         }
 
         /* Animated gradient orbs */
@@ -301,6 +307,14 @@
     </style>
 </head>
 <body>
+    <!-- Stiahnut app - pravy horny roh (PWA install prompt) -->
+    <div id="installAppBtn" style="display:none;position:fixed;top:16px;right:16px;z-index:100;">
+        <button onclick="triggerInstall()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;background:rgba(16,185,129,0.15);backdrop-filter:blur(10px);border:1px solid rgba(16,185,129,0.25);font-size:12px;font-weight:700;color:#10b981;cursor:pointer;transition:all 0.2s;font-family:'Plus Jakarta Sans',sans-serif;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Stiahnuť app
+        </button>
+    </div>
+
     <!-- Solar panel background photo -->
     <div class="bg-photo"></div>
 
@@ -314,8 +328,8 @@
     <div class="login-container">
         <div class="glass-card">
             <div class="logo-area">
-                <img src="/templates/ElvosolarLogo.png" alt="ElvoControl" style="height:56px;width:auto;border-radius:16px;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(99,102,241,.4));">
-                <div class="logo-text">ElvoControl</div>
+                <img src="/templates/ElvosolarLogo.png" alt="ElvoControll" style="height:56px;width:auto;border-radius:16px;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(99,102,241,.4));">
+                <div class="logo-text">ElvoControll</div>
                 <div class="logo-sub">Smart EMS Pro</div>
             </div>
 
@@ -379,6 +393,39 @@
             &copy; 2011–2026 Elvosolar. Všetky práva vyhradené.<br>
             <a href="/templates/ochrana-osobnych-udajov.pdf" target="_blank">Ochrana osobných údajov</a>
         </div>
+
+        <script>
+            // PWA install prompt
+            var deferredInstallPrompt = null;
+            
+            // Ukaz "Stiahnut app" iba v prehladaci (nie PWA)
+            var isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            var installBtn = document.getElementById('installAppBtn');
+            
+            if (!isPWA && installBtn) {
+                installBtn.style.display = 'block';
+                
+                window.addEventListener('beforeinstallprompt', function(e) {
+                    e.preventDefault();
+                    deferredInstallPrompt = e;
+                });
+                
+                function triggerInstall() {
+                    if (deferredInstallPrompt) {
+                        deferredInstallPrompt.prompt();
+                        deferredInstallPrompt.userChoice.then(function(choice) {
+                            if (choice.outcome === 'accepted') {
+                                installBtn.style.display = 'none';
+                            }
+                            deferredInstallPrompt = null;
+                        });
+                    } else {
+                        // Fallback: presmeruj na /install stranku
+                        window.location.href = '/install';
+                    }
+                }
+            }
+        </script>
     </div>
 
     <script>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Riadiaca Stanica | ElvoControl</title>
+<title>Riadiaca Stanica | ElvoControll</title>
 <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
 <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -149,12 +149,12 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;hei
 </head>
 <body>
 <div class="bg-orb bg-orb-1"></div><div class="bg-orb bg-orb-2"></div><div class="bg-orb bg-orb-3"></div>
-<div id="php-metadata" data-device-id="<?php echo htmlspecialchars($device['id'] ?? 1); ?>" data-device-name="<?php echo htmlspecialchars($device['name'] ?? 'ElvoControl CM5'); ?>" data-base-path="<?php echo htmlspecialchars($base_path); ?>" class="hidden"></div>
+<div id="php-metadata" data-device-id="<?php echo htmlspecialchars($device['id'] ?? 1); ?>" data-device-name="<?php echo htmlspecialchars($device['name'] ?? 'ElvoControll CM5'); ?>" data-base-path="<?php echo htmlspecialchars($base_path); ?>" class="hidden"></div>
 
-<div id="pwaInstallBanner" class="hidden" style="background:rgba(15,23,42,.9);border-bottom:1px solid rgba(255,255,255,.04);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:50;"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">📱</span><div><span style="font-size:12px;font-weight:800;color:#f8fafc;">Nainštalovať ElvoControl</span><span style="font-size:10px;color:#64748b;display:block;">EMS pohodlne na ploche.</span></div></div><div style="display:flex;gap:8px;"><button onclick="dismissPwaPrompt()" style="padding:6px 12px;font-size:11px;color:#64748b;background:none;border:none;cursor:pointer;">Neskôr</button><button onclick="triggerPwaInstall()" style="padding:8px 16px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;font-size:11px;font-weight:800;border:none;cursor:pointer;">Inštalovať</button></div></div>
+<div id="pwaInstallBanner" class="hidden" style="background:rgba(15,23,42,.9);border-bottom:1px solid rgba(255,255,255,.04);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:50;"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">📱</span><div><span style="font-size:12px;font-weight:800;color:#f8fafc;">Nainštalovať ElvoControll</span><span style="font-size:10px;color:#64748b;display:block;">EMS pohodlne na ploche.</span></div></div><div style="display:flex;gap:8px;"><button onclick="dismissPwaPrompt()" style="padding:6px 12px;font-size:11px;color:#64748b;background:none;border:none;cursor:pointer;">Neskôr</button><button onclick="triggerPwaInstall()" style="padding:8px 16px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;font-size:11px;font-weight:800;border:none;cursor:pointer;">Inštalovať</button></div></div>
 
 <header class="header"><div class="header-inner">
-<a href="<?php echo $base_path; ?>/dashboard" class="header-brand"><img src="<?php echo $base_path; ?>/templates/ElvosolarLogo.png" alt="ElvoControl" style="height:36px;width:auto;border-radius:8px;filter:drop-shadow(0 0 8px rgba(99,102,241,.3));"><div><div class="brand-name">ElvoControl</div><div class="brand-ver">EMS PRO • ID #<?php echo htmlspecialchars($device['id'] ?? 1); ?></div></div></a>
+<a href="<?php echo $base_path; ?>/dashboard" class="header-brand"><img src="<?php echo $base_path; ?>/templates/ElvosolarLogo.png" alt="ElvoControll" style="height:36px;width:auto;border-radius:8px;filter:drop-shadow(0 0 8px rgba(99,102,241,.3));"><div><div class="brand-name">ElvoControll</div><div class="brand-ver">EMS PRO • ID #<?php echo htmlspecialchars($device['id'] ?? 1); ?></div></div></a>
 <div class="header-right"><div class="status-badge"><span class="dot"></span><span>Zbernica aktívna</span></div><a href="<?php echo $base_path; ?>/dashboard" class="btn-back"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></a></div>
 </div></header>
 
@@ -398,7 +398,7 @@ Vyberte AI model kliknutím na kartu vyššie. Modely 1-5 riadia kedy sa strieda
 </div></div>
 </section>
 </main>
-<footer class="footer"><span class="footer-left">2026 © ElvoControl</span><div class="footer-right"><span>Firmware: CM5-v3.2</span><span>•</span><span>Zbernica CH1: OK</span></div></footer>
+<footer class="footer"><span class="footer-left">2026 © ElvoControll</span><div class="footer-right"><span>Firmware: CM5-v3.2</span><span>•</span><span>Zbernica CH1: OK</span></div></footer>
 <script>
 lucide.createIcons();const metaEl=document.getElementById('php-metadata');const basePath=metaEl?metaEl.getAttribute('data-base-path'):'';const deviceId=metaEl?metaEl.getAttribute('data-device-id'):'1';
 // Floating particles

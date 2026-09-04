@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Provisioning CM5 | ElvoControl</title>
+    <title>Provisioning CM5 | ElvoControll</title>
     <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#020617">
@@ -18,7 +18,11 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            -webkit-background-size: cover;
+            background-attachment: fixed;
+            image-orientation: from-image;
         }
+        @media (orientation: landscape) and (max-height: 500px) { .solar-bg { background-position: center 30%; } }
         .indicator-step { height: 4px; transition: all 0.3s ease; }
         .slider-viewport { overflow: hidden; width: 100%; position: relative; }
         .slider-container { display: flex; width: 600%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }

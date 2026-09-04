@@ -9,7 +9,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
     const data = event.data ? event.data.json() : {};
-    const title = data.title || 'ElvoControl';
+    const title = data.title || 'ElvoControll';
     const options = {
         body: data.body || 'Nove upozornenie',
         icon: '/templates/ElvosolarLogo.png',

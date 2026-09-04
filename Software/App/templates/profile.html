@@ -1,143 +1,416 @@
 <!DOCTYPE html>
-<html lang="sk" class="h-full bg-slate-950 text-slate-100">
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Môj profil | ElvoControl</title>
+    <title>Môj profil | ElvoControll</title>
     <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(51, 65, 85, 0.4); }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #02040a;
+            --bg-card: rgba(10, 15, 30, 0.45);
+            --border-card: rgba(255, 255, 255, 0.07);
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-battery: #10b981;
+            --accent-grid: #3b82f6;
+            --accent-solar: #f59e0b;
+            --accent-warn: #f43f5e;
+            --accent-saved: #818cf8;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 800px) {
+            .profile-grid { grid-template-columns: 1fr; }
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.7) 0%, rgba(5, 7, 15, 0.8) 100%);
+            border: 1px solid var(--border-card);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 24px;
+            backdrop-filter: blur(25px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-card);
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-styled {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .input-styled:focus {
+            border-color: var(--accent-battery);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-battery), var(--accent-grid));
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .btn-purple {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Toggle switch */
+        .toggle-track {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .toggle-track.on { background: var(--accent-battery); }
+        .toggle-track.off { background: rgba(255,255,255,0.1); border: 1px solid var(--border-card); }
+        .toggle-knob {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            top: 3px;
+            transition: all 0.3s;
+        }
+        .toggle-track.on .toggle-knob { background: white; margin-left: 23px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .toggle-track.off .toggle-knob { background: #4b5563; margin-left: 3px; }
+
+        /* Avatar upload */
+        .avatar-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+        }
+        .avatar-container:hover .avatar-overlay { opacity: 1; }
+        .avatar-overlay {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .avatar-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-battery);
+        }
+        .avatar-letter {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #3b82f6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 900;
+            color: white;
+            border: 2px solid var(--accent-battery);
+        }
+
+        /* Notification item */
+        .notif-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            transition: background 0.2s;
+        }
+        .notif-item:hover { background: rgba(255,255,255,0.04); }
+
+        /* Device row */
+        .device-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            transition: background 0.2s;
+        }
+        .device-row:hover { background: rgba(255,255,255,0.04); }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .pulse-dot.online { background: var(--accent-battery); box-shadow: 0 0 10px var(--accent-battery); }
+        .pulse-dot.offline { background: var(--accent-warn); }
+
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen bg-slate-950">
+<body>
 
     <!-- NAV -->
-    <nav class="glass border-b border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-        <div class="flex items-center gap-4">
-            <a href="/dashboard" class="flex items-center gap-2 text-slate-400 hover:text-white transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                <span class="text-xs font-bold">Dashboard</span>
+    <nav style="position:sticky;top:0;z-index:100;background:rgba(2,4,10,0.85);backdrop-filter:blur(25px);border-bottom:1px solid var(--border-card);padding:0 24px;">
+        <div style="max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;height:64px;">
+            <div style="display:flex;align-items:center;gap:16px;">
+                <a href="/dashboard" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-muted);font-size:12px;font-weight:700;transition:color 0.2s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">
+                    <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+                    Dashboard
+                </a>
+                <span style="color:var(--text-muted);">|</span>
+                <h1 style="font-size:14px;font-weight:800;color:var(--text-primary);">Môj profil</h1>
+            </div>
+            <a href="/logout" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);color:var(--accent-warn);font-size:11px;font-weight:800;text-decoration:none;transition:all 0.2s;">
+                <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+                Odhlásiť sa
             </a>
-            <span class="text-slate-700">|</span>
-            <h1 class="text-sm font-bold text-white">Môj profil</h1>
         </div>
-        <a href="/logout" class="text-xs font-bold text-rose-400 hover:text-rose-300 border border-rose-500/30 px-4 py-2 rounded-xl transition">Odhlásiť sa</a>
     </nav>
 
-    <div class="max-w-4xl mx-auto p-6 space-y-6">
+    <main style="max-width:1200px;margin:0 auto;padding:32px 24px;">
 
-        <!-- HLAVICKA PROFILU -->
-        <div class="glass rounded-2xl p-6 flex items-center gap-6">
-            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-2xl font-black text-white" id="avatarLetter">A</div>
-            <div>
-                <h2 class="text-lg font-bold text-white" id="profileName">Načítavam...</h2>
-                <p class="text-sm text-slate-400" id="profileEmail">...</p>
-                <p class="text-xs text-slate-500 mt-1">Člen od <span id="memberSince">...</span></p>
-            </div>
-        </div>
+        <div class="profile-grid">
 
-        <!-- ZARIADENIA -->
-        <div class="glass rounded-2xl p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <span class="text-cyan-400">⚡</span> Moje zariadenia
-                </h3>
-                <a href="/setup" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5">
-                    <span>+</span> Pridať zariadenie
-                </a>
-            </div>
-            <div id="devicesList" class="space-y-3">
-                <p class="text-slate-500 text-xs">Načítavam zariadenia...</p>
-            </div>
-        </div>
+            <!-- LEFT COLUMN -->
+            <div style="display:flex;flex-direction:column;gap:24px;">
 
-        <!-- NASTAVENIA NOTIFIKACII -->
-        <div class="glass rounded-2xl p-6">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
-                <span class="text-amber-400">📧</span> Email notifikácie
-            </h3>
-            <div class="space-y-4">
-                <label class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl cursor-pointer hover:bg-slate-800/50 transition">
-                    <div>
-                        <span class="text-sm font-semibold text-white">Nové zariadenie</span>
-                        <p class="text-xs text-slate-500">Oznamenie keď sa pridá nové zariadenie</p>
+                <!-- Avatar + Profile Info -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div style="display:flex;align-items:center;gap:20px;">
+                        <div class="avatar-container" onclick="document.getElementById('avatarInput').click()">
+                            <div id="avatarDisplay" class="avatar-letter">A</div>
+                            <div class="avatar-overlay">
+                                <i data-lucide="camera" style="width:20px;height:20px;color:white;"></i>
+                            </div>
+                            <img id="avatarImg" class="avatar-img hidden" alt="Avatar">
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="uploadAvatar(event)">
+                        <div>
+                            <h2 style="font-size:18px;font-weight:900;color:var(--text-primary);" id="profileName">Načítavam...</h2>
+                            <p style="font-size:12px;color:var(--text-secondary);" id="profileEmail">...</p>
+                            <p style="font-size:10px;color:var(--text-muted);margin-top:4px;">Člen od <span id="memberSince" class="font-mono">...</span></p>
+                        </div>
                     </div>
-                    <input type="checkbox" id="notifNewDevice" checked class="w-5 h-5 accent-cyan-500 rounded">
-                </label>
-                <label class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl cursor-pointer hover:bg-slate-800/50 transition">
-                    <div>
-                        <span class="text-sm font-semibold text-white">Porucha zariadenia</span>
-                        <p class="text-xs text-slate-500">Upozornenie pri chybe alebo offline stave</p>
+                </div>
+
+                <!-- Moje zariadenia (left) -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-solar);"></i> Moje zariadenia</span>
                     </div>
-                    <input type="checkbox" id="notifError" checked class="w-5 h-5 accent-cyan-500 rounded">
-                </label>
-                <label class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl cursor-pointer hover:bg-slate-800/50 transition">
-                    <div>
-                        <span class="text-sm font-semibold text-white">Denný report</span>
-                        <p class="text-xs text-slate-500">Súhrn výroby a spotreby za deň</p>
+                    <div id="devicesListLeft" style="display:flex;flex-direction:column;gap:10px;">
+                        <p style="text-align:center;color:var(--text-muted);font-size:11px;padding:16px;">Načítavam...</p>
                     </div>
-                    <input type="checkbox" id="notifDaily" class="w-5 h-5 accent-cyan-500 rounded">
-                </label>
-                <label class="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl cursor-pointer hover:bg-slate-800/50 transition">
-                    <div>
-                        <span class="text-sm font-semibold text-white">Negatívna cena OKTE</span>
-                        <p class="text-xs text-slate-500">Upozornenie keď je cena elektriny záporná</p>
+                </div>
+
+                <!-- Email notifikácie -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="mail" style="width:14px;height:14px;color:var(--accent-grid);"></i> Email notifikácie</span>
                     </div>
-                    <input type="checkbox" id="notifNegPrice" checked class="w-5 h-5 accent-cyan-500 rounded">
-                </label>
-                <button onclick="saveNotifications()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm rounded-xl transition mt-2">
-                    Uložiť nastavenia
-                </button>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Nové zariadenie</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Oznamenie keď sa pridá nové zariadenie</span>
+                            </div>
+                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifNewDevice')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifNewDevice" checked style="display:none;">
+                        </div>
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Porucha zariadenia</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Upozornenie pri chybe alebo offline stave</span>
+                            </div>
+                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifError')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifError" checked style="display:none;">
+                        </div>
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Denný report</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Súhrn výroby a spotreby za deň</span>
+                            </div>
+                            <div class="toggle-track off" onclick="toggleNotif(this, 'notifDaily')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifDaily" style="display:none;">
+                        </div>
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Negatívna cena OKTE</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Upozornenie keď je cena elektriny záporná</span>
+                            </div>
+                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifNegPrice')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifNegPrice" checked style="display:none;">
+                        </div>
+                        <button onclick="saveNotifications()" class="btn-primary" style="margin-top:8px;">Uložiť nastavenia</button>
+                    </div>
+                </div>
+
             </div>
-        </div>
 
-        <!-- ZMENA HESLA -->
-        <div class="glass rounded-2xl p-6">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
-                <span class="text-emerald-400">🔒</span> Zmena hesla
-            </h3>
-            <div class="space-y-3">
-                <input type="password" id="currentPassword" placeholder="Aktuálne heslo" class="w-full bg-slate-900/50 border border-slate-800 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-cyan-500 transition">
-                <input type="password" id="newPassword" placeholder="Nové heslo (min. 6 znakov)" class="w-full bg-slate-900/50 border border-slate-800 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-cyan-500 transition">
-                <input type="password" id="confirmPassword" placeholder="Zopakujte nové heslo" class="w-full bg-slate-900/50 border border-slate-800 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-cyan-500 transition">
-                <button onclick="changePassword()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl transition">
-                    Zmeniť heslo
-                </button>
+            <!-- RIGHT COLUMN -->
+            <div style="display:flex;flex-direction:column;gap:24px;">
+
+                <!-- Nastavenie + Pridať zariadenie -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="settings" style="width:14px;height:14px;color:var(--accent-battery);"></i> Nastavenie</span>
+                        <a href="/setup" style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:10px;font-weight:800;text-decoration:none;transition:all 0.2s;">
+                            <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať zariadenie
+                        </a>
+                    </div>
+                    <div id="devicesListRight" style="display:flex;flex-direction:column;gap:10px;">
+                        <p style="text-align:center;color:var(--text-muted);font-size:11px;padding:16px;">Načítavam...</p>
+                    </div>
+                </div>
+
+                <!-- Zmena hesla -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="lock" style="width:14px;height:14px;color:var(--accent-battery);"></i> Zmena hesla</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <input type="password" id="currentPassword" placeholder="Aktuálne heslo" class="input-styled">
+                        <input type="password" id="newPassword" placeholder="Nové heslo (min. 6 znakov)" class="input-styled">
+                        <input type="password" id="confirmPassword" placeholder="Zopakujte nové heslo" class="input-styled">
+                        <button onclick="changePassword()" class="btn-primary">Zmeniť heslo</button>
+                    </div>
+                    <div id="passwordMsg" class="hidden" style="margin-top:12px;font-size:11px;font-weight:700;text-align:center;border-radius:10px;padding:10px;"></div>
+                </div>
+
+                <!-- Test emailu -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="flask-conical" style="width:14px;height:14px;color:#a855f7;"></i> Test emailu</span>
+                    </div>
+                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Odošle testovací email na tvoju adresu cez Resend API.</p>
+                    <button onclick="testEmail()" class="btn-purple">Odoslať test email</button>
+                    <div id="testEmailMsg" class="hidden" style="margin-top:12px;font-size:11px;font-weight:700;text-align:center;border-radius:10px;padding:10px;"></div>
+                </div>
+
             </div>
-            <div id="passwordMsg" class="hidden mt-3 text-xs font-bold text-center rounded-xl p-3"></div>
+
         </div>
 
-        <!-- OVERenie EMAILU -->
-        <div class="glass rounded-2xl p-6">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
-                <span class="text-blue-400">✉️</span> Overenie emailu
-            </h3>
-            <p class="text-xs text-slate-400 mb-3" id="emailStatus">Overujem...</p>
-            <button onclick="verifyEmail()" id="verifyBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition">
-                Poslať overovací email
-            </button>
-            <div id="verifyMsg" class="hidden mt-3 text-xs font-bold text-center rounded-xl p-3"></div>
-        </div>
-
-        <!-- TEST EMAILU -->
-        <div class="glass rounded-2xl p-6">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
-                <span class="text-purple-400">🧪</span> Test emailu
-            </h3>
-            <p class="text-xs text-slate-400 mb-3">Odošle testovací email na tvoju adresu cez Resend API.</p>
-            <button onclick="testEmail()" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition">
-                Odoslať test email
-            </button>
-            <div id="testEmailMsg" class="hidden mt-3 text-xs font-bold text-center rounded-xl p-3"></div>
-        </div>
-
-    </div>
+    </main>
 
     <script>
         let userProfile = {};
+
+        // Toggle notification
+        function toggleNotif(el, checkboxId) {
+            const cb = document.getElementById(checkboxId);
+            cb.checked = !cb.checked;
+            if (cb.checked) {
+                el.className = 'toggle-track on';
+            } else {
+                el.className = 'toggle-track off';
+            }
+        }
+
+        // Avatar upload (local only)
+        function uploadAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                localStorage.setItem('elvo_avatar', dataUrl);
+                showAvatar(dataUrl);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showAvatar(dataUrl) {
+            const letter = document.getElementById('avatarDisplay');
+            const img = document.getElementById('avatarImg');
+            if (dataUrl) {
+                letter.classList.add('hidden');
+                img.src = dataUrl;
+                img.classList.remove('hidden');
+            } else {
+                img.classList.add('hidden');
+                letter.classList.remove('hidden');
+            }
+        }
+
+        function loadAvatar() {
+            const saved = localStorage.getItem('elvo_avatar');
+            showAvatar(saved);
+        }
 
         async function loadProfile() {
             try {
@@ -147,11 +420,8 @@
                     userProfile = data;
                     document.getElementById('profileName').textContent = data.username || 'Používateľ';
                     document.getElementById('profileEmail').textContent = data.email || '';
-                    document.getElementById('avatarLetter').textContent = (data.username || 'U')[0].toUpperCase();
+                    document.getElementById('avatarDisplay').textContent = (data.username || 'U')[0].toUpperCase();
                     document.getElementById('memberSince').textContent = data.created_at || '2026';
-                    document.getElementById('emailStatus').innerHTML = data.email_verified
-                        ? '<span class="text-emerald-400">✅ Email overený</span>'
-                        : '<span class="text-amber-400">⚠️ Email neoverený</span>';
                 }
             } catch(e) { console.error(e); }
         }
@@ -160,35 +430,36 @@
             try {
                 const res = await fetch('/api/user/devices', { credentials: 'same-origin' });
                 const data = await res.json();
-                const list = document.getElementById('devicesList');
+                const leftList = document.getElementById('devicesListLeft');
+                const rightList = document.getElementById('devicesListRight');
+
                 if (data.status === 'success' && data.devices.length > 0) {
-                    list.innerHTML = data.devices.map(d => {
+                    const html = data.devices.map(d => {
                         const isOnline = d.is_online;
-                        const statusColor = isOnline ? 'bg-emerald-500' : 'bg-slate-600';
+                        const statusColor = isOnline ? 'online' : 'offline';
                         const statusText = isOnline ? 'Online' : 'Offline';
                         return `
-                        <div class="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl hover:bg-slate-800/50 transition">
-                            <div class="flex items-center gap-3">
-                                <span class="status-dot ${statusColor}"></span>
+                        <div class="device-row">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span class="pulse-dot ${statusColor}"></span>
                                 <div>
-                                    <a href="/device/${d.id}" class="text-sm font-bold text-white hover:text-cyan-400 transition">${d.name}</a>
-                                    <p class="text-xs text-slate-500">${d.serial_number} • ${d.brand_id || ''} ${d.model_id || ''}</p>
+                                    <a href="/device/${d.id}" style="font-size:12px;font-weight:800;color:var(--text-primary);text-decoration:none;">${d.name}</a>
+                                    <p style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${d.serial_number || '---'} · ${d.brand_id || ''} ${d.model_id || ''}</p>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <span class="text-xs font-bold ${isOnline ? 'text-emerald-400' : 'text-slate-500'}">${statusText}</span>
-                                <p class="text-[10px] text-slate-600">${d.total_kwh ? d.total_kwh.toFixed(1) + ' kWh' : ''}</p>
-                            </div>
+                            <span style="font-size:10px;font-weight:700;color:${isOnline ? 'var(--accent-battery)' : 'var(--text-muted)'};">${statusText}</span>
                         </div>`;
                     }).join('');
+                    leftList.innerHTML = html;
+                    rightList.innerHTML = html;
                 } else {
-                    list.innerHTML = `
-                        <div class="text-center py-8">
-                            <p class="text-slate-500 text-sm mb-3">Žiadne zariadenia</p>
-                            <a href="/setup" class="inline-flex items-center gap-1.5 px-4 py-2 bg-cyan-600 text-white text-xs font-bold rounded-xl hover:bg-cyan-500 transition">
-                                + Pridať prvé zariadenie
-                            </a>
+                    const empty = `
+                        <div style="text-align:center;padding:20px;">
+                            <p style="color:var(--text-muted);font-size:11px;margin-bottom:8px;">Žiadne zariadenia</p>
+                            <a href="/setup" style="display:inline-flex;align-items:center;gap:4px;padding:8px 16px;border-radius:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:10px;font-weight:800;text-decoration:none;">+ Pridať prvé zariadenie</a>
                         </div>`;
+                    leftList.innerHTML = empty;
+                    rightList.innerHTML = empty;
                 }
             } catch(e) { console.error(e); }
         }
@@ -207,8 +478,8 @@
                     credentials: 'same-origin',
                     body: JSON.stringify(settings)
                 });
-                alert('Nastavenia uložené!');
-            } catch(e) { alert('Chyba: ' + e.message); }
+                showToast('Nastavenia uložené!');
+            } catch(e) { showToast('Chyba: ' + e.message, true); }
         }
 
         async function changePassword() {
@@ -216,29 +487,20 @@
             const newP = document.getElementById('newPassword').value;
             const conf = document.getElementById('confirmPassword').value;
             const msg = document.getElementById('passwordMsg');
-            if (newP !== conf) { msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 bg-rose-500/10 text-rose-400'; msg.textContent = 'Heslá sa nezhodujú'; msg.classList.remove('hidden'); return; }
-            if (newP.length < 6) { msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 bg-rose-500/10 text-rose-400'; msg.textContent = 'Heslo musí mať aspoň 6 znakov'; msg.classList.remove('hidden'); return; }
+            if (newP !== conf) { msg.style.background='rgba(244,63,94,0.1)'; msg.style.color='var(--accent-warn)'; msg.textContent='Heslá sa nezhodujú'; msg.classList.remove('hidden'); return; }
+            if (newP.length < 6) { msg.style.background='rgba(244,63,94,0.1)'; msg.style.color='var(--accent-warn)'; msg.textContent='Heslo musí mať aspoň 6 znakov'; msg.classList.remove('hidden'); return; }
             try {
                 const res = await fetch('/api/user/change-password', {
                     method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin',
                     body: JSON.stringify({ current_password: cur, new_password: newP })
                 });
                 const data = await res.json();
-                msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 ' + (data.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400');
+                const ok = data.status === 'success';
+                msg.style.background = ok ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)';
+                msg.style.color = ok ? 'var(--accent-battery)' : 'var(--accent-warn)';
                 msg.textContent = data.message;
                 msg.classList.remove('hidden');
-            } catch(e) { alert('Chyba: ' + e.message); }
-        }
-
-        async function verifyEmail() {
-            const msg = document.getElementById('verifyMsg');
-            try {
-                const res = await fetch('/api/user/verify-email', { method: 'POST', credentials: 'same-origin' });
-                const data = await res.json();
-                msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 ' + (data.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400');
-                msg.textContent = data.message;
-                msg.classList.remove('hidden');
-            } catch(e) { alert('Chyba: ' + e.message); }
+            } catch(e) { showToast('Chyba: ' + e.message, true); }
         }
 
         async function testEmail() {
@@ -246,14 +508,29 @@
             try {
                 const res = await fetch('/api/user/test-email', { method: 'POST', credentials: 'same-origin' });
                 const data = await res.json();
-                msg.className = 'mt-3 text-xs font-bold text-center rounded-xl p-3 ' + (data.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400');
+                const ok = data.status === 'success';
+                msg.style.background = ok ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)';
+                msg.style.color = ok ? 'var(--accent-battery)' : 'var(--accent-warn)';
                 msg.textContent = data.message;
                 msg.classList.remove('hidden');
-            } catch(e) { alert('Chyba: ' + e.message); }
+            } catch(e) { showToast('Chyba: ' + e.message, true); }
         }
 
+        function showToast(msg, isError) {
+            const t = document.createElement('div');
+            t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:12px;font-weight:800;z-index:9999;backdrop-filter:blur(10px);`;
+            t.style.background = isError ? 'rgba(244,63,94,0.9)' : 'rgba(16,185,129,0.9)';
+            t.style.color = 'white';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        // Init
+        loadAvatar();
         loadProfile();
         loadDevices();
+        lucide.createIcons();
     </script>
 </body>
 </html>

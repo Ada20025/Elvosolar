@@ -1,4 +1,4 @@
-// ElvoControl - Service Worker
+// ElvoControll - Service Worker
 const CACHE_NAME = 'elvocontrol-v1';
 const STATIC_ASSETS = [
   '/',
@@ -58,7 +58,7 @@ self.addEventListener('fetch', (event) => {
 // Push notifications
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'ElvoControl';
+  const title = data.title || 'ElvoControll';
   const body = data.body || 'Nová notifikácia';
   const icon = '/templates/ElvosolarLogo.png';
   

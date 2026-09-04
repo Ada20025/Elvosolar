@@ -10,6 +10,19 @@ date_default_timezone_set('Europe/Bratislava');
 session_start();
 require_once 'config.php';
 
+// === AUTO-MIGRACIA: Pridanie chybajucich stlpcov ===
+if (isset($pdo)) {
+    try {
+        $cols = [];
+        $r = $pdo->query("SHOW COLUMNS FROM devices");
+        while ($row = $r->fetch()) $cols[] = $row['Field'];
+        if (!in_array('min_power_w', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_power_w FLOAT DEFAULT 0");
+        if (!in_array('max_power_w', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN max_power_w FLOAT DEFAULT 10000");
+        if (!in_array('active_model_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN active_model_id VARCHAR(10) DEFAULT '1'");
+        if (!in_array('night_sleep', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN night_sleep TINYINT DEFAULT 0");
+    } catch (Exception $e) { /* ignore */ }
+}
+
 // ==========================================
 // --- NASTAVENIE ODOSIELANIA E-MAILOV ---
 // ==========================================
@@ -646,9 +659,9 @@ elseif ($path === '/login') {
             // Email notifikacia o prihlaseni
             $ip = $_SERVER['REMOTE_ADDR'] ?? '';
             $device = $_SERVER['HTTP_USER_AGENT'] ?? '';
-            @send_elvo_email($user['email'], 'Nove prihlasenie do ElvoControl', 'Nove prihlasenie',
+            @send_elvo_email($user['email'], 'Nove prihlasenie do ElvoControll', 'Nove prihlasenie',
                 '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
-                . '<p>Niekto sa prave prihlasil do vaseho ElvoControl uctu:</p>'
+                . '<p>Niekto sa prave prihlasil do vaseho ElvoControll uctu:</p>'
                 . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
                 . '<p>📧 Email: <strong>' . htmlspecialchars($user['email']) . '</strong></p>'
                 . '<p>🌐 IP adresa: <strong>' . htmlspecialchars($ip) . '</strong></p>'
@@ -681,9 +694,9 @@ elseif ($path === '/register') {
             $stmt->execute([$username, $email, $hashed]);
             
             // Welcome email
-            @send_elvo_email($email, "Vitajte v ElvoControl!", "Vitajte v ElvoControl, " . htmlspecialchars($username) . "!",
+            @send_elvo_email($email, "Vitajte v ElvoControll!", "Vitajte v ElvoControll, " . htmlspecialchars($username) . "!",
                 '<p>Ahoj <strong>' . htmlspecialchars($username) . '</strong>,</p>'
-                . '<p>Váš účet bol úspešne vytvorený. Vitajte v ElvoControl Smart EMS!</p>'
+                . '<p>Váš účet bol úspešne vytvorený. Vitajte v ElvoControll Smart EMS!</p>'
                 . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;">'
                 . '<p>📧 <strong>Prihlasovací e-mail:</strong> ' . htmlspecialchars($email) . '</p>'
                 . '</div>'
@@ -727,6 +740,11 @@ elseif ($path === '/dashboard' && $method === 'GET') {
     }
     $devices = get_user_devices($pdo, $_SESSION['user_id']);
     render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices]);
+}
+
+// --- INSTALL / STIAHNUT APP ---
+elseif ($path === '/install' && $method === 'GET') {
+    render_template('install.html', []);
 }
 
 // --- USER PROFILE ---
@@ -950,7 +968,7 @@ elseif ($path === '/api/user/test-email' && $method === 'POST') {
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch();
     if (!$user) send_json(['status' => 'error', 'message' => 'Pouzivatel nenajdeny']);
-    $result = @send_elvo_email($user['email'], 'Test emailu ElvoControl', 'Test emailu', '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p><p>Tento email bol uspesne odoslany z ElvoControl cez Resend API.</p><p style="color:#64748b;font-size:12px;">Ak toto citate, vsetko funguje!</p>', '#10b981');
+    $result = @send_elvo_email($user['email'], 'Test emailu ElvoControll', 'Test emailu', '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p><p>Tento email bol uspesne odoslany z ElvoControll cez Resend API.</p><p style="color:#64748b;font-size:12px;">Ak toto citate, vsetko funguje!</p>', '#10b981');
     if ($result) {
         send_json(['status' => 'success', 'message' => 'Test email uspesne odoslany na ' . $user['email']]);
     } else {
@@ -1146,6 +1164,135 @@ elseif (preg_match('#^/api/device/([0-9]+)/meter/config$#', $path, $matches)) {
         save_device_ai_state_php($device_id, $ai_state);
         send_json(['status' => 'success', 'message' => 'Konfigurácia smart meradla uložená.']);
     }
+}
+
+// --- AI MODEL SELECT ---
+elseif (preg_match('#^/api/device/([0-9]+)/model$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $device = $stmt->fetch();
+    if (!$device) send_json(['error' => 'Device not found'], 404);
+    $data = get_json_input();
+    $model_id = intval($data['model_id'] ?? 1);
+    if ($model_id < 1 || $model_id > 5) send_json(['error' => 'Neplatny model ID (1-5)'], 400);
+    $stmt = $pdo->prepare("UPDATE devices SET active_model_id = ? WHERE id = ?");
+    $stmt->execute([$model_id, $device_id]);
+    // Also save to AI state
+    $ai_state = get_device_ai_state_php($device_id);
+    $ai_state['active_model'] = $model_id;
+    save_device_ai_state_php($device_id, $ai_state);
+    send_json(['status' => 'success', 'active_model_id' => $model_id]);
+}
+
+// --- RELAY TOGGLE ---
+elseif (preg_match('#^/api/device/([0-9]+)/relay$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $device = $stmt->fetch();
+    if (!$device) send_json(['error' => 'Device not found'], 404);
+    $data = get_json_input();
+    $relay_id = intval($data['relay_id'] ?? 0);
+    $state = strtoupper(trim($data['state'] ?? 'OFF'));
+    if (!in_array($state, ['ON', 'OFF'])) send_json(['error' => 'State must be ON or OFF'], 400);
+    $ai_state = get_device_ai_state_php($device_id);
+    if (!isset($ai_state['relays'])) $ai_state['relays'] = [];
+    $ai_state['relays'][$relay_id] = $state;
+    save_device_ai_state_php($device_id, $ai_state);
+    send_json(['status' => 'success', 'relay_id' => $relay_id, 'state' => $state]);
+}
+
+// --- RELAY ADD/DELETE ---
+elseif (preg_match('#^/api/device/([0-9]+)/relay/add$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $device = $stmt->fetch();
+    if (!$device) send_json(['error' => 'Device not found'], 404);
+    $data = get_json_input();
+    $ai_state = get_device_ai_state_php($device_id);
+    if (!isset($ai_state['relays'])) $ai_state['relays'] = [];
+    if (!isset($ai_state['relay_config'])) $ai_state['relay_config'] = [];
+    $new_id = max(array_keys($ai_state['relays']) ?: [0]) + 1;
+    $ai_state['relays'][$new_id] = 'OFF';
+    $ai_state['relay_config'][$new_id] = [
+        'name' => trim($data['name'] ?? 'Relé ' . $new_id),
+        'type' => trim($data['type'] ?? 'GPIO'),
+        'pin' => intval($data['pin'] ?? 0),
+        'power_w' => floatval($data['power_w'] ?? 0),
+    ];
+    save_device_ai_state_php($device_id, $ai_state);
+    send_json(['status' => 'success', 'relay_id' => $new_id, 'message' => 'Relé pridané']);
+}
+
+elseif (preg_match('#^/api/device/([0-9]+)/relay/delete$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $device = $stmt->fetch();
+    if (!$device) send_json(['error' => 'Device not found'], 404);
+    $data = get_json_input();
+    $relay_id = intval($data['relay_id'] ?? 0);
+    $ai_state = get_device_ai_state_php($device_id);
+    unset($ai_state['relays'][$relay_id]);
+    unset($ai_state['relay_config'][$relay_id]);
+    save_device_ai_state_php($device_id, $ai_state);
+    send_json(['status' => 'success', 'message' => 'Relé zmazané']);
+}
+
+// --- RELAY LIST ---
+elseif (preg_match('#^/api/device/([0-9]+)/relays$#', $path, $matches) && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $device = $stmt->fetch();
+    if (!$device) send_json(['error' => 'Device not found'], 404);
+    $ai_state = get_device_ai_state_php($device_id);
+    $relays = $ai_state['relays'] ?? [];
+    $relay_config = $ai_state['relay_config'] ?? [];
+    $result = [];
+    foreach ($relays as $rid => $rstate) {
+        $result[] = [
+            'id' => $rid,
+            'state' => $rstate,
+            'name' => $relay_config[$rid]['name'] ?? 'Relé ' . $rid,
+            'type' => $relay_config[$rid]['type'] ?? 'GPIO',
+            'power_w' => $relay_config[$rid]['power_w'] ?? 0,
+        ];
+    }
+    send_json(['status' => 'success', 'relays' => $result]);
+}
+
+// --- POWER LIMITS (min/max) ---
+elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $device = $stmt->fetch();
+    if (!$device) send_json(['error' => 'Device not found'], 404);
+    $data = get_json_input();
+    $min_power = max(0, intval($data['min_power_w'] ?? 0));
+    $max_power = max(500, intval($data['max_power_w'] ?? 10000));
+    $stmt = $pdo->prepare("UPDATE devices SET min_power_w = ?, max_power_w = ? WHERE id = ?");
+    $stmt->execute([$min_power, $max_power, $device_id]);
+    send_json(['status' => 'success', 'min_power_w' => $min_power, 'max_power_w' => $max_power]);
+}
+
+elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT min_power_w, max_power_w FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $row = $stmt->fetch();
+    if (!$row) send_json(['error' => 'Device not found'], 404);
+    send_json(['status' => 'success', 'min_power_w' => floatval($row['min_power_w'] ?? 0), 'max_power_w' => floatval($row['max_power_w'] ?? 10000)]);
 }
 
 // --- TELEMETRIA SYNC ---
@@ -1356,9 +1503,9 @@ elseif ($path === '/api/devices/register' && $method === 'POST') {
         $user_email->execute([$user_id]);
         $u = $user_email->fetch();
         if ($u) {
-            @send_elvo_email($u['email'], 'Nové zariadenie v ElvoControl', '📦 Zariadenie bolo pridané',
+            @send_elvo_email($u['email'], 'Nové zariadenie v ElvoControll', '📦 Zariadenie bolo pridané',
                 '<p>Ahoj <strong>' . htmlspecialchars($u['username']) . '</strong>,</p>'
-                . '<p>Pridali ste nové zariadenie do ElvoControl:</p>'
+                . '<p>Pridali ste nové zariadenie do ElvoControll:</p>'
                 . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;">'
                 . '<p>📦 <strong>Názov:</strong> ' . htmlspecialchars($name) . '</p>'
                 . '<p>🔢 <strong>Sériové číslo:</strong> ' . htmlspecialchars($serial) . '</p>'
@@ -1416,7 +1563,7 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
     $stmt->execute([$user['id'], $code, $expires]);
     
     // Posli email (s fallback ak nefunguje mail())
-    $subject = "ElvoControl - Obnovenie hesla";
+    $subject = "ElvoControll - Obnovenie hesla";
     $title = "Váš overovací kód";
     $html = "<p>Ahoj <strong>" . htmlspecialchars($user['username']) . "</strong>,</p>"
          . "<p>Váš 6-miestny overovací kód pre obnovenie hesla:</p>"
@@ -1661,7 +1808,7 @@ SMTP AUTH OK - Sending test email...
         fwrite($socket, "DATA
 
 "); $rd($socket);
-        $msg = "Subject: =?UTF-8?B?" . base64_encode("ElvoControl SMTP Test") . "?=
+        $msg = "Subject: =?UTF-8?B?" . base64_encode("ElvoControll SMTP Test") . "?=
 
 ";
         $msg .= "From: $sender
@@ -2019,7 +2166,7 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     if (isset($_SESSION['user_id'])) {
         $brand = $data['brand_id'] ?? '';
         $model = $data['model_id'] ?? '';
-        $name = $data['device_name'] ?? $data['name'] ?? 'ElvoControll';
+        $name = $data['device_name'] ?? $data['name'] ?? 'ElvoControlll';
         $stmt2 = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
         $stmt2->execute([$_SESSION['user_id'], $name, $serial, $brand, $model]);
     }
