@@ -1592,56 +1592,64 @@
                     <!-- Temperature Gauge Section (only for temp relays) -->
                     <div id="relayGaugeSection" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;margin-bottom:20px;">
                         <h4 style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:8px;">Maximálna Teplota</h4>
-                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:20px;">Nastavte maximálnu teplotu. Zariadenie nebude ohrievať nad túto teplotu.</p>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:24px;">Nastavte maximálnu teplotu. Zariadenie nebude ohrievať nad túto teplotu.</p>
                         
-                        <!-- Large Circular Gauge with Gradient -->
-                        <div style="position:relative;width:100%;max-width:300px;margin:0 auto 20px;">
-                            <svg viewBox="0 0 200 130" style="width:100%;height:auto;">
-                                <defs>
-                                    <linearGradient id="gaugeGradient" gradientUnits="userSpaceOnUse" x1="30" y1="100" x2="170" y2="100">
-                                        <stop offset="0%" stop-color="#5c4033"/>
-                                        <stop offset="35%" stop-color="#e8507a"/>
-                                        <stop offset="100%" stop-color="#ff6b8a"/>
-                                    </linearGradient>
-                                    <filter id="glow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                                </defs>
-                                <!-- Background arc (semicircle) -->
-                                <path d="M 30 110 A 70 70 0 0 1 170 110" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10" stroke-linecap="round"/>
-                                <!-- Active arc -->
-                                <path id="relayTempArcPath" d="M 30 110 A 70 70 0 0 1 145 50" fill="none" stroke="url(#gaugeGradient)" stroke-width="10" stroke-linecap="round" filter="url(#glow)" style="transition:all 0.3s ease;"/>
-                                <!-- Numbers properly positioned around arc -->
-                                <text x="20" y="118" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">0</text>
-                                <text x="38" y="72" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">10</text>
-                                <text x="72" y="42" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">20</text>
-                                <text x="100" y="30" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">30</text>
-                                <text x="130" y="42" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">40</text>
-                                <text x="155" y="70" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">50</text>
-                                <text x="170" y="100" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">60</text>
-                                <text x="175" y="118" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">70</text>
-                                <!-- Temperature dot -->
-                                <circle id="relayTempDot" cx="145" cy="50" r="8" fill="#ff6b8a" filter="url(#glow)" style="transition:all 0.3s ease;"/>
-                            </svg>
+                        <!-- Gauge using CSS + rotation approach -->
+                        <div style="position:relative;width:200px;height:110px;margin:0 auto 24px;overflow:hidden;">
+                            <!-- Background arc -->
+                            <div style="position:absolute;width:200px;height:200px;border-radius:50%;border:10px solid rgba(255,255,255,0.06);clip-path:polygon(0 0, 100% 0, 100% 50%, 0 50%);"></div>
+                            <!-- Active arc using conic-gradient -->
+                            <div id="relayTempArc" style="position:absolute;width:200px;height:200px;border-radius:50%;border:10px solid transparent;border-top-color:#5c4033;border-right-color:#e8507a;clip-path:polygon(0 0, 100% 0, 100% 50%, 0 50%);transform:rotate(-90deg);transition:transform 0.3s ease;"></div>
+                            <!-- Temperature display in center -->
+                            <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);text-align:center;">
+                                <span id="relayTempCenter" style="font-size:42px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);line-height:1;">55</span>
+                                <span style="font-size:18px;font-weight:700;color:var(--text-muted);">°C</span>
+                            </div>
+                            <!-- Numbers -->
+                            <span style="position:absolute;bottom:4px;left:8px;font-size:11px;color:var(--text-muted);font-weight:600;">0</span>
+                            <span style="position:absolute;bottom:30px;left:28px;font-size:11px;color:var(--text-muted);font-weight:600;">10</span>
+                            <span style="position:absolute;top:20px;left:48px;font-size:11px;color:var(--text-muted);font-weight:600;">20</span>
+                            <span style="position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-muted);font-weight:600;">30</span>
+                            <span style="position:absolute;top:20px;right:48px;font-size:11px;color:var(--text-muted);font-weight:600;">40</span>
+                            <span style="position:absolute;bottom:30px;right:28px;font-size:11px;color:var(--text-muted);font-weight:600;">50</span>
+                            <span style="position:absolute;bottom:4px;right:8px;font-size:11px;color:var(--text-muted);font-weight:600;">60</span>
+                        </div>
+
+                        <!-- Color zone indicators -->
+                        <div style="display:flex;justify-content:center;gap:16px;margin-bottom:20px;">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <div style="width:12px;height:12px;border-radius:3px;background:#5c4033;"></div>
+                                <span style="font-size:10px;color:var(--text-muted);">Studená</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <div style="width:12px;height:12px;border-radius:3px;background:#e8507a;"></div>
+                                <span style="font-size:10px;color:var(--text-muted);">Teplá</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <div style="width:12px;height:12px;border-radius:3px;background:#ff6b8a;"></div>
+                                <span style="font-size:10px;color:var(--text-muted);">Horúca</span>
+                            </div>
                         </div>
 
                         <!-- Slider for temperature -->
-                        <div style="margin-bottom:20px;">
-                            <input type="range" id="relayTempSlider" min="0" max="70" step="1" value="55" oninput="updateRelayGauge(this.value);document.getElementById('relayEditTempVal').textContent=this.value+'°C'" style="width:100%;height:6px;accent-color:#ff6b8a;cursor:pointer;">
+                        <div style="margin-bottom:24px;">
+                            <input type="range" id="relayTempSlider" min="0" max="70" step="1" value="55" oninput="updateRelayGauge(this.value)" style="width:100%;height:6px;cursor:pointer;">
                             <div style="display:flex;justify-content:space-between;margin-top:8px;">
                                 <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">0°C</span>
-                                <span id="relayEditTempVal" style="font-size:16px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-warn);">55°C</span>
+                                <span id="relayEditTempVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">55°C</span>
                                 <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">70°C</span>
                             </div>
                         </div>
 
                         <!-- Temperature displays -->
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-top:16px;border-top:1px solid var(--border-card);">
                             <div style="text-align:center;">
-                                <div style="font-size:28px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);" id="relayTempGrid">55°C</div>
-                                <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-top:4px;">Teplota zo Siete</div>
+                                <div style="font-size:24px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);" id="relayTempGrid">55°C</div>
+                                <div style="font-size:10px;font-weight:700;color:var(--text-secondary);margin-top:2px;">Teplota zo Siete</div>
                             </div>
                             <div style="text-align:center;">
-                                <div style="font-size:28px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-warn);" id="relayTempPv">75°C</div>
-                                <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-top:4px;">Teplota z FVE</div>
+                                <div style="font-size:24px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-warn);" id="relayTempPv">75°C</div>
+                                <div style="font-size:10px;font-weight:700;color:var(--text-secondary);margin-top:2px;">Teplota z FVE</div>
                             </div>
                         </div>
                     </div>
@@ -2446,7 +2454,8 @@
                 document.getElementById('relayTempSlider').value = data.temp;
                 document.getElementById('relayEditTempVal').textContent = data.temp + '°C';
                 currentRelayTemp = data.temp;
-                updateRelayGauge(data.temp);
+                // Small delay to ensure DOM is ready
+                setTimeout(() => updateRelayGauge(data.temp), 50);
             }
         }
 
@@ -2457,42 +2466,46 @@
         }
 
         function updateRelayGauge(temp) {
+            temp = parseInt(temp);
             const maxTemp = 70;
             const ratio = Math.min(temp / maxTemp, 1);
             
-            // Arc geometry: center at (100, 110), radius 70
-            const startX = 30;
-            const startY = 110;
-            const radius = 70;
-            const centerX = 100;
-            const centerY = 110;
-            
-            // Angle from 180 degrees (left) towards 0 degrees (right)
-            const startAngle = Math.PI;
-            const endAngle = Math.PI - (ratio * Math.PI);
-            
-            const endX = centerX + radius * Math.cos(endAngle);
-            const endY = centerY - radius * Math.sin(endAngle);
-            
-            // Update arc path
-            const arcPath = `M ${startX} ${startY} A ${radius} ${radius} 0 ${ratio > 0.5 ? 1 : 0} 1 ${endX.toFixed(2)} ${endY.toFixed(2)}`;
-            document.getElementById('relayTempArcPath').setAttribute('d', arcPath);
-            
-            // Update dot position
-            const dot = document.getElementById('relayTempDot');
-            if (dot) {
-                dot.setAttribute('cx', endX.toFixed(2));
-                dot.setAttribute('cy', endY.toFixed(2));
+            // Rotate the arc (0°C = -90deg, 70°C = 90deg)
+            const rotation = -90 + (ratio * 180);
+            const arc = document.getElementById('relayTempArc');
+            if (arc) {
+                arc.style.transform = `rotate(${rotation}deg)`;
                 
-                // Update dot color based on temperature zone
-                if (ratio < 0.3) {
-                    dot.setAttribute('fill', '#5c4033'); // Brown (cold)
-                } else if (ratio < 0.6) {
-                    dot.setAttribute('fill', '#e8507a'); // Pink
+                // Update colors based on zone
+                if (temp <= 25) {
+                    arc.style.borderTopColor = '#5c4033'; // Brown
+                    arc.style.borderRightColor = '#8b4557';
+                } else if (temp <= 45) {
+                    arc.style.borderTopColor = '#e8507a'; // Pink
+                    arc.style.borderRightColor = '#ff6b8a';
                 } else {
-                    dot.setAttribute('fill', '#ff6b8a'); // Bright pink/red
+                    arc.style.borderTopColor = '#ff6b8a'; // Hot pink
+                    arc.style.borderRightColor = '#ff8fa3';
                 }
             }
+            
+            // Update center display
+            const center = document.getElementById('relayTempCenter');
+            if (center) center.textContent = temp;
+            
+            // Update slider value display
+            const sliderVal = document.getElementById('relayEditTempVal');
+            if (sliderVal) sliderVal.textContent = temp + '°C';
+            
+            // Update slider accent color
+            const slider = document.getElementById('relayTempSlider');
+            if (slider) {
+                if (temp <= 25) slider.style.accentColor = '#5c4033';
+                else if (temp <= 45) slider.style.accentColor = '#e8507a';
+                else slider.style.accentColor = '#ff6b8a';
+            }
+            
+            currentRelayTemp = temp;
         }
 
         function toggleRelayOnOff(isOn) {
