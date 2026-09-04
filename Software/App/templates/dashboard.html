@@ -1563,7 +1563,7 @@
                                 <i data-lucide="pencil" style="width:16px;height:16px;"></i>
                             </button>
                         </div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-card);">
+                        <div id="relayEditThermRow" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-card);">
                             <div style="display:flex;align-items:center;gap:12px;">
                                 <i data-lucide="thermometer" style="width:18px;height:18px;color:var(--text-muted);"></i>
                                 <div>
@@ -1589,98 +1589,79 @@
                         </div>
                     </div>
 
-                    <!-- Circular Gauge Section -->
-                    <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;margin-bottom:20px;">
+                    <!-- Temperature Gauge Section (only for temp relays) -->
+                    <div id="relayGaugeSection" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;margin-bottom:20px;">
                         <h4 style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:8px;">Maximálna Teplota</h4>
-                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:20px;">Nastavte maximálnu teplotu pre bojler. Bojler nebude ohrievať vodu nad túto teplotu.</p>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:20px;">Nastavte maximálnu teplotu. Zariadenie nebude ohrievať nad túto teplotu.</p>
                         
                         <!-- Large Circular Gauge with Gradient -->
-                        <div style="position:relative;width:240px;height:200px;margin:0 auto 20px;">
-                            <svg viewBox="0 0 200 160" style="width:100%;height:100%;">
+                        <div style="position:relative;width:100%;max-width:300px;margin:0 auto 20px;">
+                            <svg viewBox="0 0 200 130" style="width:100%;height:auto;">
                                 <defs>
-                                    <!-- Gradient: brown -> pink -> red -->
-                                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <linearGradient id="gaugeGradient" gradientUnits="userSpaceOnUse" x1="30" y1="100" x2="170" y2="100">
                                         <stop offset="0%" stop-color="#5c4033"/>
-                                        <stop offset="25%" stop-color="#8b4557"/>
-                                        <stop offset="50%" stop-color="#e8507a"/>
-                                        <stop offset="75%" stop-color="#ff6b8a"/>
-                                        <stop offset="100%" stop-color="#ff8fa3"/>
+                                        <stop offset="35%" stop-color="#e8507a"/>
+                                        <stop offset="100%" stop-color="#ff6b8a"/>
                                     </linearGradient>
-                                    <!-- Glow filter -->
-                                    <filter id="glow">
-                                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                                        <feMerge>
-                                            <feMergeNode in="coloredBlur"/>
-                                            <feMergeNode in="SourceGraphic"/>
-                                        </feMerge>
-                                    </filter>
+                                    <filter id="glow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                                 </defs>
-                                
-                                <!-- Background arc -->
-                                <path d="M 30 130 A 80 80 0 0 1 170 130" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12" stroke-linecap="round"/>
-                                
-                                <!-- Active arc with gradient -->
-                                <path id="relayTempArcPath" d="M 30 130 A 80 80 0 0 1 145 65" fill="none" stroke="url(#gaugeGradient)" stroke-width="12" stroke-linecap="round" filter="url(#glow)" style="transition:all 0.3s ease;"/>
-                                
-                                <!-- Tick marks -->
-                                <g stroke="var(--text-muted)" stroke-width="2">
-                                    <line x1="30" y1="130" x2="38" y2="122" transform="rotate(-75, 100, 130)"/>
-                                    <line x1="30" y1="130" x2="38" y2="122" transform="rotate(-52, 100, 130)"/>
-                                    <line x1="30" y1="130" x2="38" y2="122" transform="rotate(-29, 100, 130)"/>
-                                    <line x1="30" y1="130" x2="38" y2="122" transform="rotate(-6, 100, 130)"/>
-                                    <line x1="30" y1="130" x2="38" y2="122" transform="rotate(17, 100, 130)"/>
-                                    <line x1="30" y1="130" x2="38" y2="122" transform="rotate(40, 100, 130)"/>
-                                    <line x1="30" y1="130" x2="38" y2="122" transform="rotate(63, 100, 130)"/>
-                                    <line x1="30" y1="130" x2="38" y2="122" transform="rotate(86, 100, 130)"/>
-                                </g>
-                                
-                                <!-- Numbers around arc -->
-                                <text x="22" y="128" fill="var(--text-muted)" font-size="14" font-weight="600">0</text>
-                                <text x="28" y="95" fill="var(--text-muted)" font-size="14" font-weight="600">10</text>
-                                <text x="52" y="68" fill="var(--text-muted)" font-size="14" font-weight="600">20</text>
-                                <text x="88" y="52" fill="var(--text-muted)" font-size="14" font-weight="600">30</text>
-                                <text x="125" y="55" fill="var(--text-muted)" font-size="14" font-weight="600">40</text>
-                                <text x="155" y="75" fill="var(--text-muted)" font-size="14" font-weight="600">50</text>
-                                <text x="170" y="105" fill="var(--text-muted)" font-size="14" font-weight="600">60</text>
-                                <text x="170" y="135" fill="var(--text-muted)" font-size="14" font-weight="600">70</text>
-                                
-                                <!-- Temperature indicator dot -->
-                                <circle id="relayTempDot" cx="145" cy="65" r="10" fill="#ff6b8a" filter="url(#glow)" style="transition:all 0.3s ease;"/>
+                                <!-- Background arc (semicircle) -->
+                                <path d="M 30 110 A 70 70 0 0 1 170 110" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10" stroke-linecap="round"/>
+                                <!-- Active arc -->
+                                <path id="relayTempArcPath" d="M 30 110 A 70 70 0 0 1 145 50" fill="none" stroke="url(#gaugeGradient)" stroke-width="10" stroke-linecap="round" filter="url(#glow)" style="transition:all 0.3s ease;"/>
+                                <!-- Numbers properly positioned around arc -->
+                                <text x="20" y="118" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">0</text>
+                                <text x="38" y="72" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">10</text>
+                                <text x="72" y="42" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">20</text>
+                                <text x="100" y="30" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">30</text>
+                                <text x="130" y="42" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">40</text>
+                                <text x="155" y="70" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">50</text>
+                                <text x="170" y="100" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">60</text>
+                                <text x="175" y="118" fill="var(--text-muted)" font-size="12" font-weight="600" text-anchor="middle">70</text>
+                                <!-- Temperature dot -->
+                                <circle id="relayTempDot" cx="145" cy="50" r="8" fill="#ff6b8a" filter="url(#glow)" style="transition:all 0.3s ease;"/>
                             </svg>
                         </div>
 
-                        <!-- Temperature displays -->
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;">
-                            <div style="text-align:center;">
-                                <div style="font-size:32px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);" id="relayTempGrid">55°C</div>
-                                <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-top:4px;">Teplota zo Siete</div>
-                            </div>
-                            <div style="text-align:center;">
-                                <div style="font-size:32px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-warn);" id="relayTempPv">75°C</div>
-                                <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-top:4px;">Teplota z FVE</div>
+                        <!-- Slider for temperature -->
+                        <div style="margin-bottom:20px;">
+                            <input type="range" id="relayTempSlider" min="0" max="70" step="1" value="55" oninput="updateRelayGauge(this.value);document.getElementById('relayEditTempVal').textContent=this.value+'°C'" style="width:100%;height:6px;accent-color:#ff6b8a;cursor:pointer;">
+                            <div style="display:flex;justify-content:space-between;margin-top:8px;">
+                                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">0°C</span>
+                                <span id="relayEditTempVal" style="font-size:16px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-warn);">55°C</span>
+                                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">70°C</span>
                             </div>
                         </div>
 
-                        <!-- Description -->
-                        <div style="margin-top:24px;padding:16px;background:rgba(0,0,0,0.15);border-radius:12px;display:flex;flex-direction:column;gap:12px;">
-                            <div style="display:flex;align-items:flex-start;gap:12px;">
-                                <div style="width:32px;height:32px;border-radius:10px;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                    <i data-lucide="thermometer" style="width:16px;height:16px;color:var(--accent-solar);"></i>
+                        <!-- Temperature displays -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                            <div style="text-align:center;">
+                                <div style="font-size:28px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);" id="relayTempGrid">55°C</div>
+                                <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-top:4px;">Teplota zo Siete</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="font-size:28px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-warn);" id="relayTempPv">75°C</div>
+                                <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-top:4px;">Teplota z FVE</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ON/OFF Toggle Section (only for on/off relays) -->
+                    <div id="relayOnOffSection" style="display:none;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;margin-bottom:20px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div style="width:48px;height:48px;border-radius:14px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;">
+                                    <i data-lucide="power" style="width:24px;height:24px;color:var(--accent-battery);"></i>
                                 </div>
                                 <div>
-                                    <span style="font-size:13px;font-weight:700;color:var(--text-primary);display:block;">Teplota zo Siete</span>
-                                    <span style="font-size:11px;color:var(--text-secondary);line-height:1.5;">Aktuálna teplota vody v bojleri, ktorá bude ohrievaná zo siete.</span>
+                                    <span style="font-size:13px;font-weight:800;color:var(--text-primary);display:block;">Stav zariadenia</span>
+                                    <span id="relayOnOffLabel" style="font-size:12px;color:var(--text-secondary);">Vypnuté</span>
                                 </div>
                             </div>
-                            <div style="display:flex;align-items:flex-start;gap:12px;">
-                                <div style="width:32px;height:32px;border-radius:10px;background:rgba(244,63,94,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                    <i data-lucide="sun" style="width:16px;height:16px;color:var(--accent-warn);"></i>
-                                </div>
-                                <div>
-                                    <span style="font-size:13px;font-weight:700;color:var(--text-primary);display:block;">Teplota z FVE</span>
-                                    <span style="font-size:11px;color:var(--text-secondary);line-height:1.5;">Teplota vody ohriatej priamo z fotovoltajického systému.</span>
-                                </div>
-                            </div>
+                            <label style="position:relative;width:56px;height:30px;cursor:pointer;">
+                                <input type="checkbox" id="relayOnOffToggle" onchange="toggleRelayOnOff(this.checked)" style="opacity:0;width:0;height:0;">
+                                <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:15px;transition:all 0.3s;"><span id="relayOnOffKnob" style="width:24px;height:24px;border-radius:50%;background:#4b5563;margin:2px;transition:all 0.3s;display:block;"></span></span>
+                            </label>
                         </div>
                     </div>
 
@@ -2432,20 +2413,41 @@
             document.getElementById('relayListView').style.display = 'none';
             document.getElementById('relayEditView').style.display = 'block';
             
-            // Update title and data based on relay
+            // Relay data: type='temp' has gauge, type='onoff' has toggle
             const relayData = {
-                1: { name: 'Edit Boiler', type: 'Shelly 1PM', power: '2000W', temp: 55 },
-                2: { name: 'Edit Filtrácia', type: 'Shelly Duo', power: '150W', temp: 28 },
-                3: { name: 'Edit Klimatizácia', type: 'GPIO Relé', power: '1200W', temp: 24 }
+                1: { name: 'Edit Boiler', type: 'Shelly 1PM', power: '2000W', temp: 55, mode: 'temp' },
+                2: { name: 'Edit Filtrácia', type: 'Shelly Duo', power: '150W', temp: 28, mode: 'onoff' },
+                3: { name: 'Edit Klimatizácia', type: 'GPIO Relé', power: '1200W', temp: 24, mode: 'temp' }
             };
             
             const data = relayData[relayId] || relayData[1];
             document.getElementById('relayEditTitle').textContent = data.name;
             document.getElementById('relayEditType').textContent = data.type;
             document.getElementById('relayEditPower').textContent = data.power;
-            document.getElementById('relayTempGrid').textContent = data.temp + '°C';
-            currentRelayTemp = data.temp;
-            updateRelayGauge(data.temp);
+            
+            // Show/hide gauge vs toggle based on mode
+            const gaugeSection = document.getElementById('relayGaugeSection');
+            const onOffSection = document.getElementById('relayOnOffSection');
+            const thermRow = document.getElementById('relayEditThermRow');
+            
+            if (data.mode === 'onoff') {
+                // ON/OFF relay: hide gauge, show toggle
+                gaugeSection.style.display = 'none';
+                onOffSection.style.display = 'block';
+                thermRow.style.display = 'none'; // No thermometer for on/off
+                document.getElementById('relayOnOffLabel').textContent = 'Vypnuté';
+                document.getElementById('relayOnOffToggle').checked = false;
+            } else {
+                // Temperature relay: show gauge, hide toggle
+                gaugeSection.style.display = 'block';
+                onOffSection.style.display = 'none';
+                thermRow.style.display = 'flex'; // Show thermometer row
+                document.getElementById('relayTempGrid').textContent = data.temp + '°C';
+                document.getElementById('relayTempSlider').value = data.temp;
+                document.getElementById('relayEditTempVal').textContent = data.temp + '°C';
+                currentRelayTemp = data.temp;
+                updateRelayGauge(data.temp);
+            }
         }
 
         function closeRelayEdit() {
@@ -2455,20 +2457,19 @@
         }
 
         function updateRelayGauge(temp) {
-            // 0-70°C range
             const maxTemp = 70;
             const ratio = Math.min(temp / maxTemp, 1);
             
-            // Calculate arc path based on temperature
+            // Arc geometry: center at (100, 110), radius 70
             const startX = 30;
-            const startY = 130;
-            const radius = 80;
+            const startY = 110;
+            const radius = 70;
             const centerX = 100;
-            const centerY = 130;
+            const centerY = 110;
             
-            // Angle from 180 degrees (left) to 0 degrees (right)
-            const startAngle = Math.PI; // 180 degrees
-            const endAngle = Math.PI - (ratio * Math.PI); // 180 to 0 degrees
+            // Angle from 180 degrees (left) towards 0 degrees (right)
+            const startAngle = Math.PI;
+            const endAngle = Math.PI - (ratio * Math.PI);
             
             const endX = centerX + radius * Math.cos(endAngle);
             const endY = centerY - radius * Math.sin(endAngle);
@@ -2479,17 +2480,44 @@
             
             // Update dot position
             const dot = document.getElementById('relayTempDot');
-            dot.setAttribute('cx', endX.toFixed(2));
-            dot.setAttribute('cy', endY.toFixed(2));
-            
-            // Update dot color based on temperature zone
-            if (ratio < 0.3) {
-                dot.setAttribute('fill', '#5c4033'); // Brown (cold)
-            } else if (ratio < 0.6) {
-                dot.setAttribute('fill', '#8b4557'); // Dark pink
-            } else {
-                dot.setAttribute('fill', '#ff6b8a'); // Bright pink/red
+            if (dot) {
+                dot.setAttribute('cx', endX.toFixed(2));
+                dot.setAttribute('cy', endY.toFixed(2));
+                
+                // Update dot color based on temperature zone
+                if (ratio < 0.3) {
+                    dot.setAttribute('fill', '#5c4033'); // Brown (cold)
+                } else if (ratio < 0.6) {
+                    dot.setAttribute('fill', '#e8507a'); // Pink
+                } else {
+                    dot.setAttribute('fill', '#ff6b8a'); // Bright pink/red
+                }
             }
+        }
+
+        function toggleRelayOnOff(isOn) {
+            const label = document.getElementById('relayOnOffLabel');
+            const knob = document.getElementById('relayOnOffKnob');
+            if (isOn) {
+                label.textContent = 'Zapnuté';
+                label.style.color = 'var(--accent-battery)';
+                knob.style.marginLeft = '26px';
+                knob.style.background = 'var(--accent-battery)';
+            } else {
+                label.textContent = 'Vypnuté';
+                label.style.color = 'var(--text-secondary)';
+                knob.style.marginLeft = '2px';
+                knob.style.background = '#4b5563';
+            }
+            // Send to backend
+            try {
+                const devId = metaEl.getAttribute('data-device-id');
+                fetch(`${basePath}/api/device/${devId}/relay`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({relay_id: currentRelayId, state: isOn ? 'ON' : 'OFF'})
+                });
+            } catch(e) {}
         }
 
         function editRelayType() {
