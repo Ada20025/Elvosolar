@@ -1460,208 +1460,173 @@
 
         <!-- Tab 3: CONTROLS & RELAYS -->
         <section id="sectionControl" class="view-section">
-            <!-- Relay List View -->
-            <div id="relayListView">
-                <div class="glass-card">
-                    <div class="card-header-styled">
+            <style>
+                @media (min-width: 900px) {
+                    .relay-split-layout { display:grid !important; grid-template-columns:340px 1fr !important; gap:20px !important; }
+                }
+                @media (max-width: 899px) {
+                    .relay-split-layout { display:flex !important; flex-direction:column !important; }
+                    .relay-settings-placeholder { display:flex !important; }
+                }
+                .relay-list-item { cursor:pointer; transition:all 0.2s; }
+                .relay-list-item:hover { background:rgba(255,255,255,0.06) !important; }
+                .relay-list-item.active { border-color:var(--accent-sky) !important; background:rgba(56,189,248,0.06) !important; }
+                .relay-slider-track { position:relative;height:12px;border-radius:6px;cursor:pointer;overflow:visible; }
+                .relay-slider-fill { height:100%;border-radius:6px;transition:width 0.15s ease;position:relative; }
+                .relay-slider-thumb { position:absolute;top:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:white;border:3px solid #38bdf8;box-shadow:0 2px 12px rgba(0,0,0,0.4);cursor:grab;z-index:10;transition:box-shadow 0.2s; }
+                .relay-slider-thumb:active { cursor:grabbing;box-shadow:0 2px 20px rgba(56,189,248,0.5); }
+                .relay-type-chip { padding:8px 14px;border-radius:10px;border:1px solid var(--border-card);background:var(--bg-card);cursor:pointer;font-size:11px;font-weight:700;color:var(--text-secondary);transition:all 0.2s;display:flex;align-items:center;gap:6px; }
+                .relay-type-chip.selected { border-color:var(--accent-sky);background:rgba(56,189,248,0.1);color:var(--accent-sky); }
+                .relay-type-chip:hover { border-color:rgba(255,255,255,0.2); }
+            </style>
+            <div class="relay-split-layout" style="display:grid;grid-template-columns:340px 1fr;gap:20px;">
+                <!-- LEFT: Relay List -->
+                <div class="glass-card" style="padding:0;overflow:hidden;">
+                    <div class="card-header-styled" style="padding:16px 18px 12px;">
                         <span class="card-title-styled"><i data-lucide="toggle-left"></i> Vaše relé</span>
                         <span style="font-size:8px;font-weight:800;padding:3px 8px;border-radius:6px;background:rgba(239,68,68,0.15);color:#ef4444;">BETA</span>
                         <button onclick="addRelay()" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--accent-battery);font-size:10px;font-weight:800;transition:all 0.2s;">
                             <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať
                         </button>
                     </div>
-                    <div id="myRelaysList" style="display:flex;flex-direction:column;gap:12px;">
-                        <!-- Bojler TÚV -->
-                        <div class="relay-item-card" style="text-align:left;cursor:pointer;" onclick="openRelayEdit(1)">
-                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                                <div style="display:flex;align-items:center;gap:12px;">
-                                    <div style="width:40px;height:40px;border-radius:12px;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;">
-                                        <i data-lucide="flame" style="width:20px;height:20px;color:var(--accent-solar);"></i>
-                                    </div>
-                                    <div>
-                                        <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">Bojler TÚV</span>
-                                        <span style="font-size:10px;color:var(--text-muted);">Shelly 1PM · 2000W</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <span style="font-size:11px;font-weight:700;color:var(--accent-battery);font-family:'JetBrains Mono';">55°C</span>
-                                    <i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--text-muted);"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Filtrácia bazéna -->
-                        <div class="relay-item-card" style="text-align:left;cursor:pointer;" onclick="openRelayEdit(2)">
-                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                                <div style="display:flex;align-items:center;gap:12px;">
-                                    <div style="width:40px;height:40px;border-radius:12px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;">
-                                        <i data-lucide="droplet" style="width:20px;height:20px;color:var(--accent-grid);"></i>
-                                    </div>
-                                    <div>
-                                        <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">Filtrácia bazéna</span>
-                                        <span style="font-size:10px;color:var(--text-muted);">Shelly Duo · 150W</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <span style="font-size:11px;font-weight:700;color:var(--text-muted);font-family:'JetBrains Mono';">OFF</span>
-                                    <i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--text-muted);"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Klimatizácia -->
-                        <div class="relay-item-card" style="text-align:left;cursor:pointer;" onclick="openRelayEdit(3)">
-                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                                <div style="display:flex;align-items:center;gap:12px;">
-                                    <div style="width:40px;height:40px;border-radius:12px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;">
-                                        <i data-lucide="wind" style="width:20px;height:20px;color:var(--accent-battery);"></i>
-                                    </div>
-                                    <div>
-                                        <span style="font-size:13px;font-weight:800;display:block;color:var(--text-primary);">Klimatizácia</span>
-                                        <span style="font-size:10px;color:var(--text-muted);">GPIO Relé · 1200W</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <span style="font-size:11px;font-weight:700;color:var(--text-muted);font-family:'JetBrains Mono';">24°C</span>
-                                    <i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--text-muted);"></i>
-                                </div>
-                            </div>
-                        </div>
+                    <div id="myRelaysList" style="padding:0 12px 12px;display:flex;flex-direction:column;gap:6px;">
+                        <!-- Populated by JS -->
                     </div>
-                    <div id="noRelaysHint" style="text-align:center;padding:24px;display:none;">
-                        <i data-lucide="plus-circle" style="width:32px;height:32px;color:var(--text-muted);margin:0 auto 8px;display:block;"></i>
-                        <p style="font-size:12px;color:var(--text-muted);">Nemáte pridané žiadne relé</p>
-                        <button onclick="addRelay()" style="margin-top:12px;padding:10px 20px;border-radius:12px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:11px;font-weight:800;cursor:pointer;">+ Pridať Relé</button>
+                    <div id="noRelaysHint" style="text-align:center;padding:32px 16px;display:none;">
+                        <i data-lucide="plus-circle" style="width:36px;height:36px;color:var(--text-muted);margin:0 auto 10px;display:block;opacity:0.4;"></i>
+                        <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Nemáte pridané žiadne relé</p>
+                        <p style="font-size:10px;color:var(--text-muted);opacity:0.6;">Kliknite + Pridať pre začiatok</p>
+                    </div>
+                </div>
+                <!-- RIGHT: Relay Settings -->
+                <div class="glass-card" style="padding:0;overflow:hidden;" id="relayRightPanel">
+                    <!-- Placeholder when nothing selected -->
+                    <div id="relaySettingsPlaceholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:340px;gap:12px;">
+                        <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;">
+                            <i data-lucide="mouse-pointer-click" style="width:28px;height:28px;color:var(--text-muted);opacity:0.3;"></i>
+                        </div>
+                        <p style="font-size:14px;font-weight:700;color:var(--text-muted);">Vyberte relé z ľavej strany</p>
+                        <p style="font-size:11px;color:var(--text-muted);opacity:0.5;">Kliknite na relé pre zobrazenie nastavení</p>
+                    </div>
+                    <!-- Settings panel (hidden until relay selected) -->
+                    <div id="relaySettingsPanel" style="display:none;padding:0;">
+                        <!-- Header -->
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--border-card);">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div id="relaySettingsIcon" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;"></div>
+                                <div>
+                                    <span id="relaySettingsName" style="font-size:14px;font-weight:800;color:var(--text-primary);display:block;"></span>
+                                    <span id="relaySettingsSub" style="font-size:10px;color:var(--text-muted);"></span>
+                                </div>
+                            </div>
+                            <button onclick="deleteRelay()" style="background:none;border:none;color:var(--accent-warn);cursor:pointer;padding:8px;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(244,63,94,0.1)'" onmouseout="this.style.background='none'">
+                                <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+                            </button>
+                        </div>
+                        <!-- Device Info -->
+                        <div style="padding:16px 20px;border-bottom:1px solid var(--border-card);">
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <i data-lucide="box" style="width:15px;height:15px;color:var(--text-muted);"></i>
+                                    <span style="font-size:12px;color:var(--text-secondary);">Typ zariadenia</span>
+                                </div>
+                                <span id="relaySettingsType" style="font-size:12px;font-weight:700;color:var(--text-primary);">Shelly 1PM</span>
+                            </div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <i data-lucide="zap" style="width:15px;height:15px;color:var(--text-muted);"></i>
+                                    <span style="font-size:12px;color:var(--text-secondary);">Výkon</span>
+                                </div>
+                                <span id="relaySettingsPower" style="font-size:12px;font-weight:700;color:var(--text-primary);">2000W</span>
+                            </div>
+                        </div>
+                        <!-- Temperature Slider (full-width) -->
+                        <div id="relayTempSection" style="padding:20px;">
+                            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;">
+                                <span style="font-size:13px;font-weight:800;color:var(--text-primary);">Maximálna teplota</span>
+                                <span id="relayTempDisplay" style="font-size:32px;font-weight:900;font-family:'JetBrains Mono';line-height:1;">55°C</span>
+                            </div>
+                            <p id="relayTempDesc" style="font-size:10px;color:var(--text-muted);margin-bottom:20px;">Zariadenie nebude ohrievať nad túto teplotu.</p>
+                            <!-- Slider track -->
+                            <div id="relaySliderTrack" class="relay-slider-track" style="background:rgba(255,255,255,0.06);" onmousedown="startRelaySliderDrag(event)" ontouchstart="startRelaySliderDrag(event)">
+                                <div id="relaySliderFill" class="relay-slider-fill" style="width:50%;"></div>
+                                <div id="relaySliderThumb" class="relay-slider-thumb" style="left:50%;"></div>
+                            </div>
+                            <!-- Min / Max labels -->
+                            <div style="display:flex;justify-content:space-between;margin-top:14px;">
+                                <div style="text-align:center;">
+                                    <span id="relaySliderMinLabel" style="font-size:10px;color:var(--text-muted);display:block;">Min</span>
+                                    <span id="relaySliderMinVal" style="font-size:13px;font-weight:800;font-family:'JetBrains Mono';color:var(--accent-sky);">25°C</span>
+                                </div>
+                                <div style="text-align:center;">
+                                    <span style="font-size:10px;color:var(--text-muted);display:block;">Stred</span>
+                                    <span id="relaySliderMidVal" style="font-size:13px;font-weight:800;font-family:'JetBrains Mono';color:var(--text-secondary);">47°C</span>
+                                </div>
+                                <div style="text-align:center;">
+                                    <span id="relaySliderMaxLabel" style="font-size:10px;color:var(--text-muted);display:block;">Max</span>
+                                    <span id="relaySliderMaxVal" style="font-size:13px;font-weight:800;font-family:'JetBrains Mono';color:#ef4444;">70°C</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ON/OFF Toggle Section (only for on/off relays) -->
+                        <div id="relayOnOffSection" style="display:none;padding:20px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;">
+                                <div style="display:flex;align-items:center;gap:14px;">
+                                    <div style="width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;">
+                                        <i data-lucide="power" style="width:24px;height:24px;color:var(--accent-sky);"></i>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:13px;font-weight:800;color:var(--text-primary);display:block;">Stav zariadenia</span>
+                                        <span id="relayOnOffLabel" style="font-size:12px;color:var(--text-secondary);">Vypnuté</span>
+                                    </div>
+                                </div>
+                                <label style="position:relative;width:56px;height:30px;cursor:pointer;">
+                                    <input type="checkbox" id="relayOnOffToggle" onchange="toggleRelayOnOff(this.checked)" style="opacity:0;width:0;height:0;">
+                                    <span style="position:absolute;inset:0;background:rgba(255,255,255,0.08);border:1px solid var(--border-card);border-radius:15px;transition:all 0.3s;"><span id="relayOnOffKnob" style="width:24px;height:24px;border-radius:50%;background:#4b5563;margin:2px;transition:all 0.3s;display:block;"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Save -->
+                        <div style="padding:0 20px 20px;">
+                            <button onclick="saveRelaySettings()" style="width:100%;padding:14px;border-radius:12px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);color:var(--accent-sky);font-size:13px;font-weight:800;cursor:pointer;transition:all 0.2s;">
+                                Uložiť nastavenia
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Relay Edit View (hidden by default) -->
-            <div id="relayEditView" style="display:none;">
-                <div style="max-width:480px;margin:0 auto;">
-                    <!-- Header with back button -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-card);margin-bottom:24px;">
-                        <button onclick="closeRelayEdit()" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                            Späť
-                        </button>
-                        <h3 style="font-size:15px;font-weight:800;color:var(--text-primary);" id="relayEditTitle">Edit Boiler</h3>
-                        <button onclick="deleteRelay()" style="background:none;border:none;color:var(--accent-warn);cursor:pointer;padding:8px;">
-                            <i data-lucide="trash-2" style="width:18px;height:18px;"></i>
-                        </button>
-                    </div>
-
-                    <!-- Device Info Section -->
-                    <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:16px;margin-bottom:20px;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-card);">
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <i data-lucide="box" style="width:18px;height:18px;color:var(--text-muted);"></i>
-                                <div>
-                                    <span style="font-size:12px;color:var(--text-secondary);display:block;">Typ zariadenia</span>
-                                    <span id="relayEditType" style="font-size:14px;font-weight:700;color:var(--text-primary);">Shelly 1PM</span>
-                                </div>
-                            </div>
-                            <button onclick="editRelayType()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;">
-                                <i data-lucide="pencil" style="width:16px;height:16px;"></i>
-                            </button>
+            <!-- Add Relay Modal -->
+            <div id="addRelayModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;">
+                <div style="background:var(--bg-primary);border:1px solid var(--border-card);border-radius:20px;padding:28px;width:100%;max-width:420px;">
+                    <h3 style="font-size:16px;font-weight:900;color:var(--text-primary);margin-bottom:6px;">Pridať relé</h3>
+                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:20px;">Vyberte typ zariadenia a pomenovanie</p>
+                    <label style="font-size:11px;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:6px;">Názov relé</label>
+                    <input id="addRelayName" type="text" placeholder="napr. Bojler, Klima, Sauna..." style="width:100%;padding:12px 14px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);font-size:13px;font-weight:600;margin-bottom:16px;outline:none;box-sizing:border-box;">
+                    <label style="font-size:11px;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:10px;">Typ zariadenia</label>
+                    <div id="addRelayTypeChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+                        <div class="relay-type-chip selected" data-type="bojler" onclick="selectAddRelayType(this,'bojler')">
+                            <i data-lucide="flame" style="width:14px;height:14px;"></i> Bojler
                         </div>
-                        <div id="relayEditThermRow" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-card);">
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <i data-lucide="thermometer" style="width:18px;height:18px;color:var(--text-muted);"></i>
-                                <div>
-                                    <span style="font-size:12px;color:var(--text-secondary);display:block;">Thermometer ID</span>
-                                    <span id="relayEditThermId" style="font-size:14px;font-weight:700;color:var(--text-primary);">Not Set</span>
-                                </div>
-                            </div>
-                            <button onclick="editRelayThermId()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;">
-                                <i data-lucide="pencil" style="width:16px;height:16px;"></i>
-                            </button>
+                        <div class="relay-type-chip" data-type="klima" onclick="selectAddRelayType(this,'klima')">
+                            <i data-lucide="wind" style="width:14px;height:14px;"></i> Klimatizácia
                         </div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <i data-lucide="zap" style="width:18px;height:18px;color:var(--text-muted);"></i>
-                                <div>
-                                    <span style="font-size:12px;color:var(--text-secondary);display:block;">Výkon</span>
-                                    <span id="relayEditPower" style="font-size:14px;font-weight:700;color:var(--text-primary);">2000W</span>
-                                </div>
-                            </div>
-                            <button onclick="editRelayPower()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;">
-                                <i data-lucide="pencil" style="width:16px;height:16px;"></i>
-                            </button>
+                        <div class="relay-type-chip" data-type="sauna" onclick="selectAddRelayType(this,'sauna')">
+                            <i data-lucide="thermometer-sun" style="width:14px;height:14px;"></i> Sauna
+                        </div>
+                        <div class="relay-type-chip" data-type="filtracia" onclick="selectAddRelayType(this,'filtracia')">
+                            <i data-lucide="droplet" style="width:14px;height:14px;"></i> Filtrácia
                         </div>
                     </div>
-
-                    <!-- Temperature Gauge Section (only for temp relays) -->
-                    <div id="relayGaugeSection" style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;margin-bottom:20px;">
-                        <h4 style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:8px;">Maximálna Teplota</h4>
-                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:24px;">Nastavte maximálnu teplotu. Zariadenie nebude ohrievať nad túto teplotu.</p>
-                        
-                        <!-- Gauge using CSS + rotation approach -->
-                        <div style="position:relative;width:200px;height:110px;margin:0 auto 20px;overflow:hidden;">
-                            <!-- Background arc -->
-                            <div style="position:absolute;width:200px;height:200px;border-radius:50%;border:10px solid rgba(255,255,255,0.06);clip-path:polygon(0 0, 100% 0, 100% 50%, 0 50%);"></div>
-                            <!-- Active arc -->
-                            <div id="relayTempArc" style="position:absolute;width:200px;height:200px;border-radius:50%;border:10px solid transparent;border-top-color:#3b82f6;border-right-color:#3b82f6;clip-path:polygon(0 0, 100% 0, 100% 50%, 0 50%);transform:rotate(-90deg);transition:transform 0.3s ease;"></div>
-                            <!-- Temperature display in center -->
-                            <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);text-align:center;">
-                                <span id="relayTempCenter" style="font-size:42px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);line-height:1;">55</span>
-                                <span style="font-size:18px;font-weight:700;color:var(--text-muted);">°C</span>
-                            </div>
-                            <!-- Numbers: 40, 50, 60, 70 -->
-                            <span style="position:absolute;bottom:4px;left:12px;font-size:11px;color:var(--text-muted);font-weight:600;">40</span>
-                            <span style="position:absolute;top:20px;left:50%;transform:translateX(-120%);font-size:11px;color:var(--text-muted);font-weight:600;">50</span>
-                            <span style="position:absolute;top:20px;right:48px;font-size:11px;color:var(--text-muted);font-weight:600;">60</span>
-                            <span style="position:absolute;bottom:4px;right:12px;font-size:11px;color:var(--text-muted);font-weight:600;">70</span>
-                        </div>
-
-                        <!-- Color zone indicators -->
-                        <div style="display:flex;justify-content:center;gap:16px;margin-bottom:16px;">
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <div style="width:10px;height:10px;border-radius:50%;background:#3b82f6;"></div>
-                                <span style="font-size:10px;color:var(--text-muted);">40-50°C</span>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <div style="width:10px;height:10px;border-radius:50%;background:#10b981;"></div>
-                                <span style="font-size:10px;color:var(--text-muted);">50-60°C</span>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
-                                <span style="font-size:10px;color:var(--text-muted);">60-70°C</span>
-                            </div>
-                        </div>
-
-                        <!-- Slider for temperature -->
-                        <div style="margin-bottom:16px;">
-                            <input type="range" id="relayTempSlider" min="40" max="70" step="1" value="55" oninput="updateRelayGauge(this.value)" style="width:100%;height:6px;cursor:pointer;">
-                            <div style="display:flex;justify-content:space-between;margin-top:8px;">
-                                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">40°C</span>
-                                <span id="relayEditTempVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">55°C</span>
-                                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">70°C</span>
-                            </div>
-                        </div>
+                    <label style="font-size:11px;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:6px;">Typ pripojenia</label>
+                    <select id="addRelayConnType" style="width:100%;padding:10px 12px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-primary);font-size:12px;font-weight:600;margin-bottom:20px;outline:none;">
+                        <option value="Shelly">Shelly (WiFi)</option>
+                        <option value="GPIO">GPIO Relé (CM5)</option>
+                        <option value="HTTP">HTTP / API</option>
+                    </select>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="closeAddRelayModal()" style="flex:1;padding:12px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-muted);font-size:12px;font-weight:700;cursor:pointer;">Zrušiť</button>
+                        <button onclick="confirmAddRelay()" style="flex:1;padding:12px;border-radius:10px;background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);color:var(--accent-sky);font-size:12px;font-weight:800;cursor:pointer;">Pridať</button>
                     </div>
-
-                    <!-- ON/OFF Toggle Section (only for on/off relays) -->
-                    <div id="relayOnOffSection" style="display:none;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:24px;margin-bottom:20px;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;">
-                            <div style="display:flex;align-items:center;gap:14px;">
-                                <div style="width:48px;height:48px;border-radius:14px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;">
-                                    <i data-lucide="power" style="width:24px;height:24px;color:var(--accent-battery);"></i>
-                                </div>
-                                <div>
-                                    <span style="font-size:13px;font-weight:800;color:var(--text-primary);display:block;">Stav zariadenia</span>
-                                    <span id="relayOnOffLabel" style="font-size:12px;color:var(--text-secondary);">Vypnuté</span>
-                                </div>
-                            </div>
-                            <label style="position:relative;width:56px;height:30px;cursor:pointer;">
-                                <input type="checkbox" id="relayOnOffToggle" onchange="toggleRelayOnOff(this.checked)" style="opacity:0;width:0;height:0;">
-                                <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:15px;transition:all 0.3s;"><span id="relayOnOffKnob" style="width:24px;height:24px;border-radius:50%;background:#4b5563;margin:2px;transition:all 0.3s;display:block;"></span></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Save Button -->
-                    <button onclick="saveRelaySettings()" style="width:100%;padding:16px;border-radius:14px;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-muted);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;">
-                        Uložiť
-                    </button>
                 </div>
             </div>
         </section>
@@ -2395,126 +2360,180 @@
             }
         }
 
-        function toggleRelayState(relayId) {}
-
-        // Relay Edit Functions
+        // ===== RELAY SYSTEM (Split-screen: left=list, right=settings) =====
         let currentRelayId = null;
-        let currentRelayTemp = 54;
+        let currentRelaySliderDragging = false;
 
-        function openRelayEdit(relayId) {
+        // Relay type definitions: each has name, icon, color, mode (temp/onoff), min/max temps
+        const RELAY_TYPES = {
+            bojler:    { name: 'Bojler TÚV',    icon: 'flame',           color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', mode: 'temp', minTemp: 25, maxTemp: 70, defaultTemp: 55, desc: 'Nastavte maximálnu teplotu vody v bojleri.' },
+            klima:     { name: 'Klimatizácia',  icon: 'wind',            color: '#38bdf8', bgColor: 'rgba(56,189,248,0.15)',  mode: 'temp', minTemp: 15, maxTemp: 35, defaultTemp: 24, desc: 'Nastavte cieľovú teplotu klimatizácie.' },
+            sauna:     { name: 'Sauna',         icon: 'thermometer-sun', color: '#ef4444', bgColor: 'rgba(239,68,68,0.15)',   mode: 'temp', minTemp: 40, maxTemp: 90, defaultTemp: 70, desc: 'Nastavte cieľovú teplotu sauny.' },
+            filtracia: { name: 'Filtrácia',     icon: 'droplet',         color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)',  mode: 'onoff', minTemp: 0, maxTemp: 0, defaultTemp: 0, desc: 'Zapnutie / Vypnutie filtrácie.' }
+        };
+        // Built-in demo relays (saved to backend on add)
+        let relayDB = [
+            { id: 1, name: 'Bojler TÚV', type: 'bojler', connType: 'Shelly', temp: 55, isOn: true },
+            { id: 2, name: 'Filtrácia bazéna', type: 'filtracia', connType: 'Shelly', temp: 0, isOn: false },
+            { id: 3, name: 'Klimatizácia', type: 'klima', connType: 'GPIO', temp: 24, isOn: false }
+        ];
+        let nextRelayId = 4;
+
+        function renderRelayList() {
+            const container = document.getElementById('myRelaysList');
+            const noHint = document.getElementById('noRelaysHint');
+            if (!container) return;
+            container.innerHTML = '';
+            if (relayDB.length === 0) {
+                if (noHint) noHint.style.display = 'block';
+                return;
+            }
+            if (noHint) noHint.style.display = 'none';
+            relayDB.forEach(r => {
+                const rt = RELAY_TYPES[r.type] || RELAY_TYPES.bojler;
+                const isActive = currentRelayId === r.id;
+                const statusText = rt.mode === 'onoff' ? (r.isOn ? 'ON' : 'OFF') : r.temp + '°C';
+                const statusColor = rt.mode === 'onoff' ? (r.isOn ? 'var(--accent-battery)' : 'var(--text-muted)') : rt.color;
+                const card = document.createElement('div');
+                card.className = 'relay-list-item' + (isActive ? ' active' : '');
+                card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;border:1px solid ' + (isActive ? rt.color : 'var(--border-card)') + ';background:' + (isActive ? rt.bgColor : 'var(--bg-card)') + ';margin-bottom:6px;transition:all 0.2s;';
+                card.innerHTML = '<div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;border-radius:10px;background:' + rt.bgColor + ';display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="' + rt.icon + '" style="width:18px;height:18px;color:' + rt.color + ';"></i>
+                    </div>
+                    <div>
+                        <span style="font-size:12px;font-weight:800;display:block;color:var(--text-primary);">' + r.name + '</span>
+                        <span style="font-size:9px;color:var(--text-muted);">' + rt.mode + '</span>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\';color:' + statusColor + ';">' + statusText + '</span>
+                    <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--text-muted);"></i>
+                </div>';
+                card.onclick = () => selectRelay(r.id);
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function selectRelay(relayId) {
             currentRelayId = relayId;
-            document.getElementById('relayListView').style.display = 'none';
-            document.getElementById('relayEditView').style.display = 'block';
-            
-            // Relay data: type='temp' has gauge, type='onoff' has toggle
-            const relayData = {
-                1: { name: 'Edit Boiler', type: 'Shelly 1PM', power: '2000W', temp: 55, mode: 'temp' },
-                2: { name: 'Edit Filtrácia', type: 'Shelly Duo', power: '150W', temp: 45, mode: 'onoff' },
-                3: { name: 'Edit Klimatizácia', type: 'GPIO Relé', power: '1200W', temp: 45, mode: 'temp' }
-            };
-            
-            const data = relayData[relayId] || relayData[1];
-            document.getElementById('relayEditTitle').textContent = data.name;
-            document.getElementById('relayEditType').textContent = data.type;
-            document.getElementById('relayEditPower').textContent = data.power;
-            
-            // Show/hide gauge vs toggle based on mode
-            const gaugeSection = document.getElementById('relayGaugeSection');
+            const r = relayDB.find(x => x.id === relayId);
+            if (!r) return;
+            const rt = RELAY_TYPES[r.type] || RELAY_TYPES.bojler;
+            document.getElementById('relaySettingsPlaceholder').style.display = 'none';
+            document.getElementById('relaySettingsPanel').style.display = 'block';
+            // Header
+            const iconEl = document.getElementById('relaySettingsIcon');
+            iconEl.style.background = rt.bgColor;
+            iconEl.innerHTML = '<i data-lucide="' + rt.icon + '" style="width:18px;height:18px;color:' + rt.color + ';"></i>';
+            document.getElementById('relaySettingsName').textContent = r.name;
+            document.getElementById('relaySettingsSub').textContent = rt.mode === 'onoff' ? 'ON/OFF relé' : rt.minTemp + '–' + rt.maxTemp + '°C';
+            document.getElementById('relaySettingsType').textContent = r.connType;
+            document.getElementById('relaySettingsPower').textContent = r.connType === 'Shelly' ? 'WiFi' : r.connType === 'GPIO' ? 'CM5 GPIO' : 'HTTP';
+            // Temp section vs OnOff section
+            const tempSection = document.getElementById('relayTempSection');
             const onOffSection = document.getElementById('relayOnOffSection');
-            const thermRow = document.getElementById('relayEditThermRow');
-            
-            if (data.mode === 'onoff') {
-                // ON/OFF relay: hide gauge, show toggle
-                gaugeSection.style.display = 'none';
+            if (rt.mode === 'onoff') {
+                tempSection.style.display = 'none';
                 onOffSection.style.display = 'block';
-                thermRow.style.display = 'none'; // No thermometer for on/off
-                document.getElementById('relayOnOffLabel').textContent = 'Vypnuté';
-                document.getElementById('relayOnOffToggle').checked = false;
+                document.getElementById('relayOnOffLabel').textContent = r.isOn ? 'Zapnuté' : 'Vypnuté';
+                document.getElementById('relayOnOffToggle').checked = r.isOn;
+                const knob = document.getElementById('relayOnOffKnob');
+                if (r.isOn) { knob.style.marginLeft = '26px'; knob.style.background = rt.color; }
+                else { knob.style.marginLeft = '2px'; knob.style.background = '#4b5563'; }
             } else {
-                // Temperature relay: show gauge, hide toggle
-                gaugeSection.style.display = 'block';
+                tempSection.style.display = 'block';
                 onOffSection.style.display = 'none';
-                thermRow.style.display = 'flex'; // Show thermometer row
-                document.getElementById('relayTempGrid').textContent = data.temp + '°C';
-                document.getElementById('relayTempSlider').value = data.temp;
-                document.getElementById('relayEditTempVal').textContent = data.temp + '°C';
-                currentRelayTemp = data.temp;
-                // Small delay to ensure DOM is ready
-                setTimeout(() => updateRelayGauge(data.temp), 50);
+                document.getElementById('relayTempDesc').textContent = rt.desc;
+                document.getElementById('relaySliderMinVal').textContent = rt.minTemp + '°C';
+                document.getElementById('relaySliderMaxVal').textContent = rt.maxTemp + '°C';
+                document.getElementById('relaySliderMidVal').textContent = Math.round((rt.minTemp + rt.maxTemp) / 2) + '°C';
+                updateRelaySlider(r.temp);
+                // Set up the track range
+                const track = document.getElementById('relaySliderTrack');
+                track.setAttribute('data-min', rt.minTemp);
+                track.setAttribute('data-max', rt.maxTemp);
             }
+            lucide.createIcons();
+            renderRelayList();
         }
 
-        function closeRelayEdit() {
-            document.getElementById('relayListView').style.display = 'block';
-            document.getElementById('relayEditView').style.display = 'none';
-            currentRelayId = null;
+        function updateRelaySlider(temp) {
+            if (currentRelayId === null) return;
+            const r = relayDB.find(x => x.id === currentRelayId);
+            if (!r) return;
+            const rt = RELAY_TYPES[r.type] || RELAY_TYPES.bojler;
+            const min = rt.minTemp, max = rt.maxTemp;
+            temp = Math.max(min, Math.min(max, parseInt(temp)));
+            const ratio = (temp - min) / (max - min);
+            const pct = Math.round(ratio * 100);
+            // Colors: light blue → blue → red
+            const h = 200 - (ratio * 180); // 200 (light blue) → 20 (red)
+            const s = 70 + (ratio * 20);
+            const l = 60 - (ratio * 15);
+            const sliderColor = 'hsl(' + h + ',' + s + '%,' + l + '%)';
+            // Fill
+            const fill = document.getElementById('relaySliderFill');
+            fill.style.width = pct + '%';
+            fill.style.background = 'linear-gradient(90deg, #7dd3fc, ' + sliderColor + ')';
+            // Thumb
+            const thumb = document.getElementById('relaySliderThumb');
+            thumb.style.left = pct + '%';
+            thumb.style.borderColor = sliderColor;
+            thumb.style.boxShadow = '0 2px 12px ' + sliderColor + '44';
+            // Display
+            document.getElementById('relayTempDisplay').textContent = temp + '°C';
+            document.getElementById('relayTempDisplay').style.color = sliderColor;
+            r.temp = temp;
         }
 
-        function updateRelayGauge(temp) {
-            temp = parseInt(temp);
-            const minTemp = 40;
-            const maxTemp = 70;
-            const ratio = Math.min(Math.max((temp - minTemp) / (maxTemp - minTemp), 0), 1);
-            
-            // Rotate the arc (40°C = -90deg, 70°C = 90deg)
-            const rotation = -90 + (ratio * 180);
-            const arc = document.getElementById('relayTempArc');
-            if (arc) {
-                arc.style.transform = `rotate(${rotation}deg)`;
-                
-                // Better colors: blue -> green -> orange
-                let color;
-                if (temp <= 50) {
-                    color = '#3b82f6'; // Blue (cool)
-                } else if (temp <= 60) {
-                    color = '#10b981'; // Green (warm)
-                } else {
-                    color = '#f59e0b'; // Orange/amber (hot)
-                }
-                arc.style.borderTopColor = color;
-                arc.style.borderRightColor = color;
-                arc.style.borderLeftColor = color;
-            }
-            
-            // Update center display
-            const center = document.getElementById('relayTempCenter');
-            if (center) {
-                center.textContent = temp;
-                // Color the number too
-                if (temp <= 50) center.style.color = '#3b82f6';
-                else if (temp <= 60) center.style.color = '#10b981';
-                else center.style.color = '#f59e0b';
-            }
-            
-            // Update slider value display
-            const sliderVal = document.getElementById('relayEditTempVal');
-            if (sliderVal) sliderVal.textContent = temp + '°C';
-            
-            // Update slider accent color
-            const slider = document.getElementById('relayTempSlider');
-            if (slider) {
-                if (temp <= 50) slider.style.accentColor = '#3b82f6';
-                else if (temp <= 60) slider.style.accentColor = '#10b981';
-                else slider.style.accentColor = '#f59e0b';
-            }
-            
-            currentRelayTemp = temp;
+        function startRelaySliderDrag(e) {
+            if (currentRelayId === null) return;
+            e.preventDefault();
+            currentRelaySliderDragging = true;
+            moveRelaySlider(e);
+            const onMove = (ev) => { if (currentRelaySliderDragging) moveRelaySlider(ev); };
+            const onUp = () => { currentRelaySliderDragging = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onUp); };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+            document.addEventListener('touchmove', onMove, {passive: false});
+            document.addEventListener('touchend', onUp);
+        }
+
+        function moveRelaySlider(e) {
+            const track = document.getElementById('relaySliderTrack');
+            if (!track) return;
+            const rect = track.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let ratio = (clientX - rect.left) / rect.width;
+            ratio = Math.max(0, Math.min(1, ratio));
+            const min = parseInt(track.getAttribute('data-min')) || 0;
+            const max = parseInt(track.getAttribute('data-max')) || 100;
+            const temp = Math.round(min + (ratio * (max - min)));
+            updateRelaySlider(temp);
         }
 
         function toggleRelayOnOff(isOn) {
+            if (currentRelayId === null) return;
+            const r = relayDB.find(x => x.id === currentRelayId);
+            if (!r) return;
+            r.isOn = isOn;
             const label = document.getElementById('relayOnOffLabel');
             const knob = document.getElementById('relayOnOffKnob');
+            const rt = RELAY_TYPES[r.type];
             if (isOn) {
                 label.textContent = 'Zapnuté';
-                label.style.color = 'var(--accent-battery)';
+                label.style.color = rt.color;
                 knob.style.marginLeft = '26px';
-                knob.style.background = 'var(--accent-battery)';
+                knob.style.background = rt.color;
             } else {
                 label.textContent = 'Vypnuté';
                 label.style.color = 'var(--text-secondary)';
                 knob.style.marginLeft = '2px';
                 knob.style.background = '#4b5563';
             }
+            renderRelayList();
             // Send to backend
             try {
                 const devId = metaEl.getAttribute('data-device-id');
@@ -2526,98 +2545,73 @@
             } catch(e) {}
         }
 
-        function editRelayType() {
-            const newType = prompt('Typ zariadenia:', document.getElementById('relayEditType').textContent);
-            if (newType) document.getElementById('relayEditType').textContent = newType;
-        }
-
-        function editRelayThermId() {
-            const newId = prompt('Thermometer ID:', document.getElementById('relayEditThermId').textContent);
-            if (newId) document.getElementById('relayEditThermId').textContent = newId;
-        }
-
-        function editRelayPower() {
-            const newPower = prompt('Výkon (W):', document.getElementById('relayEditPower').textContent.replace('W', ''));
-            if (newPower) document.getElementById('relayEditPower').textContent = newPower + 'W';
-        }
-
         function saveRelaySettings() {
-            // Save to backend
+            if (currentRelayId === null) return;
             try {
                 const devId = metaEl.getAttribute('data-device-id');
+                const r = relayDB.find(x => x.id === currentRelayId);
                 fetch(`${basePath}/api/device/${devId}/relay`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        relay_id: currentRelayId,
-                        name: document.getElementById('relayEditTitle').textContent,
-                        type: document.getElementById('relayEditType').textContent,
-                        power: document.getElementById('relayEditPower').textContent,
-                        temp: currentRelayTemp
-                    })
+                    body: JSON.stringify({ relay_id: currentRelayId, name: r.name, type: r.type, temp: r.temp, isOn: r.isOn })
                 });
             } catch(e) {}
-            closeRelayEdit();
+            renderRelayList();
         }
 
         function deleteRelay() {
-            if (confirm('Naozaj chcete odstrániť toto relé?')) {
-                try {
-                    const devId = metaEl.getAttribute('data-device-id');
-                    fetch(`${basePath}/api/device/${devId}/relay/delete`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({relay_id: currentRelayId})
-                    });
-                } catch(e) {}
-                closeRelayEdit();
-            }
-        }
-
-        function addRelay() {
-            const name = prompt('Názov relé (napr. Bojler, Klima, LED):');
-            if (!name) return;
-            const type = prompt('Typ zariadenia (Shelly/GPIO/HTTP):', 'Shelly');
-            if (!type) return;
-            const devId = metaEl.getAttribute('data-device-id');
-            fetch(`${basePath}/api/device/${devId}/relay/add`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name: name, type: type, pin: 0, power_w: 0})
-            }).then(r => r.json()).then(d => {
-                if (d.status === 'success') {
-                    const container = document.querySelector('.relays-container');
-                    const count = container.querySelectorAll('.relay-item-card').length + 1;
-                    const colors = ['var(--accent-solar)', 'var(--accent-grid)', 'var(--accent-battery)', '#a855f7'];
-                    const icons = ['flame', 'droplet', 'wind', 'lightbulb'];
-                    const color = colors[count % colors.length];
-                    const icon = icons[count % icons.length];
-                    const card = document.createElement('div');
-                    card.className = 'relay-item-card';
-                    card.innerHTML = `<i data-lucide="${icon}" style="width:24px;height:24px;color:${color};"></i>
-                        <span style="font-size:12px;font-weight:800;">${name}</span>
-                        <span style="font-size:10px;color:var(--text-muted);">${type}</span>
-                        <span id="relayStatus${count}" class="relay-indicator">VYP</span>
-                        <button onclick="toggleRelay(${count})" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť</button>`;
-                    container.appendChild(card);
-                    lucide.createIcons();
-                    updateRelayVisibility();
-                }
-            }).catch(() => {});
-        }
-
-        function toggleRelay(relayId) {
-            const label = document.getElementById('relayStatus' + relayId);
-            if (!label) return;
-            const isOn = label.innerText === 'ZAP';
-            label.innerText = isOn ? 'VYP' : 'ZAP';
-            label.classList.toggle('active', !isOn);
+            if (currentRelayId === null) return;
+            if (!confirm('Naozaj chcete odstrániť toto relé?')) return;
+            relayDB = relayDB.filter(x => x.id !== currentRelayId);
             try {
                 const devId = metaEl.getAttribute('data-device-id');
-                fetch(`${basePath}/api/device/${devId}/relay`, {
+                fetch(`${basePath}/api/device/${devId}/relay/delete`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({relay_id: relayId, state: isOn ? 'OFF' : 'ON'})
+                    body: JSON.stringify({relay_id: currentRelayId})
+                });
+            } catch(e) {}
+            currentRelayId = null;
+            document.getElementById('relaySettingsPanel').style.display = 'none';
+            document.getElementById('relaySettingsPlaceholder').style.display = 'flex';
+            renderRelayList();
+        }
+
+        // Add relay modal
+        let selectedAddRelayType = 'bojler';
+        function addRelay() {
+            selectedAddRelayType = 'bojler';
+            document.getElementById('addRelayName').value = '';
+            document.querySelectorAll('#addRelayTypeChips .relay-type-chip').forEach(c => c.classList.remove('selected'));
+            document.querySelector('#addRelayTypeChips .relay-type-chip[data-type="bojler"]').classList.add('selected');
+            const modal = document.getElementById('addRelayModal');
+            modal.style.display = 'flex';
+            lucide.createIcons();
+        }
+        function selectAddRelayType(el, type) {
+            selectedAddRelayType = type;
+            document.querySelectorAll('#addRelayTypeChips .relay-type-chip').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        function closeAddRelayModal() {
+            document.getElementById('addRelayModal').style.display = 'none';
+        }
+        function confirmAddRelay() {
+            const name = document.getElementById('addRelayName').value.trim();
+            if (!name) { document.getElementById('addRelayName').style.borderColor = '#ef4444'; return; }
+            const connType = document.getElementById('addRelayConnType').value;
+            const rt = RELAY_TYPES[selectedAddRelayType];
+            const newRelay = { id: nextRelayId++, name: name, type: selectedAddRelayType, connType: connType, temp: rt.defaultTemp, isOn: false };
+            relayDB.push(newRelay);
+            closeAddRelayModal();
+            renderRelayList();
+            selectRelay(newRelay.id);
+            try {
+                const devId = metaEl.getAttribute('data-device-id');
+                fetch(`${basePath}/api/device/${devId}/relay/add`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name: name, type: selectedAddRelayType, conn_type: connType, temp: rt.defaultTemp})
                 });
             } catch(e) {}
         }
@@ -3165,28 +3159,16 @@
                 const r = await fetch(`${basePath}/api/device/${devId}/relays`);
                 const d = await r.json();
                 if (d.status === 'success' && d.relays && d.relays.length > 0) {
-                    const container = document.querySelector('.relays-container');
-                    if (!container) return;
-                    container.innerHTML = '';
-                    const colors = ['var(--accent-solar)', 'var(--accent-grid)', 'var(--accent-battery)', '#a855f7'];
-                    const icons = ['flame', 'droplet', 'wind', 'lightbulb'];
+                    // Merge backend relays into relayDB
                     d.relays.forEach((relay, idx) => {
-                        const color = colors[idx % colors.length];
-                        const icon = icons[idx % icons.length];
-                        const isOn = relay.state === 'ON';
-                        const card = document.createElement('div');
-                        card.className = 'relay-item-card';
-                        card.innerHTML = `<i data-lucide="${icon}" style="width:24px;height:24px;color:${color};"></i>
-                            <span style="font-size:12px;font-weight:800;">${relay.name}</span>
-                            <span style="font-size:10px;color:var(--text-muted);">${relay.type}</span>
-                            <span id="relayStatus${relay.id}" class="relay-indicator ${isOn ? 'active' : ''}">${isOn ? 'ZAP' : 'VYP'}</span>
-                            <button onclick="toggleRelay(${relay.id})" class="control-btn" style="padding:6px 12px;font-size:10px;margin-top:4px;width:100%;">Prepnúť</button>`;
-                        container.appendChild(card);
+                        if (!relayDB.find(x => x.id === relay.id)) {
+                            relayDB.push({ id: relay.id, name: relay.name, type: relay.type || 'bojler', connType: relay.conn_type || 'Shelly', temp: relay.temp || 55, isOn: relay.state === 'ON' });
+                        }
+                        nextRelayId = Math.max(nextRelayId, relay.id + 1);
                     });
-                    lucide.createIcons();
-                    updateRelayVisibility();
                 }
             } catch(e) {}
+            renderRelayList();
         }
 
         async function refreshDashboard() {
@@ -3205,6 +3187,7 @@
             console.log('[INIT] DOM ready, Chart.js:', typeof Chart);
             // Populate devices list in Riadenie tab
             populateMyDevices();
+            renderRelayList();
             // Skryt relay sekciu ak neni zariadenie
             const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids') || '[]') : [];
             if (deviceIds.length === 0) {
