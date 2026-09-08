@@ -62,7 +62,8 @@
         body.light-mode .control-btn.active {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(59, 130, 246, 0.08));
             border-color: var(--accent-battery);
-            color: var(--accent-battery);        }
+            color: var(--accent-battery);
+        }
         body.light-mode .station-dropdown-menu,
         body.light-mode .user-dropdown-card {
             background: #ffffff;
@@ -2407,7 +2408,7 @@
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:12px;font-weight:800;font-family:\'JetBrains Mono\';color:' + statusColor + ';">' + statusText + '</span>
+                    <span style="font-size:12px;font-weight:800;font-family:JetBrains Mono,monospace;color:' + statusColor + ';">' + statusText + '</span>
                     <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--text-muted);"></i>
                 </div>';
                 card.onclick = () => selectRelay(r.id);
