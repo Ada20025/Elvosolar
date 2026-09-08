@@ -1,6 +1,7 @@
 FROM php:8.2-cli
 
-# Install system dependencies for MySQL + PDO
+ARG BUILD_VERSION=2026-09-05-v2
+# Full dashboard: relay, OKTE, charts, control
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -17,12 +18,11 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy only the app directory
+# Copy ALL app files including templates/
 COPY Software/App/ .
 
-# Expose port (Railway pouziva PORT env var, default 8080)
+# Expose port
 EXPOSE ${PORT:-8080}
 
-# Start PHP built-in server with error display
-# Railway nastavuje PORT env var, PHP server bude pocuvat na nom
+# Start PHP built-in server
 CMD php -d display_errors=1 -d error_reporting=E_ALL -S 0.0.0.0:${PORT:-8080} index.php
