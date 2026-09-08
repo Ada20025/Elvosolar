@@ -1,7 +1,7 @@
 FROM php:8.2-cli
 
-ARG BUILD_VERSION=2026-09-05-v2
-# Full dashboard: relay, OKTE, charts, control
+ARG BUILD_VERSION=2026-09-05-v3-fix-buttons-okte
+# Full dashboard: relay, OKTE, charts, control - ALL buttons fixed
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
