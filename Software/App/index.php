@@ -21,6 +21,75 @@ if (isset($pdo)) {
         if (!in_array('active_model_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN active_model_id VARCHAR(10) DEFAULT '1'");
         if (!in_array('night_sleep', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN night_sleep TINYINT DEFAULT 0");
     } catch (Exception $e) { /* ignore */ }
+    // Auto-create telemetry table if missing
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS telemetry (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            device_id INT NOT NULL,
+            battery_soc FLOAT DEFAULT 0,
+            power_ac FLOAT DEFAULT 0,
+            temp FLOAT DEFAULT 25,
+            freq FLOAT DEFAULT 50.0,
+            status_msg VARCHAR(255) DEFAULT '',
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_device_ts (device_id, timestamp)
+        )");
+    } catch (Exception $e) { /* ignore */ }
+}
+
+// === DEMO USER SEED ===
+if (isset($pdo)) {
+    try {
+        $demoCheck = $pdo->query("SELECT id FROM users WHERE email = 'demo@elvosolar.sk' LIMIT 1")->fetch();
+        if (!$demoCheck) {
+            $demoHash = password_hash('demo123', PASSWORD_BCRYPT);
+            $pdo->prepare("INSERT INTO users (username, email, password_hash, email_verified) VALUES (?, ?, ?, 1)")
+                 ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $demoHash]);
+            $demoUserId = $pdo->lastInsertId();
+            // Demo zariadenie s defaultnimi hodnotami
+            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, model_name, status, battery_soc, fve_power_w, grid_power_w, min_power_w, max_power_w, active_model_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                 ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'HUAWEI', 'SUN2000-5KTL-M1', 'online', 72, 3200, -450, 0, 10000, '1']);
+        }
+    } catch (Exception $e) { /* ignore */ }
+}
+
+// === AUTO-SIMULACIA DEMO DATA ===
+// Kazdych 60 sekund generuje realisticka data pre demo zariadenie
+if (isset($pdo)) {
+    try {
+        $demoDev = $pdo->query("SELECT id, user_id FROM devices WHERE serial_number = 'DEMO-CM5-001' LIMIT 1")->fetch();
+        if ($demoDev) {
+            $lastSim = $pdo->query("SELECT MAX(timestamp) as ts FROM telemetry WHERE device_id = " . $demoDev['id'])->fetch();
+            $now = time();
+            if (!$lastSim['ts'] || (strtotime($lastSim['ts']) < ($now - 55))) {
+                // Realisticka simulacia podla hodiny dna
+                $hour = (int)date('G');
+                $month = (int)date('n');
+                // FVE vykon podla hodiny a mesiaca
+                $peak = ($month >= 4 && $month <= 9) ? 4800 : 2800;
+                if ($hour >= 6 && $hour <= 19) {
+                    $progress = ($hour - 6) / 13.0;
+                    $fve = (int)($peak * sin($progress * M_PI) * (0.7 + 0.3 * mt_rand(70, 100) / 100));
+                } else {
+                    $fve = 0;
+                }
+                // Bateria: nabija sa cez den, vybija v noci
+                $soc = 50 + (int)(40 * sin(($hour - 6) / 24.0 * 2 * M_PI - M_PI/2));
+                $soc = max(15, min(95, $soc + mt_rand(-3, 3)));
+                // Spotreba domu
+                $home = ($hour >= 7 && $hour <= 22) ? mt_rand(300, 2500) : mt_rand(80, 400);
+                // Grid: rozdiel medzi vyrobou a spotrebou
+                $grid = $fve - $home + ($soc > 70 ? 500 : -300);
+                $grid = max(-5000, min(5000, $grid));
+                // Teplota striedaca
+                $temp = 25 + ($fve / $peak) * 15 + mt_rand(0, 5);
+                // Uspora: kolko usetril oproti nakupu z siete
+                $saved = round(max(0, $fve) * 0.12 / 1000, 2);
+                $pdo->prepare("INSERT INTO telemetry (device_id, battery_soc, power_ac, temp, freq, timestamp) VALUES (?, ?, ?, ?, ?, NOW())")
+                     ->execute([$demoDev['id'], $soc, $fve, round($temp, 1), 50.00 + mt_rand(-10, 10) / 100.0]);
+            }
+        }
+    } catch (Exception $e) { /* ignore */ }
 }
 
 // ==========================================
@@ -639,11 +708,26 @@ elseif ($path === '/login') {
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
         
+        // === RATE LIMITING: 3 neuspesne pokusy = 15 min zamknutie ===
+        $login_key = 'login_attempts_' . md5($email);
+        $attempts = $_SESSION[$login_key] ?? ['count' => 0, 'locked_until' => 0];
+        
+        // Ak je zamknuty
+        if ($attempts['locked_until'] > time()) {
+            $remaining = ceil(($attempts['locked_until'] - time()) / 60);
+            flash("Účet je zamknutý na {$remaining} minút kvôli príliš mnohým neúspešným pokusom. Skúste znova neskôr.", 'error');
+            render_template('prihlasenie.html', ['flash' => get_flash_messages()]);
+            exit;
+        }
+        
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
         
         if ($user && password_verify($password, $user['password_hash'])) {
+            // Reset pokusov po uspesnom prihlaseni
+            unset($_SESSION[$login_key]);
+            
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['last_activity'] = time();
@@ -661,14 +745,14 @@ elseif ($path === '/login') {
             $device = $_SERVER['HTTP_USER_AGENT'] ?? '';
             @send_elvo_email($user['email'], 'Nove prihlasenie do ElvoControll', 'Nove prihlasenie',
                 '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
-                . '<p>Niekto sa prave prihlasil do vaseho ElvoControll uctu:</p>'
+                . '<p>Niekto sa práve prihlásil do vášho ElvoControll účtu:</p>'
                 . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
                 . '<p>📧 Email: <strong>' . htmlspecialchars($user['email']) . '</strong></p>'
                 . '<p>🌐 IP adresa: <strong>' . htmlspecialchars($ip) . '</strong></p>'
                 . '<p>💻 Zariadenie: <strong>' . htmlspecialchars(substr($device, 0, 80)) . '</strong></p>'
-                . '<p>📅 Cas: <strong>' . date('d.m.Y H:i:s') . '</strong></p>'
+                . '<p>📅 Čas: <strong>' . date('d.m.Y H:i:s') . '</strong></p>'
                 . '</div>'
-                . '<p style="color:#ef4444;font-size:12px;">Ak ste sa neprihlasili vy, okamzite zmente heslo!</p>'
+                . '<p style="color:#ef4444;font-size:12px;">Ak ste sa neprihlásili vy, okamžite zmeňte heslo!</p>'
                 , '#6366f1'
             );
             
@@ -676,7 +760,35 @@ elseif ($path === '/login') {
             header("Location: " . $base_path . "/");
             exit;
         } else {
-            flash('Nesprávne prihlasovacie údaje.', 'error');
+            // Zvysit pocitadlo neuspesnych pokusov
+            $attempts['count']++;
+            if ($attempts['count'] >= 3) {
+                // Zamknut na 15 minut + poslat alert email
+                $attempts['locked_until'] = time() + (15 * 60);
+                $_SESSION[$login_key] = $attempts;
+                
+                // Alert email ak existuje ucet
+                if ($user) {
+                    $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                    $_SESSION['unlock_code_' . md5($email)] = ['code' => $code, 'expires' => time() + 900];
+                    @send_elvo_email($user['email'], '⚠️ Zamknutie účtu ElvoControll', 'Bezpečnostný alert',
+                        '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
+                        . '<p>Váš účet bol <strong style="color:#ef4444;">zamknutý</strong> kvôli 3 neúspešným pokusom o prihlásenie.</p>'
+                        . '<div style="background:#fef2f2;padding:16px;border-radius:12px;margin:16px 0;border:1px solid #fecaca;">'
+                        . '<p style="font-size:14px;">🔓 Váš odblokovací kód:</p>'
+                        . '<p style="font-size:28px;font-weight:900;font-family:monospace;text-align:center;letter-spacing:8px;color:#dc2626;">' . $code . '</p>'
+                        . '</div>'
+                        . '<p style="font-size:12px;color:#6b7280;">Platnosť kódu: 15 minút</p>'
+                        . '<p style="color:#ef4444;font-size:12px;">Ak ste sa nepokúsili o prihlásenie, okamžite zmeňte heslo!</p>'
+                        , '#dc2626'
+                    );
+                }
+                flash('Účet zamknutý po 3 neúspešných pokusoch. Na email vám bol odoslaný odblokovací kód.', 'error');
+            } else {
+                $remaining = 3 - $attempts['count'];
+                $_SESSION[$login_key] = $attempts;
+                flash("Nesprávne prihlasovacie údaje. Zostáva {$remaining} pokus(ov) pred zamknutím.", 'error');
+            }
         }
     }
     render_template('prihlasenie.html', ['flash' => get_flash_messages()]);
