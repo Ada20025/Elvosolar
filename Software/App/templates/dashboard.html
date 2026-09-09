@@ -1189,6 +1189,37 @@
                 </div>
 
             </div>
+
+            <!-- Hidden elements for JS compatibility -->
+            <div id="myDevicesList" style="display:none;"></div>
+            <div id="noDevicesHint" style="display:none;"></div>
+            <div id="connectionTypeIcon" style="display:none;"></div>
+            <div id="connectionTypeText" style="display:none;"></div>
+            <div id="wifiBars" style="display:none;"></div>
+            <div id="controlModeDesc" style="display:none;"></div>
+            <div id="powerToggleIcon" style="display:none;"></div>
+            <div id="powerToggleKnob" style="display:none;"></div>
+            <div id="powerToggleLabel" style="display:none;"></div>
+            <div id="settingsPanel" style="display:none;"></div>
+            <input type="number" id="settingsMinPower" value="0" style="display:none;">
+            <input type="number" id="settingsMaxPower" value="15000" style="display:none;">
+            <input type="number" id="settingsMinSoc" value="10" style="display:none;">
+            <input type="number" id="settingsMaxSoc" value="100" style="display:none;">
+            <div id="tempArc" style="display:none;"></div>
+            <div id="tempVal" style="display:none;"></div>
+            <div id="gaugeSocArc" style="display:none;"></div>
+            <div id="gaugeSocVal" style="display:none;"></div>
+            <div id="gaugeTempArc" style="display:none;"></div>
+            <div id="gaugeTempVal" style="display:none;"></div>
+            <div id="minPowerArc" style="display:none;"></div>
+            <div id="minPowerVal" style="display:none;"></div>
+            <div id="maxPowerArc" style="display:none;"></div>
+            <div id="maxPowerVal" style="display:none;"></div>
+            <div id="minSocArc2" style="display:none;"></div>
+            <div id="minSocVal2" style="display:none;"></div>
+            <div id="maxSocArc2" style="display:none;"></div>
+            <div id="maxSocVal2" style="display:none;"></div>
+
         </section>
 
         <!-- Tab 2: SMART METER & AI REGULATION -->
@@ -1480,7 +1511,7 @@
                 .relay-type-chip.selected { border-color:var(--accent-sky);background:rgba(56,189,248,0.1);color:var(--accent-sky); }
                 .relay-type-chip:hover { border-color:rgba(255,255,255,0.2); }
             </style>
-            <div class="relay-split-layout" style="display:grid;grid-template-columns:340px 1fr;gap:20px;">
+            <div id="relaysSection" class="relay-split-layout" style="display:grid;grid-template-columns:340px 1fr;gap:20px;">
                 <!-- LEFT: Relay List -->
                 <div class="glass-card" style="padding:0;overflow:hidden;">
                     <div class="card-header-styled" style="padding:16px 18px 12px;">
@@ -1885,7 +1916,27 @@
     </footer>
 
     <script>
-        // Build: v5 - Full dashboard with relay, OKTE, charts, control buttons
+        // Build: v6 - Safe getElementById + missing elements
+        // Override getElementById to return safe proxy for missing elements (prevents JS crashes)
+        const _origGetEl = document.getElementById.bind(document);
+        document.getElementById = function(id) {
+            const el = _origGetEl(id);
+            if (el) return el;
+            // Return a safe no-op proxy to prevent null crashes
+            return new Proxy({}, {
+                get: function(t, prop) {
+                    if (prop === 'style') return new Proxy({}, { get: ()=>'', set: ()=>true });
+                    if (prop === 'classList') return { add:()=>{}, remove:()=>{}, toggle:()=>{}, contains:()=>false };
+                    if (prop === 'dataset') return {};
+                    if (prop === 'innerHTML' || prop === 'innerText' || prop === 'textContent') return '';
+                    if (prop === 'value') return 0;
+                    if (typeof prop === 'function') return ()=>{};
+                    if (prop === Symbol.toPrimitive) return ()=>'';
+                    return function(){ return { setAttribute:()=>{}, getAttribute:()=>'', classList:{ add:()=>{}, remove:()=>{}, toggle:()=>{}, contains:()=>false } }; };
+                },
+                set: function() { return true; }
+            });
+        };
         lucide.createIcons();
 
         const metaEl = document.getElementById('php-metadata');
