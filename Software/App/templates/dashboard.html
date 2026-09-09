@@ -2432,19 +2432,7 @@
                 const card = document.createElement('div');
                 card.className = 'relay-list-item' + (isActive ? ' active' : '');
                 card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;border:1px solid ' + (isActive ? rt.color : 'var(--border-card)') + ';background:' + (isActive ? rt.bgColor : 'var(--bg-card)') + ';margin-bottom:6px;transition:all 0.2s;';
-                card.innerHTML = '<div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:36px;height:36px;border-radius:10px;background:' + rt.bgColor + ';display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="' + rt.icon + '" style="width:18px;height:18px;color:' + rt.color + ';"></i>
-                    </div>
-                    <div>
-                        <span style="font-size:12px;font-weight:800;display:block;color:var(--text-primary);">' + r.name + '</span>
-                        <span style="font-size:9px;color:var(--text-muted);">' + rt.mode + '</span>
-                    </div>
-                </div>
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:12px;font-weight:800;font-family:JetBrains Mono,monospace;color:' + statusColor + ';">' + statusText + '</span>
-                    <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--text-muted);"></i>
-                </div>';
+                card.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:10px;background:${rt.bgColor};display:flex;align-items:center;justify-content:center;"><i data-lucide="${rt.icon}" style="width:18px;height:18px;color:${rt.color};"></i></div><div><span style="font-size:12px;font-weight:800;display:block;color:var(--text-primary);">${r.name}</span><span style="font-size:9px;color:var(--text-muted);">${rt.mode}</span></div></div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:12px;font-weight:800;font-family:JetBrains Mono,monospace;color:${statusColor};">${statusText}</span><i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--text-muted);"></i></div>`;
                 card.onclick = () => selectRelay(r.id);
                 container.appendChild(card);
             });
