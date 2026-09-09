@@ -1916,27 +1916,9 @@
     </footer>
 
     <script>
-        // Build: v6 - Safe getElementById + missing elements
-        // Override getElementById to return safe proxy for missing elements (prevents JS crashes)
-        const _origGetEl = document.getElementById.bind(document);
-        document.getElementById = function(id) {
-            const el = _origGetEl(id);
-            if (el) return el;
-            // Return a safe no-op proxy to prevent null crashes
-            return new Proxy({}, {
-                get: function(t, prop) {
-                    if (prop === 'style') return new Proxy({}, { get: ()=>'', set: ()=>true });
-                    if (prop === 'classList') return { add:()=>{}, remove:()=>{}, toggle:()=>{}, contains:()=>false };
-                    if (prop === 'dataset') return {};
-                    if (prop === 'innerHTML' || prop === 'innerText' || prop === 'textContent') return '';
-                    if (prop === 'value') return 0;
-                    if (typeof prop === 'function') return ()=>{};
-                    if (prop === Symbol.toPrimitive) return ()=>'';
-                    return function(){ return { setAttribute:()=>{}, getAttribute:()=>'', classList:{ add:()=>{}, remove:()=>{}, toggle:()=>{}, contains:()=>false } }; };
-                },
-                set: function() { return true; }
-            });
-        };
+        // Build: v7 - Removed proxy override, added null checks
+        // Helper: safe getElementById that returns null instead of crashing
+        function safeEl(id) { return document.getElementById(id) || null; }
         lucide.createIcons();
 
         const metaEl = document.getElementById('php-metadata');
