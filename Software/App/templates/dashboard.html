@@ -1289,7 +1289,7 @@
                             </svg>
                         </div>
                         <span style="font-size:10px;font-weight:800;color:var(--text-secondary);">MIN</span>
-                        <div style="font-size:13px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);margin-top:2px;"><span id="riadenieMinVal">0</span> W</div>
+                        <div style="font-size:13px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);margin-top:2px;"><span id="riadenieMinVal">0%</span></div>
                     </div>
                     <!-- Max Gear -->
                     <div style="text-align:center;cursor:pointer;" onclick="openGearModal('max')">
@@ -1319,7 +1319,7 @@
                             </svg>
                         </div>
                         <span style="font-size:10px;font-weight:800;color:var(--text-secondary);">MAX</span>
-                        <div style="font-size:13px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);margin-top:2px;"><span id="riadenieMaxVal">10000</span> W</div>
+                        <div style="font-size:13px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);margin-top:2px;"><span id="riadenieMaxVal">100%</span></div>
                     </div>
                 </div>
 
@@ -2279,7 +2279,7 @@
             const arrow = document.getElementById(type === 'min' ? 'riadenieMinArrow' : 'riadenieMaxArrow');
             if (arrow) arrow.style.transform = 'rotate(' + angle + 'deg)';
             const valEl = document.getElementById(type === 'min' ? 'riadenieMinVal' : 'riadenieMaxVal');
-            if (valEl) valEl.textContent = v;
+            if (valEl) valEl.textContent = v + '%';
         }
 
         let currentGearType = 'min';
@@ -2288,8 +2288,10 @@
             const modal = document.getElementById('gearModal');
             const minSlider = document.getElementById('gearModalMin');
             const maxSlider = document.getElementById('gearModalMax');
-            const minVal = document.getElementById('riadenieMinVal').textContent;
-            const maxVal = document.getElementById('riadenieMaxVal').textContent;
+            const minText = document.getElementById('riadenieMinVal').textContent.replace('%','').trim();
+            const maxText = document.getElementById('riadenieMaxVal').textContent.replace('%','').trim();
+            const minVal = parseInt(minText) || 0;
+            const maxVal = parseInt(maxText) || 100;
             minSlider.value = minVal;
             maxSlider.value = maxVal;
             document.getElementById('gearModalMinVal').textContent = minVal + '%';
@@ -2324,18 +2326,21 @@
             updateGearScreenArrow(type, value);
         }
         function saveGearSettings() {
-            const minV = document.getElementById('gearModalMin').value;
-            const maxV = document.getElementById('gearModalMax').value;
-            updateGearArrow('min', minV);
-            updateGearArrow('max', maxV);
+            const minV = parseInt(document.getElementById('gearModalMin').value);
+            const maxV = parseInt(document.getElementById('gearModalMax').value);
+            // Update display on main dashboard
+            const minEl = document.getElementById('riadenieMinVal');
+            const maxEl = document.getElementById('riadenieMaxVal');
+            if (minEl) { minEl.textContent = minV + '%'; updateGearArrow('min', minV); }
+            if (maxEl) { maxEl.textContent = maxV + '%'; updateGearArrow('max', maxV); }
             closeGearModal();
-            // Save to backend
+            // Save to backend as percentages
             try {
                 const devId = metaEl.getAttribute('data-device-id');
                 fetch(`${basePath}/api/device/${devId}/power-limits`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({min_power_w: parseInt(minV), max_power_w: parseInt(maxV)})
+                    body: JSON.stringify({min_power_pct: minV, max_power_pct: maxV})
                 });
             } catch(e) {}
         }
@@ -2805,13 +2810,12 @@
                 until: document.getElementById('holidayUntilInput').value,
                 preheat_hours: parseInt(document.getElementById('holidayPreheatHours').value),
                 min_soc: parseInt(document.getElementById('holidayMinSoc').value),
-                target_temp: parseInt(document.getElementById('holidayTargetTemp').value),
                 repeat_type: currentHolidayRepeat,
-                repeat_interval: parseInt(document.getElementById('holidayRepeatInterval').value || 1),
+                repeat_interval: parseInt((document.getElementById('holidayRepeatInterval') || {}).value || 1),
                 relays: [
-                    {id: 1, temp: parseInt(document.getElementById('holidayRelay1Temp').textContent)},
-                    {id: 2, temp: parseInt(document.getElementById('holidayRelay2Temp').textContent)},
-                    {id: 3, enabled: document.querySelector('#holidayRelaysList input[type=checkbox]').checked}
+                    {id: 1, temp: parseInt((document.getElementById('holidayRelay1Temp') || {}).textContent || 55)},
+                    {id: 2, temp: parseInt((document.getElementById('holidayRelay2Temp') || {}).textContent || 24)},
+                    {id: 3, enabled: document.querySelector('#holidayRelaysList input[type=checkbox]') ? document.querySelector('#holidayRelaysList input[type=checkbox]').checked : false}
                 ]
             };
             try {
@@ -3147,10 +3151,12 @@
                 const r = await fetch(`${basePath}/api/device/${devId}/power-limits`);
                 const d = await r.json();
                 if (d.status === 'success') {
+                    const minPct = Math.round(d.min_power_pct ?? d.min_power_w ?? 0);
+                    const maxPct = Math.round(d.max_power_pct ?? d.max_power_w ?? 100);
                     const minEl = document.getElementById('riadenieMinVal');
                     const maxEl = document.getElementById('riadenieMaxVal');
-                    if (minEl) { minEl.textContent = Math.round(d.min_power_w || 0); updateGearArrow('min', d.min_power_w || 0); }
-                    if (maxEl) { maxEl.textContent = Math.round(d.max_power_w || 10000); updateGearArrow('max', d.max_power_w || 10000); }
+                    if (minEl) { minEl.textContent = minPct + '%'; updateGearArrow('min', minPct); }
+                    if (maxEl) { maxEl.textContent = maxPct + '%'; updateGearArrow('max', maxPct); }
                 }
             } catch(e) {}
         }
@@ -3174,6 +3180,28 @@
             renderRelayList();
         }
 
+        async function loadHolidayParams() {
+            const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
+            if (!devId) return;
+            try {
+                const r = await fetch(`${basePath}/api/device/${devId}/holiday-mode`);
+                const d = await r.json();
+                if (d.status === 'success' && d.holiday_mode) {
+                    const h = d.holiday_mode;
+                    const fromEl = document.getElementById('holidayFromInput');
+                    const untilEl = document.getElementById('holidayUntilInput');
+                    const preheatEl = document.getElementById('holidayPreheatHours');
+                    const socEl = document.getElementById('holidayMinSoc');
+                    const enabledEl = document.getElementById('holidayEnabled');
+                    if (fromEl && h.from) fromEl.value = h.from;
+                    if (untilEl && h.until) untilEl.value = h.until;
+                    if (preheatEl && h.preheat_hours) { preheatEl.value = h.preheat_hours; const pv = document.getElementById('preheatVal'); if (pv) pv.textContent = h.preheat_hours + ' hodín'; }
+                    if (socEl && h.min_soc) { socEl.value = h.min_soc; const sv = document.getElementById('minSocDisplay'); if (sv) sv.textContent = h.min_soc + '%'; }
+                    if (enabledEl) enabledEl.checked = h.enabled;
+                }
+            } catch(e) {}
+        }
+
         async function refreshDashboard() {
             const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
             const [telemetry, okte] = await Promise.all([
@@ -3184,6 +3212,7 @@
             initCombinedChart(telemetry, okte);
             loadPowerLimits();
             loadRelays();
+            loadHolidayParams();
         }
 
         document.addEventListener('DOMContentLoaded', () => {

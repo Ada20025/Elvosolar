@@ -18,6 +18,8 @@ if (isset($pdo)) {
         while ($row = $r->fetch()) $cols[] = $row['Field'];
         if (!in_array('min_power_w', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_power_w FLOAT DEFAULT 0");
         if (!in_array('max_power_w', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN max_power_w FLOAT DEFAULT 10000");
+        if (!in_array('min_power_pct', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_power_pct FLOAT DEFAULT 0");
+        if (!in_array('max_power_pct', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN max_power_pct FLOAT DEFAULT 100");
         if (!in_array('active_model_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN active_model_id VARCHAR(10) DEFAULT '1'");
         if (!in_array('night_sleep', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN night_sleep TINYINT DEFAULT 0");
     } catch (Exception $e) { /* ignore */ }
@@ -1390,21 +1392,22 @@ elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && 
     $device = $stmt->fetch();
     if (!$device) send_json(['error' => 'Device not found'], 404);
     $data = get_json_input();
-    $min_power = max(0, intval($data['min_power_w'] ?? 0));
-    $max_power = max(500, intval($data['max_power_w'] ?? 10000));
-    $stmt = $pdo->prepare("UPDATE devices SET min_power_w = ?, max_power_w = ? WHERE id = ?");
-    $stmt->execute([$min_power, $max_power, $device_id]);
-    send_json(['status' => 'success', 'min_power_w' => $min_power, 'max_power_w' => $max_power]);
+    $min_pct = max(0, min(100, intval($data['min_power_pct'] ?? $data['min_power_w'] ?? 0)));
+    $max_pct = max(0, min(100, intval($data['max_power_pct'] ?? $data['max_power_w'] ?? 100)));
+    if ($min_pct > $max_pct) $min_pct = $max_pct;
+    $stmt = $pdo->prepare("UPDATE devices SET min_power_pct = ?, max_power_pct = ? WHERE id = ?");
+    $stmt->execute([$min_pct, $max_pct, $device_id]);
+    send_json(['status' => 'success', 'min_power_pct' => $min_pct, 'max_power_pct' => $max_pct]);
 }
 
 elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
     $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT min_power_w, max_power_w FROM devices WHERE id = ? AND user_id = ?");
+    $stmt = $pdo->prepare("SELECT min_power_pct, max_power_pct FROM devices WHERE id = ? AND user_id = ?");
     $stmt->execute([$device_id, $_SESSION['user_id']]);
     $row = $stmt->fetch();
     if (!$row) send_json(['error' => 'Device not found'], 404);
-    send_json(['status' => 'success', 'min_power_w' => floatval($row['min_power_w'] ?? 0), 'max_power_w' => floatval($row['max_power_w'] ?? 10000)]);
+    send_json(['status' => 'success', 'min_power_pct' => floatval($row['min_power_pct'] ?? 0), 'max_power_pct' => floatval($row['max_power_pct'] ?? 100)]);
 }
 
 // --- TELEMETRIA SYNC ---
