@@ -1771,65 +1771,11 @@
                     <!-- RIGHT COLUMN: Relays + Repetition -->
                     <div style="display:flex;flex-direction:column;gap:16px;">
                         
-                        <!-- VAŠE RELÉ PRE DOVOLENKU -->
+                        <!-- VAŠE RELÉ PRE DOVOLENKU (dynamické z relayDB) -->
                         <div style="flex:1;padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
                             <span style="font-size:9px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;display:block;">VAŠE RELÉ PRE DOVOLENKU</span>
                             <div id="holidayRelaysList" style="display:flex;flex-direction:column;gap:10px;">
-                                <!-- Bojler TÚV -->
-                                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);border-radius:12px;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;">
-                                            <i data-lucide="flame" style="width:18px;height:18px;color:var(--accent-solar);"></i>
-                                        </div>
-                                        <div>
-                                            <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Bojler TÚV</span>
-                                            <span style="font-size:9px;color:var(--text-muted);">Shelly 1PM</span>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <span style="font-size:11px;font-weight:800;color:var(--accent-battery);font-family:'JetBrains Mono';" id="holidayRelay1Temp">55°C</span>
-                                        <button onclick="editHolidayRelayTemp(1)" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:4px 8px;cursor:pointer;">
-                                            <i data-lucide="pencil" style="width:12px;height:12px;color:var(--accent-battery);"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- Klimatizácia -->
-                                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);border-radius:12px;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;">
-                                            <i data-lucide="wind" style="width:18px;height:18px;color:var(--accent-battery);"></i>
-                                        </div>
-                                        <div>
-                                            <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Klimatizácia</span>
-                                            <span style="font-size:9px;color:var(--text-muted);">GPIO Relé</span>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <span style="font-size:11px;font-weight:800;color:var(--accent-solar);font-family:'JetBrains Mono';" id="holidayRelay2Temp">24°C</span>
-                                        <button onclick="editHolidayRelayTemp(2)" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:4px 8px;cursor:pointer;">
-                                            <i data-lucide="pencil" style="width:12px;height:12px;color:var(--accent-solar);"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- Filtrácia bazéna -->
-                                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);border-radius:12px;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;">
-                                            <i data-lucide="droplet" style="width:18px;height:18px;color:var(--accent-grid);"></i>
-                                        </div>
-                                        <div>
-                                            <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Filtrácia bazéna</span>
-                                            <span style="font-size:9px;color:var(--text-muted);">Shelly Duo</span>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <span style="font-size:11px;font-weight:800;color:var(--text-muted);font-family:'JetBrains Mono;'">OFF</span>
-                                        <label style="position:relative;width:36px;height:20px;cursor:pointer;">
-                                            <input type="checkbox" onchange="toggleHolidayRelay(3, this.checked)" style="opacity:0;width:0;height:0;">
-                                            <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border:1px solid var(--border-card);border-radius:10px;transition:all 0.3s;"><span style="width:14px;height:14px;border-radius:50%;background:#4b5563;margin:2px;transition:all 0.3s;display:block;"></span></span>
-                                        </label>
-                                    </div>
-                                </div>
+                                <div id="holidayRelayEmpty" style="padding:20px;text-align:center;color:var(--text-muted);font-size:11px;">Žiadne relé pridané. Pridajte v sekcii Relé.</div>
                             </div>
                         </div>
 
@@ -2422,6 +2368,7 @@
                 container.appendChild(card);
             });
             lucide.createIcons();
+            renderHolidayRelays();
         }
 
         function selectRelay(relayId) {
@@ -2750,22 +2697,6 @@
             document.getElementById('holidayTempVal').textContent = temp + '°C';
         }
 
-        function editHolidayRelayTemp(relayId) {
-            const currentTemp = document.getElementById('holidayRelay' + relayId + 'Temp').textContent;
-            const newTemp = prompt('Nastavte cieľovú teplotu:', currentTemp.replace('°C', ''));
-            if (newTemp && !isNaN(newTemp)) {
-                document.getElementById('holidayRelay' + relayId + 'Temp').textContent = newTemp + '°C';
-            }
-        }
-
-        function toggleHolidayRelay(relayId, isOn) {
-            const label = document.getElementById('holidayRelay' + relayId + 'Temp');
-            if (label) {
-                label.textContent = isOn ? '24°C' : 'OFF';
-                label.style.color = isOn ? 'var(--accent-solar)' : 'var(--text-muted)';
-            }
-        }
-
         let currentHolidayRepeat = 'none';
 
         function setHolidayRepeat(type) {
@@ -2802,8 +2733,85 @@
             }
         }
 
+        function renderHolidayRelays() {
+            const container = document.getElementById('holidayRelaysList');
+            const emptyEl = document.getElementById('holidayRelayEmpty');
+            if (!container) return;
+            // Remove old relay items (keep emptyEl)
+            container.querySelectorAll('.holiday-relay-item').forEach(el => el.remove());
+            if (relayDB.length === 0) {
+                if (emptyEl) emptyEl.style.display = 'block';
+                return;
+            }
+            if (emptyEl) emptyEl.style.display = 'none';
+            const RELAY_TYPES = {
+                bojler: {icon: 'flame', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', mode: 'Teplota'},
+                klima: {icon: 'wind', color: '#38bdf8', bgColor: 'rgba(56,189,248,0.15)', mode: 'Teplota'},
+                sauna: {icon: 'thermometer', color: '#ef4444', bgColor: 'rgba(239,68,68,0.15)', mode: 'Teplota'},
+                filtracia: {icon: 'droplet', color: '#6366f1', bgColor: 'rgba(99,102,241,0.15)', mode: 'ON/OFF'}
+            };
+            relayDB.forEach(r => {
+                const rt = RELAY_TYPES[r.type] || RELAY_TYPES.bojler;
+                const isTempMode = rt.mode === 'Teplota';
+                const statusText = isTempMode ? (r.temp || 55) + '°C' : (r.isOn ? 'ON' : 'OFF');
+                const statusColor = isTempMode ? rt.color : (r.isOn ? '#22c55e' : 'var(--text-muted)');
+                let controls = '';
+                if (isTempMode) {
+                    controls = `<span style="font-size:11px;font-weight:800;color:${statusColor};font-family:'JetBrains Mono',monospace;">${statusText}</span>
+                        <button onclick="editHolidayRelayTemp(${r.id})" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:4px 8px;cursor:pointer;">
+                            <i data-lucide="pencil" style="width:12px;height:12px;color:var(--accent-battery);"></i>
+                        </button>`;
+                } else {
+                    controls = `<span style="font-size:11px;font-weight:800;color:${statusColor};font-family:'JetBrains Mono',monospace;">${statusText}</span>
+                        <label style="position:relative;width:36px;height:20px;cursor:pointer;">
+                            <input type="checkbox" ${r.isOn ? 'checked' : ''} onchange="toggleHolidayRelay(${r.id}, this.checked)" style="opacity:0;width:0;height:0;">
+                            <span style="position:absolute;inset:0;background:${r.isOn ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'};border:1px solid ${r.isOn ? 'rgba(34,197,94,0.5)' : 'var(--border-card)'};border-radius:10px;transition:all 0.3s;"><span style="width:14px;height:14px;border-radius:50%;background:${r.isOn ? '#22c55e' : '#4b5563'};margin:2px;transition:all 0.3s;display:block;float:${r.isOn ? 'right' : 'left'};"></span></span>
+                        </label>`;
+                }
+                const card = document.createElement('div');
+                card.className = 'holiday-relay-item';
+                card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--border-card);border-radius:12px;';
+                card.innerHTML = `<div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;border-radius:10px;background:${rt.bgColor};display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="${rt.icon}" style="width:18px;height:18px;color:${rt.color};"></i>
+                    </div>
+                    <div>
+                        <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">${r.name}</span>
+                        <span style="font-size:9px;color:var(--text-muted);">${r.connType || rt.mode}</span>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    ${controls}
+                </div>`;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function editHolidayRelayTemp(relayId) {
+            const r = relayDB.find(x => x.id === relayId);
+            if (!r) return;
+            const newTemp = prompt('Nastavte teplotu pre ' + r.name + ' (°C):', r.temp || 55);
+            if (newTemp !== null && !isNaN(parseInt(newTemp))) {
+                r.temp = parseInt(newTemp);
+                renderHolidayRelays();
+            }
+        }
+
+        function toggleHolidayRelay(relayId, isOn) {
+            const r = relayDB.find(x => x.id === relayId);
+            if (r) { r.isOn = isOn; renderHolidayRelays(); }
+        }
+
         async function saveHolidayParams() {
             const isEnabled = document.getElementById('holidayEnabled').checked;
+            const holidayRelays = relayDB.map(r => ({
+                id: r.id,
+                name: r.name,
+                type: r.type,
+                temp: r.temp || null,
+                enabled: r.isOn
+            }));
             const payload = {
                 enabled: isEnabled,
                 from: document.getElementById('holidayFromInput').value,
@@ -2812,11 +2820,7 @@
                 min_soc: parseInt(document.getElementById('holidayMinSoc').value),
                 repeat_type: currentHolidayRepeat,
                 repeat_interval: parseInt((document.getElementById('holidayRepeatInterval') || {}).value || 1),
-                relays: [
-                    {id: 1, temp: parseInt((document.getElementById('holidayRelay1Temp') || {}).textContent || 55)},
-                    {id: 2, temp: parseInt((document.getElementById('holidayRelay2Temp') || {}).textContent || 24)},
-                    {id: 3, enabled: document.querySelector('#holidayRelaysList input[type=checkbox]') ? document.querySelector('#holidayRelaysList input[type=checkbox]').checked : false}
-                ]
+                relays: holidayRelays
             };
             try {
                 const devId = metaEl.getAttribute('data-device-id');
@@ -3220,6 +3224,7 @@
             // Populate devices list in Riadenie tab
             populateMyDevices();
             renderRelayList();
+            renderHolidayRelays();
             // Skryt relay sekciu ak neni zariadenie
             const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids') || '[]') : [];
             if (deviceIds.length === 0) {
