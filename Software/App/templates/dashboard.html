@@ -6,6 +6,7 @@
     <title>ElvoControll</title>
     <link class="brand-favicon" rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
     <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#02040a">
@@ -1770,27 +1771,6 @@
                     <!-- RIGHT COLUMN: Relays + Repetition -->
                     <div style="display:flex;flex-direction:column;gap:16px;">
                         
-                        <!-- CI ÈLEL TEPLA (Target Temperature Gauge) -->
-                        <div style="padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;text-align:center;">
-                            <span style="font-size:9px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;display:block;">CIEĽOVÁ TEPLOTA</span>
-                            <div style="position:relative;width:140px;height:140px;margin:0 auto 12px;">
-                                <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg);">
-                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(239,68,68,0.1)" stroke-width="8" stroke-dasharray="186" stroke-dashoffset="0"/>
-                                    <circle id="holidayTempArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent-warn)" stroke-width="8" stroke-linecap="round" stroke-dasharray="186" stroke-dashoffset="65" style="transition:stroke-dashoffset 0.5s ease;"/>
-                                </svg>
-                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                                    <span id="holidayTempVal" style="font-size:28px;font-weight:900;font-family:'JetBrains Mono';color:var(--text-primary);">22°C</span>
-                                    <span style="font-size:8px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">TEPLOTA</span>
-                                </div>
-                            </div>
-                            <input type="range" id="holidayTargetTemp" min="15" max="30" step="1" value="22" style="width:100%;height:4px;cursor:pointer;accent-color:var(--accent-warn);" oninput="updateHolidayTempGauge(this.value)">
-                            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--text-muted);">
-                                <span>15°C</span>
-                                <span>22°C</span>
-                                <span>30°C</span>
-                            </div>
-                        </div>
-
                         <!-- VAŠE RELÉ PRE DOVOLENKU -->
                         <div style="flex:1;padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
                             <span style="font-size:9px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;display:block;">VAŠE RELÉ PRE DOVOLENKU</span>
