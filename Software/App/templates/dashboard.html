@@ -1332,7 +1332,7 @@
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
                             Späť
                         </button>
-                        <h3 style="font-size:14px;font-weight:800;color:var(--text-primary);" id="gearModalTitle">⚙️ Nastavenie Výkonu</h3>
+                        <h3 style="font-size:14px;font-weight:800;color:var(--text-primary);" id="gearModalTitle">⚙️ Nastavenie Výkonu (%)</h3>
                         <div style="width:60px;"></div>
                     </div>
                     <!-- Content -->
@@ -1367,7 +1367,7 @@
                                     </svg>
                                 </div>
                                 <div style="font-size:10px;font-weight:800;color:var(--text-secondary);margin-top:4px;">MIN</div>
-                                <div style="font-size:18px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);margin-top:2px;"><span id="gearScreenMinVal">0</span> W</div>
+                                <div style="font-size:18px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);margin-top:2px;"><span id="gearScreenMinVal">0</span>%</div>
                             </div>
                             <!-- MAX Gear Large -->
                             <div style="text-align:center;">
@@ -1397,27 +1397,27 @@
                                     </svg>
                                 </div>
                                 <div style="font-size:10px;font-weight:800;color:var(--text-secondary);margin-top:4px;">MAX</div>
-                                <div style="font-size:18px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);margin-top:2px;"><span id="gearScreenMaxVal">10000</span> W</div>
+                                <div style="font-size:18px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);margin-top:2px;"><span id="gearScreenMaxVal">100</span>%</div>
                             </div>
                         </div>
                         <!-- Sliders -->
                         <div style="display:flex;flex-direction:column;gap:24px;">
                             <div class="glass-card" style="margin:0;padding:20px;">
-                                <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Min výkon (W)</label>
-                                <input type="range" id="gearModalMin" min="0" max="5000" step="100" value="0" oninput="updateGearModal('min',this.value)" style="width:100%;accent-color:var(--accent-battery);height:6px;">
+                                <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Min výkon (%)</label>
+                                <input type="range" id="gearModalMin" min="0" max="100" step="1" value="0" oninput="updateGearModal('min',this.value)" style="width:100%;accent-color:var(--accent-battery);height:6px;">
                                 <div style="display:flex;justify-content:space-between;margin-top:8px;">
-                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">0 W</span>
-                                    <span id="gearModalMinVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);">0 W</span>
-                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">5000 W</span>
+                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">0%</span>
+                                    <span id="gearModalMinVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);">0%</span>
+                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">100%</span>
                                 </div>
                             </div>
                             <div class="glass-card" style="margin:0;padding:20px;">
-                                <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Max výkon (W)</label>
-                                <input type="range" id="gearModalMax" min="500" max="15000" step="500" value="10000" oninput="updateGearModal('max',this.value)" style="width:100%;accent-color:var(--accent-solar);height:6px;">
+                                <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Max výkon (%)</label>
+                                <input type="range" id="gearModalMax" min="0" max="100" step="1" value="100" oninput="updateGearModal('max',this.value)" style="width:100%;accent-color:var(--accent-solar);height:6px;">
                                 <div style="display:flex;justify-content:space-between;margin-top:8px;">
-                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">500 W</span>
-                                    <span id="gearModalMaxVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);">10000 W</span>
-                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">15000 W</span>
+                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">0%</span>
+                                    <span id="gearModalMaxVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);">100%</span>
+                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">100%</span>
                                 </div>
                             </div>
                         </div>
@@ -2272,8 +2272,8 @@
         // Gear wheel arrow rotation: -90deg (min) to +90deg (max)
         function updateGearArrow(type, value) {
             const v = parseInt(value) || 0;
-            const min = type === 'min' ? 0 : 500;
-            const max = type === 'min' ? 5000 : 15000;
+            const min = 0;
+            const max = 100;
             const pct = Math.max(0, Math.min(1, (v - min) / (max - min)));
             const angle = -90 + (pct * 180); // -90 to +90 degrees
             const arrow = document.getElementById(type === 'min' ? 'riadenieMinArrow' : 'riadenieMaxArrow');
@@ -2292,8 +2292,8 @@
             const maxVal = document.getElementById('riadenieMaxVal').textContent;
             minSlider.value = minVal;
             maxSlider.value = maxVal;
-            document.getElementById('gearModalMinVal').textContent = minVal + ' W';
-            document.getElementById('gearModalMaxVal').textContent = maxVal + ' W';
+            document.getElementById('gearModalMinVal').textContent = minVal + '%';
+            document.getElementById('gearModalMaxVal').textContent = maxVal + '%';
             document.getElementById('gearScreenMinVal').textContent = minVal;
             document.getElementById('gearScreenMaxVal').textContent = maxVal;
             // Update gear arrows on full-screen
@@ -2308,8 +2308,8 @@
         }
         function updateGearScreenArrow(type, value) {
             const v = parseInt(value) || 0;
-            const min = type === 'min' ? 0 : 500;
-            const max = type === 'min' ? 5000 : 15000;
+            const min = 0;
+            const max = 100;
             const pct = Math.max(0, Math.min(1, (v - min) / (max - min)));
             const angle = -90 + (pct * 180);
             const arrow = document.getElementById(type === 'min' ? 'gearScreenMinArrow' : 'gearScreenMaxArrow');
@@ -2318,9 +2318,9 @@
             if (valEl) valEl.textContent = v;
         }
         function updateGearModal(type, value) {
-            const wVal = type === 'min' ? value + ' W' : value + ' W';
-            if (document.getElementById('gearModalMinVal')) document.getElementById('gearModalMinVal').textContent = type === 'min' ? wVal : document.getElementById('gearModalMinVal').textContent;
-            if (document.getElementById('gearModalMaxVal')) document.getElementById('gearModalMaxVal').textContent = type === 'max' ? wVal : document.getElementById('gearModalMaxVal').textContent;
+            const pVal = value + '%';
+            if (document.getElementById('gearModalMinVal')) document.getElementById('gearModalMinVal').textContent = type === 'min' ? pVal : document.getElementById('gearModalMinVal').textContent;
+            if (document.getElementById('gearModalMaxVal')) document.getElementById('gearModalMaxVal').textContent = type === 'max' ? pVal : document.getElementById('gearModalMaxVal').textContent;
             updateGearScreenArrow(type, value);
         }
         function saveGearSettings() {
