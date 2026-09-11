@@ -1436,6 +1436,19 @@ elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && 
     send_json(['status' => 'success', 'min_power_pct' => floatval($row['min_power_pct'] ?? 0), 'max_power_pct' => floatval($row['max_power_pct'] ?? 100)]);
 }
 
+// --- RENAME DEVICE ---
+elseif (preg_match('#^/api/device/([0-9]+)/rename$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $data = get_json_input();
+    $new_name = trim($data['name'] ?? '');
+    if (strlen($new_name) < 1 || strlen($new_name) > 100) send_json(['error' => 'Meno musí mať 1-100 znakov'], 400);
+    $stmt = $pdo->prepare("UPDATE devices SET name = ? WHERE id = ? AND user_id = ?");
+    $stmt->execute([$new_name, $device_id, $_SESSION['user_id']]);
+    if ($stmt->rowCount() === 0) send_json(['error' => 'Device not found'], 404);
+    send_json(['status' => 'success', 'name' => $new_name]);
+}
+
 // --- DEVICE STATUS ---
 elseif (preg_match('#^/api/device/([0-9]+)/status$#', $path, $matches) && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);

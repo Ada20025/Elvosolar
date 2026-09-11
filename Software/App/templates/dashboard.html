@@ -976,30 +976,35 @@
 
             <!-- Center: Device Name -->
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-                <div class="station-dropdown-container">
-                    <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:2px solid #10b981;cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.3s;box-shadow:0 0 8px rgba(16,185,129,0.3);">
-                        <span id="deviceStatusLabel" style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0;animation:pulse-dot 2s infinite;"></span>
+                <div class="station-dropdown-container">                    <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:1px solid var(--border-card);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.2s;">
                         <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);">ElvoControll</span>
                         <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
                     </button>
                     <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
                         <?php if (isset($devices) && count($devices) > 0): ?>
                             <?php foreach ($devices as $dev): ?>
-                                <button onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" class="station-dropdown-item">
-                                    <span style="display:flex;align-items:center;gap:8px;">
-                                        <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-                                        <span><?php echo htmlspecialchars($dev['name']); ?></span>
-                                    </span>
-                                    <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
-                                </button>
+                                <div class="station-dropdown-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span style="display:flex;align-items:center;gap:8px;">
+                                            <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+                                            <span class="device-name-label" id="deviceName_<?php echo $dev['id']; ?>"><?php echo htmlspecialchars($dev['name']); ?></span>
+                                        </span>
+                                        <button onclick="event.stopPropagation();renameDevice(<?php echo $dev['id']; ?>)" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:6px;padding:3px 8px;cursor:pointer;color:var(--accent-grid);font-size:9px;font-weight:700;">Premenovať</button>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
+                                        <button onclick="event.stopPropagation();selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:6px;padding:3px 8px;cursor:pointer;color:var(--accent-battery);font-size:9px;font-weight:700;">Vybrať</button>
+                                    </div>
+                                </div>
                             <?php endforeach; ?>
-                        <?php else: ?>                                <button onclick="selectActiveDevice(this, '1', 'ElvoControll')" class="station-dropdown-item">
-                                <span style="display:flex;align-items:center;gap:8px;">
-                                    <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-                                    <span>ElvoControll</span>
-                                </span>
-                                <span class="sn-badge">SN: ---</span>
-                            </button>
+                        <?php else: ?>
+                                <div class="station-dropdown-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+                                        <span class="device-name-label">ElvoControll</span>
+                                    </div>
+                                    <span class="sn-badge">SN: ---</span>
+                                </div>
                         <?php endif; ?>
                         <div style="height:1px;background:var(--border-card);margin:6px 0;"></div>
                         <button onclick="pairNewDevice(event)" class="station-dropdown-item" style="color:var(--accent-battery);">
@@ -1357,67 +1362,15 @@
                     </div>
                     <!-- Content -->
                     <div style="padding:24px 20px;max-width:480px;margin:0 auto;">
-                        <!-- Both Gear Wheels -->
-                        <div style="display:flex;justify-content:center;gap:32px;margin-bottom:32px;">
-                            <!-- MIN Gear Large -->
+                        <!-- Value display -->
+                        <div style="display:flex;justify-content:center;gap:40px;margin-bottom:28px;">
                             <div style="text-align:center;">
-                                <div style="position:relative;width:120px;height:120px;margin:0 auto;">
-                                    <svg viewBox="0 0 120 120" style="width:100%;height:100%;">
-                                        <g transform="translate(60,60)">
-                                            <circle r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12"/>
-                                            <circle r="36" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(30)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(60)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(90)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(120)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(150)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(180)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(210)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(240)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(270)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(300)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(330)"/>
-                                            <g id="gearScreenMinArrow" style="transition:transform 0.4s ease;transform:rotate(-90deg);">
-                                                <line x1="0" y1="0" x2="0" y2="-32" stroke="var(--accent-battery)" stroke-width="2.5" stroke-linecap="round"/>
-                                                <polygon points="-4,-32 0,-40 4,-32" fill="var(--accent-battery)"/>
-                                            </g>
-                                            <circle r="5" fill="var(--accent-battery)"/>
-                                        </g>
-                                    </svg>
-                                </div>
-                                <div style="font-size:10px;font-weight:800;color:var(--text-secondary);margin-top:4px;">MIN</div>
-                                <div style="font-size:18px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);margin-top:2px;"><span id="gearScreenMinVal">0</span>%</div>
+                                <div style="font-size:11px;font-weight:800;color:var(--text-secondary);margin-bottom:4px;">MIN</div>
+                                <div style="font-size:28px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);"><span id="gearScreenMinVal">0</span>%</div>
                             </div>
-                            <!-- MAX Gear Large -->
                             <div style="text-align:center;">
-                                <div style="position:relative;width:120px;height:120px;margin:0 auto;">
-                                    <svg viewBox="0 0 120 120" style="width:100%;height:100%;">
-                                        <g transform="translate(60,60)">
-                                            <circle r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12"/>
-                                            <circle r="36" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(30)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(60)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(90)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(120)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(150)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(180)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(210)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(240)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(270)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(300)"/>
-                                            <rect x="-4" y="-50" width="8" height="14" rx="2" fill="rgba(255,255,255,0.12)" transform="rotate(330)"/>
-                                            <g id="gearScreenMaxArrow" style="transition:transform 0.4s ease;transform:rotate(40deg);">
-                                                <line x1="0" y1="0" x2="0" y2="-32" stroke="var(--accent-solar)" stroke-width="2.5" stroke-linecap="round"/>
-                                                <polygon points="-4,-32 0,-40 4,-32" fill="var(--accent-solar)"/>
-                                            </g>
-                                            <circle r="5" fill="var(--accent-solar)"/>
-                                        </g>
-                                    </svg>
-                                </div>
-                                <div style="font-size:10px;font-weight:800;color:var(--text-secondary);margin-top:4px;">MAX</div>
-                                <div style="font-size:18px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);margin-top:2px;"><span id="gearScreenMaxVal">100</span>%</div>
+                                <div style="font-size:11px;font-weight:800;color:var(--text-secondary);margin-bottom:4px;">MAX</div>
+                                <div style="font-size:28px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);"><span id="gearScreenMaxVal">100</span>%</div>
                             </div>
                         </div>
                         <!-- Sliders -->
@@ -1896,6 +1849,38 @@
         function pairNewDevice(e) {
             e.stopPropagation();
             window.location.href = basePath + '/setup';
+        }
+
+        // Select active device
+        function selectActiveDevice(el, id, name) {
+            document.getElementById('singleDeviceLabel').textContent = name;
+            document.getElementById('deviceDropdownMenu').classList.add('hidden');
+            try { localStorage.setItem('elvo_active_device', id); } catch(e) {}
+            // Reload dashboard for new device
+            window.location.href = basePath + '/device/' + id;
+        }
+
+        // Rename device
+        function renameDevice(devId) {
+            const nameEl = document.getElementById('deviceName_' + devId);
+            if (!nameEl) return;
+            const currentName = nameEl.textContent.trim();
+            const newName = prompt('Nové meno zariadenia:', currentName);
+            if (!newName || newName === currentName) return;
+            nameEl.textContent = newName;
+            // Update header label if it's the active device
+            const activeId = metaEl ? metaEl.getAttribute('data-device-id') : null;
+            if (String(activeId) === String(devId)) {
+                document.getElementById('singleDeviceLabel').textContent = newName;
+            }
+            // Save to DB
+            fetch(`${basePath}/api/device/${devId}/rename`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: newName})
+            }).then(r => r.json()).then(d => {
+                if (d.status !== 'success') alert('Chyba: ' + (d.error || 'Unknown'));
+            }).catch(e => alert('Chyba pri ukladaní'));
         }
 
         // Accordion Inverter Detail handler
