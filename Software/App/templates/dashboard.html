@@ -1697,44 +1697,7 @@
                             <input type="datetime-local" id="holidayUntilInput" class="input-styled">
                         </div>
 
-                        <!-- PRED-NÁVRATOVÝ OHREV -->
-                        <div style="padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                                <div style="display:flex;align-items:center;gap:10px;">
-                                    <div style="width:32px;height:32px;border-radius:10px;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;">
-                                        <i data-lucide="flame" style="width:16px;height:16px;color:var(--accent-solar);"></i>
-                                    </div>
-                                    <div>
-                                        <span style="font-size:9px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;display:block;">PRED-NÁVRATOVÝ OHREV</span>
-                                        <span style="font-size:11px;color:var(--text-muted);">Začať ohrievať X hodín pred príchodom</span>
-                                    </div>
-                                </div>
-                                <span id="preheatVal" style="font-size:14px;font-weight:900;color:var(--accent-solar);font-family:'JetBrains Mono';">2 hodín</span>
-                            </div>
-                            <input type="range" id="holidayPreheatHours" min="0" max="12" step="1" value="2" style="width:100%;height:4px;cursor:pointer;accent-color:var(--accent-solar);" oninput="document.getElementById('preheatVal').innerText = this.value + ' hodín'">
-                            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--text-muted);">
-                                <span>ŽIADNY</span>
-                                <span>6 hod</span>
-                                <span>12 hod</span>
-                            </div>
-                        </div>
 
-                        <!-- SOC LIMIT -->
-                        <div style="padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                                <div style="display:flex;align-items:center;gap:10px;">
-                                    <div style="width:32px;height:32px;border-radius:10px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;">
-                                        <i data-lucide="battery" style="width:16px;height:16px;color:var(--accent-battery);"></i>
-                                    </div>
-                                    <div>
-                                        <span style="font-size:9px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;display:block;">ZÁLOŽNÝ SOC LIMIT</span>
-                                        <span style="font-size:11px;color:var(--text-muted);">Minimálna kapacita batérie</span>
-                                    </div>
-                                </div>
-                                <span id="minSocDisplay" style="font-size:14px;font-weight:900;color:var(--accent-battery);font-family:'JetBrains Mono';">20%</span>
-                            </div>
-                            <input type="range" id="holidayMinSoc" min="10" max="50" step="5" value="20" style="width:100%;height:4px;cursor:pointer;accent-color:var(--accent-battery);" oninput="document.getElementById('minSocDisplay').innerText = this.value + '%'">
-                        </div>
                     </div>
 
                     <!-- RIGHT COLUMN: Relays + Repetition -->
@@ -1748,34 +1711,67 @@
                             </div>
                         </div>
 
-                        <!-- OPAKOVANIE -->
-                        <div style="padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;">
-                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                                <div style="width:32px;height:32px;border-radius:10px;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;">
-                                    <i data-lucide="repeat" style="width:16px;height:16px;color:#a855f7;"></i>
+                        <!-- OPAKOVANIE - Gear Wheel -->
+                        <div style="padding:20px;background:rgba(0,0,0,0.15);border:1px solid var(--border-card);border-radius:16px;cursor:pointer;" onclick="openRepeatModal()">
+                            <div style="display:flex;align-items:center;justify-content:space-between;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div style="width:32px;height:32px;border-radius:10px;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;">
+                                        <i data-lucide="repeat" style="width:16px;height:16px;color:#a855f7;"></i>
+                                    </div>
+                                    <div>
+                                        <span style="font-size:9px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;display:block;">OPAKOVANIE</span>
+                                        <span style="font-size:11px;color:var(--text-muted);" id="repeatDisplayLabel">Žiadne</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span style="font-size:9px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;display:block;">OPAKOVANIE</span>
-                                    <span style="font-size:11px;color:var(--text-muted);">Automatické opakovanie dovolenky</span>
-                                </div>
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.5"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="m15.6 12.4.9.5c.5.3.8.8.8 1.4v.2c0 .4-.1.8-.4 1.1l-1.5 1.5c-.3.3-.7.4-1.1.4h-.2c-.5 0-1-.3-1.4-.8l-.5-.9c-.3.1-.6.1-.9.1s-.6 0-.9-.1l-.5.9c-.4.5-.9.8-1.4.8h-.2c-.4 0-.8-.1-1.1-.4L5.6 15.6c-.3-.3-.4-.7-.4-1.1v-.2c0-.6.3-1.1.8-1.4l.9-.5c.1-.3.1-.6.1-.9s0-.6-.1-.9l-.9-.5c-.5-.3-.8-.8-.8-1.4v-.2c0-.4.1-.8.4-1.1L7.1 6.1c.3-.3.7-.4 1.1-.4h.2c.5 0 1 .3 1.4.8l.5.9c.3-.1.6-.1.9-.1s.6 0 .9.1l.5-.9c.4-.5.9-.8 1.4-.8h.2c.4 0 .8.1 1.1.4l1.5 1.5c.3.3.4.7.4 1.1v.2c0 .6-.3 1.1-.8 1.4l-.9.5c-.1.3-.1.6-.1.9s0 .6.1.9Z"/></svg>
                             </div>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <button onclick="setHolidayRepeat('none')" class="holiday-repeat-btn active" data-repeat="none" style="flex:1;min-width:60px;padding:10px 8px;border-radius:10px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:#a855f7;font-size:10px;font-weight:700;cursor:pointer;text-align:center;">Žiadne</button>
-                                <button onclick="setHolidayRepeat('weekly')" class="holiday-repeat-btn" data-repeat="weekly" style="flex:1;min-width:60px;padding:10px 8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border-card);color:var(--text-secondary);font-size:10px;font-weight:700;cursor:pointer;text-align:center;">Týždenne</button>
-                                <button onclick="setHolidayRepeat('monthly')" class="holiday-repeat-btn" data-repeat="monthly" style="flex:1;min-width:60px;padding:10px 8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border-card);color:var(--text-secondary);font-size:10px;font-weight:700;cursor:pointer;text-align:center;">Mesačne</button>
+                        </div>
+
+                        <!-- Repeat Modal (full-screen) -->
+                        <div id="repeatModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg-primary);overflow-y:auto;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-card);position:sticky;top:0;background:var(--bg-primary);z-index:5;">
+                                <button onclick="closeRepeatModal()" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                                    Späť
+                                </button>
+                                <h3 style="font-size:14px;font-weight:800;color:var(--text-primary);">⚙️ Opakovanie Dovolenky</h3>
+                                <div style="width:60px;"></div>
                             </div>
-                            <!-- Interval (hidden by default) -->
-                            <div id="holidayRepeatInterval" style="display:none;margin-top:12px;">
-                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                                    <span style="font-size:10px;font-weight:800;color:var(--text-secondary);">Interval opakovania</span>
-                                    <span id="repeatIntervalVal" style="font-size:12px;font-weight:800;color:#a855f7;font-family:'JetBrains Mono';">Každý týždeň</span>
+                            <div style="padding:24px 20px;max-width:480px;margin:0 auto;">
+                                <!-- Current value -->
+                                <div style="text-align:center;margin-bottom:32px;">
+                                    <div style="font-size:32px;font-weight:900;font-family:'JetBrains Mono';color:#a855f7;" id="repeatModalValue">Žiadne</div>
+                                    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Aktuálny interval opakovania</div>
                                 </div>
-                                <input type="range" id="holidayRepeatInterval" min="1" max="12" step="1" value="1" style="width:100%;height:4px;cursor:pointer;accent-color:#a855f7;" oninput="updateRepeatInterval(this.value)">
-                                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--text-muted);">
-                                    <span>1</span>
-                                    <span>6</span>
-                                    <span>12</span>
+                                <!-- Repeat type buttons -->
+                                <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+                                    <button onclick="setRepeatType('none')" id="repeatBtnNone" class="repeat-type-btn active" style="width:100%;padding:16px;border-radius:14px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);color:#a855f7;font-size:13px;font-weight:800;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;">
+                                        <i data-lucide="x-circle" style="width:20px;height:20px;"></i>
+                                        <div><div>Žiadne</div><div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-top:2px;">Jednorázová dovolenka</div></div>
+                                    </button>
+                                    <button onclick="setRepeatType('weekly')" id="repeatBtnWeekly" class="repeat-type-btn" style="width:100%;padding:16px;border-radius:14px;background:rgba(255,255,255,0.02);border:1px solid var(--border-card);color:var(--text-secondary);font-size:13px;font-weight:800;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;">
+                                        <i data-lucide="calendar" style="width:20px;height:20px;"></i>
+                                        <div><div>Týždenne</div><div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-top:2px;">Opakuje sa každý týždeň</div></div>
+                                    </button>
+                                    <button onclick="setRepeatType('monthly')" id="repeatBtnMonthly" class="repeat-type-btn" style="width:100%;padding:16px;border-radius:14px;background:rgba(255,255,255,0.02);border:1px solid var(--border-card);color:var(--text-secondary);font-size:13px;font-weight:800;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;">
+                                        <i data-lucide="calendar-days" style="width:20px;height:20px;"></i>
+                                        <div><div>Mesačne</div><div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-top:2px;">Opakuje sa každý mesiac</div></div>
+                                    </button>
                                 </div>
+                                <!-- Interval slider (shown when weekly/monthly) -->
+                                <div id="repeatIntervalSection" style="display:none;">
+                                    <div class="glass-card" style="margin:0;padding:20px;">
+                                        <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Interval opakovania</label>
+                                        <input type="range" id="repeatIntervalSlider" min="1" max="12" step="1" value="1" oninput="updateRepeatInterval(this.value)" style="width:100%;accent-color:#a855f7;height:6px;">
+                                        <div style="display:flex;justify-content:space-between;margin-top:8px;">
+                                            <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">1</span>
+                                            <span id="repeatIntervalText" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:#a855f7;">Každý týždeň</span>
+                                            <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">12</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Save -->
+                                <button onclick="saveRepeatSettings()" style="width:100%;padding:16px;margin-top:24px;border-radius:14px;background:linear-gradient(135deg,#a855f7,#6366f1);color:white;font-size:13px;font-weight:800;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(168,85,247,0.3);">Uložiť nastavenia</button>
                             </div>
                         </div>
                     </div>
@@ -2717,39 +2713,58 @@
         }
 
         let currentHolidayRepeat = 'none';
+        let currentRepeatInterval = 1;
 
-        function setHolidayRepeat(type) {
+        function openRepeatModal() {
+            document.getElementById('repeatModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            updateRepeatModalUI();
+        }
+        function closeRepeatModal() {
+            document.getElementById('repeatModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        function setRepeatType(type) {
             currentHolidayRepeat = type;
-            document.querySelectorAll('.holiday-repeat-btn').forEach(btn => {
-                btn.classList.remove('active');
+            document.querySelectorAll('.repeat-type-btn').forEach(btn => {
                 btn.style.background = 'rgba(255,255,255,0.02)';
                 btn.style.borderColor = 'var(--border-card)';
                 btn.style.color = 'var(--text-secondary)';
             });
-            const activeBtn = document.querySelector(`[data-repeat="${type}"]`);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-                activeBtn.style.background = 'rgba(168,85,247,0.15)';
-                activeBtn.style.borderColor = 'rgba(168,85,247,0.3)';
-                activeBtn.style.color = '#a855f7';
-            }
-            const intervalSection = document.getElementById('holidayRepeatInterval');
-            if (type === 'none') {
-                intervalSection.style.display = 'none';
-            } else {
-                intervalSection.style.display = 'block';
-                updateRepeatInterval(document.getElementById('holidayRepeatInterval').value);
-            }
+            const ids = {none:'repeatBtnNone',weekly:'repeatBtnWeekly',monthly:'repeatBtnMonthly'};
+            const btn = document.getElementById(ids[type]);
+            if(btn){btn.style.background='rgba(168,85,247,0.1)';btn.style.borderColor='rgba(168,85,247,0.3)';btn.style.color='#a855f7';}
+            document.getElementById('repeatIntervalSection').style.display = type === 'none' ? 'none' : 'block';
+            updateRepeatModalUI();
         }
-
         function updateRepeatInterval(val) {
+            currentRepeatInterval = parseInt(val);
+            updateRepeatModalUI();
+        }
+        function updateRepeatModalUI() {
             const type = currentHolidayRepeat;
-            const label = document.getElementById('repeatIntervalVal');
-            if (type === 'weekly') {
-                label.textContent = val == 1 ? 'Každý týždeň' : `Každých ${val} týždňov`;
-            } else if (type === 'monthly') {
-                label.textContent = val == 1 ? 'Každý mesiac' : `Každých ${val} mesiacov`;
-            }
+            const interval = currentRepeatInterval;
+            let text = 'Ziadne';
+            if(type==='weekly') text = interval==1 ? 'Kazdy tyzden' : 'Kazdych ' + interval + ' tyzdnov';
+            else if(type==='monthly') text = interval==1 ? 'Kazdy mesiac' : 'Kazdych ' + interval + ' mesiacov';
+            const modalVal = document.getElementById('repeatModalValue');
+            if(modalVal) modalVal.textContent = text;
+            const headerLabel = document.getElementById('repeatDisplayLabel');
+            if(headerLabel) headerLabel.textContent = text;
+            const intervalText = document.getElementById('repeatIntervalText');
+            if(intervalText && type !== 'none') intervalText.textContent = text;
+            const slider = document.getElementById('repeatIntervalSlider');
+            if(slider) slider.value = interval;
+        }
+        function saveRepeatSettings() {
+            closeRepeatModal();
+            try {
+                const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
+                if(devId) fetch(`${basePath}/api/device/${devId}/holiday-mode`, {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({repeat_type: currentHolidayRepeat, repeat_interval: currentRepeatInterval})
+                });
+            } catch(e) {}
         }
 
         function renderHolidayRelays() {
