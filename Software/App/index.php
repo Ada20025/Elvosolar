@@ -1362,6 +1362,8 @@ elseif (preg_match('#^/api/device/([0-9]+)/relay/add$#', $path, $matches) && $me
     $ai_state['relay_config'][$new_id] = [
         'name' => trim($data['name'] ?? 'Relé ' . $new_id),
         'type' => trim($data['type'] ?? 'GPIO'),
+        'conn_type' => trim($data['conn_type'] ?? 'Shelly'),
+        'temp' => intval($data['temp'] ?? 55),
         'pin' => intval($data['pin'] ?? 0),
         'power_w' => floatval($data['power_w'] ?? 0),
     ];
@@ -1403,6 +1405,8 @@ elseif (preg_match('#^/api/device/([0-9]+)/relays$#', $path, $matches) && $metho
             'state' => $rstate,
             'name' => $relay_config[$rid]['name'] ?? 'Relé ' . $rid,
             'type' => $relay_config[$rid]['type'] ?? 'GPIO',
+            'conn_type' => $relay_config[$rid]['conn_type'] ?? 'Shelly',
+            'temp' => $relay_config[$rid]['temp'] ?? 55,
             'power_w' => $relay_config[$rid]['power_w'] ?? 0,
         ];
     }
