@@ -976,33 +976,29 @@
 
             <!-- Center: Device Name -->
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-                <div class="station-dropdown-container">                    <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:1px solid var(--border-card);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.2s;">
-                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);">ElvoControll</span>
+                <div class="station-dropdown-container">                    <?php $activeDevName = 'ElvoControll'; if (isset($devices) && count($devices) > 0) { $activeDevName = htmlspecialchars($devices[0]['name'] ?? 'ElvoControll'); } ?>
+                    <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:1px solid var(--border-card);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.2s;">
+                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);"><?php echo $activeDevName; ?></span>
                         <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
                     </button>
                     <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
                         <?php if (isset($devices) && count($devices) > 0): ?>
                             <?php foreach ($devices as $dev): ?>
-                                <div class="station-dropdown-item" style="flex-direction:column;align-items:stretch;gap:6px;">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                                        <span style="display:flex;align-items:center;gap:8px;">
-                                            <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-                                            <span class="device-name-label" id="deviceName_<?php echo $dev['id']; ?>"><?php echo htmlspecialchars($dev['name']); ?></span>
-                                        </span>
-                                        <button onclick="event.stopPropagation();renameDevice(<?php echo $dev['id']; ?>)" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:6px;padding:3px 8px;cursor:pointer;color:var(--accent-grid);font-size:9px;font-weight:700;">Premenovať</button>
-                                    </div>
-                                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                                <div class="station-dropdown-item" onclick="selectActiveDevice(null, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" style="cursor:pointer;">
+                                    <span style="display:flex;align-items:center;gap:8px;flex:1;">
+                                        <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+                                        <span class="device-name-label" id="deviceName_<?php echo $dev['id']; ?>"><?php echo htmlspecialchars($dev['name']); ?></span>
                                         <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
-                                        <button onclick="event.stopPropagation();selectActiveDevice(this, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:6px;padding:3px 8px;cursor:pointer;color:var(--accent-battery);font-size:9px;font-weight:700;">Vybrať</button>
-                                    </div>
+                                    </span>
+                                    <svg onclick="event.stopPropagation();renameDevice(<?php echo $dev['id']; ?>)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);cursor:pointer;flex-shrink:0;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
-                                <div class="station-dropdown-item" style="flex-direction:column;align-items:stretch;gap:6px;">
-                                    <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="station-dropdown-item">
+                                    <span style="display:flex;align-items:center;gap:8px;">
                                         <i data-lucide="cpu" style="width:14px;height:14px;"></i>
                                         <span class="device-name-label">ElvoControll</span>
-                                    </div>
+                                    </span>
                                     <span class="sn-badge">SN: ---</span>
                                 </div>
                         <?php endif; ?>
@@ -1856,8 +1852,26 @@
             document.getElementById('singleDeviceLabel').textContent = name;
             document.getElementById('deviceDropdownMenu').classList.add('hidden');
             try { localStorage.setItem('elvo_active_device', id); } catch(e) {}
-            // Reload dashboard for new device
-            window.location.href = basePath + '/device/' + id;
+            // Highlight active device in dropdown
+            document.querySelectorAll('.station-dropdown-item').forEach(item => {
+                item.style.background = '';
+                item.style.borderColor = '';
+            });
+            if (el) {
+                el.closest('.station-dropdown-item').style.background = 'rgba(16,185,129,0.06)';
+                el.closest('.station-dropdown-item').style.borderColor = 'rgba(16,185,129,0.3)';
+            }
+            // Save to DB + reload data for this device
+            fetch(`${basePath}/api/device/${id}/power-limits`).then(r=>r.json()).then(d=>{
+                if(d.status==='success'){
+                    const minEl=document.getElementById('riadenieMinVal');
+                    const maxEl=document.getElementById('riadenieMaxVal');
+                    if(minEl){minEl.textContent=Math.round(d.min_power_pct??0)+'%';updateGearArrow('min',Math.round(d.min_power_pct??0));}
+                    if(maxEl){maxEl.textContent=Math.round(d.max_power_pct??100)+'%';updateGearArrow('max',Math.round(d.max_power_pct??100));}
+                }
+            }).catch(()=>{});
+            fetchTelemetry();
+            fetchMeterData();
         }
 
         // Rename device
