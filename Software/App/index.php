@@ -37,6 +37,32 @@ if (isset($pdo)) {
             INDEX idx_device_ts (device_id, timestamp)
         )");
     } catch (Exception $e) { /* ignore */ }
+    // Auto-create push_subscriptions table if missing
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            endpoint VARCHAR(500) NOT NULL,
+            keys_json TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_endpoint (endpoint(255)),
+            INDEX idx_user (user_id)
+        )");
+    } catch (Exception $e) { /* ignore */ }
+    // Auto-create notifications log table if missing
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS notifications_log (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            device_id INT,
+            type VARCHAR(50) DEFAULT 'info',
+            title VARCHAR(255),
+            message TEXT,
+            read_status TINYINT DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user_notif (user_id, created_at)
+        )");
+    } catch (Exception $e) { /* ignore */ }
 }
 
 // === DEMO USER SEED ===
@@ -1408,6 +1434,35 @@ elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && 
     $row = $stmt->fetch();
     if (!$row) send_json(['error' => 'Device not found'], 404);
     send_json(['status' => 'success', 'min_power_pct' => floatval($row['min_power_pct'] ?? 0), 'max_power_pct' => floatval($row['max_power_pct'] ?? 100)]);
+}
+
+// --- DEVICE STATUS ---
+elseif (preg_match('#^/api/device/([0-9]+)/status$#', $path, $matches) && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $device_id = $matches[1];
+    $stmt = $pdo->prepare("SELECT id, last_seen FROM devices WHERE id = ? AND user_id = ?");
+    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $row = $stmt->fetch();
+    if (!$row) send_json(['error' => 'Device not found'], 404);
+    $last_seen = $row['last_seen'] ?? null;
+    $is_online = $last_seen && (time() - strtotime($last_seen) < 300);
+    send_json(['status' => $is_online ? 'online' : 'offline', 'last_seen' => $last_seen]);
+}
+
+// --- PUSH SUBSCRIPTION ---
+elseif ($path === '/api/push/subscribe' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
+    $data = get_json_input();
+    $endpoint = $data['endpoint'] ?? '';
+    $keys = json_encode($data['keys'] ?? []);
+    if (!$endpoint) send_json(['error' => 'No endpoint'], 400);
+    try {
+        $stmt = $pdo->prepare("INSERT INTO push_subscriptions (user_id, endpoint, keys_json, created_at) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE keys_json = VALUES(keys_json), created_at = NOW()");
+        $stmt->execute([$_SESSION['user_id'], $endpoint, $keys]);
+    } catch(Exception $e) {
+        // Table might not exist yet
+    }
+    send_json(['status' => 'success']);
 }
 
 // --- TELEMETRIA SYNC ---
