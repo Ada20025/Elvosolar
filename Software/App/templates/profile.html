@@ -44,11 +44,11 @@
             background: linear-gradient(135deg, rgba(10, 15, 30, 0.7) 0%, rgba(5, 7, 15, 0.8) 100%);
             border: 1px solid var(--border-card);
             border-top: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 24px;
-            padding: 24px;
+            border-radius: 20px;
+            padding: 20px;
             backdrop-filter: blur(25px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            margin-bottom: 24px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            margin-bottom: 0;
             position: relative;
             overflow: hidden;
         }
@@ -146,8 +146,8 @@
         /* Avatar upload */
         .avatar-container {
             position: relative;
-            width: 80px;
-            height: 80px;
+            width: 64px;
+            height: 64px;
             cursor: pointer;
         }
         .avatar-container:hover .avatar-overlay { opacity: 1; }
@@ -163,15 +163,15 @@
             transition: opacity 0.2s;
         }
         .avatar-img {
-            width: 80px;
-            height: 80px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid var(--accent-battery);
         }
         .avatar-letter {
-            width: 80px;
-            height: 80px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             background: linear-gradient(135deg, #6366f1, #3b82f6);
             display: flex;
@@ -250,7 +250,7 @@
 
                 <!-- Avatar + Profile Info -->
                 <div class="glass-card" style="margin-bottom:0;">
-                    <div style="display:flex;align-items:center;gap:20px;">
+                    <div style="display:flex;align-items:center;gap:16px;">
                         <div class="avatar-container" onclick="document.getElementById('avatarInput').click()">
                             <div id="avatarDisplay" class="avatar-letter">A</div>
                             <div class="avatar-overlay">
@@ -260,9 +260,9 @@
                         </div>
                         <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="uploadAvatar(event)">
                         <div>
-                            <h2 style="font-size:18px;font-weight:900;color:var(--text-primary);" id="profileName">Načítavam...</h2>
-                            <p style="font-size:12px;color:var(--text-secondary);" id="profileEmail">...</p>
-                            <p style="font-size:10px;color:var(--text-muted);margin-top:4px;">Člen od <span id="memberSince" class="font-mono">...</span></p>
+                            <h2 style="font-size:16px;font-weight:900;color:var(--text-primary);margin-bottom:2px;" id="profileName">Načítavam...</h2>
+                            <p style="font-size:11px;color:var(--text-secondary);" id="profileEmail">...</p>
+                            <p style="font-size:9px;color:var(--text-muted);margin-top:3px;">Člen od <span id="memberSince" class="font-mono">...</span></p>
                         </div>
                     </div>
                 </div>
@@ -349,16 +349,6 @@
                         <button onclick="changePassword()" class="btn-primary">Zmeniť heslo</button>
                     </div>
                     <div id="passwordMsg" class="hidden" style="margin-top:12px;font-size:11px;font-weight:700;text-align:center;border-radius:10px;padding:10px;"></div>
-                </div>
-
-                <!-- Test emailu -->
-                <div class="glass-card" style="margin-bottom:0;">
-                    <div class="card-header">
-                        <span class="card-title"><i data-lucide="flask-conical" style="width:14px;height:14px;color:#a855f7;"></i> Test emailu</span>
-                    </div>
-                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Odošle testovací email na tvoju adresu cez Resend API.</p>
-                    <button onclick="testEmail()" class="btn-purple">Odoslať test email</button>
-                    <div id="testEmailMsg" class="hidden" style="margin-top:12px;font-size:11px;font-weight:700;text-align:center;border-radius:10px;padding:10px;"></div>
                 </div>
 
             </div>
