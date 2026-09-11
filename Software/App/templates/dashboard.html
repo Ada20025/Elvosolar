@@ -1401,8 +1401,8 @@
                         <div style="display:flex;align-items:center;gap:12px;">
                             <i data-lucide="shield-check" style="color:var(--accent-battery);width:20px;height:20px;"></i>
                             <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 1: Ochrana pred zápornými cenami</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Výroba zakázaná pri cenách pod 0 €/MWh.</div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 1: Základná ochrana</div>
+                                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.5;">Keď cena elektriny na trhu klesne pod 0 €/MWh, systém automaticky pozastaví vývoz do siete. Chráni vás pred platbami za odber počas záporných cien (flip-flop efekt). Ideálny pre základnú ochranu domácnosti.</div>
                             </div>
                         </div>
                         <i id="aiModelCheck1" data-lucide="check" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1414,7 +1414,7 @@
                             <i data-lucide="trending-up" style="color:var(--accent-grid);width:20px;height:20px;"></i>
                             <div>
                                 <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 2: Predajná arbitráž</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Uvoľní pretlak do siete iba počas špičiek.</div>
+                                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.5;">Systém sleduje cenové špičky na OKTE trhu. Vyváža energiu do siete iba vtedy, keď je cena nad určeným prahom (napr. nad 80 €/MWh). Mimo špičiek uskladňuje energiu v batérii pre vlastnú spotrebu.</div>
                             </div>
                         </div>
                         <i id="aiModelCheck2" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1425,8 +1425,8 @@
                         <div style="display:flex;align-items:center;gap:12px;">
                             <i data-lucide="download" style="color:var(--accent-battery);width:20px;height:20px;"></i>
                             <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 3: Nabíjanie batérie zo siete</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nabije batérie, keď ceny klesnú pod denný priemer.</div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 3: Nočné nabíjanie</div>
+                                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.5;">Keď nočná cena elektriny klesne pod denný priemer, systém nabije batériu zo siete za lacný prúd. Na obed ju potom vybíja do domácnosti namiesto drahého nákupu. Šetrí peniaze aj bez fotovoltiky.</div>
                             </div>
                         </div>
                         <i id="aiModelCheck3" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1437,8 +1437,8 @@
                         <div style="display:flex;align-items:center;gap:12px;">
                             <i data-lucide="git-compare" style="color:var(--accent-solar);width:20px;height:20px;"></i>
                             <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 4: Obojsmerná arbitráž</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Kombinované nákupy a predaje podľa trhu.</div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 4: Plná arbitráž</div>
+                                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.5;">Kombinuje nákup aj predaj. Nakupuje zo siete keď je lacno (pod priemerom dňa) a predáva keď je drahо (nad 120% priemeru). Automaticky vyváža aj vybíja batériu podľa aktuálnych cien.</div>
                             </div>
                         </div>
                         <i id="aiModelCheck4" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -1449,8 +1449,8 @@
                         <div style="display:flex;align-items:center;gap:12px;">
                             <i data-lucide="shield-alert" style="color:var(--accent-warn);width:20px;height:20px;"></i>
                             <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: Zimné udržiavanie</div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Nulový odber zo siete, záchranná hranica SOC 15%.</div>
+                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 5: Zimný režim</div>
+                                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.5;">Nulový odber zo siete za každú cenu. Batéria sa nikdy nevybije pod 15% — záloha pre kúrenie. Pri mínusových teplotách uprednostňuje vnútorné spotrebiče (kúrenie, bojler) pred vývozom.</div>
                             </div>
                         </div>
                         <i id="aiModelCheck5" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
