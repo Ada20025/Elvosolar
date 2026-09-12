@@ -1878,11 +1878,11 @@ elseif ($path === '/api/devices/register' && $method === 'POST') {
                 . '</div>'
                 . '<p style="margin-bottom:16px;">Čo ďalej?</p>'
                 . '<ol style="padding-left:20px;color:#475569;line-height:2;">'
-                . '<li>Uistite sa že CM5 is pripojený k internetu</li>'
+                . '<li>Uistite sa že CM5 je pripojený k internetu</li>'
                 . '<li>Pripojte RS485 kábel k striedaču</li>'
                 . '<li>Zariadenie sa automaticky zaregistruje keď bude online</li>'
                 . '</ol>'
-                . '<p style="text-align:center;margin:24px 0;"><a href="' . ($base_path ?? '') . '/dashboard" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#10b981,#3b82f6);color:white;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;">Otvoriť Dashboard</a></p>'
+                . '<p style="text-align:center;margin:24px 0;"><a href="/dashboard" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#10b981,#3b82f6);color:white;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;">Otvoriť Dashboard</a></p>'
                 , '#10b981'
             );
         }
@@ -1897,15 +1897,10 @@ elseif ($path === '/api/devices/register' && $method === 'POST') {
 define('RESEND_API_KEY', getenv('RESEND_API_KEY') ?: '');
 define('RESEND_FROM', getenv('RESEND_FROM') ?: 'no-reply@elvosolar.sk');
 
-// Ukončenie routovania (fallback pre neznáme cesty)
+// Ukončenie celého routovania (fallback)
 else {
-    // Ak používateľ príde na hlavnú stránku, načítame hlavné klientske rozhranie z priečinka templates
     if ($path === '/' || $path === '/index.php') {
-        if (file_exists('templates/dashboard.php')) {
-            include 'templates/dashboard.php';
-        } else {
-            echo "<h1>ElvoSolar Setup</h1><p>Status: Online (Aplikácia je pripravená)</p>";
-        }
+        echo "<h1>ElvoSolar Setup</h1><p>Status: Online</p>";
     } else {
         http_response_code(404);
         send_json(['status' => 'error', 'message' => 'Stránka nenájdená'], 404);
