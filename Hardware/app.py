@@ -1120,12 +1120,20 @@ def _auto_detect_rs485_port():
         except Exception:
             return []
     
-    all_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*'))
+    candidate_list = ['/dev/ttyAMA3', '/dev/ttyAMA4', '/dev/serial0', '/dev/ttyAMA0', '/dev/ttyUSB0', '/dev/ttyACM0']
+    found_sys_ports = sorted(glob_mod.glob('/dev/ttyAMA*') + glob_mod.glob('/dev/serial*') + glob_mod.glob('/dev/ttyUSB*') + glob_mod.glob('/dev/ttyACM*'))
+    all_ports = []
+    for cp in candidate_list:
+        if cp in found_sys_ports and cp not in all_ports:
+            all_ports.append(cp)
+    for sp in found_sys_ports:
+        if sp not in all_ports:
+            all_ports.append(sp)
     if not all_ports:
-        all_ports = ['/dev/ttyAMA4']
+        all_ports = ['/dev/ttyAMA3', '/dev/ttyAMA4']
     
-    # FAZA 1: Rychly test - ttyAMA4, 9600, NONE (16 sekund)
-    log_message(f"[AUTO-DETECT] Faza 1 - rychly test: {all_ports}")
+    # FAZA 1: Rychly test - ttyAMA3 / ttyAMA4, 9600, NONE
+    log_message(f"[AUTO-DETECT] Faza 1 - rychly test portov: {all_ports}")
     for port in all_ports:
         if not os.path.exists(port):
             continue
@@ -1431,8 +1439,34 @@ led.anim_boot()  # cervena - system sa spusta
 # Smart meter init
 smart_meter = get_smart_meter_service(bg_service)
 
-# Auto-detect NEBEZI pri boot - caka na prikaz z cloudu
-log_message("[STARTUP] Auto-detect preskoceny - caka na prikaz z cloudu")
+# ─── AUTOMATICKÉ PREHĽADANIE VŠETKÝCH PORTOV PO ŠTARTE ────────────────
+def _startup_auto_discovery_loop():
+    """Automaticky preskenuje a nájde všetky pripojené RS485 porty a sieťové zariadenia po štarte CM5."""
+    time.sleep(3)
+    log_message("[STARTUP DISCOVERY] 🚀 Spúšťam automatické vyhľadanie všetkých portov...")
+    try:
+        if 'led' in globals():
+            led.anim_scanning()
+        
+        # 1. Automatické vyhľadanie a overenie RS485 portu
+        detected_port = _auto_detect_rs485_port()
+        log_message(f"[STARTUP DISCOVERY] ✅ RS485 port detegovaný a pripravený: {detected_port}")
+        
+        # 2. Rýchly scan siete pre Modbus TCP a SmartLogger
+        try:
+            from network_scan import fast_network_scan
+            net_devs = fast_network_scan(timeout=0.3)
+            log_message(f"[STARTUP DISCOVERY] 📡 Sieťový sken: nájdených {len(net_devs)} aktívnych zariadení v sieti")
+        except Exception:
+            pass
+
+        if 'led' in globals():
+            led.anim_online()
+    except Exception as e:
+        log_message(f"[STARTUP DISCOVERY] Chyba pri autodetekcii: {e}")
+
+threading.Thread(target=_startup_auto_discovery_loop, daemon=True).start()
+
 
 # 24-hodinovy auto-reset DB
 def _daily_reset():
