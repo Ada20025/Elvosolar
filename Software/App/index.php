@@ -1620,8 +1620,6 @@ elseif ($path === '/api/devices/list' && $method === 'GET') {
                 '1' => ['meno' => 'Všetky modely SUN2000']]],
             '2' => ['meno' => 'SmartLogger (Enspire)', 'typ' => 'smartlogger', 'popis' => 'Monitorovací zariadenie cez LAN, Modbus TCP', 'connection' => 'tcp', 'tcp_port' => 502, 'modely' => [
                 '1' => ['meno' => 'SmartLogger 3000A / 1000 / Enspire']]]],
-            '2' => ['meno' => 'SmartLogger', 'typ' => 'smartlogger', 'popis' => 'Monitorovací zariadenie', 'modely' => [
-                '1' => ['meno' => 'SmartLogger 3000A / 1000']]]]],
         '2' => ['znacka' => 'FRONIUS', 'zapojenie' => 'D+ na A(+), D- na B(-).', 'kategorie' => [
             '1' => ['meno' => 'Rezidenčné (Galvo/Symo/Primo)', 'typ' => 'striedac', 'popis' => 'Jedno- aj trojfázové', 'modely' => [
                 '1' => ['meno' => 'Všetky Fronius modely']]]]],
