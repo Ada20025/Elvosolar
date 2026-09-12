@@ -58,3 +58,4 @@ echo "✅ HOTOVO: ElvoSolar služba je aktívna a povolená na auto-štart!"
 echo "   Status môžete skontrolovať príkazom:"
 echo "   sudo systemctl status elvosolar"
 echo "=================================================="
+
