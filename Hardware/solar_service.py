@@ -4,6 +4,8 @@ import time
 import requests
 import os
 import serial
+import socket
+import struct
 import threading
 import json
 import queue
@@ -29,6 +31,9 @@ class SolarBackgroundService:
 
         self.live_data = {}
         self.last_live_okte_price = 0.0  
+
+        # Modbus TCP spojenia (SmartLogger)
+        self.tcp_connections = {}  # {device_id: {ip, port, sock, last_ok}}
 
         self.terminal_logs = []
         self.ai_service = AiService.get_instance()
@@ -181,6 +186,213 @@ class SolarBackgroundService:
         except Exception:
             pass
         return False
+
+    # =========================================================================
+    # MODBUS TCP - Komunikacia so SmartLoggerom / Enspire cez LAN/WiFi
+    # =========================================================================
+
+    def tcp_connect(self, device_id, ip, port=502, timeout=2.0):
+        """Otvori Modbus TCP spojenie na SmartLogger."""
+        try:
+            key = str(device_id)
+            if key in self.tcp_connections:
+                old = self.tcp_connections[key]
+                if old.get('sock'):
+                    try: old['sock'].close()
+                    except: pass
+            
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            sock.connect((ip, port))
+            
+            self.tcp_connections[key] = {
+                'ip': ip,
+                'port': port,
+                'sock': sock,
+                'last_ok': time.time(),
+                'unit_id': 1
+            }
+            self.log_to_terminal(f"[TCP] Pripojený na SmartLogger {ip}:{port}")
+            return True
+        except Exception as e:
+            self.log_to_terminal(f"[TCP] Chyba pripojenia na {ip}:{port}: {e}")
+            return False
+
+    def tcp_read_holding_registers(self, device_id, slave_id, address, count, timeout=1.0):
+        """Citanie Holding Registers cez Modbus TCP (FC03)."""
+        key = str(device_id)
+        conn = self.tcp_connections.get(key)
+        if not conn or not conn.get('sock'):
+            return None
+        
+        try:
+            # Modbus TCP frame
+            transaction_id = int(time.time() * 1000) & 0xFFFF
+            packet = struct.pack('>HHBBHH',
+                transaction_id,  # Transaction ID
+                0,               # Protocol ID (Modbus)
+                6,               # Length
+                slave_id,        # Unit ID
+                3,               # Function Code: Read Holding Registers
+                address,         # Start Address
+                count            # Quantity
+            )
+            
+            conn['sock'].sendall(packet)
+            resp = conn['sock'].recv(256)
+            
+            if len(resp) < 9:
+                return None
+            
+            fc = resp[7]
+            if fc == 0x83:  # Exception
+                return None
+            
+            if fc == 0x03:
+                byte_count = resp[8]
+                registers = []
+                for i in range(0, byte_count, 2):
+                    if i + 1 < len(resp):
+                        val = (resp[9+i] << 8) | resp[9+i+1]
+                        registers.append(val)
+                conn['last_ok'] = time.time()
+                return registers
+            
+            return None
+        except Exception as e:
+            self.log_to_terminal(f"[TCP] Chyba citania z {conn['ip']}: {e}")
+            # Zatvor a znovu pripoj nabuduce
+            try: conn['sock'].close()
+            except: pass
+            conn['sock'] = None
+            return None
+
+    def tcp_read_single(self, device_id, slave_id, register, fc=3):
+        """Precita jednu hodnotu cez Modbus TCP."""
+        if fc == 3:
+            regs = self.tcp_read_holding_registers(device_id, slave_id, register, 1)
+        else:
+            # FC4 Input Registers - rovnaky packet len FC=4
+            key = str(device_id)
+            conn = self.tcp_connections.get(key)
+            if not conn or not conn.get('sock'):
+                return None
+            try:
+                transaction_id = int(time.time() * 1000) & 0xFFFF
+                packet = struct.pack('>HHBBHH', transaction_id, 0, 6, slave_id, 4, register, 1)
+                conn['sock'].sendall(packet)
+                resp = conn['sock'].recv(256)
+                if len(resp) >= 11 and resp[7] == 0x04:
+                    val = (resp[9] << 8) | resp[10]
+                    conn['last_ok'] = time.time()
+                    return val
+            except Exception:
+                pass
+            return None
+        
+        if regs and len(regs) > 0:
+            return regs[0]
+        return None
+
+    def tcp_disconnect(self, device_id):
+        """Zatvori Modbus TCP spojenie."""
+        key = str(device_id)
+        conn = self.tcp_connections.pop(key, None)
+        if conn and conn.get('sock'):
+            try: conn['sock'].close()
+            except: pass
+
+    def is_tcp_device(self, dev_config):
+        """Zisti ci je zariadenie TCP (SmartLogger) alebo RS485 (striedac)."""
+        if not dev_config:
+            return False
+        conn = dev_config.get('connection', '')
+        if conn == 'tcp':
+            return True
+        if dev_config.get('tcp_port'):
+            return True
+        typ = dev_config.get('typ', '')
+        if 'smartlogger' in typ.lower():
+            return True
+        return False
+
+    def read_tcp_device(self, dev, dev_config):
+        """Precita data z SmartLoggera cez Modbus TCP."""
+        device_id = dev.get('id', 0)
+        slave_id = dev.get('slave_id', 1)
+        
+        # Zisti IP SmartLoggera z DB
+        tcp_ip = None
+        tcp_port = dev_config.get('tcp_port', 502)
+        
+        # Hladaj v system_settings alebo v devices
+        row = db_execute(f"SELECT value FROM system_settings WHERE key = 'tcp_ip_{device_id}'")
+        if row:
+            tcp_ip = row[0]['value']
+        
+        # Fallback: hladaj v device extra settings
+        if not tcp_ip:
+            row2 = db_execute(f"SELECT value FROM system_settings WHERE key = 'smartlogger_ip'")
+            if row2:
+                tcp_ip = row2[0]['value']
+        
+        if not tcp_ip:
+            return None
+        
+        # Pripoj sa ak treba
+        key = str(device_id)
+        conn = self.tcp_connections.get(key)
+        if not conn or not conn.get('sock') or conn.get('ip') != tcp_ip:
+            if not self.tcp_connect(device_id, tcp_ip, tcp_port):
+                return None
+            conn = self.tcp_connections[key]
+        
+        # Citanie registrov
+        reg_p_ac = dev_config.get('reg_p_ac', 32080)
+        reg_soc = dev_config.get('reg_soc', 37760)
+        
+        power_val = 0.0
+        soc_val = 0.0
+        temp_val = 0.0
+        freq_val = 50.0
+        status_msg = "SmartLogger TCP aktívne"
+        
+        read_p = self.tcp_read_holding_registers(device_id, slave_id, reg_p_ac, 2)
+        if not read_p:
+            read_p = self.tcp_read_holding_registers(device_id, slave_id, reg_p_ac, 1)
+        read_soc = self.tcp_read_holding_registers(device_id, slave_id, reg_soc, 1)
+        
+        if read_p:
+            power_val = float(read_p[0])
+            temp_val = 34.0
+            status_msg = f"SmartLogger online ({conn['ip']})"
+            LedService.blink_start_led(4)
+        else:
+            status_msg = f"SmartLogger neodpovedá ({conn['ip']}:{conn['port']})"
+        
+        if read_soc:
+            soc_val = float(read_soc[0])
+        
+        # Citaj pripojene striedace zo SmartLoggera (slave ID 1-32)
+        inverters = []
+        for sid in range(1, 33):
+            data_val = self.tcp_read_holding_registers(device_id, sid, reg_p_ac, 1)
+            if data_val and data_val[0] > 0:
+                soc_data = self.tcp_read_holding_registers(device_id, sid, reg_soc, 1)
+                inverters.append({
+                    'slave_id': sid,
+                    'power_ac': float(data_val[0]),
+                    'battery_soc': float(soc_data[0]) if soc_data else 0.0
+                })
+        
+        return {
+            'power_ac': power_val,
+            'battery_soc': soc_val,
+            'temp': temp_val,
+            'freq': freq_val,
+            'status_msg': status_msg,
+            'inverters_via_tcp': inverters
+        }
 
     def ping_slave_fc(self, ser, slave_id: int, register: int, fc: int = 3) -> bool:
         """Testuje ci slave odpoveda na danom registri s danou function code (3=Holding, 4=Input)."""
@@ -490,70 +702,132 @@ class SolarBackgroundService:
 
     def read_and_sync_devices(self, devices_list):
         try:
-            first_dev = devices_list[0]
-            baud_rate = first_dev['config'].get('baud', 9600) if first_dev['config'] else 9600
+            # Oddel TCP zariadenia (SmartLogger) od RS485 (striedace)
+            tcp_devices = [d for d in devices_list if d['config'] and self.is_tcp_device(d['config'])]
+            rs485_devices = [d for d in devices_list if not (d['config'] and self.is_tcp_device(d['config']))]
             
-            ser = self.get_serial_port(baud_rate)
-            if not ser or not ser.is_open:
-                raise Exception("Sériový port nie je otvorený.")
-            
-            for dev in devices_list:
-                slave_id = dev['slave_id']
+            # --- TCP zariadenia (SmartLogger) ---
+            for dev in tcp_devices:
                 cfg = dev['config']
+                slave_id = dev['slave_id']
                 
-                power_val = 0.0
-                soc_val = 0.0
-                temp_val = 0.0
-                freq_val = 0.0
-                status_msg = "Chyba komunikácie (Zbernica offline)"
+                tcp_result = self.read_tcp_device(dev, cfg)
                 
-                if cfg:
-                    reg_p_ac = cfg.get('reg_p_ac', 32080)
-                    reg_soc = cfg.get('reg_soc', 37760)
+                if tcp_result:
+                    power_val = tcp_result['power_ac']
+                    soc_val = tcp_result['battery_soc']
+                    temp_val = tcp_result['temp']
+                    freq_val = tcp_result['freq']
+                    status_msg = tcp_result['status_msg']
                     
-                    read_p = self.raw_read_registers(ser, slave_id, reg_p_ac, 2)
-                    if not read_p:
-                        read_p = self.raw_read_registers(ser, slave_id, reg_p_ac, 1)
-                    read_soc = self.raw_read_registers(ser, slave_id, reg_soc, 1)
-                    
-                    if read_p:
-                        power_val = float(read_p[0])
-                        temp_val = 34.2
-                        freq_val = 50.01
-                        status_msg = "Aktívne pripojenie"
-                        LedService.blink_start_led(4)
-                        
-                    if read_soc:
-                        soc_val = float(read_soc[0])
-                        if not read_p:
-                            LedService.blink_start_led(4)
-
+                    # SmartLogger moze mat pripojene striedace
+                    inverters = tcp_result.get('inverters_via_tcp', [])
+                    for inv in inverters:
+                        inv_sid = inv['slave_id']
+                        self.live_data[inv_sid] = {
+                            'serial_number': f"TCP-INV-{inv_sid}",
+                            'slave_id': inv_sid,
+                            'power_ac': inv['power_ac'],
+                            'battery_soc': inv['battery_soc'],
+                            'temp': 0.0,
+                            'freq': 50.0,
+                            'status_msg': f'Via SmartLogger ({tcp_result.get("ip", "?")})',
+                            'via_smartlogger': True
+                        }
+                        try:
+                            self.ai_service.learn_from_telemetry(power_ac=inv['power_ac'], battery_soc=inv['battery_soc'])
+                        except Exception:
+                            pass
+                else:
+                    power_val = 0.0
+                    soc_val = 0.0
+                    temp_val = 0.0
+                    freq_val = 0.0
+                    status_msg = "SmartLogger nedostupný"
+                
                 self.live_data[slave_id] = {
-                    "serial_number": dev['serial_number'],
-                    "slave_id": slave_id,
-                    "power_ac": power_val,
-                    "battery_soc": soc_val,
-                    "temp": temp_val,
-                    "freq": freq_val,
-                    "status_msg": status_msg
+                    'serial_number': dev['serial_number'],
+                    'slave_id': slave_id,
+                    'power_ac': power_val,
+                    'battery_soc': soc_val,
+                    'temp': temp_val,
+                    'freq': freq_val,
+                    'status_msg': status_msg
                 }
                 
                 try:
                     self.ai_service.learn_from_telemetry(power_ac=power_val, battery_soc=soc_val, temp=temp_val)
                 except Exception:
                     pass
-
-                # Pridanie smart meter dát do payloadu pre cloud
-                if self.smart_meter and self.smart_meter.meter_mode != 'NONE':
-                    meter_data = self.smart_meter.get_live_data()
-                    self.live_data[slave_id].update({
-                        'house_consumption_w': meter_data['house_consumption_w'],
-                        'grid_import_w': meter_data['grid_import_w'],
-                        'grid_export_w': meter_data['grid_export_w'],
-                        'meter_control_mode': meter_data['control_mode'],
-                    })
-
+                
                 self.push_to_cloud(self.live_data[slave_id])
+            
+            # --- RS485 zariadenia (striedace) ---
+            if rs485_devices:
+                first_dev = rs485_devices[0]
+                baud_rate = first_dev['config'].get('baud', 9600) if first_dev['config'] else 9600
+                
+                ser = self.get_serial_port(baud_rate)
+                if not ser or not ser.is_open:
+                    raise Exception("Sériový port nie je otvorený.")
+                
+                for dev in rs485_devices:
+                    slave_id = dev['slave_id']
+                    cfg = dev['config']
+                    
+                    power_val = 0.0
+                    soc_val = 0.0
+                    temp_val = 0.0
+                    freq_val = 0.0
+                    status_msg = "Chyba komunikácie (Zbernica offline)"
+                    
+                    if cfg:
+                        reg_p_ac = cfg.get('reg_p_ac', 32080)
+                        reg_soc = cfg.get('reg_soc', 37760)
+                        
+                        read_p = self.raw_read_registers(ser, slave_id, reg_p_ac, 2)
+                        if not read_p:
+                            read_p = self.raw_read_registers(ser, slave_id, reg_p_ac, 1)
+                        read_soc = self.raw_read_registers(ser, slave_id, reg_soc, 1)
+                        
+                        if read_p:
+                            power_val = float(read_p[0])
+                            temp_val = 34.2
+                            freq_val = 50.01
+                            status_msg = "Aktívne pripojenie"
+                            LedService.blink_start_led(4)
+                            
+                        if read_soc:
+                            soc_val = float(read_soc[0])
+                            if not read_p:
+                                LedService.blink_start_led(4)
+
+                    self.live_data[slave_id] = {
+                        "serial_number": dev['serial_number'],
+                        "slave_id": slave_id,
+                        "power_ac": power_val,
+                        "battery_soc": soc_val,
+                        "temp": temp_val,
+                        "freq": freq_val,
+                        "status_msg": status_msg
+                    }
+                    
+                    try:
+                        self.ai_service.learn_from_telemetry(power_ac=power_val, battery_soc=soc_val, temp=temp_val)
+                    except Exception:
+                        pass
+
+                    # Pridanie smart meter dát do payloadu pre cloud
+                    if self.smart_meter and self.smart_meter.meter_mode != 'NONE':
+                        meter_data = self.smart_meter.get_live_data()
+                        self.live_data[slave_id].update({
+                            'house_consumption_w': meter_data['house_consumption_w'],
+                            'grid_import_w': meter_data['grid_import_w'],
+                            'grid_export_w': meter_data['grid_export_w'],
+                            'meter_control_mode': meter_data['control_mode'],
+                        })
+
+                    self.push_to_cloud(self.live_data[slave_id])
                         
         except Exception as com_err:
             for dev in devices_list:

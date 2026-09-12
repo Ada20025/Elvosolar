@@ -471,6 +471,45 @@ def api_discover_network(port: int = 502, timeout: float = 0.3):
         return {"status": "error", "message": str(e), "devices": []}
 
 
+@app.post("/api/system/save-smartlogger")
+def api_save_smartlogger():
+    """Ulozi IP SmartLoggera pre modbus TCP komunikaciu."""
+    data = get_json_input()
+    ip = data.get('ip', '')
+    port = data.get('port', 502)
+    device_id = data.get('device_id', 0)
+    
+    if not ip:
+        return {"status": "error", "message": "IP adresa je povinna"}
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Uloz IP pre specificke zariadenie
+    if device_id:
+        cursor.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)",
+                       (f'tcp_ip_{device_id}', ip))
+    
+    # Uloz ako globalny SmartLogger IP
+    cursor.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)",
+                   ('smartlogger_ip', ip))
+    cursor.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)",
+                   ('smartlogger_port', str(port)))
+    
+    conn.commit()
+    conn.close()
+    
+    bg_service.log_to_terminal(f"[TCP] SmartLogger IP ulozeny: {ip}:{port}")
+    
+    # Okamzite sa pokus pripojit
+    try:
+        bg_service.tcp_connect(device_id or 1, ip, port)
+    except Exception as e:
+        bg_service.log_to_terminal(f"[TCP] Pripojenie zlyhalo: {e}")
+    
+    return {"status": "success", "ip": ip, "port": port}
+
+
 @app.get("/api/system/announce")
 def api_announce():
     """CM5 sa ohlasi do siete cez UDP broadcast aby ho SmartLogger nasiel."""
