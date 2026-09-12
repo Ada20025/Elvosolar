@@ -423,6 +423,42 @@ def api_system_discover(brand: str = "", category: str = "", model: str = ""):
         return {"status": "error", "message": f"Chyba vyhľadávania: {str(e)}", "discovered_count": 0, "slaves": []}
 
 
+@app.get("/api/system/discover-network")
+def api_discover_network(port: int = 502, timeout: float = 0.5):
+    """Skenuje lokálnu sieť pre Modbus TCP zariadenia (SmartLogger, Enspire, atd.)"""
+    try:
+        from network_scan import scan_network_for_modbus, get_local_subnet
+        subnet = get_local_subnet()
+        bg_service.log_to_terminal(f"[NETWORK] Spúšťam skenovanie siete {subnet}.x pre Modbus TCP port {port}...")
+        
+        bg_service.paused = True
+        time.sleep(0.1)
+        
+        results = scan_network_for_modbus(port=port, timeout=timeout)
+        
+        bg_service.paused = False
+        
+        if results:
+            bg_service.log_to_terminal(f"[NETWORK] Nájdených {len(results)} zariadení v sieti")
+            for r in results:
+                model = r.get('model_name', 'Neznáme')
+                bg_service.log_to_terminal(f"  -> {r['ip']}:{r['port']} Model: {model}")
+        else:
+            bg_service.log_to_terminal("[NETWORK] Žiadne Modbus TCP zariadenia v sieti")
+        
+        return {
+            "status": "success",
+            "subnet": subnet,
+            "port": port,
+            "found": len(results),
+            "devices": results
+        }
+    except Exception as e:
+        bg_service.paused = False
+        bg_service.log_to_terminal(f"[NETWORK] Chyba skenovania: {e}")
+        return {"status": "error", "message": str(e), "devices": []}
+
+
 @app.get("/api/system/is-claimed")
 def api_is_claimed():
     conn = get_db_connection()

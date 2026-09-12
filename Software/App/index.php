@@ -1615,9 +1615,11 @@ elseif (preg_match('#^/api/device/([0-9]+)/telemetry$#', $path, $matches) && $me
 elseif ($path === '/api/devices/list' && $method === 'GET') {
     // Kazda znacka moze mat viacero kategorii (striedace + smartlogger)
     send_json([
-        '1' => ['znacka' => 'HUAWEI', 'zapojenie' => 'Modul CH1: R/A(+) a T/B(-).', 'kategorie' => [
+        '1' => ['znacka' => 'HUAWEI', 'zapojenie' => 'RS485: Modul CH1: R/A(+) a T/B(-). SmartLogger: LAN/WiFi, Modbus TCP port 502.', 'kategorie' => [
             '1' => ['meno' => 'Striedače SUN2000', 'typ' => 'striedac', 'popis' => 'Jednofázové aj trojfázové', 'modely' => [
                 '1' => ['meno' => 'Všetky modely SUN2000']]],
+            '2' => ['meno' => 'SmartLogger (Enspire)', 'typ' => 'smartlogger', 'popis' => 'Monitorovací zariadenie cez LAN, Modbus TCP', 'connection' => 'tcp', 'tcp_port' => 502, 'modely' => [
+                '1' => ['meno' => 'SmartLogger 3000A / 1000 / Enspire']]]],
             '2' => ['meno' => 'SmartLogger', 'typ' => 'smartlogger', 'popis' => 'Monitorovací zariadenie', 'modely' => [
                 '1' => ['meno' => 'SmartLogger 3000A / 1000']]]]],
         '2' => ['znacka' => 'FRONIUS', 'zapojenie' => 'D+ na A(+), D- na B(-).', 'kategorie' => [

@@ -41,6 +41,27 @@ DEVICE_DB = {
                         'reg_p_ac': 32080
                     },
                 }
+            },
+            '2': {
+                'cat_id': 2,
+                'typ': 'smartlogger',
+                'skupina_id': 2,
+                'skip_model_selection': True,
+                'meno': 'HUAWEI SmartLogger (Enspire)',
+                'description': 'Monitorovací zariadenie pre FVE - pripojenie cez LAN/WiFi, Modbus TCP port 502',
+                'connection': 'tcp',
+                'tcp_port': 502,
+                'modely': {
+                    '1': {
+                        'meno': 'SmartLogger 3000A / 1000 / Enspire',
+                        'on': 40125,
+                        'off': 40125,
+                        'baud': 9600,
+                        'reg_soc': 37760,
+                        'reg_p_ac': 32080,
+                        'tcp_port': 502
+                    },
+                }
             }
         }
     },

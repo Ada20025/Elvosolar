@@ -356,9 +356,20 @@
                             <p class="text-xs text-slate-400">Jednotka preverí odozvu pripojených zariadení.</p>
                         </div>
                         
-                        <div id="scanStatus" class="p-4 bg-slate-950/50 border border-slate-850 rounded-xl text-xs text-center font-bold text-amber-400 font-sans">Čakám na spustenie diagnostiky zbernice...</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="runDiscoverAndAnimate()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-[11px] py-3 rounded-xl transition shadow-lg">
+                                🔌 RS485 AUTODETEKCIA
+                            </button>
+                            <button onclick="runNetworkDiscovery()" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white font-extrabold text-[11px] py-3 rounded-xl transition shadow-lg">
+                                🌐 HĽADAŤ V SITI (LAN/WiFi)
+                            </button>
+                        </div>
+
+                        <div id="scanStatus" class="p-4 bg-slate-950/50 border border-slate-850 rounded-xl text-xs text-center font-bold text-amber-400 font-sans">Čakám na výber spôsobu vyhľadávania...</div>
 
                         <div id="diagnosticGrid" class="hidden grid grid-cols-8 gap-1.5 p-3 bg-slate-950/60 rounded-2xl border border-slate-800/80 text-[10px] font-mono"></div>
+
+                        <div id="networkResults" class="hidden p-4 bg-slate-950/60 rounded-2xl border border-purple-900/50 space-y-2"></div>
 
                         <div id="finalReport" class="hidden p-4 bg-slate-950/40 rounded-xl border border-slate-850 space-y-2 text-xs">
                             <h4 class="text-cyan-400 font-bold mb-1">Diagnostický report:</h4>
@@ -606,6 +617,81 @@
             document.getElementById("finishBtn").classList.remove("hidden");
         }
 
+        async function runNetworkDiscovery() {
+            const status = document.getElementById("scanStatus");
+            const results = document.getElementById("networkResults");
+            const grid = document.getElementById("diagnosticGrid");
+            grid.classList.add("hidden");
+            results.classList.add("hidden");
+            
+            status.innerText = "🌐 Skenovanie siete pre Modbus TCP zariadenia...";
+            status.className = "p-4 bg-slate-950/50 border border-purple-800 rounded-xl text-xs text-center font-bold text-purple-400";
+            status.innerHTML = '<span class="animate-pulse">🔍</span> Skenovanie siete... Port 502, timeout 0.5s';
+            
+            try {
+                // Zisti subnet z CM5
+                const res = await fetch('/api/system/discover-network?port=502&timeout=0.5');
+                const data = await res.json();
+                
+                if (data.status === 'success' && data.devices && data.devices.length > 0) {
+                    status.innerHTML = '<span class="text-emerald-400">✅ Nájdených ' + data.devices.length + ' zariadení!</span>';
+                    status.className = "p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300";
+                    
+                    // Zobraz vysledky
+                    let html = '<div class="space-y-2">';
+                    html += '<div class="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-2">🌐 Nájdené zariadenia v sieti (' + data.subnet + '.x)</div>';
+                    
+                    data.devices.forEach(function(dev) {
+                        const model = dev.model_name || 'SmartLogger';
+                        const serial = dev.serial_number || '---';
+                        const power = dev.ac_power_w !== undefined ? dev.ac_power_w + ' W' : '--';
+                        const soc = dev.soc_pct !== undefined ? dev.soc_pct + '%' : '--';
+                        
+                        html += '<div onclick="selectNetworkDevice('' + dev.ip + '', '' + dev.port + '', '' + model + '', '' + serial + '')" ';
+                        html += 'class="p-3 bg-slate-950/40 border border-purple-900/50 rounded-xl cursor-pointer hover:border-purple-500 transition">';
+                        html += '<div class="flex items-center justify-between">';
+                        html += '<div>';
+                        html += '<div class="text-xs font-bold text-white">' + model + '</div>';
+                        html += '<div class="text-[10px] text-slate-400 font-mono">' + dev.ip + ':' + dev.port + ' | SN: ' + serial + '</div>';
+                        html += '</div>';
+                        html += '<div class="text-right">';
+                        html += '<div class="text-[10px] text-emerald-400 font-bold">' + power + '</div>';
+                        html += '<div class="text-[10px] text-yellow-400">' + soc + '</div>';
+                        html += '</div>';
+                        html += '</div></div>';
+                    });
+                    
+                    html += '</div>';
+                    results.innerHTML = html;
+                    results.classList.remove("hidden");
+                    
+                    // Automaticky vyber prve zaradenie
+                    selectNetworkDevice(data.devices[0].ip, data.devices[0].port, data.devices[0].model_name || 'SmartLogger', data.devices[0].serial_number || '');
+                    
+                } else {
+                    status.innerHTML = '<span class="text-amber-400">⚠️ Žiadne Modbus TCP zariadenia v sieti</span><br><span class="text-[10px] text-slate-500 mt-1 block">Skontrolujte: 1. SmartLogger zapnutý? 2. Pripojený k sieti? 3. Port 502 otvorený?</span>';
+                    status.className = "p-4 bg-amber-950/20 border border-amber-900/30 rounded-xl text-xs text-center font-bold text-amber-400";
+                }
+            } catch(e) {
+                status.innerHTML = '<span class="text-rose-400">❌ Chyba: ' + e.message + '</span>';
+                status.className = "p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400";
+            }
+        }
+        
+        function selectNetworkDevice(ip, port, model, serial) {
+            // Uloz do local storage pre neskor
+            localStorage.setItem('elvo_network_device', JSON.stringify({ip: ip, port: port, model: model, serial: serial}));
+            
+            // Zobraz v scanStatus
+            const status = document.getElementById("scanStatus");
+            status.innerHTML = '<span class="text-emerald-400">✅ Vybrané: ' + model + '</span><br>' +
+                '<span class="text-[10px] text-slate-300 font-mono">' + ip + ':' + port + ' | SN: ' + serial + '</span>';
+            status.className = "p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300";
+            
+            // Zobraz finish button
+            document.getElementById("finishBtn").classList.remove("hidden");
+        }
+        
         async function runDiscoverAndAnimate() {
             const status = document.getElementById("scanStatus");
             const bId = document.getElementById('brandSelect').value;
