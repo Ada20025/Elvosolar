@@ -1,0 +1,44 @@
+{
+  "device_profile": {
+    "name": "ElvoSolar CM5 AI Smart EMS",
+    "vendor": "ElvoSolar s.r.o.",
+    "protocol": "Modbus-RTU",
+    "default_slave_id": 205,
+    "baudrate": 9600,
+    "databits": 8,
+    "parity": "None",
+    "stopbits": 1,
+    "version": "3.2"
+  },
+  "holding_registers": [
+    { "address": 0, "name": "Device_Type_ID", "type": "uint16", "access": "R", "desc": "0x0501 (ElvoSolar EMS)" },
+    { "address": 1, "name": "Protocol_Version", "type": "uint16", "access": "R", "desc": "100 (v1.00)" },
+    { "address": 6, "name": "Device_Status", "type": "uint16", "access": "R", "desc": "1=Normal, 2=Alarm, 3=Standby" },
+    { "address": 7, "name": "Control_Mode", "type": "uint16", "access": "RW", "desc": "0=Auto, 1=Force Charge, 2=Force Discharge, 3=Off" },
+    { "address": 8, "name": "Modbus_Address", "type": "uint16", "access": "R", "desc": "205" },
+    { "address": 9, "name": "Baudrate", "type": "uint16", "access": "R", "desc": "9600" },
+    { "address": 10, "name": "Stop_Bits", "type": "uint16", "access": "R", "desc": "1" },
+    { "address": 1000, "name": "Inverter_Control_State", "type": "uint16", "access": "RW", "desc": "0=Auto, 1=Force ON, 2=OFF" },
+    { "address": 1001, "name": "Active_AI_Model", "type": "uint16", "access": "RW", "desc": "1-4=Model, 5=Full AI" },
+    { "address": 1004, "name": "Total_PV_Power_W", "type": "int16", "unit": "W", "access": "R", "desc": "Aktualny solarny vykon" },
+    { "address": 1005, "name": "Battery_SoC_Pct", "type": "uint16", "unit": "%", "access": "R", "desc": "Stav nabitia baterie" },
+    { "address": 1006, "name": "OKTE_Spot_Price", "type": "int16", "scale": 0.01, "unit": "EUR/MWh", "access": "R", "desc": "Spotova cena OKTE" },
+    { "address": 1007, "name": "Controller_Temp", "type": "int16", "scale": 0.1, "unit": "degC", "access": "R", "desc": "Teplota jednotky" },
+    { "address": 1008, "name": "Boiler_PT1000_Temp", "type": "int16", "scale": 0.1, "unit": "degC", "access": "R", "desc": "Teplota vody PT1000" },
+    { "address": 1009, "name": "Boiler_Target_Temp", "type": "uint16", "unit": "degC", "access": "RW", "desc": "Cielova teplota bojlera" },
+    { "address": 1010, "name": "Shelly_Boiler_Power_W", "type": "uint16", "unit": "W", "access": "R", "desc": "Prikon bojlera/rele" },
+    { "address": 1011, "name": "Indoor_Temp", "type": "int16", "scale": 0.1, "unit": "degC", "access": "R", "desc": "Izbova teplota" },
+    { "address": 1012, "name": "Heating_Target_Temp", "type": "int16", "scale": 0.1, "unit": "degC", "access": "RW", "desc": "Cielova teplota kurenia" },
+    { "address": 1013, "name": "EV_Charger_Amps", "type": "uint16", "unit": "A", "access": "RW", "desc": "Nabijaci prud Wallboxu" },
+    { "address": 1014, "name": "Battery_Min_Reserve_Pct", "type": "uint16", "unit": "%", "access": "RW", "desc": "Rezerva baterie" },
+    { "address": 2010, "name": "House_Load_W", "type": "int16", "unit": "W", "access": "R", "desc": "Spotreba domu" },
+    { "address": 2011, "name": "Grid_Import_W", "type": "int16", "unit": "W", "access": "R", "desc": "Nakup zo siete" },
+    { "address": 2012, "name": "Grid_Export_W", "type": "int16", "unit": "W", "access": "R", "desc": "Predaj do siete" },
+    { "address": 2013, "name": "PV_Surplus_W", "type": "int16", "unit": "W", "access": "R", "desc": "Prebytky FVE" },
+    { "address": 2015, "name": "Zero_Export_Mode", "type": "uint16", "access": "RW", "desc": "0=Unlimited, 1=ZeroExport, 2=Smart" },
+    { "address": 32080, "name": "Huawei_Active_Power_W", "type": "int16", "unit": "W", "access": "R", "desc": "Active Power P_AC" },
+    { "address": 37760, "name": "Huawei_Storage_SoC", "type": "uint16", "unit": "%", "access": "R", "desc": "Battery SoC" },
+    { "address": 40125, "name": "Huawei_Power_Curtailment", "type": "uint16", "scale": 0.1, "unit": "%", "access": "RW", "desc": "Limit vykonu" }
+  ]
+}
+

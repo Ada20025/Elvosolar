@@ -7,6 +7,14 @@ TZ_SK = "Europe/Bratislava"
 OKTE_URL = "https://isot.okte.sk/api/v1/dam/results"
 WEB_PORT = 80
 
+# === MODBUS RTU SLAVE PRE HUAWEI SMARTLOGGER (ADRESA 205) ===
+MODBUS_RTU_SLAVE_ENABLED = True
+MODBUS_RTU_SLAVE_ID = 205       # Slave adresa pre vyhľadanie v SmartLoggeri
+MODBUS_RTU_BAUDRATE = 9600      # Rýchlosť zbernice
+MODBUS_RTU_DATABITS = 8         # Dátové bity
+MODBUS_RTU_PARITY = 'N'         # Parita: N (None)
+MODBUS_RTU_STOPBITS = 1         # Stop bit: 1
+
 IP_REPORT_URL = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app") + "/api/report-ip"
 COMMON_APNS = ["internet", "o2internet", "to.naklik", "o2.sk"]
 

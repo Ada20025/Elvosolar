@@ -10,8 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Force rebuild timestamp: 2026-09-05
-# Copy ALL app files including templates/dashboard.html (3283 lines)
+# Force rebuild: 2026-09-05T15:00 - safe proxy + 29 missing elements
 COPY Software/App/ /app/
 
 EXPOSE ${PORT:-8080}

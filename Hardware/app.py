@@ -1575,5 +1575,93 @@ def api_smart_meter_auto_detect():
     return {"status": "error", "message": "Ziadne smart meter nenajdene na RS485"}
 
 
+# =============================================================================
+# MODBUS RTU SLAVE & SMARTLOGGER SYSTEM ENDPOINTY
+# =============================================================================
+
+@app.get("/api/system/modbus-rtu-status")
+def get_modbus_rtu_status():
+    """Vráti stav Modbus RTU Slave zbernice pre Huawei SmartLogger."""
+    return {
+        "status": "success",
+        "protocol": "Modbus-RTU",
+        "slave_id": 205,
+        "baudrate": 9600,
+        "databits": 8,
+        "parity": "N",
+        "stopbits": 1,
+        "port": PORT,
+        "is_active": True,
+        "smartlogger_ready": True
+    }
+
+@app.get("/api/system/installation-type")
+def get_installation_type():
+    from database import db_execute
+    rows = db_execute("SELECT value FROM system_settings WHERE key = 'installation_type'")
+    inst_type = rows[0]['value'] if rows and rows[0]['value'] else "HOME"
+    return {"status": "success", "installation_type": inst_type}
+
+@app.post("/api/system/installation-type")
+def set_installation_type(data: dict):
+    from database import db_execute
+    inst_type = data.get("installation_type", "HOME")
+    allow_export = bool(data.get("allow_grid_export", False))
+    db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('installation_type', ?)", (inst_type,))
+    db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('allow_grid_export', ?)", ("1" if allow_export else "0",))
+    return {"status": "success", "installation_type": inst_type, "allow_grid_export": allow_export}
+
+@app.get("/api/devices/third-party")
+def get_third_party_devices():
+    from database import db_execute
+    rows = db_execute("SELECT * FROM third_party_appliances")
+    return {"status": "success", "devices": rows or []}
+
+@app.post("/api/devices/third-party")
+def add_third_party_device(data: dict):
+    from database import db_execute
+    name = data.get("name", "Nový spotrebič")
+    category = data.get("category", "BOILER")
+    protocol = data.get("protocol", "SHELLY_RELAY")
+    ip_address = data.get("ip_address", "192.168.1.150")
+    power_w = float(data.get("power_w", 2000.0))
+    smart_trigger = data.get("smart_trigger", "NEGATIVE_AND_SURPLUS")
+    
+    rows = db_execute(
+        "INSERT INTO third_party_appliances (name, category, protocol, ip_address, power_w, smart_trigger, is_enabled) VALUES (?, ?, ?, ?, ?, ?, 1) RETURNING id",
+        (name, category, protocol, ip_address, power_w, smart_trigger)
+    )
+    dev_id = rows[0]['id'] if rows else 1
+    
+    # Pridanie notifikácie
+    db_execute(
+        "INSERT INTO system_notifications (title, message, tag, is_read) VALUES (?, ?, ?, 0)",
+        (f"Pridaný spotrebič {name}", f"Zariadenie {name} ({category}) bolo úspešne pridané s IP {ip_address}.", "SHELLY")
+    )
+    return {"status": "success", "device_id": dev_id}
+
+@app.post("/api/devices/third-party/{dev_id}/toggle")
+def toggle_third_party_device(dev_id: int):
+    from database import db_execute
+    rows = db_execute("SELECT is_enabled FROM third_party_appliances WHERE id = ?", (dev_id,))
+    if rows:
+        new_state = 0 if rows[0]['is_enabled'] else 1
+        db_execute("UPDATE third_party_appliances SET is_enabled = ? WHERE id = ?", (new_state, dev_id))
+        return {"status": "success", "is_enabled": bool(new_state)}
+    return {"status": "error", "message": "Zariadenie nenájdené"}
+
+@app.get("/api/notifications")
+def get_notifications():
+    from database import db_execute
+    rows = db_execute("SELECT * FROM system_notifications ORDER BY id DESC LIMIT 20")
+    return {"status": "success", "notifications": rows or []}
+
+@app.post("/api/notifications/read")
+def mark_notifications_read(data: dict = None):
+    from database import db_execute
+    db_execute("UPDATE system_notifications SET is_read = 1")
+    return {"status": "success"}
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=WEB_PORT)

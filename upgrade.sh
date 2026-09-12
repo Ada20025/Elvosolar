@@ -92,7 +92,7 @@ if [ -d "$TEMP_DIR/Hardware" ]; then
     done
     
     # Kopíruj nové súbory ak neexistujú
-    for f in ai_engine.py ble_service.py led_service.py modbus_slave_service.py third_party_service.py smarthome_voice_service.py; do
+    for f in ai_engine.py ble_service.py led_service.py modbus_slave_service.py third_party_service.py; do
         if [ -f "$TEMP_DIR/Hardware/$f" ] && [ ! -f "$HARDWARE_DIR/$f" ]; then
             cp "$TEMP_DIR/Hardware/$f" "$HARDWARE_DIR/$f"
             echo "  📄 $f (nový)"

@@ -37,6 +37,8 @@ node_modules/
 # Tetovacie subory - nepatria do hlavného repo
 tetovacie subory/
 
-# Hw Windows - duplicita
+# Database
+*.db
+Hardware/*.db
 Hw Windows/
 
