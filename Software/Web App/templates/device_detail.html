@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Riadiaca Stanica | ElvoControll</title>
+<link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+<link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#020617">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;background:#020617;color:#f8fafc}
+.font-mono{font-family:'JetBrains Mono',monospace}
+.bg-orb{position:fixed;border-radius:50%;filter:blur(180px);opacity:.10;pointer-events:none;z-index:0;animation:orbFloat 25s ease-in-out infinite}
+.bg-orb-1{width:650px;height:650px;background:radial-gradient(circle,#6366f1,transparent 70%);top:-250px;left:-200px}
+.bg-orb-2{width:500px;height:500px;background:radial-gradient(circle,#3b82f6,transparent 70%);bottom:-200px;right:-150px;animation-delay:-12s}
+.bg-orb-3{width:400px;height:400px;background:radial-gradient(circle,#818cf8,transparent 70%);top:35%;left:45%;animation-delay:-6s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0)}33%{transform:translate(30px,-40px)}66%{transform:translate(-20px,30px)}}
+.header{position:sticky;top:0;z-index:40;background:rgba(2,6,23,.75);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid rgba(99,102,241,.08);box-shadow:0 4px 30px rgba(0,0,0,.2)}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.header-brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,#6366f1,#3b82f6);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 0 20px rgba(99,102,241,.2)}
+.brand-icon svg{width:18px;height:18px}
+.brand-name{font-size:15px;font-weight:900;color:#f8fafc}
+.brand-ver{font-size:9px;font-weight:700;color:#6366f1;letter-spacing:1px;font-family:'JetBrains Mono',monospace}
+.header-right{display:flex;align-items:center;gap:10px}
+.status-badge{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);font-size:10px;font-weight:700;color:#3b82f6}
+.status-badge .dot{width:6px;height:6px;border-radius:50%;background:#3b82f6;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.btn-back{width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.06);background:transparent;color:#64748b;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;text-decoration:none}
+.btn-back:hover{background:rgba(255,255,255,.05);color:#f8fafc}
+.btn-back svg{width:16px;height:16px}
+.tabs{background:rgba(2,6,23,.8);border-bottom:1px solid rgba(255,255,255,.04);padding:0 24px;display:flex;gap:4px;overflow-x:auto}
+.tab{padding:12px 18px;font-size:12px;font-weight:700;color:#475569;border-bottom:2px solid transparent;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:6px;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'Plus Jakarta Sans',sans-serif;border-radius:10px 10px 0 0}
+.tab:hover{color:#94a3b8;background:rgba(99,102,241,.04)}
+.tab.active{color:#818cf8;border-bottom-color:#818cf8;background:rgba(99,102,241,.06)}
+.tab svg{width:14px;height:14px}
+.main{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:24px}
+.section{display:none}.section.active{display:block}
+.card{background:linear-gradient(135deg,rgba(15,23,42,.6),rgba(30,41,59,.3));border:1px solid rgba(255,255,255,.04);border-radius:22px;padding:24px;transition:all .35s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(10px)}
+.card:hover{border-color:rgba(99,102,241,.12);box-shadow:0 8px 32px -8px rgba(0,0,0,.3)}
+.hero-box{background:linear-gradient(135deg,rgba(15,23,42,.85),rgba(59,130,246,.08),rgba(99,102,241,.06));border:1px solid rgba(99,102,241,.18);border-radius:24px;padding:32px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-bottom:24px;box-shadow:0 8px 40px -12px rgba(99,102,241,.12);backdrop-filter:blur(20px);position:relative;overflow:hidden}
+.hero-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#6366f1,#3b82f6,#818cf8,transparent);opacity:.6}
+.hero-badge{display:inline-flex;padding:4px 12px;border-radius:8px;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.2);font-family:'JetBrains Mono',monospace}
+.hero-title{font-size:20px;font-weight:900;color:#f8fafc;margin-top:12px;letter-spacing:-.3px}
+.hero-desc{font-size:12px;color:#64748b;margin-top:8px;line-height:1.6}
+.hero-meta{display:flex;gap:12px;margin-top:12px;font-size:10px;color:#475569;font-family:'JetBrains Mono',monospace}
+.hero-meta strong{color:#3b82f6}
+.hero-icon{font-size:64px;filter:drop-shadow(0 0 20px rgba(59,130,246,.3))}
+.telemetry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.tele-card{background:linear-gradient(135deg,rgba(15,23,42,.6),rgba(30,41,59,.3));border:1px solid rgba(255,255,255,.04);border-radius:18px;padding:18px;transition:all .35s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+.tele-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(99,102,241,.4),transparent);opacity:0;transition:opacity .3s}
+.tele-card:hover{border-color:rgba(99,102,241,.2);transform:translateY(-3px);box-shadow:0 12px 40px -12px rgba(99,102,241,.15)}
+.tele-card:hover::before{opacity:1}
+.tele-label{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:6px}
+.tele-value{font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;letter-spacing:-.5px}
+.tele-value.blue{color:#3b82f6}.tele-value.cyan{color:#6366f1}.tele-value.indigo{color:#818cf8}.tele-value.violet{color:#a78bfa}.tele-value.white{color:#e2e8f0}
+.tele-bar{width:100%;height:4px;background:rgba(255,255,255,.04);border-radius:4px;margin-top:8px;overflow:hidden}
+.tele-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.mode-section{margin-bottom:20px}
+.mode-title{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:12px}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mode-btn{padding:16px;border-radius:16px;font-size:11px;font-weight:800;cursor:pointer;transition:all .35s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.06);background:linear-gradient(135deg,rgba(15,23,42,.5),rgba(30,41,59,.2));color:#94a3b8;font-family:'Plus Jakarta Sans',sans-serif;position:relative;overflow:hidden}
+.mode-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(59,130,246,.08));opacity:0;transition:opacity .3s}
+.mode-btn:hover{border-color:rgba(99,102,241,.15);color:#f8fafc;transform:translateY(-2px)}
+.mode-btn:hover::after{opacity:1}
+.mode-btn.active{background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(99,102,241,.15));border-color:rgba(99,102,241,.3);color:#818cf8;box-shadow:0 0 30px rgba(99,102,241,.12),inset 0 1px 0 rgba(255,255,255,.05)}
+.mode-btn svg{width:14px;height:14px}
+.section-title{font-size:18px;font-weight:900;color:#f8fafc;margin-bottom:4px;letter-spacing:-.3px}
+.section-desc{font-size:12px;color:#64748b;margin-bottom:20px}
+.phone-mockup{background:#05070f;border:6px solid #1e293b;border-radius:36px;padding:20px;height:420px;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,.4)}
+.phone-header{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#475569;font-family:'JetBrains Mono',monospace;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.03);margin-bottom:12px}
+.phone-header .title{color:#e2e8f0;font-weight:700;font-size:10px}
+.phone-body{flex:1;overflow:hidden}
+.phone-footer{font-size:8px;color:#334155;text-align:center;margin-top:8px;font-family:'JetBrains Mono',monospace}
+.sim-item{background:rgba(15,23,42,.8);border:1px solid rgba(255,255,255,.04);border-radius:12px;padding:12px;margin-bottom:8px}
+.sim-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sim-item-name{display:flex;align-items:center;gap:8px}
+.sim-item-name h4{font-size:11px;font-weight:700;color:#f8fafc}
+.sim-item-name .status{font-size:8px;color:#3b82f6;font-family:'JetBrains Mono',monospace}
+.sim-dot{width:6px;height:6px;border-radius:50%;background:#3b82f6}.sim-dot.off{background:#334155}
+.sim-actions{display:flex;gap:4px}
+.sim-btn{font-size:8px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.06);background:transparent;color:#94a3b8;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.sim-btn:hover{background:rgba(255,255,255,.05);color:#f8fafc}
+.holiday-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,.04)}
+.holiday-info{display:flex;align-items:center;gap:12px}
+.holiday-icon{font-size:28px}
+.holiday-text h3{font-size:16px;font-weight:900;color:#f8fafc}
+.holiday-text p{font-size:11px;color:#64748b;margin-top:2px}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.08);border-radius:12px;transition:all .3s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#64748b;left:3px;top:3px;transition:all .3s}
+.toggle input:checked+.toggle-slider{background:#3b82f6}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:white}
+.form-label{display:block;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:6px}
+.form-input{width:100%;background:rgba(2,6,23,.8);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;font-size:13px;font-weight:600;color:#f8fafc;font-family:'JetBrains Mono',monospace;outline:none;transition:all .2s}
+.form-input:focus{border-color:rgba(59,130,246,.5);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+input[type="range"]{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:4px;outline:none;cursor:pointer}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#3b82f6;cursor:pointer;box-shadow:0 0 10px rgba(59,130,246,.3)}
+.terminal-box{background:rgba(2,6,23,.9);border:1px solid rgba(99,102,241,.15);border-radius:16px;padding:20px}
+.terminal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.terminal-title{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#f8fafc}
+.terminal-badge{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:700;color:#6366f1;font-family:'JetBrains Mono',monospace}
+.terminal-badge .dot{width:6px;height:6px;border-radius:50%;background:#6366f1;animation:pulse 2s infinite}
+.terminal-output{height:180px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.03);border-radius:12px;padding:14px;overflow-y:auto;font-size:11px;font-family:'JetBrains Mono',monospace;color:#6366f1;line-height:1.6}
+.terminal-output::-webkit-scrollbar{width:4px}.terminal-output::-webkit-scrollbar-thumb{background:#1e293b;border-radius:4px}
+.terminal-input-row{display:flex;gap:8px;margin-top:12px;align-items:center}
+.terminal-prompt{font-size:12px;font-weight:800;color:#6366f1;font-family:'JetBrains Mono',monospace}
+.terminal-input{flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#f8fafc;outline:none;transition:all .2s}
+.terminal-input:focus{border-color:rgba(99,102,241,.4)}
+.terminal-submit{padding:10px 18px;border-radius:10px;border:none;background:linear-gradient(135deg,#6366f1,#0891b2);color:white;font-size:11px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s}
+.terminal-submit:hover{box-shadow:0 4px 15px rgba(99,102,241,.3)}
+.hdmi-box{border-radius:16px;overflow:hidden;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.03);height:220px;display:flex;align-items:center;justify-content:center}
+.hdmi-placeholder{text-align:center}
+.hdmi-placeholder svg{width:32px;height:32px;color:#6366f1;margin-bottom:8px;animation:pulse 2s infinite}
+.hdmi-placeholder .label{font-size:11px;font-weight:700;color:#94a3b8}
+.hdmi-placeholder .desc{font-size:9px;color:#475569;margin-top:4px;font-family:'JetBrains Mono',monospace;max-width:280px}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px;background:rgba(2,6,23,.5);border:1px solid rgba(255,255,255,.03);border-radius:12px;margin-bottom:8px}
+.setting-info h4{font-size:12px;font-weight:700;color:#f8fafc}
+.setting-info p{font-size:10px;color:#475569;margin-top:2px}
+.footer{margin-top:48px;padding:20px 24px;border-top:1px solid rgba(255,255,255,.03);display:flex;justify-content:space-between;align-items:center}
+.footer-left{font-size:11px;color:#334155}
+.footer-right{display:flex;gap:16px;font-size:10px;color:#334155;font-family:'JetBrains Mono',monospace}
+.holiday-notice{padding:14px;border-radius:14px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);display:flex;gap:12px;align-items:center;margin-bottom:20px}
+.holiday-notice .icon{font-size:24px}
+.holiday-notice .text h4{font-size:12px;font-weight:800;color:#6366f1}
+.holiday-notice .text p{font-size:11px;color:#94a3b8;margin-top:2px}
+.temp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.temp-card{padding:12px;border-radius:12px;background:rgba(2,6,23,.5);border:1px solid rgba(255,255,255,.03);text-align:center}
+.temp-card .label{font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#475569}
+.temp-card .value{font-size:16px;font-weight:900;font-family:'JetBrains Mono',monospace;margin-top:4px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.hidden{display:none!important}
+.particle{position:fixed;width:2px;height:2px;background:rgba(99,102,241,.3);border-radius:50%;pointer-events:none;z-index:0;animation:particleFloat linear infinite}
+@keyframes particleFloat{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1.5);opacity:0}}
+.shimmer{position:relative;overflow:hidden}
+.shimmer::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(99,102,241,.04),transparent);animation:shimmer 3s ease-in-out infinite}
+@keyframes shimmer{0%{left:-100%}100%{left:100%}}
+.tele-value{transition:color .3s}
+.tele-value.changing{animation:valueFlash .5s ease}
+@keyframes valueFlash{0%,100%{opacity:1}50%{opacity:.5}}
+@media(max-width:768px){.telemetry-grid{grid-template-columns:repeat(2,1fr)}.mode-grid{grid-template-columns:1fr}.hero-box{grid-template-columns:1fr}.hero-icon{display:none}.footer{flex-direction:column;gap:8px;text-align:center}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="bg-orb bg-orb-1"></div><div class="bg-orb bg-orb-2"></div><div class="bg-orb bg-orb-3"></div>
+<div id="php-metadata" data-device-id="<?php echo htmlspecialchars($device['id'] ?? 1); ?>" data-device-name="<?php echo htmlspecialchars($device['name'] ?? 'ElvoControll CM5'); ?>" data-base-path="<?php echo htmlspecialchars($base_path); ?>" class="hidden"></div>
+
+<div id="pwaInstallBanner" class="hidden" style="background:rgba(15,23,42,.9);border-bottom:1px solid rgba(255,255,255,.04);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:50;"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">📱</span><div><span style="font-size:12px;font-weight:800;color:#f8fafc;">Nainštalovať ElvoControll</span><span style="font-size:10px;color:#64748b;display:block;">EMS pohodlne na ploche.</span></div></div><div style="display:flex;gap:8px;"><button onclick="dismissPwaPrompt()" style="padding:6px 12px;font-size:11px;color:#64748b;background:none;border:none;cursor:pointer;">Neskôr</button><button onclick="triggerPwaInstall()" style="padding:8px 16px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;font-size:11px;font-weight:800;border:none;cursor:pointer;">Inštalovať</button></div></div>
+
+<header class="header"><div class="header-inner">
+<a href="<?php echo $base_path; ?>/dashboard" class="header-brand"><img src="<?php echo $base_path; ?>/templates/ElvosolarLogo.png" alt="ElvoControll" style="height:36px;width:auto;border-radius:8px;filter:drop-shadow(0 0 8px rgba(99,102,241,.3));"><div><div class="brand-name">ElvoControll</div><div class="brand-ver">EMS PRO • ID #<?php echo htmlspecialchars($device['id'] ?? 1); ?></div></div></a>
+<div class="header-right"><div class="status-badge"><span class="dot"></span><span>Zbernica aktívna</span></div><a href="<?php echo $base_path; ?>/dashboard" class="btn-back"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></a></div>
+</div></header>
+
+<nav class="tabs">
+<button onclick="switchTab('dashboard')" id="tabBtnDashboard" class="tab active"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Prehľad</button>
+<button onclick="switchTab('app_sim')" id="tabBtnAppSim" class="tab"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>Smart Aplikácia</button>
+<button onclick="switchTab('holiday')" id="tabBtnHoliday" class="tab">🌴 Dovolenka</button>
+<?php if ($is_admin): ?><button onclick="switchTab('terminal')" id="tabBtnTerminal" class="tab"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Terminál</button><?php endif; ?>
+<button onclick="switchTab('meter')" id="tabBtnMeter" class="tab"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M6.34 6.34l1.42 1.42M16.24 16.24l1.42 1.42M17.66 6.34l-1.42 1.42M7.76 16.24l-1.42 1.42"/></svg>Smart Meter</button>
+</nav>
+
+<main class="main">        <section id="sectionDashboard" class="section active">
+<div class="hero-box" id="device-hero"><div><span class="hero-badge">RIADIACA JEDNOTKA AKTÍVNA</span><span style="margin-left:8px;font-size:8px;padding:3px 8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:6px;color:#f59e0b;font-family:JetBrains Mono,monospace;font-weight:700;">⚠️ BETA VERZIA</span><h2 class="hero-title" id="device-greeting"></h2><p class="hero-desc" id="device-greeting-sub"></p><div class="hero-meta"><span>Pripojenie: <strong>Ethernet / Wi-Fi</strong></span><span>•</span><span>Odozva: <strong>12 ms</strong></span></div></div><div class="hero-icon">🧠</div></div>
+<div class="telemetry-grid"><div class="tele-card"><div class="tele-label">⚡ Výkon FVE</div><div class="tele-value blue font-mono" id="dashLivePower">0 W</div><div class="tele-bar"><div id="dashPowerBar" class="tele-bar-fill" style="width:0%;background:linear-gradient(90deg,#3b82f6,#6366f1);"></div></div></div><div class="tele-card"><div class="tele-label">🔋 Batéria SOC</div><div class="tele-value cyan font-mono" id="dashBatterySoc">-- %</div><div class="tele-bar"><div id="dashBatteryBar" class="tele-bar-fill" style="width:0%;background:linear-gradient(90deg,#6366f1,#3b82f6);"></div></div></div><div class="tele-card"><div class="tele-label">💰 Úspora</div><div class="tele-value indigo font-mono" id="dashTotalSaved">-- €</div></div><div class="tele-card"><div class="tele-label">📊 Frekvencia</div><div class="tele-value white font-mono" id="dashLiveFreq">50.01 Hz</div></div><div class="tele-card"><div class="tele-label">🌡️ Teplota bojlera <span style="font-size:7px;padding:2px 6px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.2);border-radius:4px;color:#f59e0b;font-family:JetBrains Mono,monospace;vertical-align:middle;">BETA</span></div><div class="tele-value violet font-mono" id="dashBoilerTemp">-- °C</div></div><div class="tele-card"><div class="tele-label">🔌 Spotreba</div><div class="tele-value white font-mono" id="dashConsumption">-- W</div></div><div class="tele-card"><div class="tele-label">☀️ Slnko FVE <span style="font-size:7px;padding:2px 6px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.2);border-radius:4px;color:#f59e0b;font-family:JetBrains Mono,monospace;vertical-align:middle;">BETA</span></div><div class="tele-value blue font-mono" id="dashSolarTemp">-- °C</div></div><div class="tele-card"><div class="tele-label">🌡️ Vonkajšia <span style="font-size:7px;padding:2px 6px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.2);border-radius:4px;color:#f59e0b;font-family:JetBrains Mono,monospace;vertical-align:middle;">BETA</span></div><div class="tele-value indigo font-mono" id="dashOutdoorTemp">-- °C</div></div></div>
+<div class="mode-section"><div class="mode-title">Rýchla zmena režimu riadenia</div><div class="mode-grid"><button onclick="setManualOverride('AUTO')" id="btnOverrideAuto" class="mode-btn active"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>AUTO (AI EMS)</button><button onclick="setManualOverride('ON')" id="btnOverrideOn" class="mode-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 17H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-1"/><polygon points="12 15 17 21 7 21 12 15"/></svg>FORCE CHARGE</button><button onclick="setManualOverride('OFF')" id="btnOverrideOff" class="mode-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>FORCE DISCHARGE</button></div></div>
+</section>
+<section id="sectionAppSim" class="section"><div class="section-title">Prehľad mobilnej aplikácie</div><div class="section-desc">Detailne vyobrazené funkcie spínania, prehľadov nákladov a regulácie.</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin:0 auto;">
+<div class="phone-mockup"><div class="phone-header"><span>9:41</span><span class="title">Zariadenia 3. strán</span><span>📶 🔋</span></div><div class="phone-body"><div class="sim-item"><div class="sim-item-header"><div class="sim-item-name"><span>♨️</span><div><h4>Bojler TÚV</h4><span class="status" id="appBoilerStatusText">Online - Spustené zo soláru</span></div></div><span class="sim-dot" id="appBoilerIndicator"></span></div><div class="sim-actions"><button onclick="toggleAppBoiler()" class="sim-btn" id="appBoilerToggleBtn">Prepnúť</button><span class="sim-btn" style="cursor:default;">Teplotný ohrev</span></div></div><div class="sim-item"><div class="sim-item-header"><div class="sim-item-name"><span>🏊</span><div><h4>Vonkajší bazén</h4><span class="status" id="appPoolStatusText">Online - Filtrácia spustená</span></div></div><span class="sim-dot" id="appPoolIndicator"></span></div><div class="sim-actions"><button onclick="toggleAppPool()" class="sim-btn" id="appPoolToggleBtn">Prepnúť</button><span class="sim-btn" style="cursor:default;">Solárne spínanie</span></div></div></div><div class="phone-footer">Integrované lokálne prepojenie</div></div>
+<div class="phone-mockup"><div class="phone-header"><span>9:41</span><span class="title">Prehľad nákladov</span><span>📶 🔋</span></div><div class="phone-body"><div style="text-align:center;margin-bottom:12px;"><div style="font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:4px;">Ušetrené náklady</div><div style="font-size:24px;font-weight:900;color:#3b82f6;font-family:'JetBrains Mono',monospace;" id="appLiveSavedCost">3,37 €</div></div><div style="height:80px;background:rgba(0,0,0,.3);border-radius:10px;border:1px solid rgba(255,255,255,.03);padding:8px;display:flex;align-items:flex-end;justify-content:space-between;gap:3px;"><div style="width:100%;background:rgba(59,130,246,.1);height:30%;border-radius:3px 3px 0 0;"></div><div style="width:100%;background:rgba(59,130,246,.2);height:45%;border-radius:3px 3px 0 0;"></div><div style="width:100%;background:rgba(59,130,246,.35);height:15%;border-radius:3px 3px 0 0;"></div><div style="width:100%;background:#3b82f6;height:68%;border-radius:3px 3px 0 0;position:relative;"><span style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:7px;font-weight:800;color:#3b82f6;">16h</span></div><div style="width:100%;background:rgba(59,130,246,.25);height:25%;border-radius:3px 3px 0 0;"></div><div style="width:100%;background:rgba(59,130,246,.12);height:12%;border-radius:3px 3px 0 0;"></div></div><p style="font-size:9px;color:#475569;margin-top:10px;line-height:1.5;">Analýza tokov prebieha asynchrónne.</p></div><div class="phone-footer">Automatická aktualizácia</div></div>
+<div class="phone-mockup"><div class="phone-header"><span>9:41</span><span class="title">Upraviť bojler</span><span>📶 🔋</span></div><div class="phone-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;"><div onclick="toggleDialTemp()" style="width:120px;height:120px;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="112" height="112" style="transform:rotate(-90deg);"><circle cx="56" cy="56" r="48" stroke="rgba(255,255,255,.06)" stroke-width="5" fill="transparent"/><circle id="appCircularDialProgress" cx="56" cy="56" r="48" stroke="#3b82f6" stroke-width="5" stroke-dasharray="301" stroke-dashoffset="100" fill="transparent" style="transition:stroke-dashoffset .4s;"/></svg><div style="position:absolute;text-align:center;"><div style="font-size:20px;font-weight:900;color:#f8fafc;font-family:'JetBrains Mono',monospace;" id="appDialTempDisplay">65°C</div><div style="font-size:7px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#475569;">Cieľ ohrevu</div></div></div><div class="temp-grid" style="width:100%;margin-top:12px;"><div class="temp-card"><div class="label">Zo siete</div><div class="value" style="color:#94a3b8;">22°C</div></div><div class="temp-card" style="border-color:rgba(59,130,246,.15);"><div class="label">Z FVE</div><div class="value" style="color:#3b82f6;">27°C</div></div></div></div><div class="phone-footer">Kliknutím prepínate (50/65/75°C)</div></div>
+</div></section>
+<section id="sectionHoliday" class="section">
+<div class="card" style="padding:28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:32px;">🌴</span>
+            <div>
+                <h3 style="font-size:16px;font-weight:900;color:#f8fafc;">Dovolenka</h3>
+                <p style="font-size:11px;color:#64748b;margin-top:2px;">Automaticky spravuje energiu počas neprítomnosti</p>
+            </div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="holidayEnabled" onchange="toggleHolidayModeState(this.checked)"><span class="toggle-slider"></span></label>
+    </div>
+
+    <div id="holidayActiveNotice" class="holiday-notice hidden" style="padding:16px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);border-radius:14px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:24px;">✈️</span>
+        <div>
+            <h4 id="holidayNoticeTitle" style="font-size:13px;font-weight:800;color:#3b82f6;">Dovolenka aktívna</h4>
+            <p id="holidayNoticeDesc" style="font-size:11px;color:#64748b;">Dom je v hlbokej úspore.</p>
+        </div>
+    </div>
+
+    <!-- Datumy -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div>
+            <label class="form-label">📅 Odchod z domu</label>
+            <input type="datetime-local" id="holidayFromInput" onchange="saveHolidayModeParams()" class="form-input">
+        </div>
+        <div>
+            <label class="form-label">🏠 Príchod domov *</label>
+            <input type="datetime-local" id="holidayUntilInput" onchange="saveHolidayModeParams()" class="form-input">
+        </div>
+    </div>
+
+    <!-- Predstih -->
+    <div style="background:rgba(2,6,23,.5);border:1px solid rgba(255,255,255,.03);border-radius:14px;padding:20px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;">⏰ Predstih spustenia ohrevu</span>
+            <span id="preheatVal" style="font-size:12px;font-weight:800;color:#3b82f6;font-family:'JetBrains Mono',monospace;">6 hodín</span>
+        </div>
+        <input type="range" id="holidayPreheatHours" min="1" max="24" value="6" oninput="document.getElementById('preheatVal').innerText = this.value + ' hodín'" onchange="saveHolidayModeParams()">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#334155;margin-top:4px;">
+            <span>1h</span><span>6h</span><span>12h</span><span>24h</span>
+        </div>
+    </div>
+
+    <!-- Ciele -->
+    <div style="background:rgba(2,6,23,.5);border:1px solid rgba(255,255,255,.03);border-radius:14px;padding:20px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:16px;">🎯 Cieľové hodnoty pri návrate</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="font-size:11px;color:#64748b;">🏠 Teplota v dome</span>
+                    <span id="targetTempText" style="font-size:13px;font-weight:800;color:#f59e0b;font-family:'JetBrains Mono',monospace;">22.0 °C</span>
+                </div>
+                <input type="range" id="holidayTargetTemp" min="16" max="28" step="0.5" value="22" oninput="document.getElementById('targetTempText').innerText = parseFloat(this.value).toFixed(1) + ' °C'" onchange="saveHolidayModeParams()">
+                <div style="display:flex;justify-content:space-between;font-size:9px;color:#334155;margin-top:4px;">
+                    <span>16°C</span><span>22°C</span><span>28°C</span>
+                </div>
+            </div>
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="font-size:11px;color:#64748b;">♨️ Teplota vody (Bojler)</span>
+                    <span id="targetBoilerText" style="font-size:13px;font-weight:800;color:#6366f1;font-family:'JetBrains Mono',monospace;">50 °C</span>
+                </div>
+                <input type="range" id="holidayTargetBoiler" min="35" max="80" value="50" oninput="document.getElementById('targetBoilerText').innerText = this.value + ' °C'" onchange="saveHolidayModeParams()">
+                <div style="display:flex;justify-content:space-between;font-size:9px;color:#334155;margin-top:4px;">
+                    <span>35°C</span><span>55°C</span><span>80°C</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
+<section id="sectionTerminal" class="section"><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+<div class="terminal-box"><div class="terminal-header"><span class="terminal-title">Interaktívny Modbus terminál</span><div class="terminal-badge"><span class="dot"></span> LIVE</div></div><div id="cliOutput" class="terminal-output"><div style="color:#334155;">[System] Terminálové jadro CM5 Pro aktívne na /dev/ttyAMA4</div><div style="color:#334155;">[System] Príkazy: "read &lt;reg&gt;", "write &lt;reg&gt; &lt;val&gt;", "restart_services", "clear_logs"</div></div><div class="terminal-input-row"><span class="terminal-prompt">&gt;_</span><input type="text" id="cliInput" onkeydown="handleCliKey(event)" placeholder="read 1000..." class="terminal-input"><button onclick="executeCliCommand()" class="terminal-submit">Spustiť</button></div></div>
+<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#f8fafc;">HDMI Diagnostický náhľad</span><span style="padding:3px 10px;border-radius:8px;font-size:9px;font-weight:700;color:#6366f1;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);font-family:'JetBrains Mono',monospace;">LIVE STREAM</span></div><div class="hdmi-box"><div class="hdmi-placeholder"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><div class="label">HDMI Video rozhranie</div><div class="desc">Simulovaná odozva Waveshare CM5. Video server pripravený prenášať mjpeg signál.</div></div></div></div></div>
+<div class="card" style="margin-top:16px;padding:24px;"><div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#f8fafc;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);">Systémové nastavenia e-mailových hlásení</div><div class="setting-row"><div class="setting-info"><h4>E-maily o novom prihlásení</h4><p>Odoslať bezpečnostný e-mail pri každom prístupe.</p></div><label class="toggle"><input type="checkbox" id="chkLoginEmails" checked onchange="saveNotificationPref()"><span class="toggle-slider"></span></label></div><div class="setting-row"><div class="setting-info"><h4>Denné prehľady úspor</h4><p>Ranný e-mail s denným sumárom úspor.</p></div><label class="toggle"><input type="checkbox" id="chkSummaryEmails" checked onchange="saveNotificationPref()"><span class="toggle-slider"></span></label></div></div>
+</section>
+<section id="sectionMeter" class="section">
+<div class="hero-box" style="background:linear-gradient(135deg,rgba(15,23,42,.8),rgba(99,102,241,.08));border-color:rgba(99,102,241,.15);">
+<div><span class="hero-badge">⚡ SMART METER</span><h2 class="hero-title">Meranie reálnej spotreby</h2><p class="hero-desc">Inteligentné riadenie FVE podľa reálnej spotreby domácnosti. Prepínajte medzi režimami pre maximálnu účinnosť.</p></div><div class="hero-icon">⚡</div>
+</div>
+<div class="mode-section"><div class="mode-title">Režim riadenia FVE podľa spotreby</div><div class="mode-grid" id="meterModeGrid">
+<button onclick="setMeterMode('UNLIMITED')" id="btnMeterUnlimited" class="mode-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>⚡ BEZ OBMEDZENIA</button>
+<button onclick="setMeterMode('SELF_CONSUMPTION')" id="btnMeterSelf" class="mode-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>🏠 VLASTNÁ SPOTREBA</button>
+<button onclick="setMeterMode('ZERO')" id="btnMeterZero" class="mode-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>⚖️ PRI NULE</button>
+<button onclick="setMeterMode('PLUS')" id="btnMeterPlus" class="mode-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>📈 PRI PLUSE</button>
+<button onclick="setMeterMode('SMART')" id="btnMeterSmart" class="mode-btn active"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>🧠 SMART AI</button>
+<button onclick="setMeterMode('CUSTOM')" id="btnMeterCustom" class="mode-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>⚙️ VLASTNÝ REŽIM</button>
+</div><div id="meterModeDesc" style="margin-top:12px;padding:12px 16px;border-radius:12px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.12);font-size:11px;color:#94a3b8;line-height:1.6;">Smart: FVE sa riadi podľa aktuálnej ceny OKTE + reálnej spotreby domu.</div>
+<div id="customSettings" style="display:none;margin-top:16px;padding:20px;border-radius:16px;background:linear-gradient(135deg,rgba(15,23,42,.8),rgba(30,41,59,.6));border:1px solid rgba(99,102,241,.2);">
+<div style="font-size:12px;font-weight:800;color:#818cf8;margin-bottom:16px;">⚙️ NASTAVENIA VLASTNÉHO REŽIMU</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+<div><label style="font-size:10px;color:#64748b;font-weight:700;">Cieľová spotreba (W)</label><input id="cfgTargetConsumption" type="number" value="0" style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(30,41,59,.8);border:1px solid rgba(71,85,105,.3);color:#f8fafc;font-size:12px;font-family:monospace;"></div>
+<div><label style="font-size:10px;color:#64748b;font-weight:700;">Limit vývozu do siete (W)</label><input id="cfgGridExportLimit" type="number" value="0" style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(30,41,59,.8);border:1px solid rgba(71,85,105,.3);color:#f8fafc;font-size:12px;font-family:monospace;"></div>
+<div><label style="font-size:10px;color:#64748b;font-weight:700;">Akcia pri NULE (spotreba=0)</label><select id="cfgZeroAction" style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(30,41,59,.8);border:1px solid rgba(71,85,105,.3);color:#f8fafc;font-size:12px;"><option value="PRODUCE_HOUSE"> Produkovať pre dom</option><option value="CHARGE_BATTERY"> Nabíjať batériu</option><option value="EXPORT_GRID"> Vyvádzať do siete</option><option value="STOP"> Zastaviť výrobu</option></select></div>
+<div><label style="font-size:10px;color:#64748b;font-weight:700;">Akcia pri PLUSE (prebytok)</label><select id="cfgSurplusAction" style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(30,41,59,.8);border:1px solid rgba(71,85,105,.3);color:#f8fafc;font-size:12px;"><option value="CHARGE_BATTERY"> Nabíjať batériu</option><option value="EXPORT_GRID"> Vyvádzať do siete</option><option value="PRODUCE_HOUSE"> Produkovať pre dom</option><option value="STOP"> Zastaviť výrobu</option></select></div>
+<div><label style="font-size:10px;color:#64748b;font-weight:700;">Batéria priorita</label><select id="cfgBatteryPriority" style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(30,41,59,.8);border:1px solid rgba(71,85,105,.3);color:#f8fafc;font-size:12px;"><option value="SMART"> Smart (AI rozhodne)</option><option value="MAX_CHARGE"> Maximálne nabíjanie</option><option value="MIN_DISCHARGE"> Minimálne vybíjanie</option><option value="PRESERVE"> Zachovať SOC</option></select></div>
+</div>
+<button onclick="saveCustomSettings()" style="margin-top:16px;width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;font-size:12px;font-weight:800;cursor:pointer;">💾 ULOŽIŤ NASTAVENIA</button>
+</div></div>
+<div class="telemetry-grid" style="margin-top:20px;">
+<div class="tele-card" style="border-color:rgba(59,130,246,.15);"><div class="tele-label">🏠 Spotreba domu</div><div class="tele-value blue font-mono" id="meterHouseConsumption">0 W</div><div class="tele-bar"><div id="meterHouseBar" class="tele-bar-fill" style="width:0%;background:linear-gradient(90deg,#3b82f6,#6366f1);"></div></div></div>
+<div class="tele-card" style="border-color:rgba(99,102,241,.15);"><div class="tele-label">☀️ FVE výroba</div><div class="tele-value cyan font-mono" id="meterFveProduction">0 W</div><div class="tele-bar"><div id="meterFveBar" class="tele-bar-fill" style="width:0%;background:linear-gradient(90deg,#6366f1,#818cf8);"></div></div></div>
+<div class="tele-card" style="border-color:rgba(129,140,248,.15);"><div class="tele-label">⬆️ Odber zo siete</div><div class="tele-value indigo font-mono" id="meterGridImport">0 W</div></div>
+<div class="tele-card" style="border-color:rgba(167,139,250,.15);"><div class="tele-label">⬇️ Vývoz do siete</div><div class="tele-value violet font-mono" id="meterGridExport">0 W</div></div>
+</div>
+<div class="card" style="margin-top:20px;padding:24px;"><div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#f8fafc;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);">⚡ Tok energie - Live vizualizácia</div>
+<div id="energyFlowViz" style="position:relative;height:180px;background:rgba(0,0,0,.2);border-radius:16px;border:1px solid rgba(255,255,255,.03);overflow:hidden;">
+<div style="position:absolute;left:20px;top:50%;transform:translateY(-50%);text-align:center;"><div style="font-size:32px;">☀️</div><div style="font-size:10px;font-weight:700;color:#3b82f6;font-family:'JetBrains Mono',monospace;margin-top:4px;" id="flowFve">0 W</div><div style="font-size:8px;color:#475569;">FVE</div></div>
+<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;"><div style="font-size:32px;">🏠</div><div style="font-size:10px;font-weight:700;color:#f8fafc;font-family:'JetBrains Mono',monospace;margin-top:4px;" id="flowHome">0 W</div><div style="font-size:8px;color:#475569;">DOM</div></div>
+<div style="position:absolute;right:20px;top:50%;transform:translateY(-50%);text-align:center;"><div style="font-size:32px;">🔌</div><div style="font-size:10px;font-weight:700;color:#6366f1;font-family:'JetBrains Mono',monospace;margin-top:4px;" id="flowGrid">0 W</div><div style="font-size:8px;color:#475569;">SIEŤ</div></div>
+<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+<defs><linearGradient id="flowGrad1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3b82f6" stop-opacity="0.6"/><stop offset="1" stop-color="#6366f1" stop-opacity="0.2"/></linearGradient></defs>
+<line id="flowLineFve" x1="18%" y1="50%" x2="42%" y2="50%" stroke="url(#flowGrad1)" stroke-width="3" stroke-dasharray="8 4" style="animation:flowDash 1s linear infinite;"/>
+<line id="flowLineGrid" x1="58%" y1="50%" x2="82%" y2="50%" stroke="rgba(99,102,241,0.3)" stroke-width="2" stroke-dasharray="8 4" style="animation:flowDash 1s linear infinite;"/>
+</svg>
+<style>@keyframes flowDash{from{stroke-dashoffset:0}to{stroke-dashoffset:-12}}</style>
+</div></div>
+<!-- ═══════════════════════════════════════════ -->
+<!-- AI MODELY 1-5 (časť Smart Meter) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card" style="margin-top:20px;padding:24px;border:1px solid rgba(251,191,36,.15);background:linear-gradient(135deg,rgba(15,23,42,.9),rgba(30,41,59,.6));">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);">
+<div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#fbbf24;">🧠 AI Regulačné modely (OKTE Cena)</div>
+<span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(251,191,36,.15);color:#fbbf24;font-weight:800;letter-spacing:1px;">BETA</span>
+</div>
+<p style="font-size:11px;color:#94a3b8;margin-bottom:16px;line-height:1.5;">AI modely riadia kedy sa striedač zapne/vypne podľa aktuálnej ceny OKTE. Vyberte si model podľa vášho stratégie.</p>
+
+<div style="display:grid;grid-template-columns:1fr;gap:10px;">
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #10b981;" onclick="setAiModel('1')" id="aiModel1">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">🛡️</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 1: Ochrana pred zápornou cenou</div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">ON keď cena > 0€/MWh • OFF keď cena < 0€/MWh</div>
+</div>
+<span style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,.1);color:#10b981;font-weight:700;">AKTÍVNY</span>
+</div></div>
+
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #3b82f6;" onclick="setAiModel('2')" id="aiModel2">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">💰</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 2: Predaj do siete (Arbitráž)</div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">ON keď cena > priemer (predávaš za vysokú cenu)</div>
+</div>
+</div></div>
+
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #8b5cf6;" onclick="setAiModel('3')" id="aiModel3">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">🔋</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 3: Nákup pod priemerom</div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">ON keď cena < priemer • Nabíja z lacnej siete • Vybíja v špičke</div>
+</div>
+</div></div>
+
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #f43f5e;" onclick="setAiModel('4')" id="aiModel4">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">📊</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 4: Kombinovaná arbitráž</div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">Nabíja keď lacno (< priemer) • Vybíja keď drahšie (> priemer)</div>
+</div>
+</div></div>
+
+<div class="tele-card" style="cursor:pointer;border-left:3px solid #fbbf24;" onclick="setAiModel('5')" id="aiModel5">
+<div style="display:flex;align-items:center;gap:10px;">
+<span style="font-size:20px;">🏖️</span>
+<div style="flex:1;">
+<div style="font-size:11px;font-weight:800;color:#f8fafc;">Model 5: Dovolenka <span style="font-size:8px;padding:2px 6px;border-radius:4px;background:rgba(251,191,36,.2);color:#fbbf24;font-weight:800;margin-left:4px;">BETA</span></div>
+<div style="font-size:10px;color:#64748b;margin-top:2px;">ZÁKAZ odberu zo siete • Len keď SOC < 15% (záchrana batérie)</div>
+</div>
+</div></div>
+</div>
+
+<div id="aiModelDesc" style="margin-top:12px;padding:12px 16px;border-radius:12px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.12);font-size:11px;color:#fbbf24;line-height:1.6;">
+Vyberte AI model kliknutím na kartu vyššie. Modely 1-5 riadia kedy sa striedač zapne podľa OKTE ceny.
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- RELÉ (BETA) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card" style="margin-top:20px;padding:24px;border:1px solid rgba(168,85,247,.15);background:linear-gradient(135deg,rgba(15,23,42,.9),rgba(30,41,59,.6));">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);">
+<div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#a855f7;">⚡ Relé ovládanie spotrebičov</div>
+<span style="font-size:8px;padding:3px 8px;border-radius:6px;background:rgba(168,85,247,.15);color:#a855f7;font-weight:800;letter-spacing:1px;">BETA</span>
+</div>
+<p style="font-size:11px;color:#94a3b8;margin-bottom:12px;line-height:1.5;">Ovládanie 3. strán spotrebičov (bojler, čerpadlo, klimatizácia) cez Shelly relé alebo GPIO.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+<div class="tele-card" style="text-align:center;border-color:rgba(168,85,247,.2);">
+<div style="font-size:16px;">🔥</div>
+<div style="font-size:10px;font-weight:700;color:#f8fafc;margin-top:4px;">Bojler</div>
+<div style="font-size:9px;color:#64748b;">Shelly 1PM</div>
+<div style="margin-top:8px;font-size:9px;padding:4px 8px;border-radius:6px;background:rgba(100,116,139,.15);color:#94a3b8;">Nepripojený</div>
+</div>
+<div class="tele-card" style="text-align:center;border-color:rgba(168,85,247,.2);">
+<div style="font-size:16px;">💧</div>
+<div style="font-size:10px;font-weight:700;color:#f8fafc;margin-top:4px;">Čerpadlo</div>
+<div style="font-size:9px;color:#64748b;">Shelly 1PM</div>
+<div style="margin-top:8px;font-size:9px;padding:4px 8px;border-radius:6px;background:rgba(100,116,139,.15);color:#94a3b8;">Nepripojený</div>
+</div>
+<div class="tele-card" style="text-align:center;border-color:rgba(168,85,247,.2);">
+<div style="font-size:16px;">❄️</div>
+<div style="font-size:10px;font-weight:700;color:#f8fafc;margin-top:4px;">Klimatizácia</div>
+<div style="font-size:9px;color:#64748b;">Shelly 1PM</div>
+<div style="margin-top:8px;font-size:9px;padding:4px 8px;border-radius:6px;background:rgba(100,116,139,.15);color:#94a3b8;">Nepripojený</div>
+</div>
+</div>
+</div>
+
+<div class="card" style="margin-top:20px;padding:24px;"><div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#f8fafc;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);">📊 Štatistiky spotreby</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+<div class="temp-card"><div class="label">Priemer</div><div class="value" style="color:#3b82f6;font-family:'JetBrains Mono',monospace;font-size:14px;" id="meterAvgConsumption">0 W</div></div>
+<div class="temp-card"><div class="label">Maximum</div><div class="value" style="color:#f43f5e;font-family:'JetBrains Mono',monospace;font-size:14px;" id="meterPeakConsumption">0 W</div></div>
+<div class="temp-card"><div class="label">Minimum</div><div class="value" style="color:#10b981;font-family:'JetBrains Mono',monospace;font-size:14px;" id="meterMinConsumption">0 W</div></div>
+</div></div>
+</section>
+</main>
+<footer class="footer"><span class="footer-left">2026 © ElvoControll</span><div class="footer-right"><span>Firmware: CM5-v3.2</span><span>•</span><span>Zbernica CH1: OK</span></div></footer>
+<script>
+lucide.createIcons();const metaEl=document.getElementById('php-metadata');const basePath=metaEl?metaEl.getAttribute('data-base-path'):'';const deviceId=metaEl?metaEl.getAttribute('data-device-id'):'1';
+// Floating particles
+(function(){const c=document.body;for(let i=0;i<25;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'vw';p.style.animationDuration=(Math.random()*18+8)+'s';p.style.animationDelay=Math.random()*12+'s';const s=Math.random()*2+1;p.style.width=p.style.height=s+'px';const colors=['rgba(99,102,241,.3)','rgba(59,130,246,.25)','rgba(129,140,248,.2)','rgba(167,139,250,.2)'];p.style.background=colors[Math.floor(Math.random()*colors.length)];c.appendChild(p);}})();
+// Add shimmer to tele-cards
+document.querySelectorAll('.tele-card').forEach(c=>c.classList.add('shimmer'));
+(function(){const h=new Date().getHours();const name='<?php echo htmlspecialchars($device["name"] ?? "Stanica"); ?>';let e,s;
+if(h>=5&&h<9){e='🌅';s='Ráno OUTPUT je na maximum';}else if(h>=9&&h<14){e='☀️';s='Solárny špičkový režim — maximum výkonu';}else if(h>=14&&h<18){e='🌤️';s='Popoludňajší režim — optimálny výkon FVE';}else if(h>=18&&h<22){e='🌇';s='Večerný režim — prechod na batérie';}else{e='🌙';s='Nočný režim — úsporný spánok';}
+document.getElementById('device-greeting').innerText=`${e} ${name} — ${e==='🌙'?'Dobrá noc':'Pekný deň'}!`;
+document.getElementById('device-greeting-sub').innerText=s+'
+
+⚠️ Zatiaľ v bete — aktívne modely: 1, 2, 3, 4, 5. Aktualizácie kódov prebiehajú.';})();
+let appBoilerOn=true,appPoolOn=true;let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();deferredPrompt=e;document.getElementById('pwaInstallBanner').classList.remove('hidden');});
+function triggerPwaInstall(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>dismissPwaPrompt());}else{alert("Inštalačný balíček pripravený.");dismissPwaPrompt();}}
+function dismissPwaPrompt(){document.getElementById('pwaInstallBanner').classList.add('hidden');}
+function switchTab(tabId){const s={dashboard:'sectionDashboard',app_sim:'sectionAppSim',holiday:'sectionHoliday',terminal:'sectionTerminal',meter:'sectionMeter'};const b={dashboard:'tabBtnDashboard',app_sim:'tabBtnAppSim',holiday:'tabBtnHoliday',terminal:'tabBtnTerminal',meter:'tabBtnMeter'};Object.values(s).forEach(v=>{const e=document.getElementById(v);if(e)e.classList.remove('active');});Object.values(b).forEach(v=>{const e=document.getElementById(v);if(e)e.classList.remove('active');});const sec=document.getElementById(s[tabId]),btn=document.getElementById(b[tabId]);if(sec)sec.classList.add('active');if(btn)btn.classList.add('active');lucide.createIcons();}
+function toggleAppBoiler(){appBoilerOn=!appBoilerOn;document.getElementById('appBoilerStatusText').innerText=appBoilerOn?"Online - Spustené zo soláru":"Online - Ohrev odstavený";document.getElementById('appBoilerStatusText').style.color=appBoilerOn?'#3b82f6':'#475569';document.getElementById('appBoilerIndicator').className=appBoilerOn?'sim-dot':'sim-dot off';document.getElementById('appBoilerToggleBtn').innerText=appBoilerOn?'Vypnúť':'Zapnúť';}
+function toggleAppPool(){appPoolOn=!appPoolOn;document.getElementById('appPoolStatusText').innerText=appPoolOn?"Online - Filtrácia spustená":"Online - Filtrácia vypnutá";document.getElementById('appPoolStatusText').style.color=appPoolOn?'#3b82f6':'#475569';document.getElementById('appPoolIndicator').className=appPoolOn?'sim-dot':'sim-dot off';document.getElementById('appPoolToggleBtn').innerText=appPoolOn?'Vypnúť':'Zapnúť';}
+let dialTemps=[50,65,75],currentDialIdx=1;function toggleDialTemp(){currentDialIdx=(currentDialIdx+1)%dialTemps.length;const t=dialTemps[currentDialIdx];document.getElementById('appDialTempDisplay').innerText=`${t}°C`;const p=document.getElementById('appCircularDialProgress');let o=100;if(t===50)o=160;if(t===75)o=40;p.setAttribute('stroke-dashoffset',o);}
+async function fetchHolidayParams(){try{const r=await fetch(basePath+`/api/device/${deviceId}/holiday-mode`);const d=await r.json();if(d.status==='success'&&d.holiday_mode){const h=d.holiday_mode;document.getElementById('holidayEnabled').checked=h.enabled;document.getElementById('holidayUntilInput').value=h.until;document.getElementById('holidayPreheatHours').value=h.preheat_hours;document.getElementById('preheatVal').innerText=h.preheat_hours+' hodín';document.getElementById('holidayTargetTemp').value=h.target_temp;document.getElementById('targetTempText').innerText=parseFloat(h.target_temp).toFixed(1)+' °C';document.getElementById('holidayTargetBoiler').value=h.target_boiler;document.getElementById('targetBoilerText').innerText=h.target_boiler+' °C';const n=document.getElementById('holidayActiveNotice');if(d.is_active){n.classList.remove('hidden');document.getElementById('holidayNoticeTitle').innerText=h.enabled?"Dovolenkový standby":"Pred-návratový ohrev";}else{n.classList.add('hidden');}}}catch(e){}}
+async function toggleHolidayModeState(enabled){const u=document.getElementById('holidayUntilInput').value;const p=parseInt(document.getElementById('holidayPreheatHours').value);const t=parseFloat(document.getElementById('holidayTargetTemp').value);const b=parseInt(document.getElementById('holidayTargetBoiler').value);await sendHolidayPost({enabled,until:u,preheat_hours:p,target_temp:t,target_boiler:b});}
+async function saveHolidayModeParams(){await toggleHolidayModeState(document.getElementById('holidayEnabled').checked);}
+async function sendHolidayPost(payload){try{await fetch(basePath+`/api/device/${deviceId}/holiday-mode`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});fetchHolidayParams();}catch(e){}}
+async function setManualOverride(mode){document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));const m={AUTO:'btnOverrideAuto',ON:'btnOverrideOn',OFF:'btnOverrideOff'};const btn=document.getElementById(m[mode]);if(btn)btn.classList.add('active');try{await fetch(basePath+`/api/device/${deviceId}/control`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'override',value:mode})});}catch(e){}}
+function handleCliKey(e){if(e.key==='Enter')executeCliCommand();}
+function logToCli(text,isError=false){const o=document.getElementById('cliOutput');const t=new Date().toLocaleTimeString('sk-SK');const c=isError?'#f43f5e':'#6366f1';o.innerHTML+=`<div style="color:${c};"><span style="color:#334155;">[${t}]</span> ${text}</div>`;o.scrollTop=o.scrollHeight;}
+async function executeCliCommand(){const input=document.getElementById('cliInput');const cmd=input.value.trim();if(!cmd)return;input.value='';logToCli(`> ${cmd}`);const parts=cmd.split(' ');const action=parts[0].toLowerCase();if(action==='read'){const reg=parseInt(parts[1]);if(isNaN(reg)){logToCli("❌ Syntax: read 1000",true);return;}logToCli(`Čítam register ${reg}...`);setTimeout(()=>logToCli(`🟢 Register ${reg}: 100 W`),400);}else if(action==='write'){const reg=parseInt(parts[1]);const val=parseInt(parts[2]);if(isNaN(reg)||isNaN(val)){logToCli("❌ Syntax: write 1000 1",true);return;}logToCli(`Zapisujem ${val} do registra ${reg}...`);setTimeout(()=>logToCli(`🟢 Zápis potvrdený.`),400);}else if(cmd==='restart_services'){logToCli("Reštartujem služby...");setTimeout(()=>logToCli("🟢 Služby reštartované."),800);}else if(cmd==='clear_logs'){document.getElementById('cliOutput').innerHTML='';logToCli("Konzola vymazaná.");}else{logToCli(`❌ Neznámy príkaz "${action}"`,true);}}
+function saveNotificationPref(){console.log("Preferencie uložené");}
+async function setMeterMode(mode){document.querySelectorAll('#meterModeGrid .mode-btn').forEach(b=>b.classList.remove('active'));const m={UNLIMITED:'btnMeterUnlimited',SELF_CONSUMPTION:'btnMeterSelf',ZERO:'btnMeterZero',PLUS:'btnMeterPlus',SMART:'btnMeterSmart',CUSTOM:'btnMeterCustom'};const btn=document.getElementById(m[mode]);if(btn)btn.classList.add('active');const descs={UNLIMITED:'⚡ BEZ OBMEDZENIA: Menič beží na maximum, bez ohľadu na spotrebu.',SELF_CONSUMPTION:'🏠 VLASTNÁ SPOTREBA: FVE sa prispôsobuje reálnej spotrebe domu.',ZERO:'⚖️ PRI NULE: Keď sieť = 0W, FVE produkuje presne čo dom potrebuje.',PLUS:'📈 PRI PLUSE: Keď je prebytok, všetko ide do batérie/siete. Pri mínuse sa vybíja.',SMART:'🧠 SMART AI: Automatické rozhodovanie podľa OKTE ceny a spotreby.',CUSTOM:'⚙️ VLASTNÝ REŽIM: Vlastné nastavenie - cieľová spotreba, akcia pri nule/pluse.'};document.getElementById('meterModeDesc').innerText=descs[mode]||'';const cs=document.getElementById('customSettings');if(cs)cs.style.display=mode==='CUSTOM'?'block':'none';try{await fetch(basePath+`/api/device/${deviceId}/meter`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({control_mode:mode})});}catch(e){}}
+async function fetchMeterData(){try{const r=await fetch(basePath+`/api/device/${deviceId}/meter`);const d=await r.json();if(d.status==='success'&&d.meter){const m=d.meter;document.getElementById('meterHouseConsumption').innerText=Math.round(m.house_consumption_w)+' W';document.getElementById('meterFveProduction').innerText=Math.round(m.fve_production_w||0)+' W';document.getElementById('meterGridImport').innerText=Math.round(m.grid_import_w)+' W';document.getElementById('meterGridExport').innerText=Math.round(m.grid_export_w)+' W';document.getElementById('flowFve').innerText=Math.round(m.fve_production_w||0)+' W';document.getElementById('flowHome').innerText=Math.round(m.house_consumption_w)+' W';document.getElementById('flowGrid').innerText=(m.grid_import_w>0?'+':'')+Math.round(m.grid_import_w)+' W';const hBar=document.getElementById('meterHouseBar');if(hBar)hBar.style.width=Math.min(100,Math.round(m.house_consumption_w/50))+'%';const fBar=document.getElementById('meterFveBar');if(fBar)fBar.style.width=Math.min(100,Math.round((m.fve_production_w||0)/50))+'%';document.getElementById('meterAvgConsumption').innerText=Math.round(m.avg_consumption_w)+' W';document.getElementById('meterPeakConsumption').innerText=Math.round(m.peak_consumption_w)+' W';document.getElementById('meterMinConsumption').innerText=Math.round(m.min_consumption_w)+' W';if(m.control_mode){document.querySelectorAll('#meterModeGrid .mode-btn').forEach(b=>b.classList.remove('active'));const bm={UNLIMITED:'btnMeterUnlimited',SELF_CONSUMPTION:'btnMeterSelf',ZERO:'btnMeterZero',PLUS:'btnMeterPlus',SMART:'btnMeterSmart',CUSTOM:'btnMeterCustom'};const ab=document.getElementById(bm[m.control_mode]);if(ab)ab.classList.add('active');}}}catch(e){}}
+async function fetchTelemetry(){try{const r=await fetch(basePath+`/api/device/${deviceId}/telemetry`);const d=await r.json();document.getElementById('dashLivePower').innerText=`${Math.round(d.total_live_power)} W`;document.getElementById('dashBatterySoc').innerText=`${Math.round(d.avg_live_soc)} %`;document.getElementById('dashLiveFreq').innerText=`${d.freq.toFixed(2)} Hz`;document.getElementById('dashTotalSaved').innerText=`${d.total_saved_eur.toFixed(2)} €`;const bar=document.getElementById('dashBatteryBar');if(bar)bar.style.width=`${Math.round(d.avg_live_soc)}%`;const pbar=document.getElementById('dashPowerBar');if(pbar)pbar.style.width=`${Math.min(100,Math.round(d.total_live_power/50))}%`;document.getElementById('appLiveSavedCost').innerText=`${(d.total_saved_eur*0.05).toFixed(2)} €`;if(d.boiler_temp!==undefined)document.getElementById('dashBoilerTemp').innerText=`${Math.round(d.boiler_temp)} °C`;if(d.consumption!==undefined)document.getElementById('dashConsumption').innerText=`${Math.round(d.consumption)} W`;if(d.solar_panel_temp!==undefined)document.getElementById('dashSolarTemp').innerText=`${Math.round(d.solar_panel_temp)} °C`;if(d.outdoor_temp!==undefined)document.getElementById('dashOutdoorTemp').innerText=`${Math.round(d.outdoor_temp)} °C`;}catch(e){}}
+document.addEventListener('DOMContentLoaded',()=>{fetchHolidayParams();fetchTelemetry();fetchMeterData();setInterval(fetchTelemetry,10000);setInterval(fetchMeterData,8000);if('serviceWorker' in navigator){navigator.serviceWorker.register(basePath+'/sw.js').catch(()=>{});}});
+
+async function saveCustomSettings(){try{const cfg={target_consumption_w:parseFloat(document.getElementById('cfgTargetConsumption').value)||0,surplus_action:document.getElementById('cfgSurplusAction').value,zero_action:document.getElementById('cfgZeroAction').value,grid_export_limit_w:parseFloat(document.getElementById('cfgGridExportLimit').value)||0,battery_priority:document.getElementById('cfgBatteryPriority').value};await fetch(basePath+`/api/device/${deviceId}/meter/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});document.getElementById('meterModeDesc').innerText='✅ Nastavenia uložené!';}catch(e){document.getElementById('meterModeDesc').innerText='❌ Chyba: '+e.message;}}
+
+async function setAiModel(id){try{document.querySelectorAll('[id^=aiModel]').forEach(c=>c.style.boxShadow='none');const card=document.getElementById('aiModel'+id);if(card)card.style.boxShadow='0 0 20px rgba(251,191,36,.2)';const labels={1:'🛡️ Ochrana pred zápornou cenou - ON keď cena > 0€, OFF keď < 0€.',2:'💰 Arbitráž - predáva keď je drahšie ako priemer.',3:'🔋 Nákup pod priemerom - lacno nabíja, v špičke vybíja.',4:'📊 Kombinovaná arbitráž - nabíja lacno, predáva drahšie.',5:'🏖️ Dovolenka BETA - zákaz odberu zo siete, len záchrana pri SOC < 15%.'};document.getElementById('aiModelDesc').innerText=labels[id]||'';await fetch(basePath+'/api/device/'+deviceId+'/model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model_id:id})});}catch(e){}}
+</script>
+</body></html>

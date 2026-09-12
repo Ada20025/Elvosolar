@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Môj profil | ElvoControll</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #02040a;
+            --bg-card: rgba(10, 15, 30, 0.45);
+            --border-card: rgba(255, 255, 255, 0.07);
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-battery: #10b981;
+            --accent-grid: #3b82f6;
+            --accent-solar: #f59e0b;
+            --accent-warn: #f43f5e;
+            --accent-saved: #818cf8;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 800px) {
+            .profile-grid { grid-template-columns: 1fr; }
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.7) 0%, rgba(5, 7, 15, 0.8) 100%);
+            border: 1px solid var(--border-card);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(25px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            margin-bottom: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-card);
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-styled {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .input-styled:focus {
+            border-color: var(--accent-battery);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-battery), var(--accent-grid));
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .btn-purple {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Toggle switch */
+        .toggle-track {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .toggle-track.on { background: var(--accent-battery); }
+        .toggle-track.off { background: rgba(255,255,255,0.1); border: 1px solid var(--border-card); }
+        .toggle-knob {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            top: 3px;
+            transition: all 0.3s;
+        }
+        .toggle-track.on .toggle-knob { background: white; margin-left: 23px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .toggle-track.off .toggle-knob { background: #4b5563; margin-left: 3px; }
+
+        /* Avatar upload */
+        .avatar-container {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            cursor: pointer;
+        }
+        .avatar-container:hover .avatar-overlay { opacity: 1; }
+        .avatar-overlay {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .avatar-img {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-battery);
+        }
+        .avatar-letter {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #3b82f6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            font-weight: 900;
+            color: white;
+            border: 2px solid var(--accent-battery);
+        }
+
+        /* Notification item */
+        .notif-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            transition: background 0.2s;
+        }
+        .notif-item:hover { background: rgba(255,255,255,0.04); }
+
+        /* Device row */
+        .device-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            transition: background 0.2s;
+        }
+        .device-row:hover { background: rgba(255,255,255,0.04); }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .pulse-dot.online { background: var(--accent-battery); box-shadow: 0 0 10px var(--accent-battery); }
+        .pulse-dot.offline { background: var(--accent-warn); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- NAV -->
+    <nav style="position:sticky;top:0;z-index:100;background:rgba(2,4,10,0.85);backdrop-filter:blur(25px);border-bottom:1px solid var(--border-card);padding:0 24px;">
+        <div style="max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;height:64px;">
+            <div style="display:flex;align-items:center;gap:16px;">
+                <a href="/dashboard" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-muted);font-size:12px;font-weight:700;transition:color 0.2s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">
+                    <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+                    Dashboard
+                </a>
+                <span style="color:var(--text-muted);">|</span>
+                <h1 style="font-size:14px;font-weight:800;color:var(--text-primary);">Môj profil</h1>
+            </div>
+            <a href="/logout" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);color:var(--accent-warn);font-size:11px;font-weight:800;text-decoration:none;transition:all 0.2s;">
+                <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+                Odhlásiť sa
+            </a>
+        </div>
+    </nav>
+
+    <main style="max-width:1200px;margin:0 auto;padding:32px 24px;">
+
+        <div class="profile-grid">
+
+            <!-- LEFT COLUMN -->
+            <div style="display:flex;flex-direction:column;gap:24px;">
+
+                <!-- Avatar + Profile Info -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <div class="avatar-container" onclick="document.getElementById('avatarInput').click()">
+                            <div id="avatarDisplay" class="avatar-letter">A</div>
+                            <div class="avatar-overlay">
+                                <i data-lucide="camera" style="width:20px;height:20px;color:white;"></i>
+                            </div>
+                            <img id="avatarImg" class="avatar-img hidden" alt="Avatar">
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="uploadAvatar(event)">
+                        <div>
+                            <h2 style="font-size:16px;font-weight:900;color:var(--text-primary);margin-bottom:2px;" id="profileName">Načítavam...</h2>
+                            <p style="font-size:11px;color:var(--text-secondary);" id="profileEmail">...</p>
+                            <p style="font-size:9px;color:var(--text-muted);margin-top:3px;">Člen od <span id="memberSince" class="font-mono">...</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Moje zariadenia (left) -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-solar);"></i> Moje zariadenia</span>
+                    </div>
+                    <div id="devicesListLeft" style="display:flex;flex-direction:column;gap:10px;">
+                        <p style="text-align:center;color:var(--text-muted);font-size:11px;padding:16px;">Načítavam...</p>
+                    </div>
+                </div>
+
+                <!-- Email notifikácie -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="mail" style="width:14px;height:14px;color:var(--accent-grid);"></i> Email notifikácie</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Nové zariadenie</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Oznamenie keď sa pridá nové zariadenie</span>
+                            </div>
+                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifNewDevice')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifNewDevice" checked style="display:none;">
+                        </div>
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Porucha zariadenia</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Upozornenie pri chybe alebo offline stave</span>
+                            </div>
+                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifError')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifError" checked style="display:none;">
+                        </div>
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Denný report</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Súhrn výroby a spotreby za deň</span>
+                            </div>
+                            <div class="toggle-track off" onclick="toggleNotif(this, 'notifDaily')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifDaily" style="display:none;">
+                        </div>
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Negatívna cena OKTE</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Upozornenie keď je cena elektriny záporná</span>
+                            </div>
+                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifNegPrice')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifNegPrice" checked style="display:none;">
+                        </div>
+                        <button onclick="saveNotifications()" class="btn-primary" style="margin-top:8px;">Uložiť nastavenia</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div style="display:flex;flex-direction:column;gap:24px;">
+
+                <!-- Nastavenie + Pridať zariadenie -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="settings" style="width:14px;height:14px;color:var(--accent-battery);"></i> Nastavenie</span>
+                        <a href="/setup" style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:10px;font-weight:800;text-decoration:none;transition:all 0.2s;">
+                            <i data-lucide="plus" style="width:12px;height:12px;"></i> Pridať zariadenie
+                        </a>
+                    </div>
+                    <div id="devicesListRight" style="display:flex;flex-direction:column;gap:10px;">
+                        <p style="text-align:center;color:var(--text-muted);font-size:11px;padding:16px;">Načítavam...</p>
+                    </div>
+                </div>
+
+                <!-- Zmena hesla -->
+                <div class="glass-card" style="margin-bottom:0;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="lock" style="width:14px;height:14px;color:var(--accent-battery);"></i> Zmena hesla</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <input type="password" id="currentPassword" placeholder="Aktuálne heslo" class="input-styled">
+                        <input type="password" id="newPassword" placeholder="Nové heslo (min. 6 znakov)" class="input-styled">
+                        <input type="password" id="confirmPassword" placeholder="Zopakujte nové heslo" class="input-styled">
+                        <button onclick="changePassword()" class="btn-primary">Zmeniť heslo</button>
+                    </div>
+                    <div id="passwordMsg" class="hidden" style="margin-top:12px;font-size:11px;font-weight:700;text-align:center;border-radius:10px;padding:10px;"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        let userProfile = {};
+
+        // Toggle notification
+        function toggleNotif(el, checkboxId) {
+            const cb = document.getElementById(checkboxId);
+            cb.checked = !cb.checked;
+            if (cb.checked) {
+                el.className = 'toggle-track on';
+            } else {
+                el.className = 'toggle-track off';
+            }
+        }
+
+        // Avatar upload (local only)
+        function uploadAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                localStorage.setItem('elvo_avatar', dataUrl);
+                showAvatar(dataUrl);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showAvatar(dataUrl) {
+            const letter = document.getElementById('avatarDisplay');
+            const img = document.getElementById('avatarImg');
+            if (dataUrl) {
+                letter.classList.add('hidden');
+                img.src = dataUrl;
+                img.classList.remove('hidden');
+            } else {
+                img.classList.add('hidden');
+                letter.classList.remove('hidden');
+            }
+        }
+
+        function loadAvatar() {
+            const saved = localStorage.getItem('elvo_avatar');
+            showAvatar(saved);
+        }
+
+        async function loadProfile() {
+            try {
+                const res = await fetch('/api/user/me', { credentials: 'same-origin' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    userProfile = data;
+                    document.getElementById('profileName').textContent = data.username || 'Používateľ';
+                    document.getElementById('profileEmail').textContent = data.email || '';
+                    document.getElementById('avatarDisplay').textContent = (data.username || 'U')[0].toUpperCase();
+                    document.getElementById('memberSince').textContent = data.created_at || '2026';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadDevices() {
+            try {
+                const res = await fetch('/api/user/devices', { credentials: 'same-origin' });
+                const data = await res.json();
+                const leftList = document.getElementById('devicesListLeft');
+                const rightList = document.getElementById('devicesListRight');
+
+                if (data.status === 'success' && data.devices.length > 0) {
+                    const html = data.devices.map(d => {
+                        const isOnline = d.is_online;
+                        const statusColor = isOnline ? 'online' : 'offline';
+                        const statusText = isOnline ? 'Online' : 'Offline';
+                        return `
+                        <div class="device-row">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span class="pulse-dot ${statusColor}"></span>
+                                <div>
+                                    <a href="/device/${d.id}" style="font-size:12px;font-weight:800;color:var(--text-primary);text-decoration:none;">${d.name}</a>
+                                    <p style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${d.serial_number || '---'} · ${d.brand_id || ''} ${d.model_id || ''}</p>
+                                </div>
+                            </div>
+                            <span style="font-size:10px;font-weight:700;color:${isOnline ? 'var(--accent-battery)' : 'var(--text-muted)'};">${statusText}</span>
+                        </div>`;
+                    }).join('');
+                    leftList.innerHTML = html;
+                    rightList.innerHTML = html;
+                } else {
+                    const empty = `
+                        <div style="text-align:center;padding:20px;">
+                            <p style="color:var(--text-muted);font-size:11px;margin-bottom:8px;">Žiadne zariadenia</p>
+                            <a href="/setup" style="display:inline-flex;align-items:center;gap:4px;padding:8px 16px;border-radius:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:10px;font-weight:800;text-decoration:none;">+ Pridať prvé zariadenie</a>
+                        </div>`;
+                    leftList.innerHTML = empty;
+                    rightList.innerHTML = empty;
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function saveNotifications() {
+            const settings = {
+                new_device: document.getElementById('notifNewDevice').checked,
+                error: document.getElementById('notifError').checked,
+                daily_report: document.getElementById('notifDaily').checked,
+                negative_price: document.getElementById('notifNegPrice').checked,
+            };
+            try {
+                await fetch('/api/user/notifications', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'same-origin',
+                    body: JSON.stringify(settings)
+                });
+                showToast('Nastavenia uložené!');
+            } catch(e) { showToast('Chyba: ' + e.message, true); }
+        }
+
+        async function changePassword() {
+            const cur = document.getElementById('currentPassword').value;
+            const newP = document.getElementById('newPassword').value;
+            const conf = document.getElementById('confirmPassword').value;
+            const msg = document.getElementById('passwordMsg');
+            if (newP !== conf) { msg.style.background='rgba(244,63,94,0.1)'; msg.style.color='var(--accent-warn)'; msg.textContent='Heslá sa nezhodujú'; msg.classList.remove('hidden'); return; }
+            if (newP.length < 6) { msg.style.background='rgba(244,63,94,0.1)'; msg.style.color='var(--accent-warn)'; msg.textContent='Heslo musí mať aspoň 6 znakov'; msg.classList.remove('hidden'); return; }
+            try {
+                const res = await fetch('/api/user/change-password', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin',
+                    body: JSON.stringify({ current_password: cur, new_password: newP })
+                });
+                const data = await res.json();
+                const ok = data.status === 'success';
+                msg.style.background = ok ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)';
+                msg.style.color = ok ? 'var(--accent-battery)' : 'var(--accent-warn)';
+                msg.textContent = data.message;
+                msg.classList.remove('hidden');
+            } catch(e) { showToast('Chyba: ' + e.message, true); }
+        }
+
+        async function testEmail() {
+            const msg = document.getElementById('testEmailMsg');
+            try {
+                const res = await fetch('/api/user/test-email', { method: 'POST', credentials: 'same-origin' });
+                const data = await res.json();
+                const ok = data.status === 'success';
+                msg.style.background = ok ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)';
+                msg.style.color = ok ? 'var(--accent-battery)' : 'var(--accent-warn)';
+                msg.textContent = data.message;
+                msg.classList.remove('hidden');
+            } catch(e) { showToast('Chyba: ' + e.message, true); }
+        }
+
+        function showToast(msg, isError) {
+            const t = document.createElement('div');
+            t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:12px;font-weight:800;z-index:9999;backdrop-filter:blur(10px);`;
+            t.style.background = isError ? 'rgba(244,63,94,0.9)' : 'rgba(16,185,129,0.9)';
+            t.style.color = 'white';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        // Init
+        loadAvatar();
+        loadProfile();
+        loadDevices();
+        lucide.createIcons();
+    </script>
+</body>
+</html>

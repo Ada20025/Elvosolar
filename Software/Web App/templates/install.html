@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stiahnuť ElvoControll</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #02040a; --bg2: #05070f;
+            --card: rgba(10, 15, 30, 0.45);
+            --border: rgba(255,255,255,0.07);
+            --text: #f9fafb; --text2: #9ca3af; --text3: #6b7280;
+            --green: #10b981; --blue: #3b82f6; --purple: #818cf8; --orange: #f59e0b;
+        }
+        body.light-mode {
+            --bg: #f0f4f8; --bg2: #ffffff;
+            --card: rgba(255,255,255,0.85);
+            --border: rgba(0,0,0,0.06);
+            --text: #0f172a; --text2: #475569; --text3: #94a3b8;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 24px 16px; }
+
+        /* Header */
+        .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; margin-bottom: 24px; }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-box { width: 40px; height: 40px; background: #000; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .light-mode .logo-box { background: #fff; border: 1px solid var(--border); }
+        .logo-box img { height: 28px; }
+        .brand { font-size: 18px; font-weight: 900; letter-spacing: -0.3px; }
+        .tagline { font-size: 8px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--green); font-family: 'JetBrains Mono', monospace; }
+        .back-btn { color: var(--text2); text-decoration: none; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+
+        /* Cards */
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(25px); }
+        .card-title { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text2); display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+        .card-title i { width: 16px; height: 16px; }
+
+        /* Phone mockup */
+        .phone-frame { width: 220px; height: 400px; border-radius: 32px; border: 3px solid var(--border); background: var(--bg2); margin: 0 auto 20px; overflow: hidden; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .phone-notch { width: 100px; height: 24px; background: var(--bg); border-radius: 0 0 16px 16px; margin: 0 auto; position: relative; z-index: 2; }
+        .phone-screen { padding: 8px 12px; font-size: 9px; color: var(--text2); }
+        .phone-header { text-align: center; padding: 12px 0 8px; }
+        .phone-header img { height: 32px; margin-bottom: 4px; }
+        .phone-header .name { font-size: 10px; font-weight: 800; color: var(--text); }
+        .phone-metric { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+        .phone-metric-label { font-size: 8px; color: var(--text3); }
+        .phone-metric-val { font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+        .phone-chart { height: 40px; background: rgba(129,140,248,0.08); border-radius: 8px; margin-top: 8px; display: flex; align-items: flex-end; padding: 4px; gap: 2px; }
+        .phone-bar { flex: 1; background: var(--purple); border-radius: 2px 2px 0 0; opacity: 0.6; }
+
+        /* Install buttons */
+        .install-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .install-btn { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; text-decoration: none; color: var(--text); }
+        .install-btn:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16,185,129,0.15); }
+        .install-btn .icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+        .install-btn .label { font-size: 12px; font-weight: 800; }
+        .install-btn .desc { font-size: 10px; color: var(--text3); text-align: center; }
+
+        .feature-list { display: flex; flex-direction: column; gap: 10px; }
+        .feature-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
+        .feature-item .fi { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .feature-item .ft { font-size: 12px; font-weight: 700; }
+        .feature-item .fd { font-size: 10px; color: var(--text3); }
+
+        .qr-box { width: 140px; height: 140px; background: #fff; border-radius: 16px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; padding: 12px; }
+        .qr-placeholder { width: 100%; height: 100%; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 10px; }
+
+        /* Footer */
+        .footer { text-align: center; padding: 24px 0; font-size: 10px; color: var(--text3); }
+        .footer a { color: var(--green); text-decoration: none; }
+
+        @media (max-width: 480px) {
+            .install-grid { grid-template-columns: 1fr; }
+            .phone-frame { width: 180px; height: 320px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-box">
+                    <img id="pageLogo" src="/templates/ElvosolarLogo.png" alt="ElvoControll">
+                </div>
+                <div>
+                    <div class="brand">ElvoControll</div>
+                    <div class="tagline">SMART EMS</div>
+                </div>
+            </div>
+            <a href="/" class="back-btn"><i data-lucide="arrow-left" style="width:14px;height:14px;"></i> Späť</a>
+        </div>
+
+        <!-- Phone preview -->
+        <div class="card" style="text-align:center;">
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="phone-screen">
+                    <div class="phone-header">
+                        <img src="/templates/ElvosolarLogo.png" alt="">
+                        <div class="name">ElvoControll</div>
+                    </div>
+                    <div class="phone-metric">
+                        <span class="phone-metric-label">Výkon FVE</span>
+                        <span class="phone-metric-val" style="color:var(--orange);">2.4 kW</span>
+                    </div>
+                    <div class="phone-metric">
+                        <span class="phone-metric-label">SOC Batérie</span>
+                        <span class="phone-metric-val" style="color:var(--green);">78%</span>
+                    </div>
+                    <div class="phone-metric">
+                        <span class="phone-metric-label">OKTE Spot</span>
+                        <span class="phone-metric-val" style="color:var(--purple);">45.2 €</span>
+                    </div>
+                    <div class="phone-chart">
+                        <div class="phone-bar" style="height:30%"></div>
+                        <div class="phone-bar" style="height:50%"></div>
+                        <div class="phone-bar" style="height:80%"></div>
+                        <div class="phone-bar" style="height:60%"></div>
+                        <div class="phone-bar" style="height:40%"></div>
+                        <div class="phone-bar" style="height:20%"></div>
+                    </div>
+                </div>
+            </div>
+            <h2 style="font-size:20px;font-weight:900;margin-bottom:6px;">ElvoControll Smart EMS</h2>
+            <p style="font-size:12px;color:var(--text3);">Inteligentný energetický manažment pre vašu fotovoltiku</p>
+        </div>
+
+        <!-- Install options -->
+        <div class="card">
+            <div class="card-title"><i data-lucide="download"></i> Stiahnuť aplikáciu</div>
+            <div class="install-grid">
+                <a href="#" onclick="installPWA(); return false;" class="install-btn">
+                    <div class="icon" style="background:rgba(16,185,129,0.1);"><i data-lucide="smartphone" style="width:24px;height:24px;color:var(--green);"></i></div>
+                    <span class="label">PWA Inštalácia</span>
+                    <span class="desc">Pridať na plochu priamo z prehliadača</span>
+                </a>
+                <a href="#" class="install-btn">
+                    <div class="icon" style="background:rgba(59,130,246,0.1);"><i data-lucide="monitor" style="width:24px;height:24px;color:var(--blue);"></i></div>
+                    <span class="label">Desktop</span>
+                    <span class="desc">Stiahnite si pre Windows/Mac</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="card">
+            <div class="card-title"><i data-lucide="star"></i> Funkcie</div>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <div class="fi" style="background:rgba(245,158,11,0.1);"><i data-lucide="sun" style="width:18px;height:18px;color:var(--orange);"></i></div>
+                    <div><div class="ft">OKTE Ceny v reálnom čase</div><div class="fd">Sledujte spotové ceny elektriny na slovenskom trhu</div></div>
+                </div>
+                <div class="feature-item">
+                    <div class="fi" style="background:rgba(16,185,129,0.1);"><i data-lucide="brain" style="width:18px;height:18px;color:var(--green);"></i></div>
+                    <div><div class="ft">Smart AI Riadenie</div><div class="fd">Automatická optimalizácia výroby a spotreby</div></div>
+                </div>
+                <div class="feature-item">
+                    <div class="fi" style="background:rgba(129,140,248,0.1);"><i data-lucide="battery-charging" style="width:18px;height:18px;color:var(--purple);"></i></div>
+                    <div><div class="ft">Battery Management</div><div class="fd">Monitorovanie SOC, teploty a životnosti batérie</div></div>
+                </div>
+                <div class="feature-item">
+                    <div class="fi" style="background:rgba(59,130,246,0.1);"><i data-lucide="toggle-left" style="width:18px;height:18px;color:var(--blue);"></i></div>
+                    <div><div class="ft">Relé Ovládanie</div><div class="fd">Diaľkové ovládanie bojlera, klimatizácie a ďalších</div></div>
+                </div>
+                <div class="feature-item">
+                    <div class="fi" style="background:rgba(239,68,68,0.1);"><i data-lucide="shield-check" style="width:18px;height:18px;color:#ef4444;"></i></div>
+                    <div><div class="ft">SafeGuard Dovolenka</div><div class="fd">Ochrana systépu počas vašej neprítomnosti</div></div>
+                </div>
+                <div class="feature-item">
+                    <div class="fi" style="background:rgba(16,185,129,0.1);"><i data-lucide="activity" style="width:18px;height:18px;color:var(--green);"></i></div>
+                    <div><div class="ft">Live Dashboard</div><div class="fd">Prehľad výroby, spotreby a cien v reálnom čase</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="card" style="text-align:center;">
+            <div class="card-title" style="justify-content:center;"><i data-lucide="qr-code"></i> QR Kód pre mobil</div>
+            <div class="qr-box">
+                <div class="qr-placeholder">QR Kód<br>bude tu</div>
+            </div>
+            <p style="font-size:11px;color:var(--text3);">Naskenujte fotoaparátom pre priamy prístup</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <a href="/templates/ochrana-osobnych-udajov.pdf" target="_blank">Ochrana osobných údajov</a><br>
+            © 2011–2026 ElvoControll s.r.o.
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(choice => {
+                    if (choice.outcome === 'accepted') console.log('PWA installed');
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('Otvorte túto stránku v Chrome/Safari a kliknite \"Pridať na plochu\" v menu prehliadača.');
+            }
+        }
+
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        // Theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') document.body.classList.add('light-mode');
+
+        // Logo swap
+        const isLight = document.body.classList.contains('light-mode');
+        const logoPath = isLight ? '/templates/ElvosolarLogoLight.png' : '/templates/ElvosolarLogoBlack.png';
+        document.getElementById('pageLogo').src = logoPath;
+    </script>
+</body>
+</html>

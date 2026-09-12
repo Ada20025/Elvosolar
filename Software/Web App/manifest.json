@@ -1,0 +1,36 @@
+{
+  "name": "ElvoControll - Smart EMS",
+  "short_name": "ElvoControll",
+  "description": "Inteligentný energetický manažment pre vašu fotovoltiku a batérie",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#02040a",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "sk",
+  "dir": "ltr",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/templates/ElvosolarLogoBlack.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/templates/ElvosolarLogoBlack.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "icons": [{"src": "/templates/ElvosolarLogoBlack.png", "sizes": "96x96"}]
+    }
+  ]
+}
