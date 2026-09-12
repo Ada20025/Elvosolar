@@ -356,12 +356,55 @@
                             <p class="text-xs text-slate-400">Jednotka preverí odozvu pripojených zariadení.</p>
                         </div>
                         
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Spôsob vyhľadávania</span>
+                            <button onclick="toggleSmartLoggerGuide()" class="text-[10px] text-purple-400 hover:text-purple-300 font-bold">ℹ️ Návod pre SmartLogger</button>
+                        </div>
+
+                        <div id="smartloggerGuide" class="hidden p-4 bg-slate-950/60 rounded-2xl border border-purple-900/50 space-y-3">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-purple-400">SmartLogger Enspire - Nastavenie</div>
+                            <div class="space-y-2 text-[11px] text-slate-300">
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-400 font-bold">1.</span>
+                                    <span>Otvorte SmartLogger v prehliadači: <strong class="text-white font-mono">http://IP_ADRESA</strong></span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-400 font-bold">2.</span>
+                                    <span>Prejdite na: <strong class="text-white">Maintenance → Device Mgmt → Connect Device</strong></span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-400 font-bold">3.</span>
+                                    <span>Kliknite <strong class="text-white">Add Devices</strong> a nastavte:</span>
+                                </div>
+                                <div class="ml-5 p-2 bg-slate-950/50 rounded-lg border border-slate-800 font-mono text-[10px] space-y-1">
+                                    <div>Device Type: <span class="text-purple-300">Inverter</span></div>
+                                    <div>Comm. Protocol: <span class="text-purple-300">Modbus-RTU</span></div>
+                                    <div>Port number: <span class="text-purple-300">COM1-2</span></div>
+                                    <div>Address: <span class="text-purple-300">1</span> (alebo cislo vaseho striedaca)</div>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-400 font-bold">4.</span>
+                                    <span>Kliknite <strong class="text-white">Submit</strong> a overte ze status je zeleny</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-400 font-bold">5.</span>
+                                    <span>Potom sa vráťte sem a kliknite <strong class="text-white">HĽADAŤ V SITI</strong></span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="verifySmartLogger()" class="flex-1 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 font-bold text-[10px] py-2 rounded-xl transition border border-purple-600/30">
+                                    OVERIT SPOJENIE
+                                </button>
+                            </div>
+                            <div id="verifyResult" class="hidden text-[10px] rounded-lg p-2"></div>
+                        </div>
+
                         <div class="grid grid-cols-2 gap-2">
                             <button onclick="runDiscoverAndAnimate()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-[11px] py-3 rounded-xl transition shadow-lg">
-                                🔌 RS485 AUTODETEKCIA
+                                RS485 AUTODETEKCIA
                             </button>
                             <button onclick="runNetworkDiscovery()" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white font-extrabold text-[11px] py-3 rounded-xl transition shadow-lg">
-                                🌐 HĽADAŤ V SITI (LAN/WiFi)
+                                HLADAT V SITI (LAN/WiFi)
                             </button>
                         </div>
 
@@ -605,7 +648,45 @@
                 statusModal.classList.add("hidden");
                 showValidationError("Prenos zlyhal: " + err.message);
             }
-        }        async function runLocalDiscoveryOnDevice() {
+        }        function toggleSmartLoggerGuide() {
+            const guide = document.getElementById('smartloggerGuide');
+            if (guide) guide.classList.toggle('hidden');
+        }
+        
+        async function verifySmartLogger() {
+            const result = document.getElementById('verifyResult');
+            result.classList.remove('hidden');
+            result.className = 'text-[10px] rounded-lg p-2 bg-purple-950/30 text-purple-400';
+            result.textContent = 'Overujem pripojenie na SmartLogger...';
+            
+            try {
+                const res = await fetch('/api/system/discover-network?port=502&timeout=1.0');
+                const data = await res.json();
+                
+                if (data.status === 'success' && data.smartloggers && data.smartloggers.length > 0) {
+                    const sl = data.smartloggers[0];
+                    result.className = 'text-[10px] rounded-lg p-2 bg-emerald-950/30 text-emerald-400';
+                    result.innerHTML = '<strong>SmartLogger najdeny!</strong> IP: ' + sl.ip + ' | ' + (sl.http_title || 'Enspire');
+                    // Uloz IP
+                    await fetch('/api/system/save-smartlogger', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ip: sl.ip, port: 502})
+                    });
+                } else if (data.all_devices && data.all_devices.length > 0) {
+                    result.className = 'text-[10px] rounded-lg p-2 bg-amber-950/30 text-amber-400';
+                    result.innerHTML = 'Najdene zaradenia ale nie SmartLogger. IP: ' + data.all_devices[0].ip;
+                } else {
+                    result.className = 'text-[10px] rounded-lg p-2 bg-rose-950/30 text-rose-400';
+                    result.innerHTML = 'SmartLogger nenajdene! Overte: 1. Je zapnuty? 2. Na rovnakej sieti? 3. Port 502 otvoreny?';
+                }
+            } catch(e) {
+                result.className = 'text-[10px] rounded-lg p-2 bg-rose-950/30 text-rose-400';
+                result.textContent = 'Chyba: ' + e.message;
+            }
+        }
+
+        async function runLocalDiscoveryOnDevice() {
             const status = document.getElementById("scanStatus");
             const grid = document.getElementById("diagnosticGrid");
             grid.classList.remove("hidden");
