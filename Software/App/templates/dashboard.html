@@ -976,7 +976,7 @@
 
             <!-- Center: Device Name -->
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-                <div class="station-dropdown-container">                    <?php $activeDevName = 'ElvoControll'; if (isset($devices) && count($devices) > 0) { $activeDevName = htmlspecialchars($devices[0]['name'] ?? 'ElvoControll'); } ?>
+                <div class="station-dropdown-container">                    <?php $activeDevName = 'Moje zariadenie'; if (isset($devices) && count($devices) > 0) { $activeDevName = htmlspecialchars($devices[0]['name'] ?? 'Moje zariadenie'); } ?>
                     <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:1px solid var(--border-card);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.2s;">
                         <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);"><?php echo $activeDevName; ?></span>
                         <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
@@ -997,7 +997,7 @@
                                 <div class="station-dropdown-item">
                                     <span style="display:flex;align-items:center;gap:8px;">
                                         <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-                                        <span class="device-name-label">ElvoControll</span>
+                                        <span class="device-name-label">Moje zariadenie</span>
                                     </span>
                                     <span class="sn-badge">SN: ---</span>
                                 </div>
@@ -1189,7 +1189,7 @@
                     <div class="diagnostic-bus-card" style="margin-top:16px;">
                         <div class="bus-header">
                             <span style="font-size:11px;font-weight:800;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
-                                <i data-lucide="layers" style="color:var(--accent-battery);width:14px;height:14px;"></i> <span id="invertersTitle">Striedače</span>
+                                <i data-lucide="layers" style="color:var(--accent-battery);width:14px;height:14px;"></i> <span id="invertersTitle">Zariadenia</span>
                             </span>
                             <span class="font-mono" id="busStatus" style="font-size:9px;color:var(--accent-battery);font-weight:700;">--</span>
                         </div>
@@ -1916,14 +1916,14 @@
 
             const brandId = data.brand_id || '';
             const brandName = brandNames[brandId] || data.brand || '';
-            const deviceName = data.name || brandName || 'ElvoControll';
+            const deviceName = data.name || brandName || 'Moje zariadenie';
             const temp = data.temp || 0;
             const power = data.total_live_power || 0;
             const soc = data.avg_live_soc || 0;
             const isOnline = power > 0 || soc > 0;
             const totalKwh = data.total_kwh || 0;
 
-            if (titleEl) titleEl.textContent = brandName || 'Striedače';
+            if (titleEl) titleEl.textContent = brandName || 'Zariadenia';
 
             container.innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:4px;">
@@ -1932,7 +1932,7 @@
                             <span class="pulse-dot ${isOnline ? 'online' : 'offline'}"></span>
                             <div style="display:flex;flex-direction:column;">
                                 <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceName}</span>
-                                <span class="font-mono" style="font-size:9px;color:var(--text-muted);">Striedač${brandName ? ' · ' + brandName : ''} | ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</span>
+                                <span class="font-mono" style="font-size:9px;color:var(--text-muted);">${brandName || 'CM5 Controlér'}${brandName ? '' : ''} | ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</span>
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
@@ -1975,7 +1975,7 @@
             const isOnline = power > 0 || soc > 0;
             const override = data.manual_override || 'AUTO';
 
-            nameEl.textContent = deviceName || 'ElvoControll';
+            nameEl.textContent = deviceName || 'Moje zariadenie';
             if (infoEl) {
                 const parts = [];
                 if (brandName) parts.push(brandName);
