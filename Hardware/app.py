@@ -424,39 +424,88 @@ def api_system_discover(brand: str = "", category: str = "", model: str = ""):
 
 
 @app.get("/api/system/discover-network")
-def api_discover_network(port: int = 502, timeout: float = 0.5):
-    """Skenuje lokálnu sieť pre Modbus TCP zariadenia (SmartLogger, Enspire, atd.)"""
+def api_discover_network(port: int = 502, timeout: float = 0.3):
+    """Komplexne skenuje siet - Modbus TCP + ARP + HTTP + UDP broadcast."""
     try:
-        from network_scan import scan_network_for_modbus, get_local_subnet
-        subnet = get_local_subnet()
-        bg_service.log_to_terminal(f"[NETWORK] Spúšťam skenovanie siete {subnet}.x pre Modbus TCP port {port}...")
+        from network_scan import scan_network, get_local_ip, get_interfaces
+        my_ip = get_local_ip()
+        ifaces = get_interfaces()
+        subnets = [i['subnet'] for i in ifaces]
+        bg_service.log_to_terminal(f"[NETWORK] Spúšťam discovery z {my_ip} (subnety: {', '.join(subnets)})...")
         
         bg_service.paused = True
         time.sleep(0.1)
         
-        results = scan_network_for_modbus(port=port, timeout=timeout)
+        results = scan_network(port=port, timeout=timeout)
         
         bg_service.paused = False
         
-        if results:
-            bg_service.log_to_terminal(f"[NETWORK] Nájdených {len(results)} zariadení v sieti")
-            for r in results:
-                model = r.get('model_name', 'Neznáme')
-                bg_service.log_to_terminal(f"  -> {r['ip']}:{r['port']} Model: {model}")
-        else:
-            bg_service.log_to_terminal("[NETWORK] Žiadne Modbus TCP zariadenia v sieti")
+        # Rozdel na kategorie
+        smartloggers = [d for d in results if d.get('is_smartlogger') or 'enspire' in str(d.get('http_title', '')).lower()]
+        modbus_devices = [d for d in results if d.get('method') == 'modbus_tcp']
+        
+        if smartloggers:
+            bg_service.log_to_terminal(f"[NETWORK] 🎯 SmartLogger/Enspire: {len(smartloggers)}")
+            for r in smartloggers:
+                bg_service.log_to_terminal(f"  -> {r['ip']} ({r.get('http_title', '')})")
+        if modbus_devices:
+            bg_service.log_to_terminal(f"[NETWORK] 📡 Modbus TCP: {len(modbus_devices)}")
+            for r in modbus_devices:
+                bg_service.log_to_terminal(f"  -> {r['ip']}:{r['port']} {r.get('model_name', '')}")
+        
+        if not results:
+            bg_service.log_to_terminal("[NETWORK] ⚠️ Žiadne zariadenia v sieti")
         
         return {
             "status": "success",
-            "subnet": subnet,
-            "port": port,
+            "my_ip": my_ip,
+            "interfaces": ifaces,
             "found": len(results),
-            "devices": results
+            "smartloggers": smartloggers,
+            "modbus_devices": modbus_devices,
+            "all_devices": results
         }
     except Exception as e:
         bg_service.paused = False
-        bg_service.log_to_terminal(f"[NETWORK] Chyba skenovania: {e}")
+        bg_service.log_to_terminal(f"[NETWORK] Chyba: {e}")
         return {"status": "error", "message": str(e), "devices": []}
+
+
+@app.get("/api/system/announce")
+def api_announce():
+    """CM5 sa ohlasi do siete cez UDP broadcast aby ho SmartLogger nasiel."""
+    try:
+        from network_scan import get_subnet, get_local_ip
+        my_ip = get_local_ip()
+        subnet = get_subnet()
+        
+        # UDP broadcast na port 50000
+        msg = json.dumps({
+            'device': 'ElvoControll CM5',
+            'ip': my_ip,
+            'http_port': 80,
+            'modbus_port': 502,
+            'version': '3.2.0'
+        }).encode()
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.sendto(msg, (f'{subnet}.255', 50000))
+        sock.close()
+        
+        bg_service.log_to_terminal(f"[ANNOUNCE] CM5 ohlásený na {my_ip} v sieti {subnet}.x")
+        
+        # Tiez sa prihlas do cloud servera
+        try:
+            requests.post(f"{CLOUD_SERVER_URL}/api/device/announce",
+                         json={'ip': my_ip, 'device': 'ElvoControll CM5'},
+                         timeout=5)
+        except Exception:
+            pass
+        
+        return {"status": "success", "ip": my_ip, "subnet": subnet}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.get("/api/system/is-claimed")
