@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:8.2-cli AS build20260913
 
 # Install system deps
 RUN apt-get update && apt-get install -y \
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Force rebuild: 2026-09-05T15:00 - safe proxy + 29 missing elements
+# Force rebuild: 2026-09-13T10:00 - fix white screen
 COPY Software/App/ /app/
 
 EXPOSE ${PORT:-8080}

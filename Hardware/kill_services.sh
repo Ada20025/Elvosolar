@@ -27,3 +27,4 @@ sudo fuser -k 5020/tcp 2>/dev/null || true
 echo "=================================================="
 echo "🛑 Všetky ElvoSolar služby boli úspešne zastavené."
 echo "=================================================="
+

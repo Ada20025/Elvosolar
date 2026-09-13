@@ -35,3 +35,4 @@ echo "✅ HOTOVO: Databáza bola kompletne vyčistená!"
 echo "   Teraz môžete spustiť aplikáciu načisto:"
 echo "   sudo systemctl start elvosolar"
 echo "=================================================="
+
