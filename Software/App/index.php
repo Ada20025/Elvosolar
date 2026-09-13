@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // index.php
 
 // Diagnostika chýb na serveri (Alwaysdata)
@@ -2695,3 +2696,5 @@ else {
     http_response_code(404);
     echo "Stránka nebola nájdaná.";
 }
+
+ob_end_flush();
