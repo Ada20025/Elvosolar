@@ -806,10 +806,6 @@ function save_device_ai_state_php($device_id, $data) {
 }
 
 // --- SMEROVANIE (ROUTING) ---
-// === NASTAVENIE ODOSIELANIA E-MAILOV ===
-define('RESEND_API_KEY', getenv('RESEND_API_KEY') ?: '');
-define('RESEND_FROM', getenv('RESEND_FROM') ?: 'no-reply@elvosolar.sk');
-
 if ($path === '/' || $path === '') {
     if (!isset($_SESSION['user_id'])) {
         header("Location: " . $base_path . "/login");
