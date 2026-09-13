@@ -1,0 +1,3 @@
+# Force LF for files used inside Linux Docker container
+Dockerfile text eol=lf
+*.sh text eol=lf
