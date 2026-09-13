@@ -1,5 +1,7 @@
 <?php
 ob_start();
+echo '<!-- DEBUG: index.php loaded -->
+';
 // index.php
 
 // Diagnostika chýb na serveri (Alwaysdata)
