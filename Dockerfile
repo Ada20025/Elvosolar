@@ -1,18 +1,13 @@
-FROM php:8.2-cli AS build20260913
+FROM php:8.2-cli
 
-# Install system deps
-RUN apt-get update && apt-get install -y \
-    libpng-dev libjpeg-dev libfreetype6-dev libzip-dev libonig-dev unzip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql mysqli mbstring zip gd \
-    && pecl install redis && docker-php-ext-enable redis \
-    && rm -rf /var/lib/apt/lists/*
+# Only essential extensions (pdo_mysql for Railway MySQL)
+RUN docker-php-ext-install pdo pdo_mysql mbstring
 
 WORKDIR /app
 
-# Force rebuild: 2026-09-13T10:00 - fix white screen
+# Cache-bust: 2026-09-13-1200 - minimal reliable build
 COPY Software/App/ /app/
 
-EXPOSE ${PORT:-8080}
+EXPOSE 8080
 
-CMD php -d display_errors=1 -d error_reporting=E_ALL -S 0.0.0.0:${PORT:-8080} index.php
+CMD ["sh", "-c", "php -d display_errors=1 -d error_reporting=E_ALL -S 0.0.0.0:${PORT:-8080} index.php"]
