@@ -806,6 +806,10 @@ function save_device_ai_state_php($device_id, $data) {
 }
 
 // --- SMEROVANIE (ROUTING) ---
+// === NASTAVENIE ODOSIELANIA E-MAILOV ===
+define('RESEND_API_KEY', getenv('RESEND_API_KEY') ?: '');
+define('RESEND_FROM', getenv('RESEND_FROM') ?: 'no-reply@elvosolar.sk');
+
 if ($path === '/' || $path === '') {
     if (!isset($_SESSION['user_id'])) {
         header("Location: " . $base_path . "/login");
@@ -1954,20 +1958,6 @@ elseif ($path === '/api/devices/register' && $method === 'POST') {
         send_json(['status' => 'success', 'device_id' => $device_id, 'message' => 'Zariadenie úspešne zaregistrované']);
     } catch (PDOException $e) {
         send_json(['status' => 'error', 'message' => 'Chyba pri registrácii zariadenia'], 500);
-    }
-}
-
-// === NASTAVENIE ODOSIELANIA E-MAILOV ===
-define('RESEND_API_KEY', getenv('RESEND_API_KEY') ?: '');
-define('RESEND_FROM', getenv('RESEND_FROM') ?: 'no-reply@elvosolar.sk');
-
-// Ukončenie celého routovania (fallback)
-else {
-    if ($path === '/' || $path === '/index.php') {
-        echo "<h1>ElvoSolar Setup</h1><p>Status: Online</p>";
-    } else {
-        http_response_code(404);
-        send_json(['status' => 'error', 'message' => 'Stránka nenájdená'], 404);
     }
 }
 
