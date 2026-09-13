@@ -1,5 +1,5 @@
 <?php
-echo 'INDEX_OK';
+echo 'STEP_1_BEFORE_INI'; ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL); echo 'STEP_2_AFTER_INI';
 // index.php
 
 // Diagnostika chýb na serveri (Alwaysdata)
@@ -9,8 +9,8 @@ error_reporting(E_ALL);
 header('Content-Type: text/html; charset=utf-8');
 
 date_default_timezone_set('Europe/Bratislava');
-session_start();
-require_once 'config.php';
+echo 'STEP_3_BEFORE_SESSION'; session_start(); echo 'STEP_4_AFTER_SESSION';
+echo 'STEP_5_BEFORE_CONFIG'; require_once 'config.php'; echo 'STEP_6_AFTER_CONFIG';
 
 // === AUTO-MIGRACIA: Pridanie chybajucich stlpcov (MySQL / SQLite kompatibilne) ===
 if (isset($pdo)) {
