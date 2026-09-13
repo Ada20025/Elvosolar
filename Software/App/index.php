@@ -1,7 +1,5 @@
 <?php
-ob_start();
-echo '<!-- DEBUG: index.php loaded -->
-';
+echo 'INDEX_OK';
 // index.php
 
 // Diagnostika chýb na serveri (Alwaysdata)
@@ -2699,4 +2697,3 @@ else {
     echo "Stránka nebola nájdaná.";
 }
 
-ob_end_flush();
