@@ -3,8 +3,9 @@
 
 // Diagnostika chýb na serveri (Alwaysdata)
 ini_set('display_errors', 1);
-ini_set('display_startup_errors', 0);
+ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+header('Content-Type: text/html; charset=utf-8');
 
 date_default_timezone_set('Europe/Bratislava');
 session_start();
@@ -2090,14 +2091,14 @@ elseif ($path === '/setup_database' && $method === 'GET') {
     // Database setup - spustiť len raz!
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
-    require __DIR__ . '/setup_database.php';
+    if (file_exists(__DIR__ . '/setup_database.php')) { require __DIR__ . '/setup_database.php'; } else { echo 'setup_database.php not found'; }
     exit;
 }
 
 elseif ($path === '/setup_database.php' && $method === 'GET') {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
-    require __DIR__ . '/setup_database.php';
+    if (file_exists(__DIR__ . '/setup_database.php')) { require __DIR__ . '/setup_database.php'; } else { echo 'setup_database.php not found'; }
     exit;
 }
 
