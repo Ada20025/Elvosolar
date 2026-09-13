@@ -1,4 +1,5 @@
 <?php
+ob_start();
 ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL);
 // index.php
 
@@ -1064,29 +1065,21 @@ elseif ($path === '/api/user/device-settings' && $method === 'GET') {
 }
 
 // --- UPDATE_DEVICE_SETTINGS ---
-elseif (preg_match(\'#^/api/device/(\d+)/settings$#\')) {\n    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    $device_id = $matches[1];
+elseif (preg_match('#^/api/device/(\d+)/settings$#', $path, $matches2) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+    $device_id = $matches2[1];
     $data = get_json_input();
-    $new_name = trim($data['name'] ?? '');
-    if (!$new_name) send_json(['status' => 'error', 'message' => 'Nazov je povinny'], 400);
-    
     // Over ze patri userovi
     $stmt = $pdo->prepare("SELECT id FROM devices WHERE id = ? AND user_id = ?");
     $stmt->execute([$device_id, $_SESSION['user_id']]);
     if (!$stmt->fetch()) send_json(['status' => 'error', 'message' => 'Zariadenie nenajdene'], 404);
-    
-    $pdo->prepare("UPDATE devices SET name = ? WHERE id = ?")->execute([$new_name, $device_id]);
-    
-    // Posli na CM5
-    $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
-    $stmt->execute([$device_id]);
-    $dev = $stmt->fetch();
-    if ($dev) {
-        $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')")
-            ->execute([$dev['serial_number'], json_encode(['action' => 'set_name', 'name' => $new_name])]);
-    }
-    
-    send_json(['status' => 'success', 'name' => $new_name]);
+    // Uloz nastavenia (min/max vykon FVE + min OKTE cena)
+    $min_w = floatval($data['min_power_w'] ?? 0);
+    $max_w = floatval($data['max_power_w'] ?? 10000);
+    $min_okte = floatval($data['min_okte_price_cz_eur'] ?? 0);
+    $pdo->prepare("UPDATE devices SET min_power_w = ?, max_power_w = ?, min_okte_price_cz_eur = ? WHERE id = ?")
+        ->execute([$min_w, $max_w, $min_okte, $device_id]);
+    send_json(['status' => 'success', 'message' => 'Nastavenia ulozene']);
 }
 
 // --- SAVE DEVICE SETTINGS (jedno alebo vsetky) ---
