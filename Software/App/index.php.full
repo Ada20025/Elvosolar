@@ -1,5 +1,5 @@
 <?php
-ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL);
+echo 'STEP_1_BEFORE_INI'; ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL); echo 'STEP_2_AFTER_INI';
 // index.php
 
 // Diagnostika chýb na serveri (Alwaysdata)
@@ -9,8 +9,8 @@ error_reporting(E_ALL);
 header('Content-Type: text/html; charset=utf-8');
 
 date_default_timezone_set('Europe/Bratislava');
-session_start();
-require_once 'config.php';
+echo 'STEP_3_BEFORE_SESSION'; session_start(); echo 'STEP_4_AFTER_SESSION';
+echo 'STEP_5_BEFORE_CONFIG'; require_once 'config.php'; echo 'STEP_6_AFTER_CONFIG';
 
 // === AUTO-MIGRACIA: Pridanie chybajucich stlpcov (MySQL / SQLite kompatibilne) ===
 if (isset($pdo)) {
@@ -34,7 +34,6 @@ if (isset($pdo)) {
         if (!in_array('smartlogger_ip', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN smartlogger_ip VARCHAR(50) DEFAULT '192.168.0.10'");
         if (!in_array('smartlogger_port', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN smartlogger_port INTEGER DEFAULT 502");
         if (!in_array('modbus_slave_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN modbus_slave_id INTEGER DEFAULT 205");
-        if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
     } catch (Exception $e) { /* ignore */ }
     // Auto-create telemetry table if missing
     try {
@@ -104,26 +103,6 @@ if (isset($pdo)) {
                 title VARCHAR(255),
                 message TEXT,
                 read_status INTEGER DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )");
-        } catch (Exception $e2) { /* ignore */ }
-    }
-    // Auto-create OKTE price log table if missing
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS okte_price_log (
-            id INTEGER PRIMARY KEY AUTO_INCREMENT,
-            device_id INT NOT NULL,
-            price_cz_kc FLOAT DEFAULT 0,
-            price_eur FLOAT DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )");
-    } catch (Exception $e) {
-        try {
-            $pdo->exec("CREATE TABLE IF NOT EXISTS okte_price_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL,
-                price_cz_kc REAL DEFAULT 0,
-                price_eur REAL DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )");
         } catch (Exception $e2) { /* ignore */ }
@@ -1063,8 +1042,9 @@ elseif ($path === '/api/user/device-settings' && $method === 'GET') {
     send_json(['status' => 'success', 'devices' => $result]);
 }
 
-// --- UPDATE_DEVICE_SETTINGS ---
-elseif (preg_match(\'#^/api/device/(\d+)/settings$#\')) {\n    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+// --- RENAME DEVICE ---
+elseif (preg_match('#^/api/device/(\d+)/rename$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
     $device_id = $matches[1];
     $data = get_json_input();
     $new_name = trim($data['name'] ?? '');
