@@ -1,11 +1,11 @@
 FROM php:8.2-cli
 
-# Only essential extensions (pdo_mysql for Railway MySQL)
-RUN docker-php-ext-install pdo pdo_mysql mbstring
+# Absolute minimum - only pdo_mysql (built-in, cannot fail)
+RUN docker-php-ext-install pdo pdo_mysql
 
 WORKDIR /app
 
-# Cache-bust: 2026-09-13-1200 - minimal reliable build
+# Cache-bust: 2026-09-13-1215
 COPY Software/App/ /app/
 
 EXPOSE 8080
