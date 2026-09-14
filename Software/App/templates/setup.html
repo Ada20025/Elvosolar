@@ -850,6 +850,14 @@
                     const soc = tcpData.battery_soc || rtuData.battery_soc || 84;
 
                     resultBox.className = 'text-xs rounded-xl p-3.5 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-2';
+                    // Uloz SmartLogger konfiguraciu na CM5 (bude ju pouzivat pre komunikaciu)
+                    try {
+                        await fetch('/api/system/save-smartlogger', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ip: ip, port: port, slave_id: slaveId, mode: activeSmartConnType})
+                        });
+                    } catch(e2) { /* non-blocking */ }
                     resultBox.innerHTML = `
                         <div class="flex items-center justify-between font-bold border-b border-emerald-900/40 pb-1.5">
                             <span class="flex items-center gap-1.5 text-emerald-400">✅ MODBUS SPOJENIE ÚSPEŠNÉ</span>
@@ -1052,8 +1060,9 @@
                     status.innerText = "Odosielam prikaz na CM5...";
                     status.className = "p-4 bg-slate-950/50 border border-cyan-800 rounded-xl text-xs text-center font-bold text-cyan-400";
                     
-                    // 1. Odozle prikaz (okamzite vrat cmd_id)
-                    const queueRes = await fetch(`${localGatewayIP}/api/system/discover?brand=${bId}&category=${cId}&model=${mId}`);
+                    // 1. Odozle prikaz (okamzite vrat cmd_id) - posli aj sposob pripojenia (TCP pre SmartLogger)
+                    const connParam = activeSmartConnType === 'tcp' ? '&connection=tcp&ip=' + encodeURIComponent(document.getElementById('smartloggerIpInput')?.value?.trim() || '') + '&port=' + (document.getElementById('smartloggerPortInput')?.value || 502) : '&connection=rtu';
+                    const queueRes = await fetch(`${localGatewayIP}/api/system/discover?brand=${bId}&category=${cId}&model=${mId}${connParam}`);
                     const queueData = await queueRes.json();
                     
                     if (!queueData.command_id) {
@@ -1090,7 +1099,7 @@
                         }
                         
                         if (pollCount >= maxPolls && discoveredSlaves.length === 0) {
-                            status.innerText = 'CM5 neodpovedalo. Skontrolujte ci je online.';
+                            status.innerHTML = '<span class="text-rose-400">⏰ CM5 neodpovedalo.</span><br><span class="text-[10px] text-slate-400">Skontrolujte: 1) CM5 zapnute a online (zelené LED), 2) kábel RS485 A(+)→A(+) B(−)→B(−), 3) pri SmartLogger: IP a Modbus TCP Enable v návode vyššie.</span>';
                             status.className = 'p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs text-center font-bold text-rose-400';
                         }
                     }

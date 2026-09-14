@@ -2833,12 +2833,17 @@ elseif ($path === '/api/system/discover' && $method === 'GET') {
         }
     } catch (Exception $e) {}
     
-    // Uloz prikaz na scan
+    // Uloz prikaz na scan (posle aj sposob pripojenia - TCP pre SmartLogger, RTU pre stridac)
+    // Zisti ci je kategoria SmartLogger (typ = smartlogger => TCP)
+    $is_smartlogger = ($_GET['connection'] ?? '') === 'tcp';
     $config = [
         'action' => 'discover',
         'brand_id' => $brand,
         'category_id' => $category,
         'model_id' => $model,
+        'connection' => $is_smartlogger ? 'tcp' : 'rtu',
+        'ip' => $_GET['ip'] ?? '',
+        'port' => intval($_GET['port'] ?? 502),
     ];
     $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
     $stmt->execute([$serial, json_encode($config)]);
@@ -2866,6 +2871,35 @@ elseif ($path === '/api/cm5/poll-result' && $method === 'GET') {
     } else {
         send_json(['status' => 'pending', 'command_id' => $cmd_id]);
     }
+}
+
+// --- SAVE SMARTLOGGER (z setup wizardu -> CM5) ---
+elseif ($path === '/api/system/save-smartlogger' && $method === 'POST') {
+    $data = get_json_input();
+    $ip = trim($data['ip'] ?? '');
+    $port = intval($data['port'] ?? 502);
+    $slave_id = intval($data['slave_id'] ?? 205);
+    $mode = trim($data['mode'] ?? 'tcp');
+    if (!$ip) {
+        send_json(['status' => 'error', 'message' => 'Chýba IP adresa'], 400);
+    }
+    $serial = 'CM5-DEFAULT';
+    try {
+        $stmt_cm5 = $pdo->prepare("SELECT serial_number FROM devices WHERE serial_number LIKE 'SN-CM5-%' ORDER BY last_seen DESC LIMIT 1");
+        $stmt_cm5->execute();
+        $cm5_row = $stmt_cm5->fetch();
+        if ($cm5_row) $serial = $cm5_row['serial_number'];
+    } catch (Exception $e) {}
+    $config = [
+        'action' => 'save_smartlogger',
+        'ip' => $ip,
+        'port' => $port,
+        'slave_id' => $slave_id,
+        'mode' => $mode,
+    ];
+    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
+    $stmt->execute([$serial, json_encode($config)]);
+    send_json(['status' => 'success', 'message' => "SmartLogger $ip:$port uložený. CM5 si ho prevezme pri ďalšom polle."]);
 }
 
 // --- SYSTEM STATUS (cloud verzia) ---

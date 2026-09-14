@@ -1417,6 +1417,9 @@ def cloud_sync_loop():
                 brand_id = config.get("brand_id", "5")
                 cat_id = config.get("category_id", "1")
                 model_id = config.get("model_id", "1")
+                conn_type = str(config.get("connection", "")).lower()
+                disc_ip = config.get("ip", "")
+                disc_port = int(config.get("port", 502) or 502)
                 discovered_slaves = []
                 discovered_port = "unknown"
 
@@ -1435,7 +1438,66 @@ def cloud_sync_loop():
                 test_reg = brand_cfg.get('reg_p_ac', 0)
                 test_baud = brand_cfg.get('baud', 9600)
                 znacka = DEVICE_DB.get(str(brand_id), {}).get('znacka', 'Unknown')
-                log_message(f'[DISCOVER] Znacka: {znacka} (brand_id={brand_id}) register: {test_reg} baud: {test_baud}')
+                cat_lower = str(DEVICE_DB.get(str(brand_id), {}).get('kategorie', {}).get(str(cat_id), {}).get('typ', '')).lower()
+                is_tcp_cat = conn_type == 'tcp' or 'smartlogger' in cat_lower
+                log_message(f'[DISCOVER] Znacka: {znacka} (brand_id={brand_id}) register: {test_reg} baud: {test_baud} tcp: {is_tcp_cat}')
+
+                if is_tcp_cat:
+                    # === SMARTLOGGER CEZ MODBUS TCP ===
+                    # 1) cielova IP: z prikazu, alebo z DB, alebo skusime siet
+                    target_ip = disc_ip
+                    if not target_ip:
+                        try:
+                            conn_ip = get_db_connection(); cur_ip = conn_ip.cursor()
+                            cur_ip.execute("SELECT value FROM system_settings WHERE key = 'smartlogger_ip'")
+                            r_ip = cur_ip.fetchone(); conn_ip.close()
+                            if r_ip and r_ip[0]: target_ip = r_ip[0]
+                        except: pass
+                    tcp_targets = []
+                    if target_ip:
+                        tcp_targets = [target_ip]
+                    else:
+                        # auto: najdi hosts s otvorenym 502 v lokalnej sieti
+                        try:
+                            from network_scan import scan_network as _scan_net
+                            nres = _scan_net(port=disc_port, timeout=0.3)
+                            tcp_targets = [d.get('ip') for d in (nres.get('all_devices') or []) if d.get('ip')][:8]
+                        except Exception as e:
+                            log_message(f'[DISCOVER-TCP] auto scan zlyhal: {e}')
+                    log_message(f'[DISCOVER-TCP] kandidati: {tcp_targets}')
+                    for tip in tcp_targets:
+                        try:
+                            s = socket.create_connection((tip, disc_port), timeout=1.5)
+                            s.close()
+                        except Exception:
+                            continue
+                        # najdi Unit ID striedaca za loggerom (sken 1..16)
+                        for uid in range(1, 17):
+                            try:
+                                frame = bytes([0x00, uid, 0x00, 0x00, 0x00, 0x06, uid, 0x03, (test_reg >> 8) & 0xFF, test_reg & 0xFF, 0x00, 0x01])
+                                if test_reg == 0:
+                                    frame = bytes([0x00, uid, 0x00, 0x00, 0x00, 0x06, uid, 0x03, 0x00, 0x00, 0x00, 0x01])
+                                s2 = socket.create_connection((tip, disc_port), timeout=1.5)
+                                s2.sendall(frame)
+                                resp = s2.recv(256)
+                                s2.close()
+                                if resp and len(resp) >= 9 and resp[7] == 0x03:
+                                    discovered_slaves.append(uid)
+                                    log_message(f'[DISCOVER-TCP] {tip}:{disc_port} UID={uid} odpoveda ✅')
+                            except Exception:
+                                pass
+                        if discovered_slaves:
+                            discovered_port = f"tcp:{tip}:{disc_port}"
+                            try:
+                                conn_save = get_db_connection(); cur_save = conn_save.cursor()
+                                cur_save.execute("DELETE FROM system_settings WHERE key = 'smartlogger_ip'")
+                                cur_save.execute("INSERT INTO system_settings (key, value) VALUES ('smartlogger_ip', ?)", (tip,))
+                                conn_save.commit(); conn_save.close()
+                            except Exception: pass
+                            log_message(f'[DISCOVER-TCP] SmartLogger najdeny na {tip}:{disc_port}, Unit IDs: {discovered_slaves}')
+                            break
+                    if not conn_type:
+                        pass  # klasicky RS485 flow nizsie
 
                 # 1) Zisti port: najprv z DB, potom auto-detect
                 known_port = None
@@ -1453,6 +1515,31 @@ def cloud_sync_loop():
                     log_message('[DISCOVER] Port nenajdeny v DB - spustam auto-detect...')
                     known_port = _auto_detect_rs485_port()
                     log_message(f'[DISCOVER] Auto-detect vysledok: {known_port}')
+
+                if discovered_slaves or is_tcp_cat:
+                    # TCP najlo zariadenia alebo je to SmartLogger kategoria - preskoc RS485 scan
+                    if is_tcp_cat and not discovered_slaves:
+                        result = {
+                            "status": "error",
+                            "slaves": [],
+                            "discovered_count": 0,
+                            "message": "SmartLogger neodpoveda na " + (disc_ip or "zadanej IP") + ". Overte IP, port 502 a Modbus TCP Enable."
+                        }
+                        try:
+                            for _retry in range(3):
+                                try:
+                                    requests.post(CLOUD_SERVER_URL + "/api/cm5/result",
+                                        json={"serial": serial_num, "command_id": command_id, "result": result},
+                                        timeout=15, verify=False)
+                                    break
+                                except Exception:
+                                    if _retry < 2:
+                                        time.sleep(3)
+                            log_message(f"[CLOUD SYNC] Vysledok odoslany: {result.get('status')}")
+                        except Exception as e:
+                            log_message(f"[CLOUD SYNC] Chyba pri odosielani vysledku: {e}")
+                        bg_service.paused = False
+                        return
 
                 # 2) Zostav zoznam portov na skenovanie
                 if known_port and os.path.exists(known_port):
@@ -1542,6 +1629,42 @@ def cloud_sync_loop():
                     result = SystemService.connect_wifi(ssid, password)
                 else:
                     result = {"status": "success", "message": "WiFi preskocene"}
+
+            elif action == "save_smartlogger":
+                # Ulozi SmartLogger nastavenie do lokalnej DB (z setup wizardu)
+                ip = config.get("ip", "")
+                port = int(config.get("port", 502) or 502)
+                slave_id = int(config.get("slave_id", 205) or 205)
+                mode = config.get("mode", "tcp")
+                if ip:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    for k, v in [("smartlogger_ip", ip), ("smartlogger_port", str(port)),
+                                 ("smartlogger_slave_id", str(slave_id)), ("smartlogger_mode", mode)]:
+                        cursor.execute("DELETE FROM system_settings WHERE key = ?", (k,))
+                        cursor.execute("INSERT INTO system_settings (key, value) VALUES (?, ?)", (k, v))
+                    conn.commit()
+                    conn.close()
+                    log_message(f"[CLOUD] SmartLogger ulozeny: {ip}:{port} slave={slave_id} mode={mode}")
+                    result = {"status": "success", "message": f"SmartLogger {ip}:{port} ulozeny"}
+                else:
+                    result = {"status": "error", "message": "Chyba IP"}
+
+            elif action == "register_cm5":
+                # Registracia CM5 zariadenia - ulozi serial, povoli claimed, vrati info
+                mac_suffix = SystemService.get_mac_suffix()
+                local_sn = f"SN-CM5-{mac_suffix}"
+                name = config.get("name", "") or "CM5 Controler"
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM system_settings WHERE key = 'device_name'")
+                cursor.execute("INSERT INTO system_settings (key, value) VALUES ('device_name', ?)", (name,))
+                cursor.execute("DELETE FROM system_settings WHERE key = 'cm5_registered'")
+                cursor.execute("INSERT INTO system_settings (key, value) VALUES ('cm5_registered', '1')")
+                conn.commit()
+                conn.close()
+                log_message(f"[CLOUD] CM5 zaregistrovany: {local_sn}")
+                result = {"status": "success", "serial_number": local_sn, "message": f"CM5 {local_sn}"}
 
             elif action == "set_name":
                 new_name = config.get("name", "")
