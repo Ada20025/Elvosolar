@@ -723,9 +723,6 @@
                 statusModal.classList.add("hidden");
                 showValidationError("Prenos zlyhal: " + err.message);
             }
-        }        function toggleSmartLoggerGuide() {
-            const guide = document.getElementById('smartloggerGuide');
-            if (guide) guide.classList.toggle('hidden');
         }
         
         async function saveSmartLoggerIp() {
@@ -1265,23 +1262,21 @@
             const listContainer = document.getElementById("cableDevicesList");
             listContainer.innerHTML = `<div class="text-center py-4 text-xs text-slate-400 flex flex-col items-center gap-2"><div class="border-2 border-slate-800 border-t-cyan-500 rounded-full w-5 h-5 animate-spin"></div><span>Prehľadávam komunikačné kanály...</span></div>`;
             let devices = [];
+            let cm5Online = false;
             try {
                 const res = await fetch(`${localGatewayIP}/api/system/status`, { signal: AbortSignal.timeout(1200) });
-                if (res.ok) {
-                    devices.push({ id: "lan_active", name: "CM5 Lokálna brána (cm5.local)", details: "Sietové ethernetové rozhranie", target: localGatewayIP, type: "network", icon: "🔌" });
-                }
-            } catch (e) {}
+                if (res.ok) cm5Online = true;
+            } catch (e) { cm5Online = false; }
+            // CM5 brana sa vzdy zobrazi - aj ked je offline (pouzivatel vie, ze ma existuje)
+            devices.push({ id: "lan_active", name: "CM5 Lokálna brána (cm5.local)", details: cm5Online ? "Sietové ethernetové rozhranie" : "Offline — zapoj CM5 káblom alebo skontroluj napájanie", target: localGatewayIP, type: "network", icon: "🔌", online: cm5Online });
 
             listContainer.innerHTML = "";
-            if (devices.length === 0) {
-                listContainer.innerHTML = `<div class="text-center py-3 text-xs text-slate-500">Neboli nájdené žiadne sieťové zariadenia.</div>`;
-            }
 
             devices.forEach(dev => {
                 const devCard = document.createElement("div");
                 devCard.className = "flex items-center justify-between p-3 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl cursor-pointer transition";
                 devCard.onclick = () => selectCableDevice(dev);
-                devCard.innerHTML = `<div class="flex items-center gap-2.5"><span class="text-base">${dev.icon}</span><div class="flex flex-col"><span class="text-xs font-bold text-white">${dev.name}</span><span class="text-[9px] text-slate-400">${dev.details}</span></div></div><span class="text-[10px] bg-slate-800 text-cyan-400 font-bold px-2.5 py-1 rounded-lg">Pripojiť</span>`;
+                devCard.innerHTML = `<div class="flex items-center gap-2.5"><span class="text-base">${dev.icon}</span><div class="flex flex-col"><span class="text-xs font-bold text-white">${dev.name}</span><span class="text-[9px] ${dev.online ? 'text-emerald-400' : 'text-amber-400'}">${dev.details}</span></div></div><span class="text-[10px] ${dev.online ? 'bg-cyan-600/20 text-cyan-400' : 'bg-slate-800 text-slate-400'} font-bold px-2.5 py-1 rounded-lg">${dev.online ? 'Pripojiť' : 'Offline'}</span>`;
                 listContainer.appendChild(devCard);
             });
         }
@@ -1425,6 +1420,15 @@
         }
 
         function handleCategoryChange() {
+            // Auto-otvor SmartLogger navod ked je vybrata SmartLogger kategoria
+            try {
+                const catSel = document.getElementById('categorySelect');
+                const catText = catSel && catSel.selectedOptions[0] ? catSel.selectedOptions[0].textContent.toLowerCase() : '';
+                const guide = document.getElementById('smartloggerGuide');
+                if (guide && (catText.includes('smartlogger') || catText.includes('enspire') || catText.includes('ezlogger'))) {
+                    guide.classList.remove('hidden');
+                }
+            } catch(e) {}
             const brand_id = document.getElementById('brandSelect').value;
             const cat_id = document.getElementById('categorySelect').value;
             const modelContainer = document.getElementById('modelContainer');

@@ -104,7 +104,7 @@ class SmartLoggerTestRequest(BaseModel):
     rtu_port: str = "/dev/ttyAMA3"
     baud: int = 9600
     slave_id: int = 205
-    register: int = 32080
+    test_register: int = 32080
 
 # =============================================================================
 # PYDANTIC MODELY PRE VALIDÁCIU POŽIADAVIEK (REQUEST SCHEMAS)
@@ -535,7 +535,7 @@ def api_test_smartlogger(data: SmartLoggerTestRequest):
             
             # Odoslanie Modbus TCP Requestu (Read Holding Registers FC03, adresa 32080, 2 registre)
             trans_id = int(time.time() * 1000) & 0xFFFF
-            packet = struct.pack('>HHBBHH', trans_id, 0, 6, data.unit_id, 3, data.register, 2)
+            packet = struct.pack('>HHBBHH', trans_id, 0, 6, data.unit_id, 3, data.test_register, 2)
             sock.sendall(packet)
             
             resp = sock.recv(256)
@@ -608,8 +608,8 @@ def api_test_smartlogger(data: SmartLoggerTestRequest):
             
             if serial and os.path.exists(port_to_use):
                 ser = serial.Serial(port=port_to_use, baudrate=data.baud, parity=serial.PARITY_NONE, timeout=0.8)
-                reg_h = (data.register >> 8) & 0xFF
-                reg_l = data.register & 0xFF
+                reg_h = (data.test_register >> 8) & 0xFF
+                reg_l = data.test_register & 0xFF
                 frame = bytes([data.slave_id, 0x03, reg_h, reg_l, 0x00, 0x01])
                 full_frame = frame + bg_service.vypocitaj_crc(frame)
                 
