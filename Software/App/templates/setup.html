@@ -821,24 +821,34 @@
             };
 
             try {
-                let res;
-                try {
-                    res = await fetch(`${localGatewayIP}/api/system/test-smartlogger`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                        signal: AbortSignal.timeout(6000)
-                    });
-                } catch (e) {
-                    res = await fetch('/api/smartlogger/test', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                        signal: AbortSignal.timeout(6000)
-                    });
+                let data = null;
+                // 1) Lokalna CM5 brana (len ak existuje - inak by 404 HTML rozbil JSON parse)
+                if (localGatewayIP) {
+                    try {
+                        const resLocal = await fetch(`${localGatewayIP}/api/system/test-smartlogger`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload),
+                            signal: AbortSignal.timeout(6000)
+                        });
+                        const ct = (resLocal.headers.get('content-type') || '');
+                        if (resLocal.ok && ct.includes('json')) data = await resLocal.json();
+                    } catch (e) { /* CM5 nie je dostupny - skus cloud */ }
                 }
+                // 2) Cloud endpoint (Railway) - realny Modbus test z cloudu
+                if (!data) {
+                    const resCloud = await fetch('/api/smartlogger/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        signal: AbortSignal.timeout(6000)
+                    });
+                    const ct = (resCloud.headers.get('content-type') || '');
+                    if (ct.includes('json')) data = await resCloud.json();
+                    else throw new Error('Server vratil neplatnu odpoved');
+                }
+                if (!data) throw new Error('Test sa nepodaril - ziaden endpoint neodpovedal');
 
-                const data = await res.json();
                 btn.disabled = false;
                 btn.innerHTML = origHtml;
 
