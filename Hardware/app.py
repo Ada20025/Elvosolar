@@ -1739,7 +1739,7 @@ def _startup_auto_discovery_loop():
             pass
 
         if 'led' in globals():
-            led.anim_online()
+            led.anim_ok()
     except Exception as e:
         log_message(f"[STARTUP DISCOVERY] Chyba pri autodetekcii: {e}")
 
