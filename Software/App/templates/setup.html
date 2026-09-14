@@ -399,13 +399,16 @@
 
                             <!-- Modbus RTU Inputs -->
                             <div id="smartRtuInputs" class="hidden space-y-2 pt-1">
+                                <div class="p-2.5 bg-emerald-950/30 border border-emerald-800/40 rounded-xl text-emerald-300 text-[10px] leading-relaxed">
+                                    ✅ Parametre sú prednastavené automaticky: <strong>9600 baud · 8 data · Parita None · 1 stop bit · Adresa 205</strong>. Nič nemusíte meniť.
+                                </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="text-[9px] font-bold text-slate-400">RS485 Port (CM5)</label>
-                                        <input id="smartRtuPortInput" type="text" value="/dev/ttyAMA3" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2.5 outline-none font-mono">
+                                        <label class="text-[9px] font-bold text-slate-400">RS485 Port (CM5) — automaticky nájdený</label>
+                                        <input id="smartRtuPortInput" type="text" value="" placeholder="Hľadám port..." readonly class="w-full bg-slate-950 border border-emerald-800/50 text-emerald-300 text-xs rounded-xl px-3 py-2.5 outline-none font-mono">
                                     </div>
                                     <div>
-                                        <label class="text-[9px] font-bold text-slate-400">Baud Rate & Parita</label>
+                                        <label class="text-[9px] font-bold text-slate-400">Baud Rate & Parita (pevné)</label>
                                         <input id="smartRtuBaudInput" type="text" value="9600 8-N-1" disabled class="w-full bg-slate-950/60 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2.5 outline-none font-mono">
                                     </div>
                                 </div>
@@ -442,7 +445,7 @@
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-purple-400 font-bold">3.</span>
-                                    <span>Pre RS485 (Modbus RTU): V <strong>Settings → Comm. Param. → RS485</strong> nastavte COM port na <strong>9600 baud, 8 data bits, Parity None, 1 stop bit</strong>. Adresa CM5 je <strong>205</strong>.</span>
+                                    <span>Pre RS485 (Modbus RTU): V <strong>Settings → Comm. Param. → RS485</strong> nechajte <strong>9600 baud, 8 data bits, Parity None, 1 stop bit</strong> — CM5 použije presne tie isté parametre automaticky (adresa <strong>205</strong>).</span>
                                 </div>
                             </div>
                         </div>
@@ -762,6 +765,44 @@
                 rtuInputs.classList.remove('hidden');
             }
         }
+
+
+        // === AUTO-DETECT RS485 SERIAL PORT (bez akejkolvek konfiguracie od uzivatela) ===
+        async function autoDetectRtuPort() {
+            const inp = document.getElementById('smartRtuPortInput');
+            if (!inp) return '/dev/ttyAMA3';
+            // 1) skus lokalnu branu (CM5 priamo)
+            const localIP = (typeof localGatewayIP !== 'undefined' && localGatewayIP) ? localGatewayIP : null;
+            const candidates = [];
+            if (localIP) candidates.push(`${localIP}/api/system/serial-ports`);
+            candidates.push('/api/system/serial-ports');
+            for (const url of candidates) {
+                try {
+                    const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
+                    const d = await r.json();
+                    const ports = d.ports || d.data?.ports || [];
+                    if (Array.isArray(ports) && ports.length > 0) {
+                        // preferuj ttyAMA/ttyUSB/serial RS485 porty
+                        const best = ports.find(p => /ttyAMA|ttyUSB|rs485|serial/i.test(p)) || ports[0];
+                        inp.value = best;
+                        return best;
+                    }
+                } catch (e) { /* skus dalsi */ }
+            }
+            inp.value = '/dev/ttyAMA3'; // bezny default pre CM5 RS485
+            return '/dev/ttyAMA3';
+        }
+        // spusti pri prepnuti na RTU alebo hybrid
+        const _origSwitch = switchSmartConnType;
+        switchSmartConnType = function(type) {
+            _origSwitch(type);
+            if (type === 'rtu' || type === 'hybrid') {
+                const inp = document.getElementById('smartRtuPortInput');
+                if (inp && !inp.value) autoDetectRtuPort();
+            }
+        };
+        // aj hned pri nacitani (ak je RTU default)
+        setTimeout(() => { const inp = document.getElementById('smartRtuPortInput'); if (inp && !inp.value) autoDetectRtuPort(); }, 800);
 
         async function testSmartLoggerConnection() {
             const btn = document.getElementById('btnTestSmartlogger');

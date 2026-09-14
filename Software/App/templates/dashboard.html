@@ -978,19 +978,30 @@
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
                 <div class="station-dropdown-container">                    <?php $activeDevName = 'Moje zariadenie'; if (isset($devices) && count($devices) > 0) { $activeDevName = htmlspecialchars($devices[0]['name'] ?? 'Moje zariadenie'); } ?>
                     <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:1px solid var(--border-card);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.2s;">
-                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);"><?php echo $activeDevName; ?></span>
+                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);display:flex;align-items:center;gap:6px;"><?php echo $activeDevName; ?> <span style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">zariadenie</span></span>
                         <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
                     </button>
-                    <div id="deviceDropdownMenu" class="station-dropdown-menu hidden">
+                    <div id="deviceDropdownMenu" class="station-dropdown-menu hidden" style="min-width:300px;max-height:70vh;overflow-y:auto;">
                         <?php if (isset($devices) && count($devices) > 0): ?>
                             <?php foreach ($devices as $dev): ?>
+                                <?php
+                                    $devConn = $dev['connection_type'] ?? 'modbus_rtu';
+                                    $isLogger = (strpos(strtolower($dev['model_name'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($dev['sub_type'] ?? ''), 'smartlogger') !== false);
+                                    $devTypeName = $isLogger ? 'SmartLogger' : 'Striedač';
+                                    $devId = $dev['modbus_slave_id'] ?? $dev['slave_id'] ?? null;
+                                    $devOnline = (strtolower($dev['status'] ?? 'offline') === 'online');
+                                ?>
                                 <div class="station-dropdown-item" onclick="selectActiveDevice(null, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" style="cursor:pointer;">
                                     <span style="display:flex;align-items:center;gap:8px;flex:1;">
-                                        <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-                                        <span class="device-name-label" id="deviceName_<?php echo $dev['id']; ?>"><?php echo htmlspecialchars($dev['name']); ?></span>
-                                        <span class="sn-badge">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -10)); ?></span>
+                                        <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:<?php echo $devOnline ? 'var(--accent-battery)' : '#ef4444'; ?>;"></span>
+                                        <span class="device-name-label" id="deviceName_<?php echo $dev['id']; ?>" style="font-weight:800;font-size:13px;color:var(--text-primary);"><?php echo htmlspecialchars($dev['name']); ?></span>
+                                        <span style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">zariadenie</span>
                                     </span>
                                     <svg onclick="event.stopPropagation();renameDevice(<?php echo $dev['id']; ?>)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);cursor:pointer;flex-shrink:0;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:8px;padding:4px 12px 6px 28px;font-size:10px;color:var(--text-secondary);">
+                                    <span style="display:flex;align-items:center;gap:4px;"><i data-lucide="<?php echo $isLogger ? 'server' : 'zap'; ?>" style="width:11px;height:11px;color:var(--accent-solar);"></i> <?php echo htmlspecialchars($devTypeName); ?><?php echo htmlspecialchars($dev['model_name'] ? ' · ' . $dev['model_name'] : ''); ?></span>
+                                    <span style="font-family:'JetBrains Mono',monospace;background:var(--bg-inset);padding:1px 6px;border-radius:5px;color:var(--accent-okte);">ID: <?php echo $devId !== null && $devId !== '' ? htmlspecialchars($devId) : '—'; ?></span>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>

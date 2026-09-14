@@ -131,6 +131,152 @@ if (isset($pdo)) {
     }
 }
 
+// === CORE TABLES AUTO-CREATE (users, devices, password_resets) ===
+// Fresh MySQL DB (napr. novy Railway) nema zakladne tabulky - vytvorime ich automaticky
+if (isset($pdo)) {
+    try { $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        username VARCHAR(100) NOT NULL,
+        email VARCHAR(190) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(20) DEFAULT 'user',
+        email_verified TINYINT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )"); } catch (Exception $e) {
+        try { $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            role TEXT DEFAULT 'user',
+            email_verified INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"); } catch (Exception $e2) { /* ignore */ }
+    }
+    // users: doplnenie stlpcov ak tabulka existuje starsiej verzie
+    try {
+        $ucols = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('role', $ucols)) $pdo->exec("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user'");
+        if (!in_array('email_verified', $ucols)) $pdo->exec("ALTER TABLE users ADD COLUMN email_verified TINYINT DEFAULT 0");
+        if (!in_array('created_at', $ucols)) $pdo->exec("ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP");
+    } catch (Exception $e) { /* sqlite alebo ignore */ }
+
+    try { $pdo->exec("CREATE TABLE IF NOT EXISTS devices (
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        name VARCHAR(150) DEFAULT 'Moje zariadenie',
+        serial_number VARCHAR(100) DEFAULT '',
+        brand VARCHAR(50) DEFAULT 'HUAWEI',
+        brand_id VARCHAR(20) DEFAULT 'huawei',
+        model_name VARCHAR(150) DEFAULT '',
+        model_id VARCHAR(20) DEFAULT '',
+        sub_type VARCHAR(50) DEFAULT '',
+        status VARCHAR(20) DEFAULT 'offline',
+        last_seen DATETIME NULL,
+        battery_soc FLOAT DEFAULT 0,
+        fve_power_w FLOAT DEFAULT 0,
+        grid_power_w FLOAT DEFAULT 0,
+        temp FLOAT DEFAULT 25.0,
+        min_power_w FLOAT DEFAULT 0,
+        max_power_w FLOAT DEFAULT 10000,
+        min_power_pct FLOAT DEFAULT 0,
+        max_power_pct FLOAT DEFAULT 100,
+        active_model_id VARCHAR(10) DEFAULT '1',
+        night_sleep TINYINT DEFAULT 0,
+        connection_type VARCHAR(20) DEFAULT 'modbus_rtu',
+        smartlogger_ip VARCHAR(50) DEFAULT '',
+        smartlogger_port INTEGER DEFAULT 502,
+        modbus_slave_id INTEGER DEFAULT 205,
+        baud_rate INTEGER DEFAULT 9600,
+        parity VARCHAR(10) DEFAULT 'none',
+        stop_bits INTEGER DEFAULT 1,
+        serial_port VARCHAR(50) DEFAULT '',
+        total_saved_eur FLOAT DEFAULT 0,
+        total_kwh FLOAT DEFAULT 0
+    )"); } catch (Exception $e) {
+        try { $pdo->exec("CREATE TABLE IF NOT EXISTS devices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            name TEXT DEFAULT 'Moje zariadenie',
+            serial_number TEXT DEFAULT '',
+            brand TEXT DEFAULT 'HUAWEI',
+            brand_id TEXT DEFAULT 'huawei',
+            model_name TEXT DEFAULT '',
+            model_id TEXT DEFAULT '',
+            sub_type TEXT DEFAULT '',
+            status TEXT DEFAULT 'offline',
+            last_seen DATETIME NULL,
+            battery_soc REAL DEFAULT 0,
+            fve_power_w REAL DEFAULT 0,
+            grid_power_w REAL DEFAULT 0,
+            temp REAL DEFAULT 25.0,
+            min_power_w REAL DEFAULT 0,
+            max_power_w REAL DEFAULT 10000,
+            min_power_pct REAL DEFAULT 0,
+            max_power_pct REAL DEFAULT 100,
+            active_model_id TEXT DEFAULT '1',
+            night_sleep INTEGER DEFAULT 0,
+            connection_type TEXT DEFAULT 'modbus_rtu',
+            smartlogger_ip TEXT DEFAULT '',
+            smartlogger_port INTEGER DEFAULT 502,
+            modbus_slave_id INTEGER DEFAULT 205,
+            baud_rate INTEGER DEFAULT 9600,
+            parity TEXT DEFAULT 'none',
+            stop_bits INTEGER DEFAULT 1,
+            serial_port TEXT DEFAULT '',
+            total_saved_eur REAL DEFAULT 0,
+            total_kwh REAL DEFAULT 0
+        )"); } catch (Exception $e2) { /* ignore */ }
+    }
+    // devices: doplnenie stlpcov do existujucej tabulky
+    try {
+        $dcols = $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN);
+        $dadds = [
+            'brand_id' => "VARCHAR(20) DEFAULT 'huawei'",
+            'model_name' => "VARCHAR(150) DEFAULT ''",
+            'model_id' => "VARCHAR(20) DEFAULT ''",
+            'sub_type' => "VARCHAR(50) DEFAULT ''",
+            'temp' => "FLOAT DEFAULT 25.0",
+            'baud_rate' => "INTEGER DEFAULT 9600",
+            'parity' => "VARCHAR(10) DEFAULT 'none'",
+            'stop_bits' => "INTEGER DEFAULT 1",
+            'serial_port' => "VARCHAR(50) DEFAULT ''",
+            'min_power_pct' => "FLOAT DEFAULT 0",
+            'max_power_pct' => "FLOAT DEFAULT 100",
+            'active_model_id' => "VARCHAR(10) DEFAULT '1'",
+            'night_sleep' => "TINYINT DEFAULT 0",
+            'connection_type' => "VARCHAR(20) DEFAULT 'modbus_rtu'",
+            'smartlogger_ip' => "VARCHAR(50) DEFAULT ''",
+            'smartlogger_port' => "INTEGER DEFAULT 502",
+            'modbus_slave_id' => "INTEGER DEFAULT 205",
+            'min_okte_price_cz_eur' => "FLOAT DEFAULT 0",
+        ];
+        foreach ($dadds as $dcol => $ddef) {
+            if (!in_array($dcol, $dcols)) $pdo->exec("ALTER TABLE devices ADD COLUMN $dcol $ddef");
+        }
+    } catch (Exception $e) { /* sqlite alebo ignore */ }
+    // fallback pre min_okte_price_cz_eur ak SHOW COLUMNS zlyhalo
+    try {
+        $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
+    } catch (Exception $e) { /* already exists */ }
+
+    try { $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        code VARCHAR(10) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )"); } catch (Exception $e) {
+        try { $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            code TEXT NOT NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"); } catch (Exception $e2) { /* ignore */ }
+    }
+}
+
 // === DEMO USER SEED ===
 if (isset($pdo)) {
     try {
@@ -1574,6 +1720,17 @@ elseif ($path === '/api/push/subscribe' && $method === 'POST') {
 }
 
 // --- SMARTLOGGER TEST ENDPOINT ---
+elseif ($path === '/api/system/serial-ports' && $method === 'GET') {
+    // Zoznam dostupnych RS485/serial portov (funguje len na lokalnej CM5 brane; v cloude vrati prazdny zoznam)
+    $ports = [];
+    if (strncasecmp(PHP_OS, 'WIN', 3) !== 0) {
+        foreach (['/dev/ttyAMA*', '/dev/ttyUSB*', '/dev/serial*'] as $pattern) {
+            foreach ((glob($pattern) ?: []) as $p_dev) { $ports[] = $p_dev; }
+        }
+    }
+    send_json(['status' => 'success', 'ports' => $ports]);
+}
+
 elseif ($path === '/api/smartlogger/test' && $method === 'POST') {
     $data = get_json_input();
     $mode = $data['mode'] ?? 'tcp'; // 'tcp', 'rtu', 'hybrid'
