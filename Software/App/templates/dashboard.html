@@ -991,17 +991,17 @@
                                     $devId = $dev['modbus_slave_id'] ?? $dev['slave_id'] ?? null;
                                     $devOnline = (strtolower($dev['status'] ?? 'offline') === 'online');
                                 ?>
-                                <div class="station-dropdown-item" onclick="selectActiveDevice(null, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" style="cursor:pointer;">
-                                    <span style="display:flex;align-items:center;gap:8px;flex:1;">
-                                        <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:<?php echo $devOnline ? 'var(--accent-battery)' : '#ef4444'; ?>;"></span>
-                                        <span class="device-name-label" id="deviceName_<?php echo $dev['id']; ?>" style="font-weight:800;font-size:13px;color:var(--text-primary);"><?php echo htmlspecialchars($dev['name']); ?></span>
-                                        <span style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">zariadenie</span>
+                                <div class="station-dropdown-item" onclick="selectActiveDevice(null, '<?php echo $dev['id']; ?>', '<?php echo htmlspecialchars($dev['name']); ?>')" style="cursor:pointer;padding:6px 12px;">
+                                    <span style="display:flex;align-items:center;gap:6px;flex:1;">
+                                        <span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:<?php echo $devOnline ? 'var(--accent-battery)' : '#ef4444'; ?>;"></span>
+                                        <span class="device-name-label" id="deviceName_<?php echo $dev['id']; ?>" style="font-weight:800;font-size:12px;color:var(--text-primary);"><?php echo htmlspecialchars($dev['name']); ?></span>
+                                        <span style="font-size:8px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">zariadenie</span>
                                     </span>
-                                    <svg onclick="event.stopPropagation();renameDevice(<?php echo $dev['id']; ?>)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);cursor:pointer;flex-shrink:0;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                    <svg onclick="event.stopPropagation();renameDevice(<?php echo $dev['id']; ?>)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);cursor:pointer;flex-shrink:0;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                                 </div>
-                                <div style="display:flex;align-items:center;gap:8px;padding:4px 12px 6px 28px;font-size:10px;color:var(--text-secondary);">
-                                    <span style="display:flex;align-items:center;gap:4px;"><i data-lucide="<?php echo $isLogger ? 'server' : 'zap'; ?>" style="width:11px;height:11px;color:var(--accent-solar);"></i> <?php echo htmlspecialchars($devTypeName); ?><?php echo htmlspecialchars($dev['model_name'] ? ' · ' . $dev['model_name'] : ''); ?></span>
-                                    <span style="font-family:'JetBrains Mono',monospace;background:var(--bg-inset);padding:1px 6px;border-radius:5px;color:var(--accent-okte);">ID: <?php echo $devId !== null && $devId !== '' ? htmlspecialchars($devId) : '—'; ?></span>
+                                <div style="display:flex;align-items:center;gap:6px;padding:2px 12px 4px 24px;font-size:9px;color:var(--text-secondary);">
+                                    <span style="display:flex;align-items:center;gap:3px;"><i data-lucide="<?php echo $isLogger ? 'server' : 'zap'; ?>" style="width:9px;height:9px;color:var(--accent-solar);"></i> <?php echo htmlspecialchars($devTypeName); ?><?php echo htmlspecialchars($dev['model_name'] ? ' · ' . $dev['model_name'] : ''); ?></span>
+                                    <span style="font-family:'JetBrains Mono',monospace;background:var(--bg-inset);padding:0 5px;border-radius:4px;color:var(--accent-okte);font-size:8px;">ID: <?php echo $devId !== null && $devId !== '' ? htmlspecialchars($devId) : '—'; ?></span>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -1207,7 +1207,7 @@
                         <div id="invertersList">
                             <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:11px;">Načítavam...</div>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px;font-size:10px;color:var(--text-secondary);">
+                        <div id="busFooterStats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px;font-size:10px;color:var(--text-secondary);">
                             <div style="display:flex;flex-direction:column;gap:2px;">
                                 <span>Latencia:</span>
                                 <strong class="font-mono" style="color:var(--text-primary);" id="busLatency">-- ms</strong>
@@ -1962,8 +1962,11 @@
 
             if (busStatus) busStatus.textContent = isOnline ? 'RS485 OK' : 'OFFLINE';
             if (busStatus) busStatus.style.color = isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)';
-            if (busLatency) busLatency.textContent = isOnline ? '12 ms' : '-- ms';
-            if (dailyProd) dailyProd.textContent = totalKwh.toFixed(1) + ' kWh';
+            if (busLatency) busLatency.textContent = isOnline ? '12 ms' : '–';
+            if (dailyProd) dailyProd.textContent = isOnline ? (totalKwh.toFixed(1) + ' kWh') : '–';
+            // Skry citacky (Latencia/Vyroba) ked je zariadenie offline
+            const footerStats = document.getElementById('busFooterStats');
+            if (footerStats) footerStats.style.display = isOnline ? 'grid' : 'none';
 
             lucide.createIcons();
         }

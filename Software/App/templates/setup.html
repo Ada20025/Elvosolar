@@ -91,14 +91,11 @@
                         </div>
                         <div id="cableVerifyBox" class="p-3 bg-slate-950/50 border border-slate-850 rounded-xl flex items-center justify-center gap-2.5 text-xs">
                             <span id="cablePulse" class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                            <span id="cableText" class="text-slate-300">Konfigurácia nie je dokončená...</span>
+                            <span id="cableText" class="text-slate-300">Pripojte CM5 káblom (LAN/USB) a pokračujte...</span>
                         </div>
                         
                         <div id="connectionMethodButtons" class="space-y-2.5 pt-2">
-                            <button onclick="startBluetoothScan(true)" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg hover:opacity-95">
-                                📡 BEZDRÔTOVO CEZ BLUETOOTH
-                            </button>
-                            <button onclick="showCableDeviceSelector()" class="w-full bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-xs py-3.5 rounded-xl transition border border-slate-750">
+                            <button onclick="showCableDeviceSelector()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg hover:opacity-95">
                                 🔌 PRIAME PRIPOJENIE KÁBLOM / LAN
                             </button>
                         </div>
@@ -220,16 +217,8 @@
                         <div id="wifiInputs" class="hidden space-y-3">
                             <div class="bg-slate-950/20 p-3 rounded-xl border border-slate-850 space-y-3">
                                 <span class="text-[9px] font-bold uppercase tracking-wider text-cyan-400 block">Pripojiť k domácej Wi-Fi</span>
-                                <div class="flex gap-2">
-                                    <button type="button" id="wifiScanBtn" onclick="scanWifiNetworks()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2 px-3 rounded-xl transition font-mono uppercase tracking-wider">🔍 Vyhľadať siete</button>
-                                    <button type="button" id="wifiManualToggleBtn" onclick="toggleManualWifi(true)" class="bg-slate-900 hover:bg-slate-850 text-slate-300 font-bold text-xs py-2 px-3 rounded-xl transition border border-slate-800 font-mono uppercase tracking-wider">✍️ Zadať manuálne</button>
-                                </div>
-                                <div id="wifiSelectContainer" class="space-y-1">
-                                    <select id="wifiSsidSelect" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-3 py-3 outline-none"></select>
-                                </div>
-                                <div id="wifiManualContainer" class="hidden space-y-1">
+                                <div id="wifiManualContainer" class="space-y-1">
                                     <input type="text" id="wifiSsidManual" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-4 py-3 outline-none font-mono" placeholder="Názov Wi-Fi (SSID)">
-                                    <button type="button" onclick="toggleManualWifi(false)" class="text-[10px] text-cyan-400 hover:underline block pt-1">Späť na výber</button>
                                 </div>
                                 
                                 <div class="relative">
@@ -404,8 +393,8 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="text-[9px] font-bold text-slate-400">RS485 Port (CM5) — automaticky nájdený</label>
-                                        <input id="smartRtuPortInput" type="text" value="" placeholder="Hľadám port..." readonly class="w-full bg-slate-950 border border-emerald-800/50 text-emerald-300 text-xs rounded-xl px-3 py-2.5 outline-none font-mono">
+                                        <label class="text-[9px] font-bold text-slate-400">RS485 Port (CM5) — káblové pripojenie</label>
+                                        <input id="smartRtuPortInput" type="text" value="/dev/ttyAMA3" readonly title="Port je pevne daný káblovým zapojením RS485 na CM5" class="w-full bg-slate-950 border border-emerald-800/50 text-emerald-300 text-xs rounded-xl px-3 py-2.5 outline-none font-mono">
                                     </div>
                                     <div>
                                         <label class="text-[9px] font-bold text-slate-400">Baud Rate & Parita (pevné)</label>
@@ -581,7 +570,7 @@
 
         async function executeFinalSetupAndSend() {
             showValidationError(null);
-            const ssid = isManualWifi ? document.getElementById('wifiSsidManual').value.trim() : document.getElementById('wifiSsidSelect').value;
+            const ssid = (document.getElementById('wifiSsidManual')?.value || '').trim();
             const pass = document.getElementById('wifiPass').value;
             const brand_id = document.getElementById('brandSelect').value;
             const category_id = document.getElementById('categorySelect').value;
@@ -766,43 +755,6 @@
             }
         }
 
-
-        // === AUTO-DETECT RS485 SERIAL PORT (bez akejkolvek konfiguracie od uzivatela) ===
-        async function autoDetectRtuPort() {
-            const inp = document.getElementById('smartRtuPortInput');
-            if (!inp) return '/dev/ttyAMA3';
-            // 1) skus lokalnu branu (CM5 priamo)
-            const localIP = (typeof localGatewayIP !== 'undefined' && localGatewayIP) ? localGatewayIP : null;
-            const candidates = [];
-            if (localIP) candidates.push(`${localIP}/api/system/serial-ports`);
-            candidates.push('/api/system/serial-ports');
-            for (const url of candidates) {
-                try {
-                    const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
-                    const d = await r.json();
-                    const ports = d.ports || d.data?.ports || [];
-                    if (Array.isArray(ports) && ports.length > 0) {
-                        // preferuj ttyAMA/ttyUSB/serial RS485 porty
-                        const best = ports.find(p => /ttyAMA|ttyUSB|rs485|serial/i.test(p)) || ports[0];
-                        inp.value = best;
-                        return best;
-                    }
-                } catch (e) { /* skus dalsi */ }
-            }
-            inp.value = '/dev/ttyAMA3'; // bezny default pre CM5 RS485
-            return '/dev/ttyAMA3';
-        }
-        // spusti pri prepnuti na RTU alebo hybrid
-        const _origSwitch = switchSmartConnType;
-        switchSmartConnType = function(type) {
-            _origSwitch(type);
-            if (type === 'rtu' || type === 'hybrid') {
-                const inp = document.getElementById('smartRtuPortInput');
-                if (inp && !inp.value) autoDetectRtuPort();
-            }
-        };
-        // aj hned pri nacitani (ak je RTU default)
-        setTimeout(() => { const inp = document.getElementById('smartRtuPortInput'); if (inp && !inp.value) autoDetectRtuPort(); }, 800);
 
         async function testSmartLoggerConnection() {
             const btn = document.getElementById('btnTestSmartlogger');
@@ -1327,8 +1279,9 @@
         }
 
         async function scanWifiNetworks() {
-            const select = document.getElementById('wifiSsidSelect');
-            select.innerHTML = '<option value="">🔍 Skenujem bezdrôtové siete...</option>';
+            // Skenovanie odstranene - SSID sa zadava vzdy manualne (zariadenie nemusi mat aktivnu Wi-Fi pri setup)e)
+            toggleManualWifi(true);
+            return;
             try {
                 const res = await fetch(`${localGatewayIP}/api/system/wifi/scan`);
                 let nets = await res.json();
@@ -1466,6 +1419,24 @@
         }
 
         function submitStep3() {
+            const ssidEl = document.getElementById('wifiSsidManual');
+            const passEl = document.getElementById('wifiPass');
+            const netType = document.querySelector('input[name="netType"]:checked');
+            // WiFi musi mat SSID + heslo zadane (aspon 8 znakov heslo)
+            if (netType && netType.value === 'wifi') {
+                if (!ssidEl || !ssidEl.value.trim()) {
+                    if (ssidEl) ssidEl.style.borderColor = '#ef4444';
+                    ssidEl?.focus();
+                    alert('Zadajte názov Wi-Fi siete (SSID) — bez neho sa CM5 nepripojí.');
+                    return;
+                }
+                if (!passEl || passEl.value.length < 8) {
+                    if (passEl) passEl.style.borderColor = '#ef4444';
+                    passEl?.focus();
+                    alert('Zadajte heslo k Wi-Fi (aspoň 8 znakov).');
+                    return;
+                }
+            }
             goToSlide(4);
         }
 
