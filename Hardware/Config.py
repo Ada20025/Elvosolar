@@ -62,12 +62,12 @@ DEVICE_DB = {
                 'modely': {
                     '1': {
                         'meno': 'SmartLogger 3000A / 1000 / Enspire',
-                        'on': 40125,
-                        'off': 40125,
+                        'on': 40428,
+                        'off': 40428,
                         'baud': 9600,
-                        'reg_soc': 37760,
-                        'reg_p_ac': 32080,
-                        'tcp_port': 502
+                        'reg_soc': 40515,
+                        'reg_p_ac': 40388,
+                        'tcp_port': 205
                     },
                 }
             }
