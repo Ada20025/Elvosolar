@@ -968,7 +968,7 @@ if ($path === '/' || $path === '') {
     if ($is_admin) {
         // Admin: show ALL devices from DB
         $all_devices = $pdo->query("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.id DESC")->fetchAll();
-        render_template('admin.html', ['devices' => $all_devices, 'all_devices' => $all_devices]);
+        render_template('admin.html', ['devices' => $all_devices, 'all_devices' => $all_devices, 'is_admin' => true]);
     } elseif (count($devices) === 0) {
         render_template('no_devices.html');
     } else {
@@ -1377,6 +1377,18 @@ elseif (preg_match('#^/device/([0-9]+)$#', $path, $matches) && $method === 'GET'
     $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
     $stmt->execute([$device_id, $_SESSION['user_id']]);
     $device = $stmt->fetch();
+    
+    // Admin moze otvorit aj zariadenie ineho uzivatela (hierarchia admin > user)
+    if (!$device) {
+        $stmt_admin_dev = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $stmt_admin_dev->execute([$_SESSION['user_id']]);
+        $admin_row2 = $stmt_admin_dev->fetch();
+        if ($admin_row2 && ($admin_row2['role'] ?? '') === 'admin') {
+            $stmt2 = $pdo->prepare("SELECT * FROM devices WHERE id = ?");
+            $stmt2->execute([$device_id]);
+            $device = $stmt2->fetch();
+        }
+    }
     
     if (!$device) {
         header("Location: " . $base_path . "/");
@@ -2670,6 +2682,15 @@ elseif ($path === '/api/admin/devices' && $method === 'GET') {
 
 // --- ADMIN: SEND COMMAND TO DEVICE ---
 elseif ($path === '/api/admin/command' && $method === 'POST') {
+    // HIERARCHIA: iba admin moze posielat prikazy na dialku
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlaseny'], 401);
+    $stmt_role = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+    $stmt_role->execute([$_SESSION['user_id']]);
+    $role_row = $stmt_role->fetch();
+    if (!$role_row || ($role_row['role'] ?? '') !== 'admin') {
+        send_json(['status' => 'error', 'message' => 'Iba admin moze posielat prikazy'], 403);
+    }
+    
     $data = get_json_input();
     $device_id = intval($data['device_id'] ?? 0);
     $action = trim($data['action'] ?? '');

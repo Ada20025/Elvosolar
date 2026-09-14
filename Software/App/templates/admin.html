@@ -874,7 +874,7 @@
                 <i data-lucide="cpu" style="width:12px;height:12px;"></i> Stanice:
             </span>
             <?php foreach ($devices as $i => $dev): ?>
-                <div class="device-tab <?php echo $i === 0 ? 'active' : ''; ?>" data-device-id="<?php echo $dev['id']; ?>" onclick="selectActiveDevice(this, '<?php echo $dev['id']; ?>')">
+                <div class="device-tab <?php echo $i === 0 ? 'active' : ''; ?>" data-device-id="<?php echo $dev['id']; ?>" onclick="openDeviceDashboard(event, '<?php echo $dev['id']; ?>')" style="cursor:pointer;" title="Otvoriť dashboard zariadenia">
                     <i data-lucide="box" style="width:14px;height:14px;"></i>
                     <span class="device-tab-name"><?php echo htmlspecialchars($dev['name']); ?></span>
                     <span style="font-family:'JetBrains Mono';font-size:9px;opacity:0.6;">SN: <?php echo htmlspecialchars(substr($dev['serial_number'], -6)); ?></span>
@@ -1375,6 +1375,11 @@
         })();
 
         // Multi-device Active Selection
+        // Klik na zariadenie = presmerovanie na user-style dashboard toho zariadenia (admin vidí cudzie zariadenia vďaka hierarchii)
+        function openDeviceDashboard(event, id) {
+            if (event) event.stopPropagation();
+            window.location.href = basePath + '/device/' + id;
+        }
         function selectActiveDevice(element, id) {
             document.querySelectorAll('.device-tab').forEach(tab => tab.classList.remove('active'));
             element.classList.add('active');
