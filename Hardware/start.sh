@@ -42,14 +42,29 @@ fi
 
 if [ "$IS_CLAIMED" != "1" ]; then
     echo "[MONITOR] Zariadenie zatiaľ nie je nastavené. Automaticky otváram sprievodcu na HDMI..."
-    chromium-browser --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --start-maximized http://localhost &
-else
-    echo "[MONITOR] Zariadenie je už nakonfigurované. Lokálny prehliadač neotváram."
+    # chromium existuje len na obrazovke - nespúšťať hlásiť chybu keď nie je nainštalovaný
+    if command -v chromium-browser >/dev/null 2>&1 || command -v chromium >/dev/null 2>&1; then
+        (chromium-browser --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --start-maximized http://localhost 2>/dev/null || chromium --noerrdialogs --disable-infobars --start-maximized http://localhost 2>/dev/null) &
+    else
+        echo "[MONITOR] Chromium nie je nainštalovaný - sprievodca otvor v prehliadači: http://$(hostname -I | awk '{print $1}')"
+    fi
 fi
 
 # 3. NEKONEČNÝ BEH HLAVNÉHO WEBSERVERU (app.py)
+# Pred štartom zabi všetky staré inštancie app.py (inak Errno 98 address already in use)
+if ! command -v fuser >/dev/null 2>&1; then
+    sudo pkill -f "python3.*app.py" 2>/dev/null
+    sleep 2
+fi
 while true; do
     if [ -f "$APP_DIR/app.py" ]; then
+        # Over či port 80 nie je obsadený starým procesom - ak áno, zobudi vlastníka
+        PORT_OWNER=$(sudo fuser 80/tcp 2>/dev/null | tr -d ' ')
+        if [ -n "$PORT_OWNER" ]; then
+            echo "[APLIKÁCIA] Port 80 drží proces $PORT_OWNER - ukončujem ho..."
+            sudo kill -9 $PORT_OWNER 2>/dev/null
+            sleep 2
+        fi
         echo "[APLIKÁCIA] >>> Spúšťam hlavný program (app.py) <<<"
         sudo $VENV_PYTHON $APP_DIR/app.py
         echo "[APLIKÁCIA] ⚠️ Varovanie: Program sa nečakane ukončil. Reštartujem ho o 5 sekúnd..."
