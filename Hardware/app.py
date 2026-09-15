@@ -105,7 +105,7 @@ class SmartLoggerTestRequest(BaseModel):
     rtu_port: str = "/dev/ttyAMA3"
     baud: int = 9600
     slave_id: int = 205
-    test_register: int = 32080
+    test_register: int = 40515  # SOC register
 
 # =============================================================================
 # PYDANTIC MODELY PRE VALIDÁCIU POŽIADAVIEK (REQUEST SCHEMAS)
@@ -521,71 +521,69 @@ def api_save_smartlogger():
     return {"status": "success", "ip": ip, "port": port}
 
 
+def _modbus_tcp_read(ip, port, unit_id, reg_addr, count=2, timeout=2.0):
+    """Pomocná funkcia - číta Modbus TCP registry."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    sock.connect((ip, port))
+    trans_id = int(time.time() * 1000) & 0xFFFF
+    packet = struct.pack('>HHBBHH', trans_id, 0, 6, unit_id, 3, reg_addr, count)
+    sock.sendall(packet)
+    resp = sock.recv(256)
+    sock.close()
+    if len(resp) >= 9 and resp[7] == 0x03:
+        byte_count = resp[8]
+        regs = []
+        for i in range(0, byte_count, 2):
+            if 9 + i + 1 < len(resp):
+                val = (resp[9+i] << 8) | resp[9+i+1]
+                regs.append(val)
+        return regs
+    return None
+
 @app.post("/api/system/test-smartlogger")
 def api_test_smartlogger(data: SmartLoggerTestRequest):
-    """Otestuje spojenie so SmartLoggerom cez Modbus TCP a/alebo Modbus RTU a vrati odozvu."""
+    """Otestuje spojenie so SmartLoggerom cez Modbus TCP a/alebo Modbus RTU a vrati realne data.
+    Registre (Huawei SmartLogger):
+      40428 (RW, I16, gain 10) - Active power adjustment %
+      40515 (RO, U16, gain 10) - SOC battery %
+      40525 (RO, I32, gain 1000) - Active power kW (2 registre)
+    """
     results = {}
     
-    # 1. Modbus TCP Test
+    # 1. Modbus TCP Test - citame realne registre
     if data.mode in ["tcp", "hybrid"]:
         t0 = time.time()
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(2.0)
-            sock.connect((data.ip, data.port))
-            
-            # Odoslanie Modbus TCP Requestu (Read Holding Registers FC03, adresa 32080, 2 registre)
-            trans_id = int(time.time() * 1000) & 0xFFFF
-            packet = struct.pack('>HHBBHH', trans_id, 0, 6, data.unit_id, 3, data.test_register, 2)
-            sock.sendall(packet)
-            
-            resp = sock.recv(256)
+            # Test pripojenia + citanie SOC (40515) a Active Power (40525)
+            soc_regs = _modbus_tcp_read(data.ip, data.port, data.unit_id, 40515, 1)
+            power_regs = _modbus_tcp_read(data.ip, data.port, data.unit_id, 40525, 2)
             latency_ms = round((time.time() - t0) * 1000, 1)
-            sock.close()
             
-            if len(resp) >= 9 and resp[7] == 0x03:
-                byte_count = resp[8]
-                regs = []
-                for i in range(0, byte_count, 2):
-                    if 9 + i + 1 < len(resp):
-                        val = (resp[9+i] << 8) | resp[9+i+1]
-                        regs.append(val)
-                power_w = regs[0] if len(regs) > 0 else 3840
-                results["tcp"] = {
-                    "status": "success",
-                    "connected": True,
-                    "ip": data.ip,
-                    "port": data.port,
-                    "unit_id": data.unit_id,
-                    "latency_ms": latency_ms,
-                    "registers": regs,
-                    "active_power_w": power_w,
-                    "battery_soc": 84,
-                    "message": f"Modbus TCP úspešný ({latency_ms} ms). SmartLogger odpovedal na porte {data.port}."
-                }
-            elif len(resp) >= 9 and resp[7] == 0x83:
-                exc_code = resp[8] if len(resp) > 8 else 0
-                results["tcp"] = {
-                    "status": "warning",
-                    "connected": True,
-                    "ip": data.ip,
-                    "port": data.port,
-                    "unit_id": data.unit_id,
-                    "latency_ms": latency_ms,
-                    "exception_code": exc_code,
-                    "message": f"SmartLogger pripojený, ale vrátil Modbus Exception Code 0x{exc_code:02X}."
-                }
+            battery_soc = (soc_regs[0] / 10.0) if soc_regs else None
+            # Active power je I32 (2 registre, gain 1000)
+            if power_regs and len(power_regs) >= 2:
+                raw_power = (power_regs[0] << 16) | power_regs[1]
+                if raw_power >= 0x80000000: raw_power -= 0x100000000  # signed I32
+                active_power_kw = raw_power / 1000.0
             else:
-                results["tcp"] = {
-                    "status": "success",
-                    "connected": True,
-                    "ip": data.ip,
-                    "port": data.port,
-                    "latency_ms": latency_ms,
-                    "active_power_w": 3840,
-                    "battery_soc": 84,
-                    "message": f"TCP socket úspešne otvorený ({latency_ms} ms)."
-                }
+                active_power_kw = None
+            
+            results["tcp"] = {
+                "status": "success",
+                "connected": True,
+                "ip": data.ip,
+                "port": data.port,
+                "unit_id": data.unit_id,
+                "latency_ms": latency_ms,
+                "battery_soc": battery_soc,
+                "active_power_kw": active_power_kw,
+                "registers": {
+                    "soc_40515": soc_regs,
+                    "power_40525": power_regs
+                },
+                "message": f"Modbus TCP úspešný ({latency_ms} ms). SOC: {battery_soc}%, Výkon: {active_power_kw} kW"
+            }
         except Exception as e:
             results["tcp"] = {
                 "status": "error",
@@ -664,6 +662,39 @@ def api_test_smartlogger(data: SmartLoggerTestRequest):
         "results": results,
         "timestamp": datetime.datetime.now().isoformat()
     }
+
+
+class PowerAdjustRequest(BaseModel):
+    ip: str = "192.168.8.10"
+    port: int = 502
+    unit_id: int = 0
+    power_percent: float = 0.0  # -100.0 az 100.0
+
+@app.post("/api/system/smartlogger/power")
+def api_smartlogger_power(data: PowerAdjustRequest):
+    """Nastavi aktivny vykon na SmartLoggeri (register 40428, gain 10)."""
+    try:
+        reg_val = int(data.power_percent * 10)  # gain 10: 49.0% = 490
+        reg_val = max(-1000, min(1000, reg_val))  # clamp -100% to 100%
+        # I16 signed: pre negativne hodnoty
+        if reg_val < 0: reg_val += 0x10000
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(3.0)
+        sock.connect((data.ip, data.port))
+        trans_id = int(time.time() * 1000) & 0xFFFF
+        # FC06 Write Single Register (40428)
+        packet = struct.pack('>HHBBHHH', trans_id, 0, 6, data.unit_id, 6, 40428, reg_val)
+        sock.sendall(packet)
+        resp = sock.recv(256)
+        sock.close()
+        if len(resp) >= 8 and resp[7] == 0x06:
+            return {"status": "success", "power_percent": data.power_percent, "register": 40428, "raw_value": reg_val}
+        elif len(resp) >= 9 and resp[7] == 0x86:
+            exc = resp[8] if len(resp) > 8 else 0
+            return {"status": "error", "message": f"Modbus Exception 0x{exc:02X}"}
+        return {"status": "warning", "message": "Odpoveď nečakaná", "raw": resp.hex()}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.get("/api/system/announce")
