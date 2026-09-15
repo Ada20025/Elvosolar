@@ -45,8 +45,8 @@ DEVICE_DB = {
                         'val_on': 1000, 
                         'val_off': 0, 
                         'baud': 9600, 
-                        'reg_soc': 37760, 
-                        'reg_p_ac': 32080
+                        'reg_soc': 40515, 
+                        'reg_p_ac': 40525
                     },
                 }
             },

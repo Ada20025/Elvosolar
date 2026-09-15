@@ -184,15 +184,16 @@ class ModbusDataStore:
                 return int(meter.house_consumption_kwh_today * 100) if meter else 1450
 
             # ------------------------------------------------------------------
-            # 4. HUAWEI SUN2000 / SMARTLOGGER EMULÁCIA BLOKY (30000+, 32000+, 37000+, 40000+)
+            # 4. HUAWEI SUN2000 / SMARTLOGGER EMULÁCIA BLOKY (30000+, 32000+, 40515+, 40000+)
             # ------------------------------------------------------------------
             elif reg == 30000:
                 return 0x0100  # Model Type ID
             elif reg == 32000:
                 return 0x0002  # State: 0x0002 = Running / On-grid
-            elif reg == 32080:
-                # Huawei Active Power (W)
-                return int(sum(item.get("power_ac", 0.0) for item in getattr(self.bg_service, 'live_data', {}).values())) or 3840
+            elif reg == 40525:
+                # Huawei Active Power (I32, gain 1000) -> kW
+                total_w = sum(item.get("power_ac", 0.0) for item in getattr(self.bg_service, 'live_data', {}).values())
+                return int(total_w * 1000) if total_w else 0
             elif reg == 32082:
                 # Huawei Reactive Power (var)
                 return 0
@@ -202,10 +203,11 @@ class ModbusDataStore:
             elif reg == 32085:
                 # Huawei Grid Frequency (50.00 Hz -> 5000)
                 return 5000
-            elif reg == 37000 or reg == 37760:
-                # Huawei Battery SoC (%)
+            elif reg == 40515:
+                # Huawei Battery SoC (U16, gain 10) -> %
                 soc_list = [item["battery_soc"] for item in getattr(self.bg_service, 'live_data', {}).values() if item.get("battery_soc", 0) > 0]
-                return int(sum(soc_list) / len(soc_list)) if soc_list else 84
+                avg = sum(soc_list) / len(soc_list) if soc_list else 0.0
+                return int(avg * 10)  # gain 10: 84% = 840
             elif reg == 40000:
                 return 2300    # Napätie fázy L1 (0.1 V -> 230.0 V)
             elif reg == 40001:

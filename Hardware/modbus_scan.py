@@ -63,18 +63,18 @@ def phase1_quick_scan(ports, baudrates=[9600], parities=['N']):
                             print(f"    ✅ ID={sid} INPUT odpovedala!")
                             continue
                         
-                        # Test 3: Holding registers adresa 32080 (Huawei P_AC)
-                        result3 = client.read_holding_registers(address=32080, count=1, slave=sid)
+                        # Test 3: Holding registers adresa 40525 (Huawei P_AC)
+                        result3 = client.read_holding_registers(address=40525, count=1, slave=sid)
                         if not result3.isError():
-                            found.append((port, baud, par, sid, 'HOLDING_32080'))
-                            print(f"    ✅ ID={sid} HOLDING 32080 odpovedala!")
+                            found.append((port, baud, par, sid, 'HOLDING_40525'))
+                            print(f"    ✅ ID={sid} HOLDING 40525 odpovedala!")
                             continue
                         
-                        # Test 4: Holding registers adresa 37760 (SoC)
-                        result4 = client.read_holding_registers(address=37760, count=1, slave=sid)
+                        # Test 4: Holding registers adresa 40515 (SoC)
+                        result4 = client.read_holding_registers(address=40515, count=1, slave=sid)
                         if not result4.isError():
-                            found.append((port, baud, par, sid, 'HOLDING_37760'))
-                            print(f"    ✅ ID={sid} HOLDING 37760 odpovedala!")
+                            found.append((port, baud, par, sid, 'HOLDING_40515'))
+                            print(f"    ✅ ID={sid} HOLDING 40515 odpovedala!")
                             continue
                         
                         # Test 5: Ak pride error odpoved = zariadenie existuje
@@ -158,25 +158,27 @@ def phase2_deep_scan(port, baud, parity, slave_id):
     except Exception as e:
         print(f"  - Chyba: {e}")
     
-    # --- AC Power (Huawei: register 32080, FC3) ---
-    print("\n[AC Power] Register 32080 (Holding FC3)...")
+    # --- AC Power (Huawei: register 40525, I32, gain 1000, 2 registre) ---
+    print("\n[AC Power] Register 40525 (I32, gain 1000)...")
     try:
-        result = client.read_holding_registers(address=32080, count=1, slave=slave_id)
-        if not result.isError() and result.registers:
-            val = result.registers[0]
-            info['ac_power'] = val
-            print(f"  ✅ AC Power = {val} W")
+        result = client.read_holding_registers(address=40525, count=2, slave=slave_id)
+        if not result.isError() and result.registers and len(result.registers) >= 2:
+            raw = (result.registers[0] << 16) | result.registers[1]
+            if raw >= 0x80000000: raw -= 0x100000000  # signed I32
+            kw = raw / 1000.0
+            info['ac_power'] = kw
+            print(f"  ✅ AC Power = {kw} kW (raw={raw})")
         else:
             print(f"  - Nedostupne")
     except Exception as e:
         print(f"  - Chyba: {e}")
     
-    # --- SoC Battery (Huawei: register 37760, FC3) ---
-    print("\n[SoC Battery] Register 37760 (Holding FC3)...")
+    # --- SoC Battery (Huawei: register 40515, U16, gain 10) ---
+    print("\n[SoC Battery] Register 40515 (U16, gain 10)...")
     try:
-        result = client.read_holding_registers(address=37760, count=1, slave=slave_id)
+        result = client.read_holding_registers(address=40515, count=1, slave=slave_id)
         if not result.isError() and result.registers:
-            val = result.registers[0]
+            val = result.registers[0] / 10.0
             info['soc'] = val
             print(f"  ✅ SoC = {val}%")
         else:

@@ -330,8 +330,8 @@ def api_system_discover(brand: str = "", category: str = "", model: str = ""):
         if not brand_id:
             brand_id = "5"
         
-        test_reg = cfg.get('reg_p_ac', 32080) if cfg else 32080
-        reg_soc = cfg.get('reg_soc', 37760) if cfg else 37760
+        test_reg = cfg.get('reg_p_ac', 40525) if cfg else 40525
+        reg_soc = cfg.get('reg_soc', 40515) if cfg else 40515
         baud_rate = cfg.get('baud', 9600) if cfg else 9600
         conn.close()
         conn = None
