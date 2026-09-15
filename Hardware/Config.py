@@ -8,7 +8,7 @@ OKTE_URL = "https://isot.okte.sk/api/v1/dam/results"
 WEB_PORT = 80
 
 # === MODBUS RTU SLAVE PRE HUAWEI SMARTLOGGER (ADRESA 205) ===
-MODBUS_RTU_SLAVE_ENABLED = True
+MODBUS_RTU_SLAVE_ENABLED = False
 MODBUS_RTU_SLAVE_ID = 205       # Slave adresa pre vyhľadanie v SmartLoggeri
 MODBUS_RTU_BAUDRATE = 9600      # Rýchlosť zbernice
 MODBUS_RTU_DATABITS = 8         # Dátové bity

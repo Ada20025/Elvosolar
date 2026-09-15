@@ -373,7 +373,7 @@
                                 <div class="grid grid-cols-3 gap-2">
                                     <div class="col-span-2">
                                         <label class="text-[9px] font-bold text-slate-400">IP adresa SmartLoggera / Striedača</label>
-                                        <input id="smartloggerIpInput" type="text" value="192.168.0.10" placeholder="192.168.0.10" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2.5 outline-none font-mono focus:border-cyan-500 transition">
+                                        <input id="smartloggerIpInput" type="text" value="192.168.8.10" placeholder="192.168.8.10" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2.5 outline-none font-mono focus:border-cyan-500 transition">
                                     </div>
                                     <div>
                                         <label class="text-[9px] font-bold text-slate-400">Port</label>
@@ -432,7 +432,7 @@
                                 <div class="ml-7 rounded-lg overflow-hidden border border-slate-700">
                                     <div class="bg-gradient-to-r from-purple-900 to-indigo-900 px-3 py-1.5 flex items-center gap-1.5">
                                         <span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                        <span class="text-[8px] text-purple-200 font-mono ml-2">https://192.168.0.10</span>
+                                        <span class="text-[8px] text-purple-200 font-mono ml-2">https://192.168.8.10</span>
                                     </div>
                                     <div class="bg-slate-950 p-3 flex flex-col items-center gap-1.5">
                                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-[10px]">🔋</div>
@@ -801,7 +801,7 @@
             resultBox.className = 'text-xs rounded-xl p-3 bg-slate-950/80 border border-purple-500/30 text-purple-300 flex items-center gap-2';
             resultBox.innerHTML = '<div class="border-2 border-purple-500/30 border-t-purple-400 rounded-full w-3.5 h-3.5 animate-spin"></div> Nadväzujem Modbus spojenie s jednotkou...';
 
-            const ip = document.getElementById('smartloggerIpInput')?.value?.trim() || '192.168.0.10';
+            const ip = document.getElementById('smartloggerIpInput')?.value?.trim() || '192.168.8.10';
             const port = parseInt(document.getElementById('smartloggerPortInput')?.value || 502);
             const unitId = parseInt(document.getElementById('smartloggerUnitIdInput')?.value || 1);
             const rtuPort = document.getElementById('smartRtuPortInput')?.value?.trim() || '/dev/ttyAMA3';

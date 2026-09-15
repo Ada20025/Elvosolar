@@ -15,6 +15,7 @@ import os
 import json
 import requests
 import socket
+import struct
 import time
 import datetime
 import serial
@@ -98,9 +99,9 @@ class InverterPowerRequest(BaseModel):
 
 class SmartLoggerTestRequest(BaseModel):
     mode: str = "tcp"
-    ip: str = "192.168.0.10"
-    port: int = 205
-    unit_id: int = 1
+    ip: str = "192.168.8.10"
+    port: int = 502
+    unit_id: int = 0  # SmartLogger uses device_id 0
     rtu_port: str = "/dev/ttyAMA3"
     baud: int = 9600
     slave_id: int = 205

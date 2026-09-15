@@ -44,13 +44,17 @@ class SolarBackgroundService:
         threading.Thread(target=self._cloud_sync_worker_loop, daemon=True).start()
 
         try:
-            from modbus_slave_service import ModbusRtuSlaveServer, ModbusTcpSlaveServer
-            # Modbus RTU Slave pre Huawei SmartLogger (RS485, adresa 205, 9600-8-N-1)
-            self.rtu_slave_server = ModbusRtuSlaveServer(self)
-            self.rtu_slave_server.start()
-            # Modbus TCP Slave (LAN port 5020)
+            from modbus_slave_service import ModbusTcpSlaveServer
+            # Modbus TCP Slave (LAN port 5020) - SmartLogger sa pripaja cez TCP
             self.slave_server = ModbusTcpSlaveServer(self)
             self.slave_server.start()
+            print("[MODBUS TCP SLAVE] Spusteny na porte 5020 - SmartLogger sa moze pripojit cez LAN")
+            # Modbus RTU Slave - len ak je explicitne povoleny v Config.py
+            from Config import MODBUS_RTU_SLAVE_ENABLED
+            if MODBUS_RTU_SLAVE_ENABLED:
+                from modbus_slave_service import ModbusRtuSlaveServer
+                self.rtu_slave_server = ModbusRtuSlaveServer(self)
+                self.rtu_slave_server.start()
         except Exception as e:
             print(f"Modbus Slave server sa nespustil: {e}")
 
