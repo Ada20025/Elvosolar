@@ -58,7 +58,7 @@ DEVICE_DB = {
                 'meno': 'HUAWEI SmartLogger (Enspire)',
                 'description': 'Monitorovací zariadenie pre FVE - pripojenie cez LAN/WiFi, Modbus TCP port 502',
                 'connection': 'tcp',
-                'tcp_port': 502,
+                'tcp_port': 205,
                 'modely': {
                     '1': {
                         'meno': 'SmartLogger 3000A / 1000 / Enspire',
