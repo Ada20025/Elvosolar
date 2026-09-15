@@ -601,6 +601,43 @@ elseif ($path === '/api/cm5/register' && $method === 'POST') {
     send_json(['status' => 'success', 'serial' => $serial]);
 }
 
+// --- USER CLAIM DEVICE (ulozi meno + parametre zariadenia do cloud DB) ---
+elseif ($path === '/api/user/claim-device' && $method === 'POST') {
+    $data = get_json_input();
+    $user_id = $_SESSION['user_id'] ?? 0;
+    if (!$user_id) {
+        // CM5 moze poslat bez session - ulozime pre user_id=1 (prvy user)
+        $user_id = 1;
+    }
+    $name = trim($data['name'] ?? 'ElvoControll');
+    $brand_id = trim($data['brand_id'] ?? '');
+    $category_id = trim($data['category_id'] ?? '');
+    $model_id = trim($data['model_id'] ?? '');
+    $slave_id = intval($data['slave_id'] ?? 1);
+    $has_battery = $data['has_battery'] ?? true;
+    $serial = trim($data['serial'] ?? '');
+    
+    try {
+        // Najdi existujuce zariadenie pre tohoto usera alebo vytvor nove
+        $existing = null;
+        if ($serial) {
+            $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
+            $stmt->execute([$serial]);
+            $existing = $stmt->fetch();
+        }
+        if ($existing) {
+            $pdo->prepare("UPDATE devices SET name = ?, brand_id = ?, model_id = ?, sub_type = ?, user_id = ? WHERE id = ?")
+                ->execute([$name, $brand_id, $model_id, $category_id, $user_id, $existing['id']]);
+        } else {
+            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, brand_id, model_name, model_id, sub_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'offline')")
+                ->execute([$user_id, $name, $serial, strtoupper($brand_id), $brand_id, $model_id, $model_id, $category_id]);
+        }
+        send_json(['status' => 'success', 'name' => $name]);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+}
+
 // --- HEALTHCHECK ---
 elseif ($path === '/healthcheck' || $path === '/health') {
     send_json(['status' => 'ok', 'time' => date('c')]);
