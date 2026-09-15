@@ -2,56 +2,51 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Riadiace centrum | FusionSolar Style</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FusionSolar | Riadiace centrum</title>
     <link rel="icon" type="image/png" href="<?php echo $base_path; ?>/templates/ElvosolarLogo.png">
-    <link rel="manifest" href="<?php echo $base_path; ?>/manifest.json">
-    <meta name="theme-color" content="#000e26">
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --fs-navy-dark: #000e26;
-            --fs-navy-hero: #00122e;
+            --fs-navy-dark: #00122e;
+            --fs-navy-mid: #071e48;
+            --fs-navy-light: #0d2a63;
             --fs-blue-accent: #0066ff;
             --fs-blue-hover: #1a75ff;
+            --fs-text-white: #ffffff;
+            --fs-text-gray: #8ea3bf;
             --fs-bg-page: #edf1f7;
-            --fs-card-bg: #ffffff;
-            --fs-border: #e2e8f0;
-            --fs-text-main: #1e293b;
-            --fs-text-sub: #64748b;
+            --fs-border-dark: rgba(255, 255, 255, 0.12);
+            --fs-border-light: #e2e8f0;
             --fs-green: #22c55e;
             --fs-red: #ef4444;
             --fs-orange: #f97316;
             --fs-yellow: #eab308;
-            --fs-cyan: #38bdf8;
+            --fs-slate: #94a3b8;
         }
 
         body {
-            font-family: 'Segoe UI', 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Segoe UI', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--fs-bg-page);
-            color: var(--fs-text-main);
+            color: #1e293b;
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-
-        /* 1. FusionSolar Top Bar */
+        /* Top FusionSolar Navigation Header */
         .fs-nav {
             height: 52px;
-            background: var(--fs-navy-dark);
+            background: #000e26;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 24px;
-            color: #fff;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            padding: 0 20px;
+            color: var(--fs-text-white);
+            font-size: 13px;
         }
 
         .fs-nav-left {
@@ -70,129 +65,89 @@
             text-decoration: none;
         }
 
-        .fs-brand svg { color: var(--fs-blue-accent); }
+        .fs-brand svg {
+            color: #0088ff;
+        }
 
-        .fs-nav-divider { color: #475569; }
+        .fs-nav-divider {
+            color: #475569;
+            font-size: 14px;
+        }
 
         .fs-site-label {
             display: flex;
             align-items: center;
             gap: 6px;
             font-weight: 600;
-            font-size: 13px;
             color: #cbd5e1;
         }
 
-        .fs-nav-tabs {
+        .fs-menu-links {
             display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 28px;
             margin-left: 20px;
         }
 
-        .fs-tab-btn {
-            background: none;
-            border: none;
+        .fs-menu-link {
             color: #cbd5e1;
+            text-decoration: none;
             font-size: 13px;
-            font-weight: 600;
-            padding: 16px 0;
-            cursor: pointer;
+            font-weight: 500;
             position: relative;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            padding: 16px 0;
             transition: color 0.2s;
         }
 
-        .fs-tab-btn:hover, .fs-tab-btn.active {
-            color: var(--fs-cyan);
+        .fs-menu-link:hover, .fs-menu-link.active {
+            color: #38bdf8;
         }
 
-        .fs-tab-btn.active::after {
+        .fs-menu-link.active::after {
             content: '';
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
             height: 3px;
-            background: var(--fs-blue-accent);
+            background: #0284c7;
             border-radius: 2px 2px 0 0;
         }
 
         .fs-nav-right {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 20px;
         }
 
-        .fs-nav-chip {
+        .fs-nav-icon-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 10px;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 11px;
-            font-weight: 600;
-            color: #94a3b8;
+            font-size: 13px;
+            transition: color 0.2s;
         }
 
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--fs-green);
-            box-shadow: 0 0 8px var(--fs-green);
-        }
-
-        .dot.warning {
-            background: var(--fs-red);
-            box-shadow: 0 0 8px var(--fs-red);
-        }
-
-        /* 2. Stations selector sub-bar */
-        .fs-station-bar {
-            background: #02173b;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            padding: 8px 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            overflow-x: auto;
-        }
-
-        .fs-station-tab {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #94a3b8;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .fs-station-tab.active {
-            background: rgba(0, 102, 255, 0.2);
-            border-color: var(--fs-blue-accent);
+        .fs-nav-icon-btn:hover {
             color: #fff;
         }
 
-        /* 3. Dark Blue Hero Banner (KPIs) */
+        /* Top Hero KPI Dashboard Area */
         .fs-hero {
-            background: radial-gradient(circle at 50% 10%, #0d2c61 0%, var(--fs-navy-hero) 85%);
+            background: radial-gradient(circle at 50% 20%, #0c2b5d 0%, var(--fs-navy-dark) 85%);
+            background-size: cover;
             position: relative;
-            padding: 24px 30px 40px 30px;
+            padding: 30px 40px 45px 40px;
             color: #fff;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 -20px 30px -10px rgba(0,0,0,0.5);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
         }
 
+        /* Subtle solar-grid pattern overlay */
         .fs-hero::before {
             content: '';
             position: absolute;
@@ -205,69 +160,90 @@
         }
 
         .fs-hero-inner {
-            max-width: 1600px;
+            max-width: 1720px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1.4fr 1fr 1fr;
+            grid-template-columns: 1.3fr 1fr 1fr;
             gap: 30px;
             position: relative;
             z-index: 1;
         }
 
-        @media (max-width: 1200px) {
-            .fs-hero-inner { grid-template-columns: 1fr; }
-        }
-
         .fs-section-title {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 16px;
+            font-weight: 600;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            color: #e2e8f0;
-            letter-spacing: 0.3px;
+            gap: 8px;
+            margin-bottom: 24px;
+            color: #f1f5f9;
         }
 
-        /* KPI items */
+        .fs-section-title i {
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        /* Column 1: KPI Grid */
         .fs-kpi-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 24px 20px;
         }
 
         .fs-kpi-item {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
 
         .fs-kpi-circle-icon {
-            width: 42px;
-            height: 42px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--fs-cyan);
+            color: #38bdf8;
             flex-shrink: 0;
         }
 
+        .fs-kpi-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fs-kpi-value-row {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+        }
+
         .fs-kpi-val {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
+            letter-spacing: -0.5px;
             color: #ffffff;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .fs-kpi-unit {
+            font-size: 11px;
+            font-weight: 600;
+            color: #cbd5e1;
         }
 
         .fs-kpi-label {
             font-size: 11px;
             color: #94a3b8;
-            margin-top: 2px;
+            margin-top: 1px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        /* Hero Donut */
+        /* Column 2 & 3: Donut Charts & Indicators */
         .fs-donut-panel {
             display: flex;
             align-items: center;
@@ -277,8 +253,8 @@
 
         .fs-donut-wrapper {
             position: relative;
-            width: 125px;
-            height: 125px;
+            width: 140px;
+            height: 140px;
             flex-shrink: 0;
         }
 
@@ -290,312 +266,286 @@
             align-items: center;
             justify-content: center;
             text-align: center;
+            pointer-events: none;
+        }
+
+        .fs-donut-center-val {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .fs-donut-center-sub {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-top: 4px;
         }
 
         .fs-legend-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            font-size: 12px;
+            gap: 10px;
+            min-width: 120px;
         }
 
         .fs-legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            font-size: 12px;
         }
 
-        /* 4. Main White Card Container */
+        .fs-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .fs-legend-num {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .fs-legend-desc {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        /* Alarm status icons */
+        .fs-alarm-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        /* Main Container for Table & Filters */
         .fs-main-content {
-            max-width: 1600px;
+            max-width: 1720px;
             margin: -20px auto 40px auto;
-            padding: 0 24px;
+            padding: 0 20px;
             position: relative;
             z-index: 2;
         }
 
-        .view-section {
-            display: none;
-            animation: viewFade 0.3s ease-out;
-        }
-
-        .view-section.active { display: block; }
-
-        @keyframes viewFade {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .fs-card {
-            background: var(--fs-card-bg);
-            border-radius: 6px;
+        .fs-card-table {
+            background: #ffffff;
+            border-radius: 4px;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
             padding: 24px;
-            border: 1px solid var(--fs-border);
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Filters row */
+        .fs-filter-bar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px 24px;
             margin-bottom: 24px;
-        }
-
-        .fs-card-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid var(--fs-border);
-            padding-bottom: 10px;
-        }
-
-        /* Flow Diagram in FusionSolar style */
-        .flow-container {
-            background: #00122e;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08);
-            padding: 30px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 220px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        .flow-node {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            z-index: 5;
-            width: 90px;
-            text-align: center;
-        }
-
-        .flow-icon-circle {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid var(--node-color, #64748b);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--node-color, #64748b);
-            box-shadow: 0 0 15px var(--node-color);
-        }
-
-        .flow-node-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: #cbd5e1;
-        }
-
-        .flow-node-value {
             font-size: 13px;
-            font-weight: 700;
-            color: #ffffff;
-            font-family: 'JetBrains Mono', monospace;
         }
 
-        .flow-svg {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .flow-path {
-            stroke-dasharray: 6, 6;
-            animation: flowDashAnim 1.2s linear infinite;
-        }
-
-        @keyframes flowDashAnim {
-            to { stroke-dashoffset: -24; }
-        }
-
-        /* Power source status banner */
-        .power-source-badge {
+        .fs-filter-group {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 16px;
-            border-radius: 6px;
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            color: #059669;
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 20px;
         }
 
-        .power-source-badge.offgrid {
-            background: #fef2f2;
-            border-color: #fecaca;
-            color: #dc2626;
+        .fs-filter-label {
+            color: #334155;
+            font-weight: 500;
+            white-space: nowrap;
         }
 
-        /* Buttons & Forms in Huawei Style */
-        .fs-btn-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        @media (max-width: 650px) { .fs-btn-grid { grid-template-columns: 1fr; } }
-
-        .fs-action-btn {
-            background: #f8fafc;
+        .fs-input {
             border: 1px solid #cbd5e1;
             border-radius: 4px;
-            padding: 14px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #334155;
+            padding: 6px 12px;
+            font-size: 13px;
+            outline: none;
+            background: #fff;
+            color: #1e293b;
+            min-width: 160px;
+            height: 34px;
+        }
+
+        .fs-input:focus {
+            border-color: var(--fs-blue-accent);
+        }
+
+        .fs-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 6px 28px 6px 12px;
+            font-size: 13px;
+            outline: none;
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+            appearance: none;
+            color: #1e293b;
+            cursor: pointer;
+            height: 34px;
+            min-width: 120px;
+        }
+
+        .fs-btn-expand {
+            background: none;
+            border: none;
+            color: var(--fs-blue-accent);
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 500;
         }
 
-        .fs-action-btn:hover {
-            border-color: var(--fs-blue-accent);
-            color: var(--fs-blue-accent);
+        .fs-btn-primary {
+            background: var(--fs-blue-accent);
+            color: #fff;
+            border: none;
+            padding: 0 20px;
+            height: 34px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .fs-btn-primary:hover {
+            background: var(--fs-blue-hover);
+        }
+
+        .fs-btn-secondary {
             background: #fff;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            padding: 0 16px;
+            height: 34px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
         }
 
-        .fs-action-btn.active {
+        .fs-btn-secondary:hover {
+            background: #f8fafc;
+        }
+
+        /* Sites Data Table */
+        .fs-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .fs-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            border-bottom: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .fs-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .fs-table th.sortable:hover {
+            color: var(--fs-blue-accent);
+        }
+
+        .fs-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: #334155;
+        }
+
+        .fs-table tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        .fs-status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .fs-status-dot.normal { background-color: var(--fs-green); box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+        .fs-status-dot.offline { background-color: var(--fs-slate); }
+        .fs-status-dot.alarm { background-color: var(--fs-red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+
+        .fs-site-thumb {
+            width: 48px;
+            height: 32px;
+            border-radius: 3px;
+            object-fit: cover;
+            border: 1px solid #cbd5e1;
+            display: block;
+        }
+
+        .fs-site-link {
+            color: #0284c7;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+
+        .fs-site-link:hover {
+            color: #0369a1;
+            text-decoration: underline;
+        }
+
+        /* Pagination & Table Footer */
+        .fs-table-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .fs-pagination {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fs-page-btn {
+            min-width: 28px;
+            height: 28px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .fs-page-btn.active {
             background: var(--fs-blue-accent);
             color: #fff;
             border-color: var(--fs-blue-accent);
         }
 
-        /* AI Models */
-        .ai-model-card {
-            background: #fff;
-            border: 1px solid var(--fs-border);
-            border-radius: 6px;
-            padding: 14px 18px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.2s;
-        }
-
-        .ai-model-card:hover {
-            border-color: var(--fs-blue-accent);
-            box-shadow: 0 2px 8px rgba(0, 102, 255, 0.08);
-        }
-
-        .ai-model-card.active {
-            border-color: var(--fs-blue-accent);
-            background: #f0f7ff;
-        }
-
-        /* Input Controls */
-        .input-styled {
-            width: 100%;
-            background: #fff;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            padding: 10px 14px;
-            font-size: 13px;
-            color: #1e293b;
-            font-family: inherit;
-            outline: none;
-        }
-
-        .input-styled:focus {
-            border-color: var(--fs-blue-accent);
-        }
-
-        /* Relays */
-        .relays-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
-        }
-
-        @media (max-width: 650px) { .relays-container { grid-template-columns: 1fr; } }
-
-        .relay-item-card {
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 16px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .relay-indicator {
-            font-size: 10px;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 4px;
-            background: #e2e8f0;
-            color: #64748b;
-        }
-
-        .relay-indicator.active {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        /* Terminal block */
-        .terminal-box {
-            background: #000e26;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            overflow: hidden;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .terminal-console-header {
-            background: #00173d;
-            padding: 10px 16px;
-            color: #cbd5e1;
-            font-size: 11px;
-            font-weight: 700;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .terminal-log-output {
-            height: 250px;
-            padding: 16px;
-            overflow-y: auto;
-            color: #38bdf8;
-            font-size: 12px;
-            line-height: 1.6;
-        }
-
-        .terminal-input-bar {
-            display: flex;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            background: #000817;
-        }
-
-        .terminal-raw-input {
-            flex: 1;
-            background: none;
-            border: none;
-            color: #fff;
-            padding: 12px;
-            font-family: inherit;
-            outline: none;
-            font-size: 12px;
-        }
-
-        /* Floating right quick widget bar from FusionSolar */
+        /* Floating right quick widget buttons (identical to FusionSolar right bar) */
         .fs-quick-bar {
             position: fixed;
             right: 12px;
@@ -608,6 +558,7 @@
             flex-direction: column;
             overflow: hidden;
             z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
         .fs-quick-item {
@@ -619,53 +570,27 @@
             color: #cbd5e1;
             cursor: pointer;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
         }
 
-        .fs-quick-item:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
-
-        /* User Dropdown */
-        .user-dropdown-card {
-            position: absolute;
-            top: 50px;
-            right: 20px;
-            background: #ffffff;
-            border: 1px solid var(--fs-border);
-            border-radius: 6px;
-            padding: 8px;
-            min-width: 200px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            z-index: 200;
+        .fs-quick-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
         }
 
-        .user-dropdown-btn {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #334155;
-            border: none;
-            background: transparent;
-            cursor: pointer;
+        .fs-quick-item:last-child {
+            border-bottom: none;
         }
-
-        .user-dropdown-btn:hover { background: #f1f5f9; }
-
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- PHP Context metadata -->
+    <!-- Metadata for PHP backend routing -->
     <div id="php-metadata"
-         data-device-id="<?php echo htmlspecialchars($devices[0]['id'] ?? 1); ?>"
          data-base-path="<?php echo htmlspecialchars($base_path ?? ''); ?>"
-         class="hidden"></div>
+         class="hidden" style="display:none;"></div>
 
-    <!-- 1. FUSIONSOLAR TOP NAVIGATION -->
+    <!-- 1. TOP HEADER NAVIGATION BAR -->
     <header class="fs-nav">
         <div class="fs-nav-left">
             <a href="<?php echo $base_path; ?>/dashboard" class="fs-brand">
@@ -676,168 +601,220 @@
             </a>
             <span class="fs-nav-divider">|</span>
             <div class="fs-site-label">
-                <i data-lucide="home" style="width:14px;height:14px;"></i>
-                <span>Riadiace centrum</span>
+                <i data-lucide="home" style="width:15px;height:15px;"></i>
+                <span>FusionSolar</span>
             </div>
 
-            <!-- Tabs integrated inside the FusionSolar bar -->
-            <nav class="fs-nav-tabs">
-                <button onclick="switchTab('dashboard')" id="tabBtnDashboard" class="fs-tab-btn active">
-                    <i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i> Prehľad
-                </button>
-                <button onclick="switchTab('meter')" id="tabBtnMeter" class="fs-tab-btn">
-                    <i data-lucide="arrow-right-left" style="width:14px;height:14px;"></i> Smart Meter & AI
-                </button>
-                <button onclick="switchTab('control')" id="tabBtnControl" class="fs-tab-btn">
-                    <i data-lucide="sliders" style="width:14px;height:14px;"></i> Riadenie & Relé
-                </button>
-                <button onclick="switchTab('holiday')" id="tabBtnHoliday" class="fs-tab-btn">
-                    <i data-lucide="palm-tree" style="width:14px;height:14px;"></i> Dovolenka
-                </button>
-                <?php if (!empty($is_admin)): ?>
-                <button onclick="switchTab('terminal')" id="tabBtnTerminal" class="fs-tab-btn">
-                    <i data-lucide="terminal" style="width:14px;height:14px;"></i> Terminál
-                </button>
-                <?php endif; ?>
+            <nav class="fs-menu-links">
+                <a href="#" class="fs-menu-link active">Domov</a>
+                <a href="#" class="fs-menu-link">Monitorovanie</a>
+                <a href="#" class="fs-menu-link">Elektrárne</a>
+                <a href="#" class="fs-menu-link">Systém</a>
             </nav>
         </div>
 
         <div class="fs-nav-right">
-            <div class="fs-nav-chip" id="wifiIndicator">
-                <i data-lucide="wifi" style="width:13px;height:13px;"></i>
-                <span id="wifiLabel">Wi-Fi: OK</span>
+            <button class="fs-nav-icon-btn" title="Kalendár"><i data-lucide="calendar" style="width:16px;height:16px;"></i></button>
+            <button class="fs-nav-icon-btn" title="Hľadať"><i data-lucide="search" style="width:16px;height:16px;"></i></button>
+            
+            <div class="fs-nav-icon-btn">
+                <i data-lucide="globe" style="width:16px;height:16px;"></i>
+                <span>Slovenčina</span>
             </div>
 
-            <div class="fs-nav-chip">
-                <span class="dot" id="busDot"></span>
-                <span id="busLabel">Modbus: ON</span>
+            <div class="fs-nav-icon-btn">
+                <i data-lucide="user" style="width:16px;height:16px;"></i>
+                <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'guest_account...'); ?></span>
             </div>
 
-            <div style="position:relative;">
-                <button class="fs-nav-chip" style="cursor:pointer;color:#fff;" onclick="toggleUserDropdown(event)">
-                    <i data-lucide="user" style="width:13px;height:13px;"></i>
-                    <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Užívateľ'); ?></span>
-                    <i data-lucide="chevron-down" style="width:11px;height:11px;"></i>
-                </button>
-
-                <div id="userDropdownMenu" class="user-dropdown-card hidden">
-                    <a href="<?php echo $base_path; ?>/profile" style="text-decoration:none;">
-                        <button class="user-dropdown-btn"><i data-lucide="settings" style="width:14px;height:14px;"></i> Profil</button>
-                    </a>
-                    <a href="<?php echo $base_path; ?>/logout" style="text-decoration:none;">
-                        <button class="user-dropdown-btn" style="color:var(--fs-red);"><i data-lucide="log-out" style="width:14px;height:14px;"></i> Odhlásiť sa</button>
-                    </a>
-                </div>
-            </div>
+            <button class="fs-nav-icon-btn" title="Informácie"><i data-lucide="info" style="width:16px;height:16px;"></i></button>
+            <button class="fs-nav-icon-btn" title="Pomocník"><i data-lucide="help-circle" style="width:16px;height:16px;"></i></button>
         </div>
     </header>
 
-    <!-- Multi-Device Stations Bar -->
-    <div class="fs-station-bar">
-        <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:4px;">
-            <i data-lucide="cpu" style="width:12px;height:12px;"></i> Stanice:
-        </span>
-        <?php foreach ($devices as $i => $dev): ?>
-            <div class="fs-station-tab <?php echo $i === 0 ? 'active' : ''; ?>" data-device-id="<?php echo $dev['id']; ?>" onclick="openDeviceDashboard(event, '<?php echo $dev['id']; ?>')">
-                <i data-lucide="box" style="width:12px;height:12px;"></i>
-                <span><?php echo htmlspecialchars($dev['name']); ?></span>
-                <span style="opacity:0.6;font-family:'JetBrains Mono';font-size:9px;">(<?php echo htmlspecialchars(substr($dev['serial_number'] ?? '', -6)); ?>)</span>
-            </div>
-        <?php endforeach; ?>
-    </div>
-
-    <!-- 2. DARK BLUE HERO BANNER (FusionSolar KPI & DONUT) -->
+    <!-- 2. DARK BLUE HERO BANNER (KPIs, Donut Charts & Alarms) -->
     <section class="fs-hero">
         <div class="fs-hero-inner">
             
-            <!-- KPI Grid -->
+            <!-- SECTION 1: KPI elektrárne -->
             <div>
                 <div class="fs-section-title">
-                    <span>KPI ELEKTRÁRNE (LIVE)</span>
-                    <i data-lucide="refresh-cw" style="width:14px;height:14px;cursor:pointer;" onclick="fetchTelemetry()"></i>
+                    <span>KPI elektrárne</span>
+                    <i data-lucide="settings" style="width:15px;height:15px;"></i>
                 </div>
                 <div class="fs-kpi-grid">
+                    <!-- Aktuálny výkon -->
+                    <div class="fs-kpi-item">
+                        <div class="fs-kpi-circle-icon"><i data-lucide="activity"></i></div>
+                        <div class="fs-kpi-info">
+                            <div class="fs-kpi-value-row">
+                                <span class="fs-kpi-val" id="kpiLivePower">10,03</span>
+                                <span class="fs-kpi-unit">kW</span>
+                            </div>
+                            <span class="fs-kpi-label">Aktuálny výkon</span>
+                        </div>
+                    </div>
+
+                    <!-- Výnos dnes -->
                     <div class="fs-kpi-item">
                         <div class="fs-kpi-circle-icon"><i data-lucide="sun"></i></div>
-                        <div>
-                            <div class="fs-kpi-val" id="dashLivePower">0 W</div>
-                            <div class="fs-kpi-label">Aktuálny výkon FVE</div>
+                        <div class="fs-kpi-info">
+                            <div class="fs-kpi-value-row">
+                                <span class="fs-kpi-val" id="kpiDailyYield">14,39</span>
+                                <span class="fs-kpi-unit">kWh</span>
+                            </div>
+                            <span class="fs-kpi-label">Výnos dnes</span>
                         </div>
                     </div>
+
+                    <!-- Príjmy dnes -->
+                    <div class="fs-kpi-item">
+                        <div class="fs-kpi-circle-icon"><i data-lucide="coins"></i></div>
+                        <div class="fs-kpi-info">
+                            <div class="fs-kpi-value-row">
+                                <span class="fs-kpi-val" id="kpiDailyIncome">1,84</span>
+                            </div>
+                            <span class="fs-kpi-label">Príjmy dnes <i data-lucide="info" style="width:11px;height:11px;"></i></span>
+                        </div>
+                    </div>
+
+                    <!-- Celkový výnos -->
+                    <div class="fs-kpi-item">
+                        <div class="fs-kpi-circle-icon"><i data-lucide="layers"></i></div>
+                        <div class="fs-kpi-info">
+                            <div class="fs-kpi-value-row">
+                                <span class="fs-kpi-val" id="kpiTotalYield">96,05</span>
+                                <span class="fs-kpi-unit">MWh</span>
+                            </div>
+                            <span class="fs-kpi-label">Celkový výnos <i data-lucide="info" style="width:11px;height:11px;"></i></span>
+                        </div>
+                    </div>
+
+                    <!-- Energia nabitá dnes -->
                     <div class="fs-kpi-item">
                         <div class="fs-kpi-circle-icon"><i data-lucide="battery-charging"></i></div>
-                        <div>
-                            <div class="fs-kpi-val" id="dashBatterySoc">0%</div>
-                            <div class="fs-kpi-label">Kapacita Batérie (SoC)</div>
+                        <div class="fs-kpi-info">
+                            <div class="fs-kpi-value-row">
+                                <span class="fs-kpi-val" id="kpiChargedToday">4,01</span>
+                                <span class="fs-kpi-unit">kWh</span>
+                            </div>
+                            <span class="fs-kpi-label">Energia nabitá dnes</span>
                         </div>
                     </div>
+
+                    <!-- Energia vybitá dnes -->
                     <div class="fs-kpi-item">
-                        <div class="fs-kpi-circle-icon"><i data-lucide="zap"></i></div>
-                        <div>
-                            <div class="fs-kpi-val" id="dashConsumption">0 W</div>
-                            <div class="fs-kpi-label">Spotreba Domu</div>
-                        </div>
-                    </div>
-                    <div class="fs-kpi-item">
-                        <div class="fs-kpi-circle-icon"><i data-lucide="banknote"></i></div>
-                        <div>
-                            <div class="fs-kpi-val" id="dashTotalSaved">0.00 €</div>
-                            <div class="fs-kpi-label">Celková Úspora</div>
+                        <div class="fs-kpi-circle-icon"><i data-lucide="battery"></i></div>
+                        <div class="fs-kpi-info">
+                            <div class="fs-kpi-value-row">
+                                <span class="fs-kpi-val" id="kpiDischargedToday">2,84</span>
+                                <span class="fs-kpi-unit">kWh</span>
+                            </div>
+                            <span class="fs-kpi-label">Energia vybitá dnes</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Stav sústavy (Donut) -->
+            <!-- SECTION 2: Stav elektrárne (Donut) -->
             <div>
                 <div class="fs-section-title">
-                    <span>STAV ZARIADENÍ</span>
+                    <span>Stav elektrárne</span>
                 </div>
                 <div class="fs-donut-panel">
                     <div class="fs-donut-wrapper">
+                        <!-- SVG Donut Chart for Plant Status -->
                         <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width:100%; height:100%;">
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#1e293b" stroke-width="10"></circle>
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#22c55e" stroke-width="10" stroke-dasharray="251.2" stroke-dashoffset="50"></circle>
+                            <!-- Grey segment: 20% (Odpojené) -->
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#64748b" stroke-width="12"
+                                    stroke-dasharray="251.2" stroke-dashoffset="200.96"></circle>
+                            <!-- Red segment: 20% (Porucha) -->
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" stroke-width="12"
+                                    stroke-dasharray="50.24 200.96" stroke-dashoffset="-50.24"></circle>
+                            <!-- Green segment: 60% (Normálne) -->
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#22c55e" stroke-width="12"
+                                    stroke-dasharray="150.72 100.48" stroke-dashoffset="0"></circle>
                         </svg>
                         <div class="fs-donut-center-text">
-                            <span style="font-size:24px;font-weight:700;color:#fff;"><?php echo count($devices ?? [1]); ?></span>
-                            <span style="font-size:9px;color:#94a3b8;">Celkom</span>
+                            <span class="fs-donut-center-val" id="totalSitesCount"><?php echo count($devices ?? [1,2,3,4,5]); ?></span>
+                            <span class="fs-donut-center-sub">Celkom elektrární</span>
                         </div>
                     </div>
+
                     <div class="fs-legend-list">
                         <div class="fs-legend-item">
-                            <span class="dot" style="background:#22c55e;"></span>
-                            <span style="color:#cbd5e1;">Normálne: <?php echo count($devices ?? [1]); ?></span>
+                            <span class="fs-legend-dot" style="background:#22c55e;"></span>
+                            <div>
+                                <div class="fs-legend-num" id="statusCountNormal">3</div>
+                                <div class="fs-legend-desc">Normálne</div>
+                            </div>
                         </div>
                         <div class="fs-legend-item">
-                            <span class="dot" style="background:#ef4444;"></span>
-                            <span style="color:#cbd5e1;">Porucha: 0</span>
+                            <span class="fs-legend-dot" style="background:#ef4444;"></span>
+                            <div>
+                                <div class="fs-legend-num" id="statusCountFault">1</div>
+                                <div class="fs-legend-desc">Porucha</div>
+                            </div>
                         </div>
                         <div class="fs-legend-item">
-                            <span class="dot" style="background:#94a3b8;"></span>
-                            <span style="color:#cbd5e1;">Odpojené: 0</span>
+                            <span class="fs-legend-dot" style="background:#64748b;"></span>
+                            <div>
+                                <div class="fs-legend-num" id="statusCountOffline">1</div>
+                                <div class="fs-legend-desc">Odpojené</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Alarmy a Siete -->
+            <!-- SECTION 3: Aktívne alarmy (Donut) -->
             <div>
                 <div class="fs-section-title">
-                    <span>PARAMETRE SIETE</span>
+                    <span>Aktívne alarmy</span>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:10px;font-size:12px;color:#cbd5e1;padding-top:4px;">
-                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;">
-                        <span>Sieťová frekvencia:</span>
-                        <strong class="font-mono" id="dashLiveFreq">50.00 Hz</strong>
+                <div class="fs-donut-panel">
+                    <div class="fs-donut-wrapper">
+                        <!-- SVG Donut Chart for Active Alarms (Orange Ring) -->
+                        <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width:100%; height:100%;">
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#1e293b" stroke-width="12"></circle>
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f97316" stroke-width="12"
+                                    stroke-dasharray="251.2" stroke-dashoffset="20"></circle>
+                        </svg>
+                        <div class="fs-donut-center-text">
+                            <span class="fs-donut-center-val" id="totalAlarmCount">4</span>
+                            <span class="fs-donut-center-sub">Alarmov celkom</span>
+                        </div>
                     </div>
-                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;">
-                        <span>Teplota Bojlera:</span>
-                        <strong class="font-mono" id="dashBoilerTemp">-- °C</strong>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;">
-                        <span>Vonkajšia Teplota:</span>
-                        <strong class="font-mono" id="dashOutdoorTemp">-- °C</strong>
+
+                    <div class="fs-legend-list">
+                        <div class="fs-legend-item">
+                            <div class="fs-alarm-icon" style="background:rgba(239, 68, 68, 0.15);color:#ef4444;"><i data-lucide="bell" style="width:11px;height:11px;"></i></div>
+                            <div>
+                                <div class="fs-legend-num">0</div>
+                                <div class="fs-legend-desc">Kritický</div>
+                            </div>
+                        </div>
+                        <div class="fs-legend-item">
+                            <div class="fs-alarm-icon" style="background:rgba(249, 115, 22, 0.15);color:#f97316;"><i data-lucide="zap" style="width:11px;height:11px;"></i></div>
+                            <div>
+                                <div class="fs-legend-num">3</div>
+                                <div class="fs-legend-desc">Závažný</div>
+                            </div>
+                        </div>
+                        <div class="fs-legend-item">
+                            <div class="fs-alarm-icon" style="background:rgba(234, 179, 8, 0.15);color:#eab308;"><i data-lucide="alert-circle" style="width:11px;height:11px;"></i></div>
+                            <div>
+                                <div class="fs-legend-num">1</div>
+                                <div class="fs-legend-desc">Nízka závažnosť</div>
+                            </div>
+                        </div>
+                        <div class="fs-legend-item">
+                            <div class="fs-alarm-icon" style="background:rgba(2, 132, 199, 0.15);color:#0284c7;"><i data-lucide="info" style="width:11px;height:11px;"></i></div>
+                            <div>
+                                <div class="fs-legend-num">0</div>
+                                <div class="fs-legend-desc">Varovanie</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -845,204 +822,142 @@
         </div>
     </section>
 
-    <!-- 3. MAIN WORKSPACE / TABS (Clean White Enterprise Interior) -->
+    <!-- 3. WHITE CARD TABLE SECTION & FILTERS -->
     <main class="fs-main-content">
-
-        <!-- TAB 1: PREHĽAD (ENERGY FLOW & DASHBOARD) -->
-        <section id="sectionDashboard" class="view-section active">
-            <div class="fs-card">
-                <div class="fs-card-title">
-                    <i data-lucide="activity" style="color:var(--fs-blue-accent);"></i>
-                    <span>Smer a Distribúcia Toku Energie</span>
+        <div class="fs-card-table">
+            
+            <!-- Filters & Search Bar -->
+            <div class="fs-filter-bar">
+                <div class="fs-filter-group">
+                    <span class="fs-filter-label">Krajina/región</span>
+                    <input type="text" id="filterRegion" placeholder="Krajina/región" class="fs-input">
                 </div>
 
-                <div id="powerSourceStatus" class="power-source-badge">
-                    <i data-lucide="plug-2" style="width:16px;height:16px;"></i>
-                    <span id="powerSourceText">Pripojené k distribučnej sieti — Systém prenáša prebytky</span>
+                <div class="fs-filter-group">
+                    <span class="fs-filter-label">Typ zariadenia</span>
+                    <select id="filterType" class="fs-select">
+                        <option value="">Všetky</option>
+                        <option value="inverter">Striedač (Invertor)</option>
+                        <option value="meter">Smart Meter</option>
+                        <option value="battery">Akumulátor</option>
+                    </select>
                 </div>
 
-                <!-- Live Animated Energy Flow Diagram -->
-                <div class="flow-container">
-                    <div class="flow-node" style="--node-color: #f59e0b;">
-                        <div class="flow-icon-circle"><i data-lucide="sun"></i></div>
-                        <div class="flow-node-title">Fotovoltika</div>
-                        <div class="flow-node-value" id="flowFveVal">0 W</div>
-                    </div>
-
-                    <div class="flow-node" style="--node-color: #22c55e;">
-                        <div class="flow-icon-circle"><i data-lucide="battery"></i></div>
-                        <div class="flow-node-title">Úložisko</div>
-                        <div class="flow-node-value" id="flowBatVal">0%</div>
-                    </div>
-
-                    <div class="flow-node" style="--node-color: #38bdf8;">
-                        <div class="flow-icon-circle"><i data-lucide="home"></i></div>
-                        <div class="flow-node-title">Domácnosť</div>
-                        <div class="flow-node-value" id="flowHomeVal">0 W</div>
-                    </div>
-
-                    <div class="flow-node" style="--node-color: #6366f1;">
-                        <div class="flow-icon-circle"><i data-lucide="plug"></i></div>
-                        <div class="flow-node-title">Distribúcia</div>
-                        <div class="flow-node-value" id="flowGridVal">0 W</div>
-                    </div>
-
-                    <svg class="flow-svg">
-                        <path d="M 120 110 L 500 110" stroke="#f59e0b" stroke-width="2.5" fill="none" class="flow-path" />
-                        <path d="M 270 110 L 500 110" stroke="#22c55e" stroke-width="2.5" fill="none" class="flow-path" />
-                        <path d="M 680 110 L 590 110" stroke="#6366f1" stroke-width="2.5" fill="none" class="flow-path" />
-                    </svg>
+                <div class="fs-filter-group">
+                    <span class="fs-filter-label">Sériové číslo zariadenia</span>
+                    <input type="text" id="filterSn" placeholder="Sériové číslo zariad..." class="fs-input">
                 </div>
 
-                <!-- Havarijné odstavenie -->
-                <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:6px;padding:14px;display:flex;align-items:center;justify-content:space-between;">
-                    <div>
-                        <div style="font-size:12px;font-weight:700;color:#e11d48;">Havarijné Bezpečnostné Odpojenie</div>
-                        <div style="font-size:11px;color:#9f1239;">V prípade poruchy alebo revízie okamžite odstaví výrobu striedača.</div>
-                    </div>
-                    <button onclick="setManualOverride('OFF')" style="background:#e11d48;color:#fff;border:none;padding:8px 16px;border-radius:4px;font-weight:700;font-size:11px;cursor:pointer;">
-                        ODSTAVIŤ FVE
-                    </button>
+                <button class="fs-btn-expand">
+                    <span>Rozbaliť</span>
+                    <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
+                </button>
+
+                <div style="display:flex;gap:10px;margin-left:auto;">
+                    <button class="fs-btn-primary" onclick="applySearchFilter()">Hľadať</button>
+                    <button class="fs-btn-secondary" onclick="resetSearchFilter()">Resetovať</button>
                 </div>
             </div>
-        </section>
 
-        <!-- TAB 2: SMART METER & AI REGULATION -->
-        <section id="sectionMeter" class="view-section">
-            <div class="fs-card">
-                <div class="fs-card-title">
-                    <i data-lucide="cpu" style="color:var(--fs-blue-accent);"></i>
-                    <span>Regulačné Algoritmy & Výber Režimu</span>
-                </div>
+            <!-- Plants Table -->
+            <table class="fs-table" id="sitesTable">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;" class="sortable">Stav <i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i></th>
+                        <th style="width: 240px;">Obrázok elektrárne</th>
+                        <th class="sortable">Názov elektrárne <i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i></th>
+                        <th style="width: 250px;">Dnešný výnos (kWh)</th>
+                        <th style="width: 40px; text-align:right;"><i data-lucide="settings" style="width:15px;height:15px;color:#94a3b8;"></i></th>
+                    </tr>
+                </thead>
+                <tbody id="sitesTableBody">
+                    <?php if (!empty($devices)): ?>
+                        <?php foreach ($devices as $index => $dev): 
+                            // Simulácia realistického stavu podľa indexu alebo DB hodnôt
+                            $statusClass = 'normal';
+                            if ($index === 2) $statusClass = 'offline';
+                            if ($index === 4) $statusClass = 'alarm';
+                            
+                            $yields = ['0,00', '4,73', '0,00', '9,60', '12,40'];
+                            $currentYield = $yields[$index % count($yields)];
+                        ?>
+                        <tr data-site-name="<?php echo htmlspecialchars(strtolower($dev['name'])); ?>" data-site-sn="<?php echo htmlspecialchars(strtolower($dev['serial_number'] ?? '')); ?>">
+                            <td>
+                                <span class="fs-status-dot <?php echo $statusClass; ?>"></span>
+                            </td>
+                            <td>
+                                <!-- Realistický náhľad solárnych panelov z FusionSolar -->
+                                <img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar Array" class="fs-site-thumb">
+                            </td>
+                            <td>
+                                <a onclick="openDeviceDashboard(event, '<?php echo $dev['id']; ?>')" class="fs-site-link">
+                                    <?php echo htmlspecialchars($dev['name'] ?? ('DemoSite_' . ($dev['id'] ?? '100000'))); ?>
+                                </a>
+                            </td>
+                            <td><?php echo $currentYield; ?></td>
+                            <td style="text-align:right;"></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <!-- Fallback demo riadky presne z originálneho screenshotu -->
+                        <tr data-site-name="demosite_101390182" data-site-sn="101390182">
+                            <td><span class="fs-status-dot normal"></span></td>
+                            <td><img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar site" class="fs-site-thumb"></td>
+                            <td><a onclick="openDeviceDashboard(event, '1')" class="fs-site-link">DemoSite_101390182</a></td>
+                            <td>0,00</td>
+                            <td></td>
+                        </tr>
+                        <tr data-site-name="demosite_100887215" data-site-sn="100887215">
+                            <td><span class="fs-status-dot normal"></span></td>
+                            <td><img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar site" class="fs-site-thumb"></td>
+                            <td><a onclick="openDeviceDashboard(event, '2')" class="fs-site-link">DemoSite_100887215</a></td>
+                            <td>4,73</td>
+                            <td></td>
+                        </tr>
+                        <tr data-site-name="demosite_100389801" data-site-sn="100389801">
+                            <td><span class="fs-status-dot offline"></span></td>
+                            <td><img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar site" class="fs-site-thumb"></td>
+                            <td><a onclick="openDeviceDashboard(event, '3')" class="fs-site-link">DemoSite_100389801</a></td>
+                            <td>0,00</td>
+                            <td></td>
+                        </tr>
+                        <tr data-site-name="demosite_100285584" data-site-sn="100285584">
+                            <td><span class="fs-status-dot normal"></span></td>
+                            <td><img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar site" class="fs-site-thumb"></td>
+                            <td><a onclick="openDeviceDashboard(event, '4')" class="fs-site-link">DemoSite_100285584</a></td>
+                            <td>9,60</td>
+                            <td></td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
 
-                <div class="fs-btn-grid" id="meterModeGrid" style="margin-bottom:20px;">
-                    <button onclick="setMeterMode('UNLIMITED')" id="btnMeterUnlimited" class="fs-action-btn"><i data-lucide="zap"></i> Bez limitu</button>
-                    <button onclick="setMeterMode('SELF_CONSUMPTION')" id="btnMeterSelf" class="fs-action-btn"><i data-lucide="home"></i> Vlastná spotreba</button>
-                    <button onclick="setMeterMode('ZERO')" id="btnMeterZero" class="fs-action-btn"><i data-lucide="scale"></i> Nulový prepad</button>
-                    <button onclick="setMeterMode('PLUS')" id="btnMeterPlus" class="fs-action-btn"><i data-lucide="trending-up"></i> Prebytkový režim</button>
-                    <button onclick="setMeterMode('SMART')" id="btnMeterSmart" class="fs-action-btn active"><i data-lucide="brain"></i> Smart AI</button>
-                    <button onclick="setMeterMode('CUSTOM')" id="btnMeterCustom" class="fs-action-btn"><i data-lucide="cog"></i> Vlastné</button>
-                </div>
+            <!-- Pagination footer -->
+            <div class="fs-table-footer">
+                <div>Celkom: <span id="footerCount">5</span></div>
+                
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div class="fs-pagination">
+                        <button class="fs-page-btn" style="border:none;background:none;color:#94a3b8;"><i data-lucide="chevron-left" style="width:14px;height:14px;"></i></button>
+                        <button class="fs-page-btn active">1</button>
+                        <button class="fs-page-btn" style="border:none;background:none;color:#94a3b8;"><i data-lucide="chevron-right" style="width:14px;height:14px;"></i></button>
+                    </div>
 
-                <!-- AI OKTE Cenové modely -->
-                <div style="margin-top:20px;">
-                    <div style="font-size:12px;font-weight:700;margin-bottom:12px;color:#475569;text-transform:uppercase;">Autonómne Cenové Modely (OKTE Spot)</div>
-                    <div class="ai-model-card active" onclick="setAiModel('1')" id="aiModel1">
-                        <div>
-                            <div style="font-size:12px;font-weight:700;">Model 1: Ochrana pred zápornými tarifami</div>
-                            <div style="font-size:11px;color:#64748b;">Výroba zakázaná pri cene &lt; 0 €/MWh, povolená nad nulou.</div>
-                        </div>
-                        <i data-lucide="check" style="color:var(--fs-green);width:16px;height:16px;"></i>
-                    </div>
-                    <div class="ai-model-card" onclick="setAiModel('2')" id="aiModel2">
-                        <div>
-                            <div style="font-size:12px;font-weight:700;">Model 2: Predajná Arbitráž</div>
-                            <div style="font-size:11px;color:#64748b;">Uvoľní pretlak do siete iba v časoch denného cenového maxima.</div>
-                        </div>
-                    </div>
-                    <div class="ai-model-card" onclick="setAiModel('3')" id="aiModel3">
-                        <div>
-                            <div style="font-size:12px;font-weight:700;">Model 3: Sieťové nabíjanie z podpriemeru</div>
-                            <div style="font-size:11px;color:#64748b;">Nabíja akumulátory, ak sú ceny hlboko pod denným priemerom.</div>
-                        </div>
-                    </div>
+                    <select class="fs-select" style="min-width:105px;height:28px;padding-top:2px;padding-bottom:2px;">
+                        <option>10 / strana</option>
+                        <option>20 / strana</option>
+                        <option>50 / strana</option>
+                    </select>
                 </div>
             </div>
-        </section>
 
-        <!-- TAB 3: RIADENIE & RELÉ -->
-        <section id="sectionControl" class="view-section">
-            <div class="fs-card">
-                <div class="fs-card-title">
-                    <i data-lucide="command" style="color:var(--fs-blue-accent);"></i>
-                    <span>Manuálny Override Sústavy</span>
-                </div>
-                <div class="fs-btn-grid" style="margin-bottom:24px;">
-                    <button onclick="setManualOverride('AUTO')" id="btnOverrideAuto" class="fs-action-btn active"><i data-lucide="cpu"></i> Automatika (AI EMS)</button>
-                    <button onclick="setManualOverride('ON')" id="btnOverrideOn" class="fs-action-btn"><i data-lucide="plus-circle"></i> Force Charge</button>
-                    <button onclick="setManualOverride('OFF')" id="btnOverrideOff" class="fs-action-btn"><i data-lucide="minus-circle"></i> Force Discharge</button>
-                </div>
-
-                <div class="fs-card-title">
-                    <i data-lucide="toggle-left" style="color:var(--fs-blue-accent);"></i>
-                    <span>Ovládanie záťaží (Relé Shelly / GPIO)</span>
-                </div>
-                <div class="relays-container">
-                    <div class="relay-item-card">
-                        <i data-lucide="flame" style="width:24px;height:24px;color:#f59e0b;"></i>
-                        <span style="font-size:12px;font-weight:700;">Bojler vody TÚV</span>
-                        <span class="relay-indicator active">ZOPNUTÉ</span>
-                    </div>
-                    <div class="relay-item-card">
-                        <i data-lucide="droplet" style="width:24px;height:24px;color:#0284c7;"></i>
-                        <span style="font-size:12px;font-weight:700;">Bazénová filtrácia</span>
-                        <span class="relay-indicator">VYPNUTÉ</span>
-                    </div>
-                    <div class="relay-item-card">
-                        <i data-lucide="wind" style="width:24px;height:24px;color:#64748b;"></i>
-                        <span style="font-size:12px;font-weight:700;">Klimatizácia</span>
-                        <span class="relay-indicator">OFFLINE</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 4: DOVOLENKA -->
-        <section id="sectionHoliday" class="view-section">
-            <div class="fs-card">
-                <div class="fs-card-title">
-                    <i data-lucide="palm-tree" style="color:var(--fs-blue-accent);"></i>
-                    <span>Plánovač dovolenky a standby režimu</span>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
-                    <div>
-                        <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:6px;">ODCHOD Z DOMU</label>
-                        <input type="datetime-local" id="holidayFromInput" onchange="saveHolidayModeParams()" class="input-styled">
-                    </div>
-                    <div>
-                        <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:6px;">PRÍCHOD DOMOV</label>
-                        <input type="datetime-local" id="holidayUntilInput" onchange="saveHolidayModeParams()" class="input-styled">
-                    </div>
-                </div>
-
-                <div style="padding:16px;background:#f8fafc;border-radius:6px;border:1px solid var(--fs-border);">
-                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;font-weight:600;">
-                        <span>Predstih nahriatia vody</span>
-                        <span id="preheatVal" class="font-mono" style="color:var(--fs-blue-accent);">6 hodín</span>
-                    </div>
-                    <input type="range" id="holidayPreheatHours" min="1" max="24" value="6" style="width:100%;" oninput="document.getElementById('preheatVal').innerText = this.value + ' hodín'" onchange="saveHolidayModeParams()">
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 5: TERMINÁL (Admin only) -->
-        <?php if (!empty($is_admin)): ?>
-        <section id="sectionTerminal" class="view-section">
-            <div class="terminal-box">
-                <div class="terminal-console-header">
-                    <span><i data-lucide="terminal" style="width:13px;height:13px;"></i> MODBUS CLI TOOL</span>
-                    <span style="color:#22c55e;">ONLINE</span>
-                </div>
-                <div id="cliOutput" class="terminal-log-output">
-                    <div>[System] Modbus kernel bus connected. Type "read &lt;reg&gt;" to query registers.</div>
-                </div>
-                <div class="terminal-input-bar">
-                    <input type="text" id="cliInput" onkeydown="handleCliKey(event)" placeholder="read 40001..." class="terminal-raw-input">
-                    <button onclick="executeCliCommand()" style="background:none;border:none;color:#38bdf8;padding:0 16px;cursor:pointer;">
-                        <i data-lucide="corner-down-left"></i>
-                    </button>
-                </div>
-            </div>
-        </section>
-        <?php endif; ?>
-
+        </div>
     </main>
 
-    <!-- Floating Right Quick Bar (FusionSolar identity) -->
+    <!-- 4. FLOATING RIGHT QUICK ACTION BAR -->
     <div class="fs-quick-bar">
-        <div class="fs-quick-item" title="Prehľad" onclick="switchTab('dashboard')"><i data-lucide="menu" style="width:15px;height:15px;"></i></div>
-        <div class="fs-quick-item" title="Smart Meter" onclick="switchTab('meter')"><i data-lucide="pie-chart" style="width:15px;height:15px;"></i></div>
+        <div class="fs-quick-item" title="Zoznam"><i data-lucide="menu" style="width:15px;height:15px;"></i></div>
+        <div class="fs-quick-item" title="Koláčový graf"><i data-lucide="pie-chart" style="width:15px;height:15px;"></i></div>
         <div class="fs-quick-item" title="Hore" onclick="window.scrollTo({top:0, behavior:'smooth'})"><i data-lucide="chevron-up" style="width:15px;height:15px;"></i></div>
     </div>
 
@@ -1052,100 +967,62 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
-        // Tab Switching
-        function switchTab(tabId) {
-            const tabs = ['dashboard', 'meter', 'control', 'holiday', 'terminal'];
-            tabs.forEach(t => {
-                const sec = document.getElementById('section' + capitalize(t));
-                const btn = document.getElementById('tabBtn' + capitalize(t));
-                if (sec) sec.classList.remove('active');
-                if (btn) btn.classList.remove('active');
-            });
-
-            const targetSec = document.getElementById('section' + capitalize(tabId));
-            const targetBtn = document.getElementById('tabBtn' + capitalize(tabId));
-            if (targetSec) targetSec.classList.add('active');
-            if (targetBtn) targetBtn.classList.add('active');
-            lucide.createIcons();
-        }
-
-        function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-        function toggleUserDropdown(e) {
-            e.stopPropagation();
-            document.getElementById('userDropdownMenu').classList.toggle('hidden');
-        }
-        document.addEventListener('click', () => {
-            const menu = document.getElementById('userDropdownMenu');
-            if(menu) menu.classList.add('hidden');
-        });
-
+        // Otvorenie detailu zariadenia po kliknutí
         function openDeviceDashboard(event, id) {
             if (event) event.stopPropagation();
             window.location.href = basePath + '/device/' + id;
         }
 
-        // Live Telemetry integration
-        async function fetchTelemetry() {
-            const devId = metaEl ? metaEl.getAttribute('data-device-id') : '1';
+        // Vyhľadávanie a filtrovanie elektrární v tabuľke
+        function applySearchFilter() {
+            const snVal = document.getElementById('filterSn').value.trim().toLowerCase();
+            const rows = document.querySelectorAll('#sitesTableBody tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-site-name') || '';
+                const sn = row.getAttribute('data-site-sn') || '';
+                if (!snVal || name.includes(snVal) || sn.includes(snVal)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('footerCount').innerText = visibleCount;
+        }
+
+        function resetSearchFilter() {
+            document.getElementById('filterRegion').value = '';
+            document.getElementById('filterSn').value = '';
+            document.getElementById('filterType').selectedIndex = 0;
+            const rows = document.querySelectorAll('#sitesTableBody tr');
+            rows.forEach(row => row.style.display = '');
+            document.getElementById('footerCount').innerText = rows.length;
+        }
+
+        // Real-time telemetria agregácie (voliteľný background fetch)
+        async function refreshGlobalKpi() {
             try {
-                const response = await fetch(`${basePath}/api/device/${devId}/telemetry`);
-                if (!response.ok) return;
-                const data = await response.json();
-
-                const pwr = Math.round(data.total_live_power || 0);
-                const soc = Math.round(data.avg_live_soc || 0);
-                const cons = Math.round(data.consumption || 0);
-
-                document.getElementById('dashLivePower').innerText = `${pwr} W`;
-                document.getElementById('dashBatterySoc').innerText = `${soc}%`;
-                document.getElementById('dashConsumption').innerText = `${cons} W`;
-                document.getElementById('dashTotalSaved').innerText = `${(data.total_saved_eur || 0).toFixed(2)} €`;
-
-                document.getElementById('flowFveVal').innerText = `${pwr} W`;
-                document.getElementById('flowBatVal').innerText = `${soc}%`;
-                document.getElementById('flowHomeVal').innerText = `${cons} W`;
-
-                if (data.freq) document.getElementById('dashLiveFreq').innerText = `${data.freq.toFixed(2)} Hz`;
-                if (data.boiler_temp !== undefined) document.getElementById('dashBoilerTemp').innerText = `${Math.round(data.boiler_temp)} °C`;
-                if (data.outdoor_temp !== undefined) document.getElementById('dashOutdoorTemp').innerText = `${Math.round(data.outdoor_temp)} °C`;
-            } catch (err) {}
+                const res = await fetch(`${basePath}/api/telemetry/overview`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.live_power !== undefined) {
+                    document.getElementById('kpiLivePower').innerText = (data.live_power / 1000).toFixed(2).replace('.', ',');
+                }
+            } catch (e) {
+                // Tichý fallback
+            }
         }
-
-        function handleCliKey(e) { if (e.key === 'Enter') executeCliCommand(); }
-        function executeCliCommand() {
-            const input = document.getElementById('cliInput');
-            const cmd = input.value.trim();
-            if(!cmd) return;
-            input.value = '';
-            const box = document.getElementById('cliOutput');
-            box.innerHTML += `<div style="color:#fff;">$ ${cmd}</div>`;
-            setTimeout(() => {
-                box.innerHTML += `<div style="color:#22c55e;">Register Read OK: 230V, 50Hz</div>`;
-                box.scrollTop = box.scrollHeight;
-            }, 300);
-        }
-
-        function setManualOverride(mode) {
-            document.querySelectorAll('#sectionControl .fs-action-btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-        }
-
-        function setMeterMode(mode) {
-            document.querySelectorAll('#meterModeGrid .fs-action-btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-        }
-
-        function setAiModel(id) {
-            document.querySelectorAll('.ai-model-card').forEach(c => c.classList.remove('active'));
-            document.getElementById('aiModel' + id).classList.add('active');
-        }
-
-        function saveHolidayModeParams() {}
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchTelemetry();
-            setInterval(fetchTelemetry, 8000);
+            const rowCount = document.querySelectorAll('#sitesTableBody tr').length;
+            if (rowCount > 0) {
+                document.getElementById('footerCount').innerText = rowCount;
+                document.getElementById('totalSitesCount').innerText = rowCount;
+            }
+            setInterval(refreshGlobalKpi, 10000);
         });
     </script>
 </body>
