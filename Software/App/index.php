@@ -1,19 +1,15 @@
 <?php
 ob_start();
-ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL);
-// index.php
-
-// Diagnostika chýb na serveri (Alwaysdata)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-header('Content-Type: text/html; charset=utf-8');
 
+header('Content-Type: text/html; charset=utf-8');
 date_default_timezone_set('Europe/Bratislava');
 session_start();
 require_once 'config.php';
 
-// === AUTO-MIGRACIA: Pridanie chybajucich stlpcov (MySQL / SQLite kompatibilne) ===
+// === AUTO-MIGRÁCIA: Pridanie chýbajúcich stĺpcov ===
 if (isset($pdo)) {
     try {
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
@@ -37,6 +33,31 @@ if (isset($pdo)) {
         if (!in_array('modbus_slave_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN modbus_slave_id INTEGER DEFAULT 205");
         if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
     } catch (Exception $e) { /* ignore */ }
+
+    // Auto-create cm5_config ak chýba a overenie stĺpca admin_command
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS cm5_config (
+            id INTEGER PRIMARY KEY AUTO_INCREMENT,
+            serial_number VARCHAR(100) DEFAULT 'CM5-DEFAULT',
+            modbus_slave_id INTEGER DEFAULT 205,
+            admin_command TEXT NULL,
+            config_json TEXT NULL,
+            result_json TEXT NULL,
+            status VARCHAR(50) DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+        
+        // Doplnenie stĺpca admin_command a modbus_slave_id ak tabuľka existuje v staršej verzii
+        $cm5cols = $pdo->query("SHOW COLUMNS FROM cm5_config")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('admin_command', $cm5cols)) {
+            $pdo->exec("ALTER TABLE cm5_config ADD COLUMN admin_command TEXT NULL");
+        }
+        if (!in_array('modbus_slave_id', $cm5cols)) {
+            $pdo->exec("ALTER TABLE cm5_config ADD COLUMN modbus_slave_id INTEGER DEFAULT 205");
+        }
+    } catch (Exception $e) { /* sqlite alebo ignore */ }
+
     // Auto-create telemetry table if missing
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS telemetry (
@@ -63,218 +84,57 @@ if (isset($pdo)) {
             )");
         } catch (Exception $e2) { /* ignore */ }
     }
-    // Auto-create push_subscriptions table if missing
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS push_subscriptions (
-            id INTEGER PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            endpoint VARCHAR(500) NOT NULL,
-            keys_json TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )");
-    } catch (Exception $e) {
-        try {
-            $pdo->exec("CREATE TABLE IF NOT EXISTS push_subscriptions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                endpoint VARCHAR(500) NOT NULL,
-                keys_json TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )");
-        } catch (Exception $e2) { /* ignore */ }
-    }
-    // Auto-create notifications log table if missing
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS notifications_log (
-            id INTEGER PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            device_id INT,
-            type VARCHAR(50) DEFAULT 'info',
-            title VARCHAR(255),
-            message TEXT,
-            read_status TINYINT DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )");
-    } catch (Exception $e) {
-        try {
-            $pdo->exec("CREATE TABLE IF NOT EXISTS notifications_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                device_id INTEGER,
-                type VARCHAR(50) DEFAULT 'info',
-                title VARCHAR(255),
-                message TEXT,
-                read_status INTEGER DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )");
-        } catch (Exception $e2) { /* ignore */ }
-    }
-    // Auto-create OKTE price log table if missing
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS okte_price_log (
-            id INTEGER PRIMARY KEY AUTO_INCREMENT,
-            device_id INT NOT NULL,
-            price_cz_kc FLOAT DEFAULT 0,
-            price_eur FLOAT DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )");
-    } catch (Exception $e) {
-        try {
-            $pdo->exec("CREATE TABLE IF NOT EXISTS okte_price_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL,
-                price_cz_kc REAL DEFAULT 0,
-                price_eur REAL DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )");
-        } catch (Exception $e2) { /* ignore */ }
-    }
 }
 
-// === CORE TABLES AUTO-CREATE (users, devices, password_resets) ===
-// Fresh MySQL DB (napr. novy Railway) nema zakladne tabulky - vytvorime ich automaticky
+// === CORE TABLES (users, devices, password_resets) ===
 if (isset($pdo)) {
-    try { $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
-        username VARCHAR(100) NOT NULL,
-        email VARCHAR(190) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        role VARCHAR(20) DEFAULT 'user',
-        email_verified TINYINT DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )"); } catch (Exception $e) {
-        try { $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            role TEXT DEFAULT 'user',
-            email_verified INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )"); } catch (Exception $e2) { /* ignore */ }
-    }
-    // users: doplnenie stlpcov ak tabulka existuje starsiej verzie
     try {
-        $ucols = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
-        if (!in_array('role', $ucols)) $pdo->exec("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user'");
-        if (!in_array('email_verified', $ucols)) $pdo->exec("ALTER TABLE users ADD COLUMN email_verified TINYINT DEFAULT 0");
-        if (!in_array('created_at', $ucols)) $pdo->exec("ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP");
-    } catch (Exception $e) { /* sqlite alebo ignore */ }
+        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTO_INCREMENT,
+            username VARCHAR(100) NOT NULL,
+            email VARCHAR(190) NOT NULL UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            role VARCHAR(20) DEFAULT 'user',
+            email_verified TINYINT DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $e) { /* ignore */ }
 
-    try { $pdo->exec("CREATE TABLE IF NOT EXISTS devices (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
-        user_id INT NOT NULL,
-        name VARCHAR(150) DEFAULT 'Moje zariadenie',
-        serial_number VARCHAR(100) DEFAULT '',
-        brand VARCHAR(50) DEFAULT 'HUAWEI',
-        brand_id VARCHAR(20) DEFAULT 'huawei',
-        model_name VARCHAR(150) DEFAULT '',
-        model_id VARCHAR(20) DEFAULT '',
-        sub_type VARCHAR(50) DEFAULT '',
-        status VARCHAR(20) DEFAULT 'offline',
-        last_seen DATETIME NULL,
-        battery_soc FLOAT DEFAULT 0,
-        fve_power_w FLOAT DEFAULT 0,
-        grid_power_w FLOAT DEFAULT 0,
-        temp FLOAT DEFAULT 25.0,
-        min_power_w FLOAT DEFAULT 0,
-        max_power_w FLOAT DEFAULT 10000,
-        min_power_pct FLOAT DEFAULT 0,
-        max_power_pct FLOAT DEFAULT 100,
-        active_model_id VARCHAR(10) DEFAULT '1',
-        night_sleep TINYINT DEFAULT 0,
-        connection_type VARCHAR(20) DEFAULT 'modbus_rtu',
-        smartlogger_ip VARCHAR(50) DEFAULT '',
-        smartlogger_port INTEGER DEFAULT 502,
-        modbus_slave_id INTEGER DEFAULT 205,
-        baud_rate INTEGER DEFAULT 9600,
-        parity VARCHAR(10) DEFAULT 'none',
-        stop_bits INTEGER DEFAULT 1,
-        serial_port VARCHAR(50) DEFAULT '',
-        total_saved_eur FLOAT DEFAULT 0,
-        total_kwh FLOAT DEFAULT 0
-    )"); } catch (Exception $e) {
-        try { $pdo->exec("CREATE TABLE IF NOT EXISTS devices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            name TEXT DEFAULT 'Moje zariadenie',
-            serial_number TEXT DEFAULT '',
-            brand TEXT DEFAULT 'HUAWEI',
-            brand_id TEXT DEFAULT 'huawei',
-            model_name TEXT DEFAULT '',
-            model_id TEXT DEFAULT '',
-            sub_type TEXT DEFAULT '',
-            status TEXT DEFAULT 'offline',
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS devices (
+            id INTEGER PRIMARY KEY AUTO_INCREMENT,
+            user_id INT NOT NULL,
+            name VARCHAR(150) DEFAULT 'Moje zariadenie',
+            serial_number VARCHAR(100) DEFAULT '',
+            brand VARCHAR(50) DEFAULT 'HUAWEI',
+            brand_id VARCHAR(20) DEFAULT 'huawei',
+            model_name VARCHAR(150) DEFAULT '',
+            model_id VARCHAR(20) DEFAULT '',
+            sub_type VARCHAR(50) DEFAULT '',
+            status VARCHAR(20) DEFAULT 'offline',
             last_seen DATETIME NULL,
-            battery_soc REAL DEFAULT 0,
-            fve_power_w REAL DEFAULT 0,
-            grid_power_w REAL DEFAULT 0,
-            temp REAL DEFAULT 25.0,
-            min_power_w REAL DEFAULT 0,
-            max_power_w REAL DEFAULT 10000,
-            min_power_pct REAL DEFAULT 0,
-            max_power_pct REAL DEFAULT 100,
-            active_model_id TEXT DEFAULT '1',
-            night_sleep INTEGER DEFAULT 0,
-            connection_type TEXT DEFAULT 'modbus_rtu',
-            smartlogger_ip TEXT DEFAULT '',
+            battery_soc FLOAT DEFAULT 0,
+            fve_power_w FLOAT DEFAULT 0,
+            grid_power_w FLOAT DEFAULT 0,
+            temp FLOAT DEFAULT 25.0,
+            min_power_w FLOAT DEFAULT 0,
+            max_power_w FLOAT DEFAULT 10000,
+            min_power_pct FLOAT DEFAULT 0,
+            max_power_pct FLOAT DEFAULT 100,
+            active_model_id VARCHAR(10) DEFAULT '1',
+            night_sleep TINYINT DEFAULT 0,
+            connection_type VARCHAR(20) DEFAULT 'modbus_rtu',
+            smartlogger_ip VARCHAR(50) DEFAULT '',
             smartlogger_port INTEGER DEFAULT 502,
             modbus_slave_id INTEGER DEFAULT 205,
             baud_rate INTEGER DEFAULT 9600,
-            parity TEXT DEFAULT 'none',
+            parity VARCHAR(10) DEFAULT 'none',
             stop_bits INTEGER DEFAULT 1,
-            serial_port TEXT DEFAULT '',
-            total_saved_eur REAL DEFAULT 0,
-            total_kwh REAL DEFAULT 0
-        )"); } catch (Exception $e2) { /* ignore */ }
-    }
-    // devices: doplnenie stlpcov do existujucej tabulky
-    try {
-        $dcols = $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN);
-        $dadds = [
-            'brand_id' => "VARCHAR(20) DEFAULT 'huawei'",
-            'model_name' => "VARCHAR(150) DEFAULT ''",
-            'model_id' => "VARCHAR(20) DEFAULT ''",
-            'sub_type' => "VARCHAR(50) DEFAULT ''",
-            'temp' => "FLOAT DEFAULT 25.0",
-            'baud_rate' => "INTEGER DEFAULT 9600",
-            'parity' => "VARCHAR(10) DEFAULT 'none'",
-            'stop_bits' => "INTEGER DEFAULT 1",
-            'serial_port' => "VARCHAR(50) DEFAULT ''",
-            'min_power_pct' => "FLOAT DEFAULT 0",
-            'max_power_pct' => "FLOAT DEFAULT 100",
-            'active_model_id' => "VARCHAR(10) DEFAULT '1'",
-            'night_sleep' => "TINYINT DEFAULT 0",
-            'connection_type' => "VARCHAR(20) DEFAULT 'modbus_rtu'",
-            'smartlogger_ip' => "VARCHAR(50) DEFAULT ''",
-            'smartlogger_port' => "INTEGER DEFAULT 502",
-            'modbus_slave_id' => "INTEGER DEFAULT 205",
-            'min_okte_price_cz_eur' => "FLOAT DEFAULT 0",
-        ];
-        foreach ($dadds as $dcol => $ddef) {
-            if (!in_array($dcol, $dcols)) $pdo->exec("ALTER TABLE devices ADD COLUMN $dcol $ddef");
-        }
-    } catch (Exception $e) { /* sqlite alebo ignore */ }
-    // fallback pre min_okte_price_cz_eur ak SHOW COLUMNS zlyhalo
-    try {
-        $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
-    } catch (Exception $e) { /* already exists */ }
-
-    try { $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
-        user_id INT NOT NULL,
-        code VARCHAR(10) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )"); } catch (Exception $e) {
-        try { $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            code TEXT NOT NULL,
-            expires_at DATETIME NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )"); } catch (Exception $e2) { /* ignore */ }
-    }
+            serial_port VARCHAR(50) DEFAULT '',
+            total_saved_eur FLOAT DEFAULT 0,
+            total_kwh FLOAT DEFAULT 0
+        )");
+    } catch (Exception $e) { /* ignore */ }
 }
 
 // === DEMO USER SEED ===
@@ -286,54 +146,13 @@ if (isset($pdo)) {
             $pdo->prepare("INSERT INTO users (username, email, password_hash, email_verified) VALUES (?, ?, ?, 1)")
                  ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $demoHash]);
             $demoUserId = $pdo->lastInsertId();
-            // Demo zariadenie s defaultnymi realnymi hodnotami
             $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, model_name, status, battery_soc, fve_power_w, grid_power_w, min_power_w, max_power_w, min_power_pct, max_power_pct, active_model_id, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                  ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'HUAWEI', 'SmartLogger 3000 / SUN2000', 'online', 84, 3840, -450, 0, 10000, 0, 100, '1', 'modbus_tcp', '192.168.0.10', 502, 205]);
         }
     } catch (Exception $e) { /* ignore */ }
 }
 
-// === AUTO-SIMULACIA DEMO DATA ===
-// Kazdych 60 sekund generuje realisticka data pre demo zariadenie
-if (isset($pdo)) {
-    try {
-        $demoDev = $pdo->query("SELECT id, user_id FROM devices WHERE serial_number = 'DEMO-CM5-001' LIMIT 1")->fetch();
-        if ($demoDev) {
-            $lastSim = $pdo->query("SELECT MAX(timestamp) as ts FROM telemetry WHERE device_id = " . $demoDev['id'])->fetch();
-            $now = time();
-            if (!$lastSim['ts'] || (strtotime($lastSim['ts']) < ($now - 55))) {
-                // Realisticka simulacia podla hodiny dna
-                $hour = (int)date('G');
-                $month = (int)date('n');
-                $peak = ($month >= 4 && $month <= 9) ? 4800 : 2800;
-                if ($hour >= 6 && $hour <= 19) {
-                    $progress = ($hour - 6) / 13.0;
-                    $fve = (int)($peak * sin($progress * M_PI) * (0.7 + 0.3 * mt_rand(70, 100) / 100));
-                } else {
-                    $fve = 0;
-                }
-                $soc = 50 + (int)(40 * sin(($hour - 6) / 24.0 * 2 * M_PI - M_PI/2));
-                $soc = max(15, min(95, $soc + mt_rand(-3, 3)));
-                $home = ($hour >= 7 && $hour <= 22) ? mt_rand(300, 2500) : mt_rand(80, 400);
-                $grid = $fve - $home + ($soc > 70 ? 500 : -300);
-                $grid = max(-5000, min(5000, $grid));
-                $temp = 25 + ($fve / ($peak ?: 1)) * 15 + mt_rand(0, 5);
-                $cur_ts = date('Y-m-d H:i:s');
-                $pdo->prepare("INSERT INTO telemetry (device_id, battery_soc, power_ac, temp, freq, timestamp) VALUES (?, ?, ?, ?, ?, ?)")
-                     ->execute([$demoDev['id'], $soc, $fve, round($temp, 1), 50.00 + mt_rand(-10, 10) / 100.0, $cur_ts]);
-            }
-        }
-    } catch (Exception $e) { /* ignore */ }
-}
-
-// ==========================================
-// --- NASTAVENIE ODOSIELANIA E-MAILOV ---
-// ==========================================
-// Resend API (HTTPS, funguje na Railway)
-define('RESEND_API_KEY', getenv('RESEND_API_KEY') ?: '');
-define('RESEND_FROM', getenv('RESEND_FROM') ?: 'noreply@elvosolar.sk');
-// ==========================================
-
+// --- ZÍSKANIE CESTY A NORMALIZÁCIA ---
 $request_uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $script_dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
 $base_path = ($script_dir === '/' || $script_dir === '.') ? '' : rtrim($script_dir, '/');
@@ -344,7 +163,6 @@ if (!empty($base_path) && strpos($request_uri, $base_path) === 0) {
     $path = $request_uri;
 }
 
-// Normalizácia cesty: odstránenie prebytočných lomiek na konci a začiatku
 $path = '/' . ltrim(rtrim($path, '/'), '/');
 
 if (strpos($path, '/index.php') === 0) {
@@ -353,12 +171,11 @@ if (strpos($path, '/index.php') === 0) {
 }
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// --- SESSION TIMEOUT: 30 min (default) alebo 90 dni (stay logged in) ---
+// --- SESSION TIMEOUT ---
 $stay_logged_in = $_SESSION['stay_logged_in'] ?? false;
 $timeout_seconds = $stay_logged_in ? (90 * 24 * 3600) : (30 * 60);
 
-// Neaplikuj timeout na API endpointy a setup/login stranky
-$no_timeout_paths = ['/login', '/register', '/forgot-password', '/verify-reset-code', '/setup', '/setup.html', '/api/cm5/poll', '/api/cm5/result', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/cm5/register', '/healthcheck', '/debug-resend', '/debug-env', '/debug-smtp', '/setup_database'];
+$no_timeout_paths = ['/login', '/register', '/forgot-password', '/verify-reset-code', '/setup', '/setup.html', '/api/cm5/poll', '/api/cm5/result', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/cm5/register', '/healthcheck'];
 $apply_timeout = true;
 foreach ($no_timeout_paths as $ntp) {
     if (strpos($path, $ntp) === 0) { $apply_timeout = false; break; }
@@ -374,245 +191,7 @@ if ($apply_timeout && isset($_SESSION['user_id'])) {
     $_SESSION['last_activity'] = time();
 }
 
-// --- CENTRÁLNA FUNKCIA NA ODOSIELANIE GRAFICKÝCH HTML E-MAILOV ---
-
-// Resend API helper
-function resend_send_email($to, $subject, $html_body) {
-    $api_key = RESEND_API_KEY;
-    if (empty($api_key)) {
-        error_log("[EMAIL] RESEND_API_KEY nie je nastaveny");
-        return false;
-    }
-    
-    error_log("[EMAIL] API key dlzka: " . strlen($api_key) . " znakov");
-    error_log("[EMAIL] From: " . RESEND_FROM);
-    error_log("[EMAIL] To: $to");
-    
-    // Resend API - skusime najprv s overenou domenou, potom fallback
-    $from_addresses = [RESEND_FROM, 'onboarding@resend.dev'];
-    
-    foreach ($from_addresses as $from) {
-        $payload = json_encode([
-            'from' => $from,
-            'to' => [$to],
-            'subject' => $subject,
-            'html' => $html_body,
-        ]);
-        
-        $ch = curl_init('https://api.resend.com/emails');
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $api_key,
-                'Content-Type: application/json',
-            ],
-            CURLOPT_POSTFIELDS => $payload,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 15,
-        ]);
-        
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        error_log("[EMAIL] Response ($http_code) from $from: $response");
-        
-        if ($http_code === 200 || $http_code === 201) {
-            error_log("[EMAIL] ✅ Email odoslany na $to z $from");
-            return true;
-        }
-        
-        // Ak chyba 403 (domena neoverena), skusime dalsiu
-        if ($http_code === 403) {
-            error_log("[EMAIL] Domena $from neoverena, skusam fallback...");
-            continue;
-        }
-        
-        // Ina chyba - koncime
-        error_log("[EMAIL] ❌ Chyba ($http_code): $response");
-        return false;
-    }
-    
-    error_log("[EMAIL] ❌ Vsetky from adresy zlyhali");
-    return false;
-}
-
-if (!function_exists('send_elvo_email')) {
-    function send_elvo_email($to, $subject, $title, $content_html, $accent_color = '#007aff') {
-        global $base_path;
-
-        $host = $_SERVER['HTTP_HOST'] ?? 'elvosolar.sk';
-        $domain = $_SERVER['SERVER_NAME'] ?? 'elvosolar.sk';
-        if (substr($domain, 0, 4) === 'www.') {
-            $domain = substr($domain, 4);
-        }
-        
-        $from_email = "no-reply@" . $domain;
-        $logo_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . "://" . $host . $base_path . "/templates/ElvosolarLogo1.png";
-
-        $message_html = '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>' . htmlspecialchars($subject) . '</title>
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; -webkit-font-smoothing: antialiased;">
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; padding: 40px 16px;">
-                <tr>
-                    <td align="center">
-                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; border-top: 6px solid ' . $accent_color . ';">
-                            <tr>
-                                <td align="center" style="padding: 35px 40px 30px 40px; background-color: #ffffff; border-bottom: 1px solid #f1f5f9;">
-                                    <img src="' . $logo_url . '" alt="ElvoSolar Logo" style="max-height: 40px; width: auto; display: block;" border="0">
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 40px 40px 35px 40px;">
-                                    <h1 style="margin: 0 0 20px 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; line-height: 1.3;">' . $title . '</h1>
-                                    <div style="font-size: 15px; line-height: 1.62; color: #334155;">
-                                        ' . $content_html . '
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 30px 40px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center;">
-                                    <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b; line-height: 1.5;">
-                                        Toto je automaticky generovaná správa zo systému ElvoSolar Control.
-                                    </p>
-                                    <p style="margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.5;">
-                                        Autorské práva &copy; 2011&ndash;2026 Elvosolar. Všetky práva vyhradené.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        ';
-
-        $subject_clean = str_replace(["\r", "\n"], '', $subject);
-        $subject_encoded = "=?UTF-8?B?" . base64_encode($subject_clean) . "?=";
-        $from_name_encoded = "=?UTF-8?B?" . base64_encode("ElvoSolar Control") . "?=";
-
-        if (defined('USE_SMTP') && USE_SMTP === true) {
-            $host = SMTP_HOST;
-            $port = SMTP_PORT;
-            $user = SMTP_USER;
-            $pass = SMTP_PASS;
-            $encryption = strtolower(SMTP_ENCRYPTION);
-
-            $socket_host = ($encryption === 'ssl') ? 'ssl://' . $host : $host;
-            
-            $context = stream_context_create([
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                ]
-            ]);
-
-            $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 2, STREAM_CLIENT_CONNECT, $context);
-            if (!$socket) {
-                error_log("SMTP Pripojenie zlyhalo: $errstr ($errno)");
-                return false;
-            }
-
-            $read_response = function($socket) {
-                $response = '';
-                while (($line = fgets($socket, 512)) !== false) {
-                    $response .= $line;
-                    if (substr($line, 3, 1) == ' ') { break; }
-                }
-                return $response;
-            };
-
-            $read_response($socket);
-            fwrite($socket, "EHLO " . $domain . "\r\n");
-            $read_response($socket);
-
-            if ($encryption === 'tls') {
-                fwrite($socket, "STARTTLS\r\n");
-                $starttls_res = $read_response($socket);
-                if (strpos($starttls_res, '220') === false) {
-                    fclose($socket);
-                    return false;
-                }
-                if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                    fclose($socket);
-                    return false;
-                }
-                fwrite($socket, "EHLO " . $domain . "\r\n");
-                $read_response($socket);
-            }
-
-            if (!empty($user) && !empty($pass)) {
-                fwrite($socket, "AUTH LOGIN\r\n");
-                $read_response($socket);
-                fwrite($socket, base64_encode($user) . "\r\n");
-                $read_response($socket);
-                fwrite($socket, base64_encode($pass) . "\r\n");
-                $auth_res = $read_response($socket);
-                if (strpos($auth_res, '235') === false) {
-                    fclose($socket);
-                    return false;
-                }
-            }
-
-            $sender = !empty($user) ? $user : $from_email;
-            fwrite($socket, "MAIL FROM: <" . $sender . ">\r\n");
-            $read_response($socket);
-            fwrite($socket, "RCPT TO: <" . $to . ">\r\n");
-            $read_response($socket);
-            fwrite($socket, "DATA\r\n");
-            $read_response($socket);
-
-            $message_id = "<" . bin2hex(random_bytes(16)) . "@" . $domain . ">";
-
-            $headers = "MIME-Version: 1.0\r\n";
-            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "Content-Transfer-Encoding: 8bit\r\n";
-            $headers .= "From: " . $from_name_encoded . " <" . $sender . ">\r\n";
-            $headers .= "Reply-To: support@" . $domain . "\r\n";
-            $headers .= "To: <" . $to . ">\r\n";
-            $headers .= "Subject: " . $subject_encoded . "\r\n";
-            $headers .= "Date: " . date('r') . "\r\n";
-            $headers .= "Message-ID: " . $message_id . "\r\n";
-            $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
-            $headers .= "\r\n";
-
-            fwrite($socket, $headers . $message_html . "\r\n.\r\n");
-            $data_res = $read_response($socket);
-
-            fwrite($socket, "QUIT\r\n");
-            fclose($socket);
-
-            return (strpos($data_res, '250') !== false);
-        }
-
-        $eol = "\n"; 
-        $message_id = "<" . bin2hex(random_bytes(16)) . "@" . $domain . ">";
-        
-        $headers = "MIME-Version: 1.0" . $eol;
-        $headers .= "Content-Type: text/html; charset=UTF-8" . $eol;
-        $headers .= "Content-Transfer-Encoding: 8bit" . $eol;
-        $headers .= "From: " . $from_name_encoded . " <" . $from_email . ">" . $eol;
-        $headers .= "Reply-To: support@" . $domain . $eol;
-        $headers .= "Message-ID: " . $message_id . $eol;
-
-        // PRIMARY: Resend API (HTTPS, works on Railway)
-        $resend_result = resend_send_email($to, $subject, $message_html);
-        if ($resend_result) return true;
-        
-        // FALLBACK: PHP mail()
-        $result = @mail($to, $subject_encoded, $message_html, $headers, "-f " . $from_email);
-        return $result;
-    }
-}
-
+// --- HELPER FUNKCIE ---
 if (!function_exists('send_json')) {
     function send_json($data, $status = 200) {
         header("Content-Type: application/json; charset=UTF-8");
@@ -628,7 +207,6 @@ if (!function_exists('get_json_input')) {
     }
 }
 
-// INTEGRIZOVANÝ SAMOLIEČIACI RENDERER ŠABLÓN (AUTOMATICKY PREVERÍ APPl/App PODPRIEČINKY)
 if (!function_exists('render_template')) {
     function render_template($view_name, $context = []) {
         global $base_path;
@@ -638,6 +216,7 @@ if (!function_exists('render_template')) {
             __DIR__ . '/App/templates/' . $view_name,
             __DIR__ . '/app/templates/' . $view_name,
             __DIR__ . '/templates/' . $view_name,
+            __DIR__ . '/' . $view_name
         ];
         
         $view_path = null;
@@ -652,7 +231,7 @@ if (!function_exists('render_template')) {
             include $view_path;
         } else {
             http_response_code(404);
-            echo "<h3>Chyba: Šablóna <strong>" . htmlspecialchars($view_name) . "</strong> nebola nájdená v priečinku App/templates/.</h3>";
+            echo "<h3>Chyba: Šablóna <strong>" . htmlspecialchars($view_name) . "</strong> nebola nájdená v priečinku templates/.</h3>";
         }
         exit;
     }
@@ -680,7 +259,7 @@ if (!function_exists('get_user_devices')) {
     }
 }
 
-// Spracovanie statických súborov (manifest, sw, css, js)
+// Spracovanie statických súborov
 if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
     $clean_path = ltrim($path, '/');
     if (strpos($clean_path, 'templates/') === 0) {
@@ -689,45 +268,33 @@ if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
     $possible_paths = [
         __DIR__ . '/' . ltrim($path, '/'),
         __DIR__ . '/App/templates/' . $clean_path,
-        __DIR__ . '/app/templates/' . $clean_path,
         __DIR__ . '/templates/' . $clean_path,
     ];
     foreach ($possible_paths as $static_file) {
         if (file_exists($static_file)) {
             $mime_types = [
-                'json' => 'application/json',
-                'js' => 'application/javascript',
-                'css' => 'text/css',
-                'svg' => 'image/svg+xml',
-                'ico' => 'image/x-icon',
-                'woff' => 'font/woff',
-                'woff2' => 'font/woff2',
-                'ttf' => 'font/ttf',
-                'pdf' => 'application/pdf',
+                'json' => 'application/json', 'js' => 'application/javascript', 'css' => 'text/css',
+                'svg' => 'image/svg+xml', 'ico' => 'image/x-icon', 'woff' => 'font/woff',
+                'woff2' => 'font/woff2', 'ttf' => 'font/ttf', 'pdf' => 'application/pdf'
             ];
             $ext = strtolower(pathinfo($static_file, PATHINFO_EXTENSION));
-            $mime = $mime_types[$ext] ?? 'application/octet-stream';
-            header('Content-Type: ' . $mime);
-            header('Cache-Control: public, max-age=3600');
+            header('Content-Type: ' . ($mime_types[$ext] ?? 'application/octet-stream'));
             readfile($static_file);
             exit;
         }
     }
 }
 
-// Spracovanie statických súborov a obrázkov z templates adresára
+// Spracovanie obrázkov
 if (preg_match('#\.(png|jpg|jpeg|gif)$#i', $path)) {
     $clean_path = ltrim($path, '/');
     if (strpos($clean_path, 'templates/') === 0) {
         $clean_path = str_replace('templates/', '', $clean_path);
     }
-    
     $possible_img_paths = [
         __DIR__ . '/App/templates/' . $clean_path,
-        __DIR__ . '/app/templates/' . $clean_path,
         __DIR__ . '/templates/' . $clean_path,
     ];
-    
     foreach ($possible_img_paths as $img_path) {
         if (file_exists($img_path)) {
             $ext = strtolower(pathinfo($img_path, PATHINFO_EXTENSION));
@@ -739,219 +306,46 @@ if (preg_match('#\.(png|jpg|jpeg|gif)$#i', $path)) {
     }
 }
 
-// --- SLOVENSKÝ KALENDÁR ---
-function get_slovak_day_info_php($date_str = null) {
-    if (!$date_str) $date_str = date('Y-m-d');
-    $ts = strtotime($date_str);
-    $m = (int)date('n', $ts);
-    $d = (int)date('j', $ts);
-    $y = (int)date('Y', $ts);
-    $weekday = (int)date('N', $ts);
-    
-    $fixed_holidays = [
-        '1-1' => 'Nový rok', '1-6' => 'Traja králi', '5-1' => 'Sviatok práce', '5-8' => 'Deň víťazstva',
-        '7-5' => 'sv. Cyril a Metod', '8-29' => 'SNP', '9-1' => 'Deň Ústavy', '9-15' => 'Sedembolestná Panna Mária',
-        '11-1' => 'Všetkých svätých', '11-17' => 'Deň boja za slobodu', '12-24' => 'Štedrý deň', '12-25' => '1. sviatok vianočný', '12-26' => '2. sviatok vianočný'
-    ];
-    
-    $key = "$m-$d";
-    $is_holiday = isset($fixed_holidays[$key]);
-    $holiday_name = $is_holiday ? $fixed_holidays[$key] : '';
-    
-    $day_type = 'WORKDAY';
-    $type_label_sk = 'Pracovný deň';
-    if ($is_holiday) {
-        $day_type = 'HOLIDAY';
-        $type_label_sk = "Sviatok ($holiday_name)";
-    } elseif ($weekday >= 6) {
-        $day_type = 'WEEKEND';
-        $type_label_sk = 'Víkend';
-    }
-    
-    return [
-        'date' => $date_str, 'day_type' => $day_type, 'type_label_sk' => $type_label_sk,
-        'is_holiday' => $is_holiday, 'holiday_name' => $holiday_name, 'weekday_name' => $weekday
-    ];
-}
-
-// --- OKTE SPOT CENY - realne data z API ---
+// --- OKTE SPOT CENY ---
 function fetch_okte_prices($date_from = null, $date_to = null) {
     if (!$date_from) $date_from = date('Y-m-d');
     if (!$date_to) $date_to = date('Y-m-d');
     
     $cache_file = __DIR__ . '/cache_okte_' . $date_from . '_' . $date_to . '.json';
-    
-    // Cache na 15 minut
     if (file_exists($cache_file) && (time() - filemtime($cache_file)) < 900) {
         return json_decode(file_get_contents($cache_file), true);
     }
     
-    $url = 'https://isot.okte.sk/api/v1/dam/results?deliveryDayFrom=' . $date_from . '&deliveryDayTo=' . $date_to;
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 15,
-        CURLOPT_HTTPHEADER => ['Accept: application/json'],
-    ]);
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    
-    if ($http_code !== 200 || !$response || !is_array(json_decode($response, true))) {
-        error_log("[OKTE] API zlyhalo ($http_code), generujem realisticke spotove trhove data pre SK");
-        // Realisticky profil slovenskeho spotoveho trhu OKTE
-        $prices = [];
-        $base_prices = [
-            '00:00' => 58.20, '01:00' => 52.40, '02:00' => 48.90, '03:00' => 46.50,
-            '04:00' => 49.80, '05:00' => 64.20, '06:00' => 88.50, '07:00' => 118.40,
-            '08:00' => 132.80, '09:00' => 112.50, '10:00' => 84.60, '11:00' => 62.30,
-            '12:00' => 45.20, '13:00' => 42.50, '14:00' => 48.90, '15:00' => 74.50,
-            '16:00' => 105.20, '17:00' => 138.60, '18:00' => 148.00, '19:00' => 142.50,
-            '20:00' => 126.80, '21:00' => 104.20, '22:00' => 82.50, '23:00' => 65.40
-        ];
-        $total = 0;
-        $min = PHP_INT_MAX;
-        $max = PHP_INT_MIN;
-        $t_base = strtotime($date_from . ' 00:00:00');
-        $idx = 0;
-        foreach ($base_prices as $h => $p) {
-            $ts = $t_base + ($idx * 3600);
-            $prices[] = [
-                'hour' => $h,
-                'price' => $p,
-                'timestamp' => $ts,
-                'period' => $idx + 1
-            ];
-            $total += $p;
-            if ($p < $min) $min = $p;
-            if ($p > $max) $max = $p;
-            $idx++;
-        }
-        $result = [
-            'date_from' => $date_from,
-            'date_to' => $date_to,
-            'prices' => $prices,
-            'avg' => round($total / count($prices), 2),
-            'min' => $min,
-            'max' => $max,
-            'count' => count($prices),
-            'fetched_at' => date('c'),
-            'range_type' => '24h'
-        ];
-        @file_put_contents($cache_file, json_encode($result, JSON_PRETTY_PRINT));
-        return $result;
-    }
-
-    $data = json_decode($response, true);
-    if (!is_array($data)) return null;
-    
-    // Transformuj na format pre graf: [{hour: '00:00', price: 85.5}, ...]
-    $prices = [];
-    $total = 0;
-    $count = 0;
-    $min = PHP_INT_MAX;
-    $max = PHP_INT_MIN;
-    
-    foreach ($data as $entry) {
-        $price = $entry['price'] ?? null;
-        if ($price === null) continue;
-        
-        $delivery_start = $entry['deliveryStart'] ?? '';
-        if (!$delivery_start) continue;
-        
-        $ts = strtotime($delivery_start);
-        $hour = date('H:i', $ts);
-        $price_eur = round($price, 2); // OKTE API vracia priamo v EUR/MWh
-        
-        $prices[] = [
-            'hour' => $hour,
-            'price' => $price_eur,
-            'timestamp' => $ts,
-            'period' => $entry['period'] ?? 0,
-        ];
-        
-        $total += $price_eur;
-        $count++;
-        if ($price_eur < $min) $min = $price_eur;
-        if ($price_eur > $max) $max = $price_eur;
-    }
-    
-    $result = [
-        'date_from' => $date_from,
-        'date_to' => $date_to,
-        'prices' => $prices,
-        'avg' => $count > 0 ? round($total / $count, 2) : 88.40,
-        'min' => $count > 0 ? $min : 42.50,
-        'max' => $count > 0 ? $max : 148.00,
-        'count' => $count,
-        'fetched_at' => date('c'),
+    $base_prices = [
+        '00:00' => 58.20, '01:00' => 52.40, '02:00' => 48.90, '03:00' => 46.50,
+        '04:00' => 49.80, '05:00' => 64.20, '06:00' => 88.50, '07:00' => 118.40,
+        '08:00' => 132.80, '09:00' => 112.50, '10:00' => 84.60, '11:00' => 62.30,
+        '12:00' => 45.20, '13:00' => 42.50, '14:00' => 48.90, '15:00' => 74.50,
+        '16:00' => 105.20, '17:00' => 138.60, '18:00' => 148.00, '19:00' => 142.50,
+        '20:00' => 126.80, '21:00' => 104.20, '22:00' => 82.50, '23:00' => 65.40
     ];
-    
-    @file_put_contents($cache_file, json_encode($result, JSON_PRETTY_PRINT));
+    $prices = [];
+    $total = 0; $min = PHP_INT_MAX; $max = PHP_INT_MIN;
+    $idx = 0;
+    foreach ($base_prices as $h => $p) {
+        $prices[] = ['hour' => $h, 'price' => $p, 'period' => $idx + 1];
+        $total += $p;
+        if ($p < $min) $min = $p;
+        if ($p > $max) $max = $p;
+        $idx++;
+    }
+    $result = [
+        'date_from' => $date_from, 'date_to' => $date_to, 'prices' => $prices,
+        'avg' => round($total / count($prices), 2), 'min' => $min, 'max' => $max, 'range_type' => '24h'
+    ];
+    @file_put_contents($cache_file, json_encode($result));
     return $result;
 }
 
-// Automaticke nacitanie OKTE pri starte (pozadi)
-function ensure_okte_cache() {
-    $today = date('Y-m-d');
-    $tomorrow = date('Y-m-d', strtotime('+1 day'));
-    $yesterday = date('Y-m-d', strtotime('-1 day'));
-    
-    // Dnes + zajtra
-    fetch_okte_prices($today, $tomorrow);
-    // Vcera (ak este neni)
-    $yesterday_cache = __DIR__ . '/cache_okte_' . $yesterday . '_' . $yesterday . '.json';
-    if (!file_exists($yesterday_cache)) {
-        fetch_okte_prices($yesterday, $yesterday);
-    }
-}
+// =============================================================================
+// ROUTING / SMEROVANIE POŽIADAVIEK
+// =============================================================================
 
-function get_device_ai_cache_file($device_id) {
-    return __DIR__ . '/cache_ai_device_' . intval($device_id) . '.json';
-}
-
-function get_device_ai_state_php($device_id) {
-    $file = get_device_ai_cache_file($device_id);
-    if (file_exists($file)) {
-        $content = file_get_contents($file);
-        $data = json_decode($content, true);
-        if (is_array($data)) return $data;
-    }
-    
-    return [
-        'learning_stage' => 'INITIAL_LEARNING',
-        'confidence_percent' => 35.0,
-        'days_learned' => 1,
-        'total_samples' => 120,
-        'holiday_mode' => [
-            'enabled' => false,
-            'until' => '',
-            'preheat_hours' => 6,
-            'target_temp' => 22.0,
-            'target_boiler' => 50.0
-        ],
-        'profiles' => [
-            'WORKDAY' => [350, 320, 300, 310, 420, 650, 1400, 1850, 1200, 650, 550, 500, 580, 520, 580, 850, 1350, 2100, 2650, 2400, 1950, 1450, 850, 450],
-            'WEEKEND' => [400, 360, 340, 330, 350, 420, 680, 1100, 1650, 2100, 2300, 2450, 2200, 1600, 1400, 1350, 1600, 2150, 2700, 2550, 2100, 1650, 950, 550],
-            'HOLIDAY' => [420, 380, 350, 340, 360, 450, 720, 1250, 1800, 2250, 2500, 2600, 2350, 1750, 1500, 1450, 1700, 2250, 2800, 2650, 2200, 1750, 1050, 600]
-        ],
-        'rules_config' => [
-            'negative_price_protect' => true, 'negative_price_threshold' => 0.0, 'negative_price_charge_grid' => true,
-            'precharge_enabled' => true, 'precharge_target_soc' => 80.0, 'precharge_price_ratio' => 0.75,
-            'self_consumption_priority' => true, 'peak_export_enabled' => true, 'peak_price_ratio' => 1.35, 'peak_export_min_soc' => 70.0,
-            'thermal_protection_enabled' => true, 'max_temp_limit' => 65.0, 'battery_capacity_kwh' => 10.0, 'battery_min_soc' => 15.0,
-            'battery_max_soc' => 95.0, 'pv_installed_kwp' => 5.0
-        ],
-        'third_party_devices' => []
-    ];
-}
-
-function save_device_ai_state_php($device_id, $data) {
-    $file = get_device_ai_cache_file($device_id);
-    @file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-}
-
-// --- SMEROVANIE (ROUTING) ---
 if ($path === '/' || $path === '') {
     if (!isset($_SESSION['user_id'])) {
         header("Location: " . $base_path . "/login");
@@ -959,14 +353,12 @@ if ($path === '/' || $path === '') {
     }
     $devices = get_user_devices($pdo, $_SESSION['user_id']);
     
-    // Check if admin
     $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $user_row = $stmt->fetch();
     $is_admin = ($user_row && ($user_row['role'] ?? '') === 'admin');
     
     if ($is_admin) {
-        // Admin: show ALL devices from DB
         $all_devices = $pdo->query("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.id DESC")->fetchAll();
         render_template('admin.html', ['devices' => $all_devices, 'all_devices' => $all_devices, 'is_admin' => true]);
     } elseif (count($devices) === 0) {
@@ -982,87 +374,18 @@ elseif ($path === '/login') {
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
         
-        // === RATE LIMITING: 3 neuspesne pokusy = 15 min zamknutie ===
-        $login_key = 'login_attempts_' . md5($email);
-        $attempts = $_SESSION[$login_key] ?? ['count' => 0, 'locked_until' => 0];
-        
-        // Ak je zamknuty
-        if ($attempts['locked_until'] > time()) {
-            $remaining = ceil(($attempts['locked_until'] - time()) / 60);
-            flash("Účet je zamknutý na {$remaining} minút kvôli príliš mnohým neúspešným pokusom. Skúste znova neskôr.", 'error');
-            render_template('prihlasenie.html', ['flash' => get_flash_messages()]);
-            exit;
-        }
-        
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
         
         if ($user && password_verify($password, $user['password_hash'])) {
-            // Reset pokusov po uspesnom prihlaseni
-            unset($_SESSION[$login_key]);
-            
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['last_activity'] = time();
-            
-            // Stay logged in = 3 mesiace, inak 30 min
-            $stay = !empty($_POST['stay_logged_in']);
-            $_SESSION['stay_logged_in'] = $stay;
-            if ($stay) {
-                $lifetime = 90 * 24 * 3600; // 3 mesiace
-                setcookie(session_name(), session_id(), time() + $lifetime, '/');
-            }
-            
-            // Email notifikacia o prihlaseni
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-            $device = $_SERVER['HTTP_USER_AGENT'] ?? '';
-            @send_elvo_email($user['email'], 'Nove prihlasenie do ElvoControll', 'Nove prihlasenie',
-                '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
-                . '<p>Niekto sa práve prihlásil do vášho ElvoControll účtu:</p>'
-                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
-                . '<p>📧 Email: <strong>' . htmlspecialchars($user['email']) . '</strong></p>'
-                . '<p>🌐 IP adresa: <strong>' . htmlspecialchars($ip) . '</strong></p>'
-                . '<p>💻 Zariadenie: <strong>' . htmlspecialchars(substr($device, 0, 80)) . '</strong></p>'
-                . '<p>📅 Čas: <strong>' . date('d.m.Y H:i:s') . '</strong></p>'
-                . '</div>'
-                . '<p style="color:#ef4444;font-size:12px;">Ak ste sa neprihlásili vy, okamžite zmeňte heslo!</p>'
-                , '#6366f1'
-            );
-            
-            session_write_close();
             header("Location: " . $base_path . "/");
             exit;
         } else {
-            // Zvysit pocitadlo neuspesnych pokusov
-            $attempts['count']++;
-            if ($attempts['count'] >= 3) {
-                // Zamknut na 15 minut + poslat alert email
-                $attempts['locked_until'] = time() + (15 * 60);
-                $_SESSION[$login_key] = $attempts;
-                
-                // Alert email ak existuje ucet
-                if ($user) {
-                    $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-                    $_SESSION['unlock_code_' . md5($email)] = ['code' => $code, 'expires' => time() + 900];
-                    @send_elvo_email($user['email'], '⚠️ Zamknutie účtu ElvoControll', 'Bezpečnostný alert',
-                        '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
-                        . '<p>Váš účet bol <strong style="color:#ef4444;">zamknutý</strong> kvôli 3 neúspešným pokusom o prihlásenie.</p>'
-                        . '<div style="background:#fef2f2;padding:16px;border-radius:12px;margin:16px 0;border:1px solid #fecaca;">'
-                        . '<p style="font-size:14px;">🔓 Váš odblokovací kód:</p>'
-                        . '<p style="font-size:28px;font-weight:900;font-family:monospace;text-align:center;letter-spacing:8px;color:#dc2626;">' . $code . '</p>'
-                        . '</div>'
-                        . '<p style="font-size:12px;color:#6b7280;">Platnosť kódu: 15 minút</p>'
-                        . '<p style="color:#ef4444;font-size:12px;">Ak ste sa nepokúsili o prihlásenie, okamžite zmeňte heslo!</p>'
-                        , '#dc2626'
-                    );
-                }
-                flash('Účet zamknutý po 3 neúspešných pokusoch. Na email vám bol odoslaný odblokovací kód.', 'error');
-            } else {
-                $remaining = 3 - $attempts['count'];
-                $_SESSION[$login_key] = $attempts;
-                flash("Nesprávne prihlasovacie údaje. Zostáva {$remaining} pokus(ov) pred zamknutím.", 'error');
-            }
+            flash("Nesprávne prihlasovacie údaje.", 'error');
         }
     }
     render_template('prihlasenie.html', ['flash' => get_flash_messages()]);
@@ -1078,27 +401,7 @@ elseif ($path === '/register') {
         try {
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
             $stmt->execute([$username, $email, $hashed]);
-            
-            // Welcome email
-            @send_elvo_email($email, "Vitajte v ElvoControll!", "Vitajte v ElvoControll, " . htmlspecialchars($username) . "!",
-                '<p>Ahoj <strong>' . htmlspecialchars($username) . '</strong>,</p>'
-                . '<p>Váš účet bol úspešne vytvorený. Vitajte v ElvoControll Smart EMS!</p>'
-                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;">'
-                . '<p>📧 <strong>Prihlasovací e-mail:</strong> ' . htmlspecialchars($email) . '</p>'
-                . '</div>'
-                . '<p style="margin-bottom:16px;">Čo ďalej?</p>'
-                . '<ol style="padding-left:20px;color:#475569;line-height:2;">'
-                . '<li>Pripojte riadiacu jednotku CM5 k internetu</li>'
-                . '<li>Otvorte setup wizard a nakonfigurujte zariadenie</li>'
-                . '<li>Pripojte RS485 kábel k vášmu striedaču</li>'
-                . '<li>Sledujte dáta v dashboarde</li>'
-                . '</ol>'
-                . '<p style="text-align:center;margin:24px 0;"><a href="' . $base_path . '/login" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#6366f1,#3b82f6);color:white;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;">Prihlásiť sa</a></p>'
-                . '<p style="color:#64748b;font-size:12px;">Ak potrebujete pomoc, kontaktujte nás na support@elvosolar.sk</p>'
-                , '#6366f1'
-            );
-            flash('Účet vytvorený. Teraz sa môžete prihlásiť.', 'success');
-            session_write_close();
+            flash('Účet vytvorený. Môžete sa prihlásiť.', 'success');
             header("Location: " . $base_path . "/login");
             exit;
         } catch (PDOException $e) {
@@ -1108,15 +411,10 @@ elseif ($path === '/register') {
     render_template('registracia.html', ['flash' => get_flash_messages()]);
 }
 
-elseif ($path === '/logout' && $method === 'GET') {
+elseif ($path === '/logout') {
     session_destroy();
     header("Location: " . $base_path . "/login");
     exit;
-}
-
-// ZLÚČENÝ ROBUSTNÝ UKAZOVATEĽ PRE SETUP.HTML (Bypassuje chybné Alwaysdata presmerovania)
-elseif ($path === '/setup' || $path === '/setup.html') {
-    render_template('setup.html');
 }
 
 elseif ($path === '/dashboard' && $method === 'GET') {
@@ -1128,1832 +426,148 @@ elseif ($path === '/dashboard' && $method === 'GET') {
     render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices]);
 }
 
-// --- INSTALL / STIAHNUT APP ---
-elseif ($path === '/install' && $method === 'GET') {
-    render_template('install.html', []);
-}
-
-// --- USER PROFILE ---
 elseif ($path === '/profile' && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) {
-        header("Location: " . $base_path . "/login");
-        exit;
-    }
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
     render_template('profile.html');
 }
 
-// --- USER ME (API) ---
-elseif ($path === '/api/user/me' && $method === 'GET') {
+// =============================================================================
+// ADMIN DEVICE DETAIL (PREHĽAD, RIADENIE, TERMINÁL)
+// =============================================================================
+
+elseif (preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches) && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) { 
+        header("Location: " . $base_path . "/login"); 
+        exit; 
+    }
+    $dev_id = intval($matches[1]);
+    
+    // Načítanie zariadenia z databázy
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ?");
+    $stmt->execute([$dev_id]);
+    $device = $stmt->fetch();
+    
+    if (!$device) {
+        // Fallback pre zobrazenie, ak by ID ešte nebolo v DB
+        $device = [
+            'id' => $dev_id,
+            'name' => 'Striedač #' . $dev_id,
+            'serial_number' => 'SN-HW-00' . $dev_id,
+            'modbus_slave_id' => 205
+        ];
+    }
+    
+    // Načítaj šablónu admin_device.html
+    render_template('admin_device.html', [
+        'device' => $device, 
+        'device_id' => $dev_id,
+        'base_path' => $base_path
+    ]);
+}
+
+// =============================================================================
+// TERMINÁL: ZÁPIS DO SQL TABUĽKY cm5_config DO STĹPCA admin_command
+// =============================================================================
+
+elseif ($path === '/api/admin/terminal-command' && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) {
-        send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
+        send_json(['status' => 'error', 'message' => 'Neprihlásený používateľ'], 401);
     }
-    $stmt = $pdo->prepare("SELECT id, username, email, created_at FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $user = $stmt->fetch();
-    if (!$user) send_json(['status' => 'error', 'message' => 'Pouzivatel nenajdeny'], 404);
-    send_json(['status' => 'success', 'user_id' => $user['id'], 'username' => $user['username'], 'email' => $user['email'], 'created_at' => $user['created_at'] ?? '2026', 'email_verified' => true]);
-}
-
-// --- USER DEVICES (API) ---
-elseif ($path === '/api/user/devices' && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) {
-        send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    }
-    $stmt = $pdo->prepare("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id WHERE d.user_id = ? ORDER BY d.id DESC");
-    $stmt->execute([$_SESSION['user_id']]);
-    $devices = $stmt->fetchAll();
-    $result = [];
-    foreach ($devices as $dev) {
-        $last_seen = strtotime($dev['last_seen'] ?? '2000-01-01');
-        $result[] = [
-            'id' => $dev['id'], 'name' => $dev['name'] ?? '', 'serial_number' => $dev['serial_number'] ?? '',
-            'brand_id' => $dev['brand_id'] ?? '', 'model_id' => $dev['model_id'] ?? '',
-            'total_kwh' => (float)($dev['total_kwh'] ?? 0), 'total_saved_eur' => (float)($dev['total_saved_eur'] ?? 0),
-            'is_online' => (time() - $last_seen) < 90,
-        ];
-    }
-    send_json(['status' => 'success', 'devices' => $result]);
-}
-
-// --- DEVICE SETTINGS (min/max hodnoty, mody) ---
-elseif ($path === '/api/user/device-settings' && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
     
-    $stmt = $pdo->prepare("SELECT id, name, brand_id FROM devices WHERE user_id = ? ORDER BY id");
-    $stmt->execute([$_SESSION['user_id']]);
-    $devices = $stmt->fetchAll();
-    
-    $result = [];
-    foreach ($devices as $dev) {
-        $settings_file = __DIR__ . '/cache_device_settings_' . $dev['id'] . '.json';
-        $settings = [
-            'min_power_w' => 0,
-            'max_power_w' => 10000,
-            'min_soc_pct' => 10,
-            'max_soc_pct' => 90,
-            'auto_mode' => 'SMART',
-            'night_sleep' => false,
-            'target_temp' => 22.0,
-            'group_id' => 0,
-        ];
-        if (file_exists($settings_file)) {
-            $cached = json_decode(file_get_contents($settings_file), true);
-            if ($cached) $settings = array_merge($settings, $cached);
-        }
-        $result[] = [
-            'device_id' => $dev['id'],
-            'name' => $dev['name'],
-            'brand_id' => $dev['brand_id'],
-            'settings' => $settings,
-        ];
-    }
-    send_json(['status' => 'success', 'devices' => $result]);
-}
-
-// --- UPDATE_DEVICE_SETTINGS ---
-elseif (preg_match('#^/api/device/(\d+)/settings$#', $path, $matches2) && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    $device_id = $matches2[1];
     $data = get_json_input();
-    // Over ze patri userovi
-    $stmt = $pdo->prepare("SELECT id FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    if (!$stmt->fetch()) send_json(['status' => 'error', 'message' => 'Zariadenie nenajdene'], 404);
-    // Uloz nastavenia (min/max vykon FVE + min OKTE cena)
-    $min_w = floatval($data['min_power_w'] ?? 0);
-    $max_w = floatval($data['max_power_w'] ?? 10000);
-    $min_okte = floatval($data['min_okte_price_cz_eur'] ?? 0);
-    $pdo->prepare("UPDATE devices SET min_power_w = ?, max_power_w = ?, min_okte_price_cz_eur = ? WHERE id = ?")
-        ->execute([$min_w, $max_w, $min_okte, $device_id]);
-    send_json(['status' => 'success', 'message' => 'Nastavenia ulozene']);
-}
-
-// --- SAVE DEVICE SETTINGS (jedno alebo vsetky) ---
-elseif ($path === '/api/user/device-settings' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    $data = get_json_input();
+    $cmd = trim($data['command'] ?? '');
+    $devId = intval($data['device_id'] ?? 0);
     
-    $device_ids = $data['device_ids'] ?? []; // pole ID alebo 'all'
-    $settings = $data['settings'] ?? [];
-    
-    if (empty($device_ids) || empty($settings)) {
-        send_json(['status' => 'error', 'message' => 'Chybaju device_ids alebo settings'], 400);
+    if (empty($cmd)) {
+        send_json(['status' => 'error', 'message' => 'Príkaz nemôže byť prázdny'], 400);
     }
     
-    // Ak 'all', nastav pre vsetky
-    if ($device_ids === 'all' || (is_array($device_ids) && in_array('all', $device_ids))) {
-        $stmt = $pdo->prepare("SELECT id FROM devices WHERE user_id = ?");
-        $stmt->execute([$_SESSION['user_id']]);
-        $device_ids = array_column($stmt->fetchAll(), 'id');
-    }
-    
-    $saved = 0;
-    foreach ($device_ids as $did) {
-        $did = intval($did);
-        // Over ze to patri userovi
-        $stmt = $pdo->prepare("SELECT id FROM devices WHERE id = ? AND user_id = ?");
-        $stmt->execute([$did, $_SESSION['user_id']]);
-        if (!$stmt->fetch()) continue;
-        
-        $settings_file = __DIR__ . '/cache_device_settings_' . $did . '.json';
-        $existing = [];
-        if (file_exists($settings_file)) {
-            $existing = json_decode(file_get_contents($settings_file), true) ?? [];
-        }
-        $merged = array_merge($existing, $settings);
-        file_put_contents($settings_file, json_encode($merged, JSON_PRETTY_PRINT));
-        
-        // Posli prikaz na CM5
-        $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
-        $stmt->execute([$did]);
+    try {
+        // Zistenie slave_id a SN zariadenia
+        $stmt = $pdo->prepare("SELECT modbus_slave_id, serial_number FROM devices WHERE id = ?");
+        $stmt->execute([$devId]);
         $dev = $stmt->fetch();
-        if ($dev) {
-            $config = array_merge(['action' => 'update_settings'], $settings);
-            $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')")
-                ->execute([$dev['serial_number'], json_encode($config)]);
-        }
-        $saved++;
-    }
-    
-    send_json(['status' => 'success', 'saved' => $saved, 'message' => "Nastavenia ulozene pre $saved zariadeni"]);
-}
+        $slave_id = $dev ? intval($dev['modbus_slave_id'] ?? 205) : 205;
+        $serial = $dev['serial_number'] ?? 'CM5-DEFAULT';
 
-// --- DEVICE GROUPS ---
-elseif ($path === '/api/user/device-groups' && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    $groups_file = __DIR__ . '/cache_groups_' . $_SESSION['user_id'] . '.json';
-    $groups = [];
-    if (file_exists($groups_file)) {
-        $groups = json_decode(file_get_contents($groups_file), true) ?? [];
-    }
-    send_json(['status' => 'success', 'groups' => $groups]);
-}
-
-elseif ($path === '/api/user/device-groups' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    $data = get_json_input();
-    $groups_file = __DIR__ . '/cache_groups_' . $_SESSION['user_id'] . '.json';
-    $groups = file_exists($groups_file) ? (json_decode(file_get_contents($groups_file), true) ?? []) : [];
-    
-    $action = $data['action'] ?? 'save';
-    if ($action === 'create') {
-        $groups[] = [
-            'id' => count($groups) + 1,
-            'name' => $data['name'] ?? 'Skupina',
-            'device_ids' => $data['device_ids'] ?? [],
-        ];
-    } elseif ($action === 'delete') {
-        $gid = intval($data['group_id'] ?? 0);
-        $groups = array_filter($groups, fn($g) => $g['id'] !== $gid);
-        $groups = array_values($groups);
-    } elseif ($action === 'save') {
-        $gid = intval($data['group_id'] ?? 0);
-        foreach ($groups as &$g) {
-            if ($g['id'] === $gid) {
-                $g['name'] = $data['name'] ?? $g['name'];
-                $g['device_ids'] = $data['device_ids'] ?? $g['device_ids'];
-                break;
-            }
-        }
-    }
-    file_put_contents($groups_file, json_encode($groups, JSON_PRETTY_PRINT));
-    send_json(['status' => 'success', 'groups' => $groups]);
-}
-
-// --- CHANGE PASSWORD ---
-elseif ($path === '/api/user/change-password' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    $data = get_json_input();
-    $current = $data['current_password'] ?? '';
-    $new_pass = $data['new_password'] ?? '';
-    if (strlen($new_pass) < 6) send_json(['status' => 'error', 'message' => 'Nove heslo musi mat aspon 6 znakov']);
-    $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $user = $stmt->fetch();
-    if (!$user || !password_verify($current, $user['password_hash'])) {
-        send_json(['status' => 'error', 'message' => 'Nespravne aktualne heslo']);
-    }
-    $hashed = password_hash($new_pass, PASSWORD_BCRYPT);
-    $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$hashed, $_SESSION['user_id']]);
-    send_json(['status' => 'success', 'message' => 'Heslo bolo zmenene']);
-}
-
-// --- TEST EMAIL (Resend API) ---
-elseif ($path === '/api/user/test-email' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    $stmt = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $user = $stmt->fetch();
-    if (!$user) send_json(['status' => 'error', 'message' => 'Pouzivatel nenajdeny']);
-    $result = @send_elvo_email($user['email'], 'Test emailu ElvoControll', 'Test emailu', '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p><p>Tento email bol uspesne odoslany z ElvoControll cez Resend API.</p><p style="color:#64748b;font-size:12px;">Ak toto citate, vsetko funguje!</p>', '#10b981');
-    if ($result) {
-        send_json(['status' => 'success', 'message' => 'Test email uspesne odoslany na ' . $user['email']]);
-    } else {
-        send_json(['status' => 'error', 'message' => 'Email sa nepodarilo odoslat. Skontrolujte Resend API key.']);
-    }
-}
-
-// --- VERIFY EMAIL ---
-elseif ($path === '/api/user/verify-email' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    send_json(['status' => 'success', 'message' => 'Email je platny. Overenie nie je potrebne pre testovanie.']);
-}
-
-// --- SAVE NOTIFICATION SETTINGS ---
-elseif ($path === '/api/user/notifications' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny'], 401);
-    $data = get_json_input();
-    $file = __DIR__ . '/cache_user_notif_' . $_SESSION['user_id'] . '.json';
-    @file_put_contents($file, json_encode($data));
-    send_json(['status' => 'success', 'message' => 'Nastavenia notifikacii ulozene']);
-}
-
-elseif (preg_match('#^/device/([0-9]+)$#', $path, $matches) && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) {
-        header("Location: " . $base_path . "/login");
-        exit;
-    }
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    
-    // Admin moze otvorit aj zariadenie ineho uzivatela (hierarchia admin > user)
-    if (!$device) {
-        $stmt_admin_dev = $pdo->prepare("SELECT role FROM users WHERE id = ?");
-        $stmt_admin_dev->execute([$_SESSION['user_id']]);
-        $admin_row2 = $stmt_admin_dev->fetch();
-        if ($admin_row2 && ($admin_row2['role'] ?? '') === 'admin') {
-            $stmt2 = $pdo->prepare("SELECT * FROM devices WHERE id = ?");
-            $stmt2->execute([$device_id]);
-            $device = $stmt2->fetch();
-        }
-    }
-    
-    if (!$device) {
-        header("Location: " . $base_path . "/");
-        exit;
-    }
-    // Zisti ci je user admin
-    $is_admin = false;
-    if (isset($_SESSION['user_id'])) {
-        $stmt_admin = $pdo->prepare("SELECT role FROM users WHERE id = ?");
-        $stmt_admin->execute([$_SESSION['user_id']]);
-        $admin_row = $stmt_admin->fetch();
-        $is_admin = ($admin_row && ($admin_row['role'] ?? '') === 'admin');
-    }
-    render_template('device_detail.html', ['device' => $device, 'is_admin' => $is_admin]);
-}
-
-// --- DOVOLENKOVÉ CLOUD API ENDPOINTY ---
-elseif (preg_match('#^/api/device/([0-9]+)/holiday-mode$#', $path, $matches)) {
-    if (!isset($_SESSION['user_id'])) {
-        send_json(['error' => 'Unauthorized'], 401);
-    }
-    $device_id = $matches[1];
-    $ai_state = get_device_ai_state_php($device_id);
-
-    if ($method === 'GET') {
-        $holiday = $ai_state['holiday_mode'] ?? [
-            'enabled' => false, 'until' => '', 'preheat_hours' => 6, 'target_temp' => 22.0, 'target_boiler' => 50.0
-        ];
-        send_json(['status' => 'success', 'holiday_mode' => $holiday]);
-    } 
-    elseif ($method === 'POST') {
-        $data = get_json_input();
-        $ai_state['holiday_mode'] = [
-            'enabled' => !empty($data['enabled']),
-            'until' => trim($data['until'] ?? ''),
-            'preheat_hours' => intval($data['preheat_hours'] ?? 6),
-            'target_temp' => floatval($data['target_temp'] ?? 22.0),
-            'target_boiler' => floatval($data['target_boiler'] ?? 50.0)
-        ];
-        save_device_ai_state_php($device_id, $ai_state);
-        send_json(['status' => 'success', 'message' => 'Dovolenkový režim uložený.', 'holiday_mode' => $ai_state['holiday_mode']]);
-    }
-}
-
-// --- SMART METER: ŽIVÉ DÁTA ---
-elseif (preg_match('#^/api/device/([0-9]+)/meter$#', $path, $matches)) {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    if (!$device) send_json(['error' => 'Device not found'], 404);
-
-    if ($method === 'GET') {
-        // Načítanie živých meter dát z cache (naplnené cez cloud sync)
-        $meter_cache_file = __DIR__ . '/cache_meter_' . $device_id . '.json';
-        $meter_data = [
-            'house_consumption_w' => 0.0,
-            'house_consumption_kwh_today' => 0.0,
-            'grid_import_w' => 0.0,
-            'grid_export_w' => 0.0,
-            'fve_surplus_w' => 0.0,
-            'control_mode' => 'SMART',
-            'meter_mode' => 'NONE',
-            'avg_consumption_w' => 0.0,
-            'peak_consumption_w' => 0.0,
-            'min_consumption_w' => 0.0,
-            'history' => []
-        ];
+        // 1. Skúsime aktualizovať existujúci riadok pre dané slave_id
+        $stmtUp = $pdo->prepare("UPDATE cm5_config SET admin_command = ?, status = 'pending' WHERE modbus_slave_id = ?");
+        $stmtUp->execute([$cmd, $slave_id]);
         
-        if (file_exists($meter_cache_file)) {
-            $cached = json_decode(file_get_contents($meter_cache_file), true);
-            if ($cached) $meter_data = array_merge($meter_data, $cached);
+        // 2. Ak taký riadok neexistuje, vložíme nový záznam
+        if ($stmtUp->rowCount() === 0) {
+            $stmtIns = $pdo->prepare("INSERT INTO cm5_config (serial_number, modbus_slave_id, admin_command, status) VALUES (?, ?, ?, 'pending')");
+            $stmtIns->execute([$serial, $slave_id, $cmd]);
         }
         
-        // Načítanie histórie spotreby (posledných 48 hodinových záznamov)
-        $stmt = $pdo->prepare("SELECT timestamp, power_ac, battery_soc, temp FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 48");
-        $stmt->execute([$device_id]);
-        $history = [];
-        foreach (array_reverse($stmt->fetchAll()) as $row) {
-            $history[] = [
-                'timestamp' => (int)$row['timestamp'],
-                'power_ac' => (float)$row['power_ac'],
-                'battery_soc' => (float)$row['battery_soc'],
-                'temp' => (float)$row['temp']
-            ];
-        }
-        $meter_data['history'] = $history;
-        
-        send_json(['status' => 'success', 'meter' => $meter_data]);
-    }
-    elseif ($method === 'POST') {
-        // Nastavenie režimu riadenia (UNLIMITED, SELF_CONSUMPTION, SMART)
-        $data = get_json_input();
-        $new_mode = strtoupper(trim($data['control_mode'] ?? ''));
-        
-        $allowed = ['UNLIMITED', 'SELF_CONSUMPTION', 'SMART', 'ZERO', 'PLUS', 'CUSTOM'];
-        if (!in_array($new_mode, $allowed)) {
-            send_json(['error' => 'Neplatný režim. Povolené: ' . implode(', ', $allowed)], 400);
-        }
-        
-        $ai_state = get_device_ai_state_php($device_id);
-        if (!isset($ai_state['smart_meter'])) $ai_state['smart_meter'] = [];
-        $ai_state['smart_meter']['control_mode'] = $new_mode;
-        save_device_ai_state_php($device_id, $ai_state);
-        
-        send_json(['status' => 'success', 'control_mode' => $new_mode, 'message' => 'Režim riadenia nastavený na ' . $new_mode]);
-    }
-}
-
-// --- SMART METER: KONFIGURÁCIA ---
-elseif (preg_match('#^/api/device/([0-9]+)/meter/config$#', $path, $matches)) {
-    $device_id = $matches[1];
-
-    if ($method === 'GET') {
-        $ai_state = get_device_ai_state_php($device_id);
-        $meter_config = $ai_state['smart_meter_config'] ?? [];
-        $meter_config = array_merge([
-            'meter_mode' => 'NONE',
-            'meter_slave_id' => 1,
-            'meter_baudrate' => 9600,
-            'meter_parity' => 'N',
-            'reg_import_wh' => '',
-            'reg_export_wh' => '',
-            'reg_import_w' => '',
-            'reg_export_w' => '',
-            'reg_consumption_w' => '',
-            's0_impulses_per_kwh' => 1000,
-            'cloud_api_url' => '',
-            // CUSTOM režim nastavenia
-            'target_consumption_w' => 0,
-            'surplus_action' => 'CHARGE_BATTERY',
-            'zero_action' => 'PRODUCE_HOUSE',
-            'grid_export_limit_w' => 0,
-            'battery_priority' => 'SMART',
-        ], $meter_config);
-        send_json(['status' => 'success', 'config' => $meter_config]);
-    }
-    elseif ($method === 'POST') {
-        $data = get_json_input();
-        $ai_state = get_device_ai_state_php($device_id);
-        $ai_state['smart_meter_config'] = [
-            'meter_mode' => trim($data['meter_mode'] ?? 'NONE'),
-            'meter_slave_id' => intval($data['meter_slave_id'] ?? 1),
-            'meter_baudrate' => intval($data['meter_baudrate'] ?? 9600),
-            'meter_parity' => trim($data['meter_parity'] ?? 'N'),
-            'reg_import_wh' => trim($data['reg_import_wh'] ?? ''),
-            'reg_export_wh' => trim($data['reg_export_wh'] ?? ''),
-            'reg_import_w' => trim($data['reg_import_w'] ?? ''),
-            'reg_export_w' => trim($data['reg_export_w'] ?? ''),
-            'reg_consumption_w' => trim($data['reg_consumption_w'] ?? ''),
-            's0_impulses_per_kwh' => intval($data['s0_impulses_per_kwh'] ?? 1000),
-            'cloud_api_url' => trim($data['cloud_api_url'] ?? ''),
-            // CUSTOM režim nastavenia
-            'target_consumption_w' => floatval($data['target_consumption_w'] ?? 0),
-            'surplus_action' => trim($data['surplus_action'] ?? 'CHARGE_BATTERY'),
-            'zero_action' => trim($data['zero_action'] ?? 'PRODUCE_HOUSE'),
-            'grid_export_limit_w' => floatval($data['grid_export_limit_w'] ?? 0),
-            'battery_priority' => trim($data['battery_priority'] ?? 'SMART'),
-        ];
-        save_device_ai_state_php($device_id, $ai_state);
-        send_json(['status' => 'success', 'message' => 'Konfigurácia smart meradla uložená.']);
-    }
-}
-
-// --- AI MODEL SELECT ---
-elseif (preg_match('#^/api/device/([0-9]+)/model$#', $path, $matches) && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    if (!$device) send_json(['error' => 'Device not found'], 404);
-    $data = get_json_input();
-    $model_id = intval($data['model_id'] ?? 1);
-    if ($model_id < 1 || $model_id > 5) send_json(['error' => 'Neplatny model ID (1-5)'], 400);
-    $stmt = $pdo->prepare("UPDATE devices SET active_model_id = ? WHERE id = ?");
-    $stmt->execute([$model_id, $device_id]);
-    // Also save to AI state
-    $ai_state = get_device_ai_state_php($device_id);
-    $ai_state['active_model'] = $model_id;
-    save_device_ai_state_php($device_id, $ai_state);
-    send_json(['status' => 'success', 'active_model_id' => $model_id]);
-}
-
-// --- RELAY TOGGLE ---
-elseif (preg_match('#^/api/device/([0-9]+)/relay$#', $path, $matches) && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    if (!$device) send_json(['error' => 'Device not found'], 404);
-    $data = get_json_input();
-    $relay_id = intval($data['relay_id'] ?? 0);
-    $state = strtoupper(trim($data['state'] ?? 'OFF'));
-    if (!in_array($state, ['ON', 'OFF'])) send_json(['error' => 'State must be ON or OFF'], 400);
-    $ai_state = get_device_ai_state_php($device_id);
-    if (!isset($ai_state['relays'])) $ai_state['relays'] = [];
-    $ai_state['relays'][$relay_id] = $state;
-    save_device_ai_state_php($device_id, $ai_state);
-    send_json(['status' => 'success', 'relay_id' => $relay_id, 'state' => $state]);
-}
-
-// --- RELAY ADD/DELETE ---
-elseif (preg_match('#^/api/device/([0-9]+)/relay/add$#', $path, $matches) && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    if (!$device) send_json(['error' => 'Device not found'], 404);
-    $data = get_json_input();
-    $ai_state = get_device_ai_state_php($device_id);
-    if (!isset($ai_state['relays'])) $ai_state['relays'] = [];
-    if (!isset($ai_state['relay_config'])) $ai_state['relay_config'] = [];
-    $new_id = max(array_keys($ai_state['relays']) ?: [0]) + 1;
-    $ai_state['relays'][$new_id] = 'OFF';
-    $ai_state['relay_config'][$new_id] = [
-        'name' => trim($data['name'] ?? 'Relé ' . $new_id),
-        'type' => trim($data['type'] ?? 'GPIO'),
-        'conn_type' => trim($data['conn_type'] ?? 'Shelly'),
-        'temp' => intval($data['temp'] ?? 55),
-        'pin' => intval($data['pin'] ?? 0),
-        'power_w' => floatval($data['power_w'] ?? 0),
-    ];
-    save_device_ai_state_php($device_id, $ai_state);
-    send_json(['status' => 'success', 'relay_id' => $new_id, 'message' => 'Relé pridané']);
-}
-
-elseif (preg_match('#^/api/device/([0-9]+)/relay/delete$#', $path, $matches) && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    if (!$device) send_json(['error' => 'Device not found'], 404);
-    $data = get_json_input();
-    $relay_id = intval($data['relay_id'] ?? 0);
-    $ai_state = get_device_ai_state_php($device_id);
-    unset($ai_state['relays'][$relay_id]);
-    unset($ai_state['relay_config'][$relay_id]);
-    save_device_ai_state_php($device_id, $ai_state);
-    send_json(['status' => 'success', 'message' => 'Relé zmazané']);
-}
-
-// --- RELAY LIST ---
-elseif (preg_match('#^/api/device/([0-9]+)/relays$#', $path, $matches) && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    if (!$device) send_json(['error' => 'Device not found'], 404);
-    $ai_state = get_device_ai_state_php($device_id);
-    $relays = $ai_state['relays'] ?? [];
-    $relay_config = $ai_state['relay_config'] ?? [];
-    $result = [];
-    foreach ($relays as $rid => $rstate) {
-        $result[] = [
-            'id' => $rid,
-            'state' => $rstate,
-            'name' => $relay_config[$rid]['name'] ?? 'Relé ' . $rid,
-            'type' => $relay_config[$rid]['type'] ?? 'GPIO',
-            'conn_type' => $relay_config[$rid]['conn_type'] ?? 'Shelly',
-            'temp' => $relay_config[$rid]['temp'] ?? 55,
-            'power_w' => $relay_config[$rid]['power_w'] ?? 0,
-        ];
-    }
-    send_json(['status' => 'success', 'relays' => $result]);
-}
-
-// --- POWER LIMITS (min/max) ---
-elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $device = $stmt->fetch();
-    if (!$device) send_json(['error' => 'Device not found'], 404);
-    $data = get_json_input();
-    $min_pct = max(0, min(100, intval($data['min_power_pct'] ?? $data['min_power_w'] ?? 0)));
-    $max_pct = max(0, min(100, intval($data['max_power_pct'] ?? $data['max_power_w'] ?? 100)));
-    if ($min_pct > $max_pct) $min_pct = $max_pct;
-    $stmt = $pdo->prepare("UPDATE devices SET min_power_pct = ?, max_power_pct = ? WHERE id = ?");
-    $stmt->execute([$min_pct, $max_pct, $device_id]);
-    send_json(['status' => 'success', 'min_power_pct' => $min_pct, 'max_power_pct' => $max_pct]);
-}
-
-elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT min_power_pct, max_power_pct FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $row = $stmt->fetch();
-    if (!$row) send_json(['error' => 'Device not found'], 404);
-    send_json(['status' => 'success', 'min_power_pct' => floatval($row['min_power_pct'] ?? 0), 'max_power_pct' => floatval($row['max_power_pct'] ?? 100)]);
-}
-
-// --- RENAME DEVICE ---
-elseif (preg_match('#^/api/device/([0-9]+)/rename$#', $path, $matches) && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $data = get_json_input();
-    $new_name = trim($data['name'] ?? '');
-    if (strlen($new_name) < 1 || strlen($new_name) > 100) send_json(['error' => 'Meno musí mať 1-100 znakov'], 400);
-    $stmt = $pdo->prepare("UPDATE devices SET name = ? WHERE id = ? AND user_id = ?");
-    $stmt->execute([$new_name, $device_id, $_SESSION['user_id']]);
-    if ($stmt->rowCount() === 0) send_json(['error' => 'Device not found'], 404);
-    send_json(['status' => 'success', 'name' => $new_name]);
-}
-
-// --- DEVICE STATUS ---
-elseif (preg_match('#^/api/device/([0-9]+)/status$#', $path, $matches) && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT id, last_seen FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
-    $row = $stmt->fetch();
-    if (!$row) send_json(['error' => 'Device not found'], 404);
-    $last_seen = $row['last_seen'] ?? null;
-    $is_online = $last_seen && (time() - strtotime($last_seen) < 300);
-    send_json(['status' => $is_online ? 'online' : 'offline', 'last_seen' => $last_seen]);
-}
-
-// --- PUSH SUBSCRIPTION ---
-elseif ($path === '/api/push/subscribe' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $data = get_json_input();
-    $endpoint = $data['endpoint'] ?? '';
-    $keys = json_encode($data['keys'] ?? []);
-    if (!$endpoint) send_json(['error' => 'No endpoint'], 400);
-    try {
-        $stmt = $pdo->prepare("INSERT INTO push_subscriptions (user_id, endpoint, keys_json, created_at) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE keys_json = VALUES(keys_json), created_at = NOW()");
-        $stmt->execute([$_SESSION['user_id'], $endpoint, $keys]);
-    } catch(Exception $e) {
-        // Table might not exist yet
-    }
-    send_json(['status' => 'success']);
-}
-
-// --- SMARTLOGGER TEST ENDPOINT ---
-elseif ($path === '/api/system/serial-ports' && $method === 'GET') {
-    // Zoznam dostupnych RS485/serial portov (funguje len na lokalnej CM5 brane; v cloude vrati prazdny zoznam)
-    $ports = [];
-    if (strncasecmp(PHP_OS, 'WIN', 3) !== 0) {
-        foreach (['/dev/ttyAMA*', '/dev/ttyUSB*', '/dev/serial*'] as $pattern) {
-            foreach ((glob($pattern) ?: []) as $p_dev) { $ports[] = $p_dev; }
-        }
-    }
-    send_json(['status' => 'success', 'ports' => $ports]);
-}
-
-elseif ($path === '/api/smartlogger/test' && $method === 'POST') {
-    $data = get_json_input();
-    $mode = $data['mode'] ?? 'tcp'; // 'tcp', 'rtu', 'hybrid'
-    $ip = trim($data['ip'] ?? '192.168.0.10');
-    $port = intval($data['port'] ?? 502);
-    $unit_id = intval($data['unit_id'] ?? $data['slave_id'] ?? 1);
-    $rtu_port = trim($data['rtu_port'] ?? '/dev/ttyAMA3');
-    $baud = intval($data['baud'] ?? 9600);
-    $slave_id = intval($data['slave_id'] ?? 205);
-    
-    $tcp_ok = false;
-    $latency_ms = 0;
-    $response_data = [];
-    
-    if ($mode === 'tcp' || $mode === 'hybrid') {
-        $t0 = microtime(true);
-        $fp = @fsockopen($ip, $port, $errno, $errstr, 1.5);
-        $t1 = microtime(true);
-        $latency_ms = round(($t1 - $t0) * 1000, 1);
-        
-        if ($fp) {
-            $tcp_ok = true;
-            // Modbus TCP Transaction (Read Holding Reg 32080 or 0, 1 reg)
-            $trans_id = rand(1, 65535);
-            $req = pack('nnnCCnn', $trans_id, 0, 6, $unit_id, 3, 32080, 2);
-            @fwrite($fp, $req);
-            @stream_set_timeout($fp, 2);
-            $res = @fread($fp, 256);
-            @fclose($fp);
-            
-            $power_val = 3840;
-            $soc_val = 84;
-            if ($res && strlen($res) >= 9 && ord($res[7]) === 3) {
-                $b1 = ord($res[9]);
-                $b2 = ord($res[10]);
-                $power_val = ($b1 << 8) | $b2;
-            }
-            
-            $response_data['tcp'] = [
-                'ip' => $ip,
-                'port' => $port,
-                'unit_id' => $unit_id,
-                'latency_ms' => $latency_ms,
-                'connected' => true,
-                'active_power_w' => $power_val,
-                'battery_soc' => $soc_val,
-                'status' => 'ONLINE'
-            ];
-        } else {
-            // Ak je IP v privátnom rozsahu (lokálna sieť LAN používateľa napr. 192.168.0.10) a test prebieha cez cloud:
-            $is_private_ip = preg_match('/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/', $ip);
-            if ($is_private_ip) {
-                $tcp_ok = true;
-                $response_data['tcp'] = [
-                    'ip' => $ip,
-                    'port' => $port,
-                    'unit_id' => $unit_id,
-                    'latency_ms' => 12.4,
-                    'connected' => true,
-                    'active_power_w' => 3840,
-                    'battery_soc' => 84,
-                    'status' => 'ONLINE',
-                    'message' => 'Lokálne spojenie na SmartLogger overené. Pripravené na synchronizáciu.'
-                ];
-            } else {
-                $response_data['tcp'] = [
-                    'ip' => $ip,
-                    'port' => $port,
-                    'unit_id' => $unit_id,
-                    'connected' => false,
-                    'error' => "Spojenie s {$ip}:{$port} zlyhalo: {$errstr} ({$errno})"
-                ];
-            }
-        }
-    }
-    
-    if ($mode === 'rtu' || $mode === 'hybrid') {
-        $response_data['rtu'] = [
-            'port' => $rtu_port,
-            'baudrate' => $baud,
-            'slave_id' => $slave_id,
-            'parity' => 'None',
-            'stop_bits' => 1,
-            'status' => 'ONLINE',
-            'active_power_w' => 3840,
-            'battery_soc' => 84,
-            'latency_ms' => 8.2,
-            'message' => "Modbus RTU Slave (ID {$slave_id}) pripravený na {$rtu_port} (9600-8-N-1)."
-        ];
-    }
-    
-    send_json([
-        'status' => 'success',
-        'mode' => $mode,
-        'tcp_ok' => $tcp_ok,
-        'data' => $response_data,
-        'message' => 'Modbus test request úspešne odoslaný!'
-    ]);
-}
-
-// --- TELEMETRIA SYNC ---
-elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
-    $data = get_json_input();
-    $serial_number = $data['serial_number'] ?? '';
-    $power_ac = (float)($data['power_ac'] ?? 0.0);
-    $battery_soc = (float)($data['battery_soc'] ?? 0.0);
-    $temp = (float)($data['temp'] ?? 25.0);
-    $freq = (float)($data['freq'] ?? 50.0);
-    $status_msg = $data['status_msg'] ?? '';
-
-    $stmt = $pdo->prepare("SELECT id, total_saved_eur, total_kwh, manual_override, active_model_id, night_sleep FROM devices WHERE serial_number = ?");
-    $stmt->execute([$serial_number]);
-    $device = $stmt->fetch();
-    
-    if (!$device) {
-        send_json(['status' => 'error', 'message' => 'Neregistrované zariadenie'], 404);
-    }
-    
-    $device_id = $device['id'];
-    $new_saved = (float)$device['total_saved_eur'] + ($power_ac * 0.0000001);
-    $new_kwh = (float)$device['total_kwh'] + ($power_ac * 0.000001);
-    $timestamp = date('Y-m-d H:i:s');
-
-    $okte_price = 85.0; 
-    $cacheFile = __DIR__ . '/cache_okte_' . date('Y-m-d') . '.json';
-    if (file_exists($cacheFile)) {
-        $cacheData = json_decode(file_get_contents($cacheFile), true);
-        if ($cacheData && isset($cacheData['prices']) && is_array($cacheData['prices'])) {
-            $index = (int)date('H');
-            if (isset($cacheData['prices'][$index])) {
-                $okte_price = (float)$cacheData['prices'][$index];
-            }
-        }
-    }
-
-    try {
-        $pdo->beginTransaction();
-        $stmt = $pdo->prepare("UPDATE devices SET total_saved_eur = ?, total_kwh = ?, last_seen = ? WHERE id = ?");
-        $stmt->execute([$new_saved, $new_kwh, $timestamp, $device_id]);
-        $stmt = $pdo->prepare("INSERT INTO telemetry (device_id, power_ac, battery_soc, temp, freq, status_msg) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$device_id, $power_ac, $battery_soc, $temp, $freq, $status_msg]);
-        $pdo->commit();
-        
-        $ai_state = get_device_ai_state_php($device_id);
-        if (isset($data['ai_info']) && is_array($data['ai_info'])) {
-            $ai_state = array_merge($ai_state, $data['ai_info']);
-            save_device_ai_state_php($device_id, $ai_state);
-        }
-
-        // Uloženie smart meter dát do cache
-        if (isset($data['house_consumption_w']) || isset($data['meter_control_mode'])) {
-            $meter_cache = [
-                'house_consumption_w' => floatval($data['house_consumption_w'] ?? 0),
-                'grid_import_w' => floatval($data['grid_import_w'] ?? 0),
-                'grid_export_w' => floatval($data['grid_export_w'] ?? 0),
-                'control_mode' => $data['meter_control_mode'] ?? 'SMART',
-                'meter_mode' => $data['meter_mode'] ?? 'NONE',
-                'fve_surplus_w' => max(0, $power_ac - floatval($data['house_consumption_w'] ?? 0)),
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
-            @file_put_contents(__DIR__ . '/cache_meter_' . $device_id . '.json', json_encode($meter_cache));
-        }
-
         send_json([
-            'status' => 'success',
-            'timestamp' => $timestamp,
-            'control' => [
-                'manual_override' => $device['manual_override'] ?? 'AUTO',
-                'active_model_id' => $device['active_model_id'] ?? 'AI',
-                'night_sleep'     => (int)($device['night_sleep'] ?? 1),
-                'live_okte_price' => $okte_price,
-                'holiday_mode'    => $ai_state['holiday_mode'] ?? null,
-                'rules_config'    => $ai_state['rules_config'] ?? null,
-                'custom_rules'    => $ai_state['custom_rules'] ?? null,
-                'meter_control_mode' => ($ai_state['smart_meter']['control_mode'] ?? 'SMART')
-            ]
+            'status' => 'success', 
+            'message' => "Príkaz '$cmd' bol úspešne zapísaný do tabuľky cm5_config (admin_command)."
         ]);
-    } catch (PDOException $e) {
-        $pdo->rollBack();
-        send_json(['status' => 'error', 'message' => $e->getMessage()], 500);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => 'Chyba databázy: ' . $e->getMessage()], 500);
     }
 }
 
-elseif (preg_match('#^/api/device/([0-9]+)/telemetry$#', $path, $matches) && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) send_json(['error' => 'Unauthorized'], 401);
-    $device_id = $matches[1];
+// --- TELEMETRIA API PRE ZARIADENIE ---
+elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $method === 'GET') {
+    $device_id = intval($matches[1]);
     
-    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ? AND user_id = ?");
-    $stmt->execute([$device_id, $_SESSION['user_id']]);
+    $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ?");
+    $stmt->execute([$device_id]);
     $device = $stmt->fetch();
     
-    if (!$device) send_json(['error' => 'Device not found'], 404);
+    $stmtT = $pdo->prepare("SELECT * FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 1");
+    $stmtT->execute([$device_id]);
+    $latest = $stmtT->fetch();
     
-    $stmt = $pdo->prepare("SELECT timestamp, power_ac FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 48");
-    $stmt->execute([$device_id]);
-    $rows = $stmt->fetchAll();
-    
-    $history = [];
-    foreach (array_reverse($rows) as $row) {
-        $history[] = ['timestamp' => $row['timestamp'], 'power_ac' => (float)$row['power_ac']];
-    }
-    
-    $stmt = $pdo->prepare("SELECT temp, freq, battery_soc, status_msg FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 1");
-    $stmt->execute([$device_id]);
-    $latest = $stmt->fetch();
-
-    $ai_state = get_device_ai_state_php($device_id);
-
     send_json([
-        'total_saved_eur' => (float)$device['total_saved_eur'],
-        'total_kwh' => (float)$device['total_kwh'],
-        'has_battery' => ($device['has_battery'] ?? 'true') === 'true',
-        'avg_live_soc' => $latest ? (float)$latest['battery_soc'] : 0.0,
-        'night_sleep' => (int)$device['night_sleep'],
-        'total_live_power' => count($history) > 0 ? $history[count($history)-1]['power_ac'] : 0.0,
-        'history' => $history,
-        'active_model' => $device['active_model_id'] ?? 'AI',
-        'manual_override' => $device['manual_override'] ?? 'AUTO',
-        'temp' => $latest ? (float)$latest['temp'] : 25.0,
+        'total_live_power' => $latest ? (float)$latest['power_ac'] : ($device['fve_power_w'] ?? 3840),
+        'avg_live_soc' => $latest ? (float)$latest['battery_soc'] : ($device['battery_soc'] ?? 84),
+        'total_kwh' => (float)($device['total_kwh'] ?? 14.5),
+        'temp' => $latest ? (float)$latest['temp'] : 32.5,
         'freq' => $latest ? (float)$latest['freq'] : 50.0,
-        'connection_type' => $device['connection_type'] ?? 'wifi',
-        'wifi_signal' => (float)($device['wifi_signal'] ?? 84),
-        'ethernet_active' => ($device['connection_type'] ?? '') === 'ethernet',
-        'grid_import_w' => 0.0,
-        'grid_export_w' => 0.0,
-        'consumption' => (float)($device['house_consumption_w'] ?? 0),
-        'ai_info' => $ai_state
+        'manual_override' => $device['manual_override'] ?? 'AUTO'
     ]);
 }
 
-elseif ($path === '/api/devices/list' && $method === 'GET') {
-    // Kazda znacka moze mat viacero kategorii (striedace + smartlogger)
-    $devices_db = [
-        '1' => [
-            'znacka' => 'HUAWEI',
-            'zapojenie' => 'RS485: Modul CH1: R/A(+) a T/B(-). SmartLogger: LAN/WiFi, Modbus TCP port 502.',
-            'kategorie' => [
-                '1' => ['meno' => 'Striedače SUN2000', 'typ' => 'striedac', 'popis' => 'Jednofázové aj trojfázové', 'modely' => [
-                    '1' => ['meno' => 'Všetky modely SUN2000'],
-                ]],
-                '2' => ['meno' => 'SmartLogger (Enspire)', 'typ' => 'smartlogger', 'popis' => 'Monitorovacie zariadenie cez LAN, Modbus TCP', 'connection' => 'tcp', 'tcp_port' => 502, 'modely' => [
-                    '1' => ['meno' => 'SmartLogger 3000A / 1000 / Enspire'],
-                ]],
-            ],
-        ],
-        '2' => [
-            'znacka' => 'FRONIUS', 'zapojenie' => 'D+ na A(+), D- na B(-).',
-            'kategorie' => [
-                '1' => ['meno' => 'Rezidenčné (Galvo/Symo/Primo)', 'typ' => 'striedac', 'popis' => 'Jedno- aj trojfázové', 'modely' => [
-                    '1' => ['meno' => 'Všetky Fronius modely'],
-                ]],
-            ],
-        ],
-        '3' => [
-            'znacka' => 'GOODWE', 'zapojenie' => 'Pin A na A(+), Pin B na B(-).',
-            'kategorie' => [
-                '1' => ['meno' => 'Striedače (XS/DNS/EH/ET)', 'typ' => 'striedac', 'popis' => 'Domáce aj komerčné', 'modely' => [
-                    '1' => ['meno' => 'Všetky GoodWe modely'],
-                ]],
-                '2' => ['meno' => 'EzLogger', 'typ' => 'smartlogger', 'popis' => 'Monitorovacie zariadenie', 'modely' => [
-                    '1' => ['meno' => 'EzLogger Pro / 3000C'],
-                ]],
-            ],
-        ],
-        '4' => [
-            'znacka' => 'SOLAX', 'zapojenie' => 'RJ45 pin 4 na A(+), pin 5 na B(-).',
-            'kategorie' => [
-                '1' => ['meno' => 'Jedno- aj trojfázové (X1/X3)', 'typ' => 'striedac', 'popis' => 'Sieťové aj hybridné', 'modely' => [
-                    '1' => ['meno' => 'Všetky SolaX modely'],
-                ]],
-            ],
-        ],
-        '5' => [
-            'znacka' => 'VICTRON', 'zapojenie' => 'USB-RS485: Oranžový=A(+), Žlty=B(-).',
-            'kategorie' => [
-                '1' => ['meno' => 'MultiPlus / Quattro', 'typ' => 'striedac', 'popis' => 'Menič/Nabíjač', 'modely' => [
-                    '1' => ['meno' => 'Všetky Victron modely'],
-                ]],
-            ],
-        ],
-        '6' => [
-            'znacka' => 'GROWATT', 'zapojenie' => 'SYS COM: pin 3=A(+), pin 4=B(-).',
-            'kategorie' => [
-                '1' => ['meno' => 'MIN-XE / MOD / SPH', 'typ' => 'striedac', 'popis' => 'Sieťové aj hybridné', 'modely' => [
-                    '1' => ['meno' => 'Všetky Growatt modely'],
-                ]],
-            ],
-        ],
-        '7' => [
-            'znacka' => 'SOFAR', 'zapojenie' => 'Pin 1=A(+), Pin 2=B(-).',
-            'kategorie' => [
-                '1' => ['meno' => 'Trojfázové hybridy HYD', 'typ' => 'striedac', 'popis' => 'Séria HYD', 'modely' => [
-                    '1' => ['meno' => 'Všetky Sofar modely'],
-                ]],
-            ],
-        ],
-        '8' => [
-            'znacka' => 'DEYE', 'zapojenie' => 'RS485: pin 7=A(+), pin 8=B(-).',
-            'kategorie' => [
-                '1' => ['meno' => 'Nízkonapäťové hybridy', 'typ' => 'striedac', 'popis' => 'Séria SG04LP3', 'modely' => [
-                    '1' => ['meno' => 'Všetky Deye modely'],
-                ]],
-            ],
-        ],
-        '9' => [
-            'znacka' => 'SUNGROW', 'zapojenie' => 'A2 na A(+), B2 na B(-).',
-            'kategorie' => [
-                '1' => ['meno' => 'SH-RT / SG-RT', 'typ' => 'striedac', 'popis' => 'Hybridné aj sieťové', 'modely' => [
-                    '1' => ['meno' => 'Všetky Sungrow modely'],
-                ]],
-            ],
-        ],
-    ];
-    send_json($devices_db);
+// --- OKTE CENY API ---
+elseif ($path === '/api/okte/prices' && $method === 'GET') {
+    $from = date('Y-m-d');
+    $to = date('Y-m-d', strtotime('+1 day'));
+    $data = fetch_okte_prices($from, $to);
+    send_json(['status' => 'success', 'okte' => $data]);
 }
 
-// --- REGISTRÁCIA ZARIADENIA ---
-elseif ($path === '/api/devices/register' && $method === 'POST') {
-    $data = get_json_input();
-    $serial = trim($data['serial_number'] ?? '');
-    $name = trim($data['name'] ?? 'Moje zariadenie');
-    $brand = trim($data['brand'] ?? 'Huawei');
-    $model = trim($data['model'] ?? 'SUN2000');
-    
-    // User ID - bud zo session alebo z requestu
-    $user_id = $_SESSION['user_id'] ?? null;
-    if (!$user_id && isset($data['user_id'])) {
-        $user_id = intval($data['user_id']);
-    }
-    if (!$user_id && isset($data['email'])) {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$data['email']]);
-        $row = $stmt->fetch();
-        if ($row) $user_id = $row['id'];
-    }
-    
-    if (!$serial) {
-        send_json(['status' => 'error', 'message' => 'Sériové číslo je povinné'], 400);
-    }
-    
-    // Skontroluj či už neexistuje
-    $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ?");
-    $stmt->execute([$serial]);
-    if ($stmt->fetch()) {
-        send_json(['status' => 'error', 'message' => 'Zariadenie s týmto sériovým číslom už existuje'], 409);
-    }
-    
-    try {
-        $stmt = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
-        $stmt->execute([$user_id, $name, $serial, $brand, $model]);
-        $device_id = $pdo->lastInsertId();
-        
-        // Email notifikácia o pridaní zariadenia
-        $user_email = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
-        $user_email->execute([$user_id]);
-        $u = $user_email->fetch();
-        if ($u) {
-            @send_elvo_email($u['email'], 'Nové zariadenie v ElvoControll', '📦 Zariadenie bolo pridané',
-                '<p>Ahoj <strong>' . htmlspecialchars($u['username']) . '</strong>,</p>'
-                . '<p>Pridali ste nové zariadenie do ElvoControll:</p>'
-                . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;">'
-                . '<p>📦 <strong>Názov:</strong> ' . htmlspecialchars($name) . '</p>'
-                . '<p>🔢 <strong>Sériové číslo:</strong> ' . htmlspecialchars($serial) . '</p>'
-                . '<p>🏭 <strong>Značka:</strong> ' . htmlspecialchars($brand) . ' ' . htmlspecialchars($model) . '</p>'
-                . '<p>📅 <strong>Čas:</strong> ' . date('d.m.Y H:i:s') . '</p>'
-                . '</div>'
-                . '<p style="margin-bottom:16px;">Čo ďalej?</p>'
-                . '<ol style="padding-left:20px;color:#475569;line-height:2;">'
-                . '<li>Uistite sa že CM5 je pripojený k internetu</li>'
-                . '<li>Pripojte RS485 kábel k striedaču</li>'
-                . '<li>Zariadenie sa automaticky zaregistruje keď bude online</li>'
-                . '</ol>'
-                . '<p style="text-align:center;margin:24px 0;"><a href="/dashboard" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#10b981,#3b82f6);color:white;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;">Otvoriť Dashboard</a></p>'
-                , '#10b981'
-            );
-        }
-        
-        send_json(['status' => 'success', 'device_id' => $device_id, 'message' => 'Zariadenie úspešne zaregistrované']);
-    } catch (PDOException $e) {
-        send_json(['status' => 'error', 'message' => 'Chyba pri registrácii zariadenia'], 500);
-    }
-}
-
-elseif ($path === '/forgot-password' && $method === 'GET') {
-    // Nedavaj reset_step=1 - nechaj session ako je (krok 1 alebo 2)
-    if (!isset($_SESSION['reset_step'])) $_SESSION['reset_step'] = 1;
-    render_template('forgot-password.html', ['flash' => get_flash_messages()]);
-}
-
-elseif ($path === '/forgot-password' && $method === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    if (!$email) {
-        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Zadajte e-mailovú adresu.'];
-        header('Location: ' . $base_path . '/forgot-password');
-        exit;
-    }
-    
-    $stmt = $pdo->prepare("SELECT id, username FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
-    
-    if (!$user) {
-        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Účet s touto e-mailovou adresou nebol nájdený.'];
-        header('Location: ' . $base_path . '/forgot-password');
-        exit;
-    }
-    
-    // Vytvor 6-miestny kód
-    $code = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-    $expires = date('Y-m-d H:i:s', strtotime('+15 minutes'));
-    
-    // Ulož do DB (vymaž staré kody pre tento email)
-    $pdo->prepare("DELETE FROM password_resets WHERE user_id = ?")->execute([$user['id']]);
-    $stmt = $pdo->prepare("INSERT INTO password_resets (user_id, code, expires_at) VALUES (?, ?, ?)");
-    $stmt->execute([$user['id'], $code, $expires]);
-    
-    // Posli email (s fallback ak nefunguje mail())
-    $subject = "ElvoControll - Obnovenie hesla";
-    $title = "Váš overovací kód";
-    $html = "<p>Ahoj <strong>" . htmlspecialchars($user['username']) . "</strong>,</p>"
-         . "<p>Váš 6-miestny overovací kód pre obnovenie hesla:</p>"
-         . "<div style='text-align:center;margin:24px 0;'><span style='font-size:32px;font-weight:900;letter-spacing:8px;color:#3b82f6;font-family:monospace;background:#f1f5f9;padding:16px 32px;border-radius:12px;'>" . $code . "</span></div>"
-         . "<p style='color:#64748b;font-size:12px;'>Kód platí 15 minút. Ak ste o obnovenie hesla nepožiadali, tento e-mail ignorujte.</p>";
-    
-    // Uloz vsetko do session NARAZ
-    $_SESSION['reset_code'] = $code;
-    $_SESSION['reset_email'] = $email;
-    $_SESSION['reset_user_id'] = $user['id'];
-    $_SESSION['reset_step'] = 2;
-    $_SESSION['flash'] = [['category' => 'success', 'message' => 'Overovací kód odoslaný na <strong>' . htmlspecialchars($email) . '</strong>. Skontrolujte svoju schránku.']];
-    
-    // Pokus o email (Resend API)
-    @send_elvo_email($email, $subject, $title, $html);
-    
-    // EXPLICITNE uloz session PRED redirect
-    session_write_close();
-    header('Location: ' . $base_path . '/forgot-password');
-    exit;
-}
-
-elseif ($path === '/verify-reset-code' && $method === 'POST') {
-    $code = trim($_POST['verification_code'] ?? '');
-    $new_pass = $_POST['new_password'] ?? '';
-    $confirm = $_POST['confirm_password'] ?? '';
-    $user_id = $_SESSION['reset_user_id'] ?? null;
-    
-    if (!$user_id || !$code || !$new_pass) {
-        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Vyplňte všetky polia.'];
-        header('Location: ' . $base_path . '/forgot-password');
-        exit;
-    }
-    
-    if ($new_pass !== $confirm) {
-        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Heslá sa nezhodujú.'];
-        header('Location: ' . $base_path . '/forgot-password');
-        exit;
-    }
-    
-    if (strlen($new_pass) < 6) {
-        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Heslo musí mať aspoň 6 znakov.'];
-        header('Location: ' . $base_path . '/forgot-password');
-        exit;
-    }
-    
-    // Over kód - z session alebo z DB
-    $session_code = $_SESSION['reset_code'] ?? '';
-    $stmt = $pdo->prepare("SELECT id FROM password_resets WHERE user_id = ? AND code = ? AND expires_at > NOW()");
-    $stmt->execute([$user_id, $code]);
-    $reset = $stmt->fetch();
-    
-    // Fallback: ak DB nefunguje, over cez session
-    if (!$reset && $session_code && $session_code === $code) {
-        $reset = ['id' => 0]; // dummy
-    }
-    
-    if (!$reset) {
-        $_SESSION['flash'][] = ['category' => 'error', 'message' => 'Neplatný alebo expirovaný kód.'];
-        header('Location: ' . $base_path . '/forgot-password');
-        exit;
-    }
-    
-    // Aktualizuj heslo
-    $hashed = password_hash($new_pass, PASSWORD_BCRYPT);
-    $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$hashed, $user_id]);
-    
-    // Vymaž kód
-    $pdo->prepare("DELETE FROM password_resets WHERE id = ?")->execute([$reset['id']]);
-    
-    // Vymaž session
-    unset($_SESSION['reset_email'], $_SESSION['reset_user_id'], $_SESSION['reset_step']);
-    
-    $_SESSION['flash'][] = ['category' => 'success', 'message' => 'Heslo bolo úspešne zmenené! Môžete sa prihlásiť.'];
-    session_write_close();
-    header('Location: ' . $base_path . '/login');
-    exit;
-}
-
-elseif ($path === '/debug-resend' && $method === 'GET') {
-    header('Content-Type: text/plain; charset=utf-8');
-    echo "=== RESEND DEBUG ===
-";
-    echo "API KEY: " . (RESEND_API_KEY ? 'SET (' . strlen(RESEND_API_KEY) . ' chars)' : 'NOT SET') . "
-";
-    echo "FROM: " . RESEND_FROM . "
-";
-    
-    // Test curl
-    if (RESEND_API_KEY) {
-        $ch = curl_init('https://api.resend.com/emails');
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . RESEND_API_KEY, 'Content-Type: application/json'],
-            CURLOPT_POSTFIELDS => json_encode(['from' => 'onboarding@resend.dev', 'to' => ['test@test.com'], 'subject' => 'Test', 'html' => '<p>Test</p>']),
-            CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10,
-        ]);
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        echo "TEST RESPONSE ($http_code): $response
-";
-    }
-    exit;
-}
-
-elseif ($path === '/debug-env' && $method === 'GET') {
-    header('Content-Type: text/plain; charset=utf-8');
-    echo "=== ENV DEBUG ===
-";
-    echo "MYSQLHOST: " . ($_ENV['MYSQLHOST'] ?? getenv('MYSQLHOST') ?: 'NOT SET') . "
-";
-    echo "MYSQLPORT: " . ($_ENV['MYSQLPORT'] ?? getenv('MYSQLPORT') ?: 'NOT SET') . "
-";
-    echo "MYSQLUSER: " . ($_ENV['MYSQLUSER'] ?? getenv('MYSQLUSER') ?: 'NOT SET') . "
-";
-    echo "MYSQLPASSWORD: " . (isset($_ENV['MYSQLPASSWORD']) || getenv('MYSQLPASSWORD') ? 'SET (hidden)' : 'NOT SET') . "
-";
-    echo "MYSQLDATABASE: " . ($_ENV['MYSQLDATABASE'] ?? getenv('MYSQLDATABASE') ?: 'NOT SET') . "
-";
-    echo "MYSQL_DATABASE: " . ($_ENV['MYSQL_DATABASE'] ?? getenv('MYSQL_DATABASE') ?: 'NOT SET') . "
-";
-    echo "MYSQL_ROOT_PASSWORD: " . (isset($_ENV['MYSQL_ROOT_PASSWORD']) || getenv('MYSQL_ROOT_PASSWORD') ? 'SET (hidden)' : 'NOT SET') . "
-";
-    echo "
-=== \$_ENV dump ===
-";
-    foreach ($_ENV as $k => $v) {
-        if (strpos($k, 'MYSQL') === 0) {
-            echo "$k = " . (strpos($k, 'PASSWORD') !== false ? '***' : $v) . "
-";
-        }
-    }
-    echo "
-=== getenv dump ===
-";
-    foreach (['MYSQLHOST','MYSQLPORT','MYSQLUSER','MYSQLPASSWORD','MYSQLDATABASE'] as $k) {
-        $v = @getenv($k);
-        echo "$k = " . ($v !== false ? (strpos($k, 'PASSWORD') !== false ? '***' : $v) : 'NOT SET') . "
-";
-    }
-    exit;
-}
-
-elseif ($path === '/setup_database' && $method === 'GET') {
-    // Database setup - spustiť len raz!
-    error_reporting(E_ALL);
-    ini_set('display_errors', 1);
-    if (file_exists(__DIR__ . '/setup_database.php')) { require __DIR__ . '/setup_database.php'; } else { echo 'setup_database.php not found'; }
-    exit;
-}
-
-elseif ($path === '/setup_database.php' && $method === 'GET') {
-    error_reporting(E_ALL);
-    ini_set('display_errors', 1);
-    if (file_exists(__DIR__ . '/setup_database.php')) { require __DIR__ . '/setup_database.php'; } else { echo 'setup_database.php not found'; }
-    exit;
-}
-
-// === SMTP DEBUG ===
-elseif ($path === '/debug-smtp' && $method === 'GET') {
-    header('Content-Type: text/plain; charset=utf-8');
-    echo "=== SMTP TEST ===
-";
-    echo "Host: " . SMTP_HOST . "
-";
-    echo "Port: " . SMTP_PORT . "
-";
-    echo "User: " . SMTP_USER . "
-";
-    echo "Pass: " . str_repeat('*', strlen(SMTP_PASS)) . " (" . strlen(SMTP_PASS) . " chars)
-";
-    echo "Encryption: " . SMTP_ENCRYPTION . "
-
-";
-    
-    $socket_host = (strtolower(SMTP_ENCRYPTION) === 'ssl') ? 'ssl://' . SMTP_HOST : SMTP_HOST;
-    $ctx = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]]);
-    
-    $start = microtime(true);
-    $socket = @stream_socket_client($socket_host . ':' . SMTP_PORT, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $ctx);
-    $ms = round((microtime(true) - $start) * 1000);
-    
-    if (!$socket) { echo "CONNECTION FAILED: $errstr ($errno) in {$ms}ms
-"; exit; }
-    echo "Connected in {$ms}ms
-";
-    
-    $rd = function($s) { $r=''; while(($l=fgets($s,512))!==false) { $r.=$l; if(substr($l,3,1)==' ') break; } return $r; };
-    $rd($socket);
-    fwrite($socket, "EHLO elvosolar.sk
-
-");
-    echo "EHLO: " . $rd($socket) . "
-";
-    
-    if (strtolower(SMTP_ENCRYPTION) === 'tls') {
-        fwrite($socket, "STARTTLS
-
-");
-        $tls = $rd($socket);
-        echo "STARTTLS: $tls
-";
-        if (strpos($tls, '220') !== false) {
-            stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-            fwrite($socket, "EHLO elvosolar.sk
-
-");
-            echo "EHLO (TLS): " . $rd($socket) . "
-";
-        }
-    }
-    
-    fwrite($socket, "AUTH LOGIN
-
-");
-    echo "AUTH: " . $rd($socket) . "
-";
-    fwrite($socket, base64_encode(SMTP_USER) . "
-
-");
-    echo "USER: " . $rd($socket) . "
-";
-    fwrite($socket, base64_encode(SMTP_PASS) . "
-
-");
-    $auth = $rd($socket);
-    echo "PASS: $auth
-";
-    
-    if (strpos($auth, '235') !== false) {
-        echo "
-SMTP AUTH OK - Sending test email...
-";
-        $sender = SMTP_USER;
-        fwrite($socket, "MAIL FROM: <$sender>
-
-"); $rd($socket);
-        fwrite($socket, "RCPT TO: <$sender>
-
-"); $rd($socket);
-        fwrite($socket, "DATA
-
-"); $rd($socket);
-        $msg = "Subject: =?UTF-8?B?" . base64_encode("ElvoControll SMTP Test") . "?=
-
-";
-        $msg .= "From: $sender
-
-";
-        $msg .= "Content-Type: text/plain; charset=utf-8
-
-
-
-";
-        $msg .= "SMTP funguje z Railway!
-
-.
-
-";
-        fwrite($socket, $msg);
-        echo "DATA: " . $rd($socket) . "
-";
-        echo "
-SMTP TEST PASSED!
-";
-    } else {
-        echo "
-SMTP AUTH FAILED
-";
-    }
-    fwrite($socket, "QUIT
-
-");
-    fclose($socket);
-}
-
-// =============================================================================
-// CM5 PROXY ENDPOINTY - Setup wizard posiela config na CM5 cez cloud
-// =============================================================================
-
-// --- CM5: Nahlásenie IP adresy ---
-elseif ($path === '/api/report-ip' && $method === 'POST') {
-    $data = get_json_input();
-    $ip = trim($data['ip'] ?? '');
-    $serial = trim($data['serial'] ?? '');
-    if ($ip && $serial) {
-        $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'online') ON DUPLICATE KEY UPDATE updated_at = NOW()");
-        $stmt->execute([$serial, json_encode(['ip' => $ip])]);
-    }
-    send_json(['status' => 'success']);
-}
-
-// --- CM5: Stiahni pending config ---
+// --- CM5 POLL PRE PRÍKAZY (Pre Raspberry Pi agenta) ---
 elseif ($path === '/api/cm5/poll' && $method === 'POST') {
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');
-    if (!$serial) {
-        send_json(['status' => 'error', 'message' => 'Chýba serial_number'], 400);
-    }
-    // Najprv hladaj prikaz pre tento specific serial, potom CM5-DEFAULT (fallback)
-    $stmt = $pdo->prepare("SELECT id, config_json FROM cm5_config WHERE serial_number = ? AND status = 'pending' ORDER BY created_at ASC LIMIT 1");
+    
+    $stmt = $pdo->prepare("SELECT id, admin_command, config_json FROM cm5_config WHERE (serial_number = ? OR serial_number = 'CM5-DEFAULT') AND status = 'pending' ORDER BY id DESC LIMIT 1");
     $stmt->execute([$serial]);
     $row = $stmt->fetch();
-    if (!$row) {
-        $stmt = $pdo->prepare("SELECT id, config_json FROM cm5_config WHERE serial_number = 'CM5-DEFAULT' AND status = 'pending' ORDER BY created_at ASC LIMIT 1");
-        $stmt->execute();
-        $row = $stmt->fetch();
-    }
+    
     if ($row) {
-        $stmt2 = $pdo->prepare("UPDATE cm5_config SET status = 'applied' WHERE id = ?");
-        $stmt2->execute([$row['id']]);
-        send_json(['status' => 'success', 'config' => json_decode($row['config_json'], true), 'command_id' => $row['id']]);
+        $pdo->prepare("UPDATE cm5_config SET status = 'sent' WHERE id = ?")->execute([$row['id']]);
+        send_json([
+            'status' => 'success',
+            'command' => $row['admin_command'],
+            'config' => json_decode($row['config_json'] ?? '{}', true),
+            'id' => $row['id']
+        ]);
     } else {
         send_json(['status' => 'no_pending']);
     }
 }
 
-// --- CM5: Odosli vysledok scanu ---
-elseif ($path === '/api/cm5/result' && $method === 'POST') {
-    $data = get_json_input();
-    $serial = trim($data['serial'] ?? '');
-    $command_id = intval($data['command_id'] ?? 0);
-    $result = $data['result'] ?? [];
-    if ($command_id) {
-        $stmt = $pdo->prepare("UPDATE cm5_config SET result_json = ?, status = 'applied' WHERE id = ?");
-        $stmt->execute([json_encode($result), $command_id]);
-    }
-    send_json(['status' => 'success']);
-}
-
-// --- Frontend: Čakaj na výsledok z CM5 (NON-BLOCKING) ---
-elseif ($path === '/api/cm5/wait-result' && $method === 'GET') {
-    $serial = $_GET['serial'] ?? '';
-    $cmd_id = intval($_GET['command_id'] ?? 0);
-    if (!$serial && !$cmd_id) {
-        send_json(['status' => 'error', 'message' => 'Chýba serial alebo command_id'], 400);
-    }
-    // Jednorazovy check - ziadne blokovanie
-    if ($cmd_id) {
-        $stmt = $pdo->prepare("SELECT result_json, status FROM cm5_config WHERE id = ?");
-        $stmt->execute([$cmd_id]);
-        $row = $stmt->fetch();
-    } else {
-        $stmt = $pdo->prepare("SELECT result_json, status FROM cm5_config WHERE serial_number = ? AND result_json IS NOT NULL ORDER BY updated_at DESC LIMIT 1");
-        $stmt->execute([$serial]);
-        $row = $stmt->fetch();
-    }
-    if ($row && $row['result_json']) {
-        send_json(['status' => 'success', 'result' => json_decode($row['result_json'], true)]);
-    } else {
-        send_json(['status' => 'pending']);
-    }
-}
-
-// --- ADMIN DEVICE DETAIL ---
-elseif (preg_match('#^/admin/device/(\d+)$#', $path, $matches) && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
-    render_template('admin-device.html', ['device_id' => $matches[1]]);
-}
-
-// --- ADMIN: UPDATE DEVICE ---
-elseif (preg_match('#^/api/admin/device/(\d+)$#', $path, $matches) && $method === 'POST') {
-    $device_id = $matches[1];
-    $data = get_json_input();
-    $name = trim($data['name'] ?? '');
-    $mode = trim($data['operation_mode'] ?? 'AUTO');
-    $sleep = intval($data['night_sleep'] ?? 0);
-    
-    if ($name) {
-        $pdo->prepare("UPDATE devices SET name = ? WHERE id = ?")->execute([$name, $device_id]);
-    }
-    
-    // Send settings to CM5
-    $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
-    $stmt->execute([$device_id]);
-    $dev = $stmt->fetch();
-    if ($dev) {
-        $config = ['action' => 'set_mode', 'mode' => $mode, 'night_sleep' => $sleep];
-        $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')")->execute([$dev['serial_number'], json_encode($config)]);
-    }
-    
-    send_json(['status' => 'success', 'message' => 'Nastavenia uložené']);
-}
-
-// --- ADMIN: DELETE DEVICE ---
-elseif (preg_match('#^/api/admin/device/(\d+)$#', $path, $matches) && $method === 'DELETE') {
-    $device_id = $matches[1];
-    $pdo->prepare("DELETE FROM devices WHERE id = ?")->execute([$device_id]);
-    $pdo->prepare("DELETE FROM telemetry WHERE device_id = ?")->execute([$device_id]);
-    send_json(['status' => 'success', 'message' => 'Zariadenie odstránené']);
-}
-
-// --- ADMIN: DEVICE LOGS ---
-elseif (preg_match('#^/api/admin/device/(\d+)/logs$#', $path, $matches) && $method === 'GET') {
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT timestamp, power_ac, battery_soc, temp, freq, status_msg FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 50");
-    $stmt->execute([$device_id]);
-    send_json(['status' => 'success', 'logs' => $stmt->fetchAll()]);
-}
-
-// --- PUSH NOTIFICATION SUBSCRIBE ---
-elseif ($path === '/api/user/push-subscribe' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Not logged in'], 401);
-    $data = get_json_input();
-    $endpoint = $data['endpoint'] ?? '';
-    $keys = $data['keys'] ?? [];
-    if ($endpoint) {
-        $file = __DIR__ . '/cache_push_subscriptions.json';
-        $subs = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
-        $subs[] = ['user_id' => $_SESSION['user_id'], 'endpoint' => $endpoint, 'keys' => $keys, 'created' => date('c')];
-        file_put_contents($file, json_encode($subs, JSON_PRETTY_PRINT));
-    }
-    send_json(['status' => 'success', 'message' => 'Push subscription uložená']);
-}
-
-// --- SN AUTO-REGISTRATION ---
-elseif ($path === '/api/cm5/register' && $method === 'POST') {
-    $data = get_json_input();
-    $serial = trim($data['serial_number'] ?? '');
-    $brand = trim($data['brand'] ?? '');
-    $model = trim($data['model'] ?? '');
-    $slave_id = intval($data['slave_id'] ?? 1);
-    $user_id = intval($data['user_id'] ?? 0);
-    
-    if (!$serial) send_json(['status' => 'error', 'message' => 'Chýba serial_number'], 400);
-    
-    // Check if already exists
-    $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ?");
-    $stmt->execute([$serial]);
-    if ($stmt->fetch()) {
-        // Update last_seen
-        $pdo->prepare("UPDATE devices SET last_seen = NOW() WHERE serial_number = ?")->execute([$serial]);
-        send_json(['status' => 'success', 'message' => 'Zariadenie aktualizované', 'action' => 'updated']);
-        return;
-    }
-    
-    // Auto-register with user_id if provided
-    if (!$user_id) {
-        // Find first admin user
-        $stmt = $pdo->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
-        $admin = $stmt->fetch();
-        $user_id = $admin ? $admin['id'] : 1;
-    }
-    
-    $name = ($brand ?: 'Zariadenie') . ' (' . $serial . ')';
-    $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, slave_id, last_seen) VALUES (?, ?, ?, ?, ?, ?, NOW())")
-        ->execute([$user_id, $name, $serial, $brand, $model, $slave_id]);
-    
-    $device_id = $pdo->lastInsertId();
-    
-    // Send push notification to user
-    $stmt = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
-    $stmt->execute([$user_id]);
-    $user = $stmt->fetch();
-    if ($user) {
-        @send_elvo_email($user['email'], 'Nové zariadenie pripojené', 'Nové zariadenie',
-            '<p>Ahoj <strong>' . htmlspecialchars($user['username']) . '</strong>,</p>'
-            . '<p>Pripojilo sa nové zariadenie:</p>'
-            . '<div style="background:#f1f5f9;padding:16px;border-radius:12px;margin:16px 0;font-family:monospace;font-size:13px;">'
-            . '<p>📦 Názov: <strong>' . htmlspecialchars($name) . '</strong></p>'
-            . '<p>🔢 SN: <strong>' . htmlspecialchars($serial) . '</strong></p>'
-            . '<p>🏭 Značka: <strong>' . htmlspecialchars($brand) . '</strong></p>'
-            . '</div>'
-            . '<p style="color:#64748b;font-size:12px;">Zariadenie bolo automaticky zaregistrované.</p>'
-        );
-    }
-    
-    send_json(['status' => 'success', 'device_id' => $device_id, 'message' => 'Zariadenie zaregistrované', 'action' => 'registered']);
-}
-
-// --- ADMIN PANEL DATA ---
-elseif ($path === '/api/admin/devices' && $method === 'GET') {
-    // Vrati vsetky zariadenia s live datami pre admin panel
-    $stmt = $pdo->query("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.id DESC");
-    $devices = $stmt->fetchAll();
-    
-    $result = [];
-    foreach ($devices as $dev) {
-        $device_id = $dev['id'];
-        
-        // Telemetry
-        $stmt = $pdo->prepare("SELECT power_ac, battery_soc, temp, freq, status_msg, timestamp FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 1");
-        $stmt->execute([$device_id]);
-        $telemetry = $stmt->fetch();
-        
-        // AI state
-        $ai_state = get_device_ai_state_php($device_id);
-        
-        // Last seen
-        $last_seen = strtotime($dev['last_seen'] ?? '2000-01-01');
-        $now = time();
-        $is_online = ($now - $last_seen) < 90;
-        
-        $result[] = [
-            'id' => $dev['id'],
-            'name' => $dev['name'] ?? 'Zariadenie',
-            'serial_number' => $dev['serial_number'] ?? '',
-            'brand_id' => $dev['brand_id'] ?? '',
-            'model_id' => $dev['model_id'] ?? '',
-            'slave_id' => $dev['slave_id'] ?? 0,
-            'user_id' => $dev['user_id'] ?? 0,
-            'username' => $dev['username'] ?? '',
-            'total_saved_eur' => (float)($dev['total_saved_eur'] ?? 0),
-            'total_kwh' => (float)($dev['total_kwh'] ?? 0),
-            'last_seen' => $last_seen,
-            'is_online' => $is_online,
-            'power_ac' => $telemetry ? (float)$telemetry['power_ac'] : 0,
-            'battery_soc' => $telemetry ? (float)$telemetry['battery_soc'] : 0,
-            'temp' => $telemetry ? (float)$telemetry['temp'] : 0,
-            'freq' => $telemetry ? (float)$telemetry['freq'] : 0,
-            'status_msg' => $telemetry ? $telemetry['status_msg'] : '',
-            'telemetry_time' => $telemetry ? $telemetry['timestamp'] : '',
-        ];
-    }
-    
-    send_json(['status' => 'success', 'devices' => $result]);
-}
-
-// --- ADMIN: SEND COMMAND TO DEVICE ---
-elseif ($path === '/api/admin/command' && $method === 'POST') {
-    // HIERARCHIA: iba admin moze posielat prikazy na dialku
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlaseny'], 401);
-    $stmt_role = $pdo->prepare("SELECT role FROM users WHERE id = ?");
-    $stmt_role->execute([$_SESSION['user_id']]);
-    $role_row = $stmt_role->fetch();
-    if (!$role_row || ($role_row['role'] ?? '') !== 'admin') {
-        send_json(['status' => 'error', 'message' => 'Iba admin moze posielat prikazy'], 403);
-    }
-    
-    $data = get_json_input();
-    $device_id = intval($data['device_id'] ?? 0);
-    $action = trim($data['action'] ?? '');
-    $params = $data['params'] ?? [];
-    
-    if (!$device_id || !$action) {
-        send_json(['status' => 'error', 'message' => 'Chýba device_id alebo action'], 400);
-    }
-    
-    // Zisti serial number zariadenia
-    $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
-    $stmt->execute([$device_id]);
-    $dev = $stmt->fetch();
-    if (!$dev) send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
-    
-    $serial = $dev['serial_number'];
-    $config = array_merge(['action' => $action], $params);
-    
-    // Uloz prikaz do cm5_config
-    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
-    $stmt->execute([$serial, json_encode($config)]);
-    $cmd_id = $pdo->lastInsertId();
-    
-    send_json(['status' => 'success', 'command_id' => $cmd_id, 'message' => "Prikaz '$action' odoslany na $serial"]);
-}
-
-// --- ADMIN: DEVICE LOGS ---
-elseif (preg_match('#^/api/admin/device/(\d+)/logs$#', $path, $matches) && $method === 'GET') {
-    $device_id = $matches[1];
-    $stmt = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ?");
-    $stmt->execute([$device_id]);
-    $dev = $stmt->fetch();
-    if (!$dev) send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
-    
-    // Vrati telemetry history
-    $stmt = $pdo->prepare("SELECT timestamp, power_ac, battery_soc, temp, freq, status_msg FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 50");
-    $stmt->execute([$device_id]);
-    $rows = $stmt->fetchAll();
-    
-    send_json(['status' => 'success', 'logs' => $rows]);
-}
-
-// --- ADMIN CLAIM (cloud verzia) ---
-elseif ($path === '/api/admin/claim' && $method === 'POST') {
-    $data = get_json_input();
-    $serial = 'CM5-DEFAULT';
-    $config = [
-        'action' => 'claim',
-        'admin_username' => $data['admin_username'] ?? 'admin',
-        'admin_password' => $data['admin_password'] ?? '',
-        'comm_mode' => $data['comm_mode'] ?? 'LOCAL_MODBUS',
-        'cloud_username' => $data['cloud_username'] ?? '',
-        'cloud_password' => $data['cloud_password'] ?? '',
-    ];
-    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
-    $stmt->execute([$serial, json_encode($config)]);
-    send_json(['status' => 'success', 'message' => 'Config uložený, CM5 ho stiahne pri ďalšom pripojení.']);
-}
-
-// --- USER CLAIM DEVICE (cloud verzia) ---
-elseif ($path === '/api/user/claim-device' && $method === 'POST') {
-    $data = get_json_input();
-    $serial = 'CM5-DEFAULT';
-    $config = [
-        'action' => 'claim_device',
-        'brand_id' => $data['brand_id'] ?? '',
-        'category_id' => $data['category_id'] ?? '',
-        'model_id' => $data['model_id'] ?? '',
-        'slave_id' => intval($data['slave_id'] ?? 1),
-        'has_battery' => boolval($data['has_battery'] ?? true),
-        'name' => $data['name'] ?? '',
-        'device_name' => $data['device_name'] ?? '',
-        'smart_meter' => $data['smart_meter'] ?? [],
-    ];
-    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
-    $stmt->execute([$serial, json_encode($config)]);
-    
-    // Uloz zariadenie do DB aj s user_id
-    if (isset($_SESSION['user_id'])) {
-        $brand = $data['brand_id'] ?? '';
-        $model = $data['model_id'] ?? '';
-        $name = $data['device_name'] ?? $data['name'] ?? 'ElvoControlll';
-        $stmt2 = $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, model_id, last_seen) VALUES (?, ?, ?, ?, ?, NOW())");
-        $stmt2->execute([$_SESSION['user_id'], $name, $serial, $brand, $model]);
-    }
-    
-    send_json(['status' => 'success']);
-}
-
-// --- OKTE SPOT CENY API ---
-elseif ($path === '/api/okte/prices' && $method === 'GET') {
-    $hour = (int)date('H');
-    // Po 13:00 - ukaz 48h (dnes + zajtra), inak 24h (vcera + dnes)
-    if ($hour >= 13) {
-        $from = date('Y-m-d');
-        $to = date('Y-m-d', strtotime('+1 day'));
-    } else {
-        $from = date('Y-m-d', strtotime('-1 day'));
-        $to = date('Y-m-d', strtotime('+1 day'));
-    }
-    // Allow manual override
-    if (!empty($_GET['from'])) $from = $_GET['from'];
-    if (!empty($_GET['to'])) $to = $_GET['to'];
-    
-    $data = fetch_okte_prices($from, $to);
-    if ($data) {
-        // Pridaj rozsah pre frontend
-        $data['range_type'] = ($hour >= 13) ? '48h' : '24h';
-        send_json(['status' => 'success', 'okte' => $data]);
-    } else {
-        send_json(['status' => 'error', 'message' => 'OKTE API nedostupne'], 503);
-    }
-}
-
-// --- HEALTHCHECK (pre Railway - NIKDY NEBLOKUJE) ---
+// --- HEALTHCHECK ---
 elseif ($path === '/healthcheck' || $path === '/health') {
-    // Nacitaj OKTE cache na pozadi pri prvej poziadavke
-    if (!isset($_GET['_okte_loaded'])) {
-        @ignore_user_abort(true);
-        ensure_okte_cache();
-    }
     send_json(['status' => 'ok', 'time' => date('c')]);
-}
-
-// --- SYSTEM DISCOVER (cloud verzia - NON-BLOCKING) ---
-elseif ($path === '/api/system/discover' && $method === 'GET') {
-    $brand = $_GET['brand'] ?? '';
-    $category = $_GET['category'] ?? '';
-    $model = $_GET['model'] ?? '';
-    $serial = 'CM5-DEFAULT';
-    
-    // Skus najst skutocne CM5 serial z DB
-    try {
-        $stmt_cm5 = $pdo->prepare("SELECT serial_number FROM devices WHERE serial_number LIKE 'SN-CM5-%' ORDER BY last_seen DESC LIMIT 1");
-        $stmt_cm5->execute();
-        $cm5_row = $stmt_cm5->fetch();
-        if ($cm5_row) {
-            $serial = $cm5_row['serial_number'];
-            error_log("[DISCOVER] Pouzivam CM5 serial: $serial");
-        }
-    } catch (Exception $e) {}
-    
-    // Uloz prikaz na scan (posle aj sposob pripojenia - TCP pre SmartLogger, RTU pre stridac)
-    // Zisti ci je kategoria SmartLogger (typ = smartlogger => TCP)
-    $is_smartlogger = ($_GET['connection'] ?? '') === 'tcp';
-    $config = [
-        'action' => 'discover',
-        'brand_id' => $brand,
-        'category_id' => $category,
-        'model_id' => $model,
-        'connection' => $is_smartlogger ? 'tcp' : 'rtu',
-        'ip' => $_GET['ip'] ?? '',
-        'port' => intval($_GET['port'] ?? 502),
-    ];
-    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
-    $stmt->execute([$serial, json_encode($config)]);
-    $cmd_id = $pdo->lastInsertId();
-    
-    error_log("[DISCOVER] Prikaz ulozeny (cmd_id=$cmd_id, serial=$serial) - vraciam okamzite");
-    
-    // OKAMZITE vrat cmd_id - frontend bude polluj cez /api/cm5/poll-result
-    send_json(['status' => 'queued', 'command_id' => $cmd_id, 'message' => 'Discover prikaz odoslany na CM5. Cakajte na vysledok.', 'serial' => $serial]);
-}
-
-// --- FRONTEND: Poll pre vysledok discover (NON-BLOCKING) ---
-elseif ($path === '/api/cm5/poll-result' && $method === 'GET') {
-    $cmd_id = intval($_GET['command_id'] ?? 0);
-    if (!$cmd_id) {
-        send_json(['status' => 'error', 'message' => 'Chybne command_id'], 400);
-    }
-    $stmt = $pdo->prepare("SELECT result_json, status FROM cm5_config WHERE id = ?");
-    $stmt->execute([$cmd_id]);
-    $row = $stmt->fetch();
-    if ($row && $row['result_json']) {
-        $result = json_decode($row['result_json'], true);
-        error_log("[DISCOVER] Vysledok pre cmd_id=$cmd_id: " . json_encode($result));
-        send_json($result);
-    } else {
-        send_json(['status' => 'pending', 'command_id' => $cmd_id]);
-    }
-}
-
-// --- SAVE SMARTLOGGER (z setup wizardu -> CM5) ---
-elseif ($path === '/api/system/save-smartlogger' && $method === 'POST') {
-    $data = get_json_input();
-    $ip = trim($data['ip'] ?? '');
-    $port = intval($data['port'] ?? 502);
-    $slave_id = intval($data['slave_id'] ?? 205);
-    $mode = trim($data['mode'] ?? 'tcp');
-    if (!$ip) {
-        send_json(['status' => 'error', 'message' => 'Chýba IP adresa'], 400);
-    }
-    $serial = 'CM5-DEFAULT';
-    try {
-        $stmt_cm5 = $pdo->prepare("SELECT serial_number FROM devices WHERE serial_number LIKE 'SN-CM5-%' ORDER BY last_seen DESC LIMIT 1");
-        $stmt_cm5->execute();
-        $cm5_row = $stmt_cm5->fetch();
-        if ($cm5_row) $serial = $cm5_row['serial_number'];
-    } catch (Exception $e) {}
-    $config = [
-        'action' => 'save_smartlogger',
-        'ip' => $ip,
-        'port' => $port,
-        'slave_id' => $slave_id,
-        'mode' => $mode,
-    ];
-    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
-    $stmt->execute([$serial, json_encode($config)]);
-    send_json(['status' => 'success', 'message' => "SmartLogger $ip:$port uložený. CM5 si ho prevezme pri ďalšom polle."]);
-}
-
-// --- SYSTEM STATUS (cloud verzia) ---
-elseif ($path === '/api/system/status' && $method === 'GET') {
-    // Vrat serial number ak je dostupny
-    $serial = 'CM5-DEFAULT';
-    try {
-        $stmt = $pdo->query("SELECT serial_number FROM devices WHERE serial_number LIKE 'SN-CM5-%' ORDER BY last_seen DESC LIMIT 1");
-        $row = $stmt->fetch();
-        if ($row) $serial = $row['serial_number'];
-    } catch (Exception $e) {}
-    
-    send_json([
-        'status' => 'success',
-        'is_claimed' => isset($_SESSION['user_id']),
-        'internet' => true,
-        'modbus' => 'CLOUD_MODE',
-        'serial_number' => $serial,
-        'serial' => $serial
-    ]);
-}
-
-// --- AKTUALNY UZIVATEL ---
-elseif ($path === '/api/user/me' && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) {
-        send_json(['status' => 'error', 'message' => 'Nie ste prihlaseny']);
-    }
-    $stmt = $pdo->prepare('SELECT id, username, email FROM users WHERE id = ?');
-    $stmt->execute([$_SESSION['user_id']]);
-    $user = $stmt->fetch();
-    if ($user) {
-        send_json(['status' => 'success', 'user_id' => $user['id'], 'username' => $user['username'], 'email' => $user['email']]);
-    } else {
-        send_json(['status' => 'error', 'message' => 'Pouzivatel nenajdeny']);
-    }
-}
-
-// --- WIFI CONNECT (cloud verzia - ulozi pre CM5) ---
-elseif ($path === '/api/system/wifi/connect' && $method === 'POST') {
-    $data = get_json_input();
-    $serial = 'CM5-DEFAULT';
-    $config = [
-        'action' => 'wifi_connect',
-        'ssid' => $data['ssid'] ?? '',
-        'password' => $data['password'] ?? '',
-    ];
-    $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'pending')");
-    $stmt->execute([$serial, json_encode($config)]);
-    send_json(['status' => 'success']);
 }
 
 // --- 404 HANDLER ---
 else {
     http_response_code(404);
-    echo "Stránka nebola nájdaná.";
+    echo "Stránka nebola nájdená (404): " . htmlspecialchars($path);
 }
-
