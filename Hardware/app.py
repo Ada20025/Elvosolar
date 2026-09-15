@@ -1471,8 +1471,14 @@ def cloud_sync_loop():
                             s.close()
                         except Exception:
                             continue
-                        # najdi Unit ID striedaca za loggerom (sken 1..16)
-                        for uid in range(1, 17):
+                         #najdi Unit ID striedaca za loggerom (sken 1..16)
+                        unit_id = profile.get("unit_id")
+
+                        if unit_id is not None:
+                            unit_ids = [int(unit_id)]
+                        else:
+                            unit_ids = range(1, 248)
+                        for uid in unit_ids:
                             try:
                                 frame = bytes([0x00, uid, 0x00, 0x00, 0x00, 0x06, uid, 0x03, (test_reg >> 8) & 0xFF, test_reg & 0xFF, 0x00, 0x01])
                                 if test_reg == 0:
