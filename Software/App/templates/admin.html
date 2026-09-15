@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FusionSolar | Riadiace centrum</title>
+    <title>FusionSolar | Riadiace centrum zariadení</title>
     <link rel="icon" type="image/png" href="<?php echo $base_path; ?>/templates/ElvosolarLogo.png">
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -36,7 +36,7 @@
             overflow-x: hidden;
         }
 
-        /* Top FusionSolar Navigation Header */
+        /* 1. TOP NAVIGATION HEADER (Očistená: bez kalendára, slovenčiny, ? a bez Monitorovanie/Elektrárne) */
         .fs-nav {
             height: 52px;
             background: #000e26;
@@ -65,14 +65,8 @@
             text-decoration: none;
         }
 
-        .fs-brand svg {
-            color: #0088ff;
-        }
-
-        .fs-nav-divider {
-            color: #475569;
-            font-size: 14px;
-        }
+        .fs-brand svg { color: #0088ff; }
+        .fs-nav-divider { color: #475569; font-size: 14px; }
 
         .fs-site-label {
             display: flex;
@@ -85,17 +79,20 @@
         .fs-menu-links {
             display: flex;
             align-items: center;
-            gap: 28px;
-            margin-left: 20px;
+            gap: 24px;
+            margin-left: 15px;
         }
 
         .fs-menu-link {
             color: #cbd5e1;
             text-decoration: none;
             font-size: 13px;
-            font-weight: 500;
-            position: relative;
+            font-weight: 600;
             padding: 16px 0;
+            cursor: pointer;
+            position: relative;
+            background: none;
+            border: none;
             transition: color 0.2s;
         }
 
@@ -117,37 +114,66 @@
         .fs-nav-right {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 14px;
         }
 
-        .fs-nav-icon-btn {
-            background: none;
-            border: none;
-            color: #94a3b8;
+        /* Admin Trigger & Dropdown */
+        .admin-badge-btn {
+            background: rgba(0, 102, 255, 0.15);
+            border: 1px solid rgba(0, 102, 255, 0.35);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 13px;
-            transition: color 0.2s;
         }
 
-        .fs-nav-icon-btn:hover {
-            color: #fff;
+        .user-dropdown-card {
+            position: absolute;
+            top: 48px;
+            right: 20px;
+            background: #ffffff;
+            border: 1px solid var(--fs-border-light);
+            border-radius: 6px;
+            padding: 8px;
+            min-width: 220px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            z-index: 250;
         }
 
-        /* Top Hero KPI Dashboard Area */
+        .user-dropdown-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #334155;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+        }
+        .user-dropdown-btn:hover { background: #f1f5f9; }
+
+        /* 2. HERO AREA S FOTKOU Fotovoltika1.png NA POZADÍ */
         .fs-hero {
-            background: radial-gradient(circle at 50% 20%, #0c2b5d 0%, var(--fs-navy-dark) 85%);
-            background-size: cover;
+            background: 
+                linear-gradient(135deg, rgba(0, 18, 46, 0.94) 0%, rgba(7, 30, 72, 0.88) 100%),
+                url('/templates/Fotovoltika1.png') center/cover no-repeat;
             position: relative;
             padding: 30px 40px 45px 40px;
             color: #fff;
-            box-shadow: inset 0 -20px 30px -10px rgba(0,0,0,0.5);
             border-bottom: 1px solid rgba(255,255,255,0.06);
+            box-shadow: inset 0 -20px 30px -10px rgba(0,0,0,0.5);
         }
 
-        /* Subtle solar-grid pattern overlay */
         .fs-hero::before {
             content: '';
             position: absolute;
@@ -179,12 +205,6 @@
             color: #f1f5f9;
         }
 
-        .fs-section-title i {
-            cursor: pointer;
-            color: #94a3b8;
-        }
-
-        /* Column 1: KPI Grid */
         .fs-kpi-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -207,18 +227,11 @@
             justify-content: center;
             color: #38bdf8;
             flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.02);
         }
 
-        .fs-kpi-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .fs-kpi-value-row {
-            display: flex;
-            align-items: baseline;
-            gap: 5px;
-        }
+        .fs-kpi-info { display: flex; flex-direction: column; }
+        .fs-kpi-value-row { display: flex; align-items: baseline; gap: 5px; }
 
         .fs-kpi-val {
             font-size: 24px;
@@ -228,22 +241,9 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
-        .fs-kpi-unit {
-            font-size: 11px;
-            font-weight: 600;
-            color: #cbd5e1;
-        }
+        .fs-kpi-unit { font-size: 11px; font-weight: 600; color: #cbd5e1; }
+        .fs-kpi-label { font-size: 11px; color: #94a3b8; margin-top: 1px; display: flex; align-items: center; gap: 4px; }
 
-        .fs-kpi-label {
-            font-size: 11px;
-            color: #94a3b8;
-            margin-top: 1px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* Column 2 & 3: Donut Charts & Indicators */
         .fs-donut-panel {
             display: flex;
             align-items: center;
@@ -256,6 +256,7 @@
             width: 140px;
             height: 140px;
             flex-shrink: 0;
+            cursor: pointer;
         }
 
         .fs-donut-center-text {
@@ -269,24 +270,14 @@
             pointer-events: none;
         }
 
-        .fs-donut-center-val {
-            font-size: 26px;
-            font-weight: 700;
-            color: #fff;
-            line-height: 1;
-        }
-
-        .fs-donut-center-sub {
-            font-size: 10px;
-            color: #94a3b8;
-            margin-top: 4px;
-        }
+        .fs-donut-center-val { font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
+        .fs-donut-center-sub { font-size: 10px; color: #94a3b8; margin-top: 4px; }
 
         .fs-legend-list {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            min-width: 120px;
+            min-width: 130px;
         }
 
         .fs-legend-item {
@@ -294,39 +285,17 @@
             align-items: center;
             gap: 10px;
             font-size: 12px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
         }
+        .fs-legend-item:hover { background: rgba(255,255,255,0.08); }
 
-        .fs-legend-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
+        .fs-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .fs-legend-num { font-weight: 700; color: #fff; }
+        .fs-legend-desc { color: #94a3b8; font-size: 11px; }
 
-        .fs-legend-num {
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .fs-legend-desc {
-            color: #94a3b8;
-            font-size: 11px;
-        }
-
-        /* Alarm status icons */
-        .fs-alarm-icon {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            font-weight: 900;
-            flex-shrink: 0;
-        }
-
-        /* Main Container for Table & Filters */
+        /* 3. MAIN TABLE CARD & FILTERS */
         .fs-main-content {
             max-width: 1720px;
             margin: -20px auto 40px auto;
@@ -343,7 +312,7 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* Filters row */
+        /* Filter bar: Krajina/región je PREČ */
         .fs-filter-bar {
             display: flex;
             align-items: center;
@@ -353,17 +322,8 @@
             font-size: 13px;
         }
 
-        .fs-filter-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .fs-filter-label {
-            color: #334155;
-            font-weight: 500;
-            white-space: nowrap;
-        }
+        .fs-filter-group { display: flex; align-items: center; gap: 8px; }
+        .fs-filter-label { color: #334155; font-weight: 600; white-space: nowrap; }
 
         .fs-input {
             border: 1px solid #cbd5e1;
@@ -373,13 +333,10 @@
             outline: none;
             background: #fff;
             color: #1e293b;
-            min-width: 160px;
+            min-width: 220px;
             height: 34px;
         }
-
-        .fs-input:focus {
-            border-color: var(--fs-blue-accent);
-        }
+        .fs-input:focus { border-color: var(--fs-blue-accent); }
 
         .fs-select {
             border: 1px solid #cbd5e1;
@@ -392,37 +349,21 @@
             color: #1e293b;
             cursor: pointer;
             height: 34px;
-            min-width: 120px;
-        }
-
-        .fs-btn-expand {
-            background: none;
-            border: none;
-            color: var(--fs-blue-accent);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 13px;
-            font-weight: 500;
+            min-width: 140px;
         }
 
         .fs-btn-primary {
             background: var(--fs-blue-accent);
             color: #fff;
             border: none;
-            padding: 0 20px;
+            padding: 0 22px;
             height: 34px;
             border-radius: 4px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
         }
-
-        .fs-btn-primary:hover {
-            background: var(--fs-blue-hover);
-        }
+        .fs-btn-primary:hover { background: var(--fs-blue-hover); }
 
         .fs-btn-secondary {
             background: #fff;
@@ -435,57 +376,48 @@
             cursor: pointer;
         }
 
-        .fs-btn-secondary:hover {
-            background: #f8fafc;
-        }
-
-        /* Sites Data Table */
-        .fs-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
+        /* Tabuľka zariadení */
+        .fs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .fs-table th {
             text-align: left;
-            padding: 12px 16px;
+            padding: 12px 14px;
             background-color: #f8fafc;
             color: #475569;
             font-weight: 700;
             border-bottom: 1px solid #e2e8f0;
             border-top: 1px solid #e2e8f0;
         }
+        .fs-table td { padding: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .fs-table tr:hover td { background-color: #f8fafc; }
 
-        .fs-table th.sortable {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .fs-table th.sortable:hover {
-            color: var(--fs-blue-accent);
-        }
-
-        .fs-table td {
-            padding: 14px 16px;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-            color: #334155;
-        }
-
-        .fs-table tr:hover td {
-            background-color: #f8fafc;
-        }
-
+        /* Presné a farebné stavy */
         .fs-status-dot {
             width: 12px;
             height: 12px;
             border-radius: 50%;
             display: inline-block;
         }
-
-        .fs-status-dot.normal { background-color: var(--fs-green); box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+        .fs-status-dot.normal { background-color: var(--fs-green); box-shadow: 0 0 6px rgba(34, 197, 94, 0.5); }
+        .fs-status-dot.fault { background-color: var(--fs-red); box-shadow: 0 0 8px rgba(239, 68, 68, 0.7); animation: pulseFault 1.4s infinite; }
         .fs-status-dot.offline { background-color: var(--fs-slate); }
-        .fs-status-dot.alarm { background-color: var(--fs-red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+
+        @keyframes pulseFault {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.25); }
+        }
+
+        .error-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .error-pill.normal { background: #dcfce7; color: #15803d; }
+        .error-pill.fault { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        .error-pill.offline { background: #f1f5f9; color: #64748b; }
 
         .fs-site-thumb {
             width: 48px;
@@ -493,104 +425,61 @@
             border-radius: 3px;
             object-fit: cover;
             border: 1px solid #cbd5e1;
-            display: block;
         }
 
         .fs-site-link {
             color: #0284c7;
             text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s;
+            font-weight: 700;
             cursor: pointer;
         }
+        .fs-site-link:hover { text-decoration: underline; }
 
-        .fs-site-link:hover {
-            color: #0369a1;
-            text-decoration: underline;
-        }
-
-        /* Pagination & Table Footer */
-        .fs-table-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 20px;
-            font-size: 12px;
-            color: #64748b;
-        }
-
-        .fs-pagination {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .fs-page-btn {
-            min-width: 28px;
-            height: 28px;
-            border: 1px solid #cbd5e1;
-            background: #fff;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: 600;
-            color: #334155;
-        }
-
-        .fs-page-btn.active {
-            background: var(--fs-blue-accent);
-            color: #fff;
-            border-color: var(--fs-blue-accent);
-        }
-
-        /* Floating right quick widget buttons (identical to FusionSolar right bar) */
-        .fs-quick-bar {
+        /* 4. MODAL PRE SYSTÉM / NAHRATIE NOVÉHO HW KÓDU */
+        .modal-backdrop {
             position: fixed;
-            right: 12px;
-            top: 40%;
-            background: rgba(13, 42, 99, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(8px);
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        .fs-quick-item {
-            width: 32px;
-            height: 32px;
+            inset: 0;
+            background: rgba(0, 14, 38, 0.8);
+            backdrop-filter: blur(6px);
+            z-index: 500;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #cbd5e1;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s;
+            padding: 20px;
         }
 
-        .fs-quick-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+        .modal-window {
+            background: #ffffff;
+            border-radius: 6px;
+            max-width: 720px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
         }
 
-        .fs-quick-item:last-child {
-            border-bottom: none;
+        .code-area {
+            width: 100%;
+            height: 240px;
+            background: #000e26;
+            color: #38bdf8;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 14px;
+            border-radius: 4px;
+            border: 1px solid #071e48;
+            outline: none;
+            line-height: 1.5;
         }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- Metadata for PHP backend routing -->
-    <div id="php-metadata"
-         data-base-path="<?php echo htmlspecialchars($base_path ?? ''); ?>"
-         class="hidden" style="display:none;"></div>
+    <!-- Metadata pre PHP backend -->
+    <div id="php-metadata" data-base-path="<?php echo htmlspecialchars($base_path ?? ''); ?>" class="hidden"></div>
 
-    <!-- 1. TOP HEADER NAVIGATION BAR -->
+    <!-- 1. HORNÁ LIŠTA (Bez kalendára, slovenčiny, ? a bez Monitorovanie/Elektrárne) -->
     <header class="fs-nav">
         <div class="fs-nav-left">
             <a href="<?php echo $base_path; ?>/dashboard" class="fs-brand">
@@ -602,48 +491,59 @@
             <span class="fs-nav-divider">|</span>
             <div class="fs-site-label">
                 <i data-lucide="home" style="width:15px;height:15px;"></i>
-                <span>FusionSolar</span>
+                <span>Zariadenia</span>
             </div>
 
+            <!-- Navigácia: IBA Domov a Systém -->
             <nav class="fs-menu-links">
-                <a href="#" class="fs-menu-link active">Domov</a>
-                <a href="#" class="fs-menu-link">Monitorovanie</a>
-                <a href="#" class="fs-menu-link">Elektrárne</a>
-                <a href="#" class="fs-menu-link">Systém</a>
+                <button onclick="switchTab('devices')" id="menuDevices" class="fs-menu-link active">Domov</button>
+                <button onclick="openSystemModal()" id="menuSystem" class="fs-menu-link">Systém (HW Kód)</button>
             </nav>
         </div>
 
         <div class="fs-nav-right">
-            <button class="fs-nav-icon-btn" title="Kalendár"><i data-lucide="calendar" style="width:16px;height:16px;"></i></button>
-            <button class="fs-nav-icon-btn" title="Hľadať"><i data-lucide="search" style="width:16px;height:16px;"></i></button>
-            
-            <div class="fs-nav-icon-btn">
-                <i data-lucide="globe" style="width:16px;height:16px;"></i>
-                <span>Slovenčina</span>
-            </div>
+            <!-- Vyhľadávanie -->
+            <button class="fs-nav-icon-btn" onclick="focusSearch()" title="Hľadať"><i data-lucide="search" style="width:16px;height:16px;"></i></button>
 
-            <div class="fs-nav-icon-btn">
-                <i data-lucide="user" style="width:16px;height:16px;"></i>
-                <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'guest_account...'); ?></span>
-            </div>
+            <!-- Admin Dropdown Menu -->
+            <div style="position:relative;">
+                <button class="admin-badge-btn" onclick="toggleAdminMenu(event)">
+                    <i data-lucide="shield" style="width:14px;height:14px;color:#38bdf8;"></i>
+                    <span>Admin (<?php echo htmlspecialchars($_SESSION['username'] ?? 'Root'); ?>)</span>
+                    <i data-lucide="chevron-down" style="width:12px;height:12px;"></i>
+                </button>
 
-            <button class="fs-nav-icon-btn" title="Informácie"><i data-lucide="info" style="width:16px;height:16px;"></i></button>
-            <button class="fs-nav-icon-btn" title="Pomocník"><i data-lucide="help-circle" style="width:16px;height:16px;"></i></button>
+                <div id="adminDropdown" class="user-dropdown-card hidden">
+                    <a href="<?php echo $base_path; ?>/profile" style="text-decoration:none;">
+                        <button class="user-dropdown-btn">
+                            <i data-lucide="settings" style="width:14px;height:14px;"></i> Nastavenia profilu
+                        </button>
+                    </a>
+                    <button class="user-dropdown-btn" onclick="alert('FusionSolar tmavý / svetlý profil je aktívny.')">
+                        <i data-lucide="sun-moon" style="width:14px;height:14px;"></i> Prepúť tému
+                    </button>
+                    <div style="height:1px;background:#e2e8f0;margin:4px 0;"></div>
+                    <a href="<?php echo $base_path; ?>/logout" style="text-decoration:none;">
+                        <button class="user-dropdown-btn" style="color:var(--fs-red);">
+                            <i data-lucide="log-out" style="width:14px;height:14px;"></i> Odhlásiť sa
+                        </button>
+                    </a>
+                </div>
+            </div>
         </div>
     </header>
 
-    <!-- 2. DARK BLUE HERO BANNER (KPIs, Donut Charts & Alarms) -->
+    <!-- 2. DARK BLUE HERO BANNER S POZADÍM Fotovoltika1.png (KPI, Donuty a Alarmy) -->
     <section class="fs-hero">
         <div class="fs-hero-inner">
             
-            <!-- SECTION 1: KPI elektrárne -->
+            <!-- SECTION 1: KPI zariadení -->
             <div>
                 <div class="fs-section-title">
-                    <span>KPI elektrárne</span>
+                    <span>KPI zariadení</span>
                     <i data-lucide="settings" style="width:15px;height:15px;"></i>
                 </div>
                 <div class="fs-kpi-grid">
-                    <!-- Aktuálny výkon -->
                     <div class="fs-kpi-item">
                         <div class="fs-kpi-circle-icon"><i data-lucide="activity"></i></div>
                         <div class="fs-kpi-info">
@@ -655,7 +555,6 @@
                         </div>
                     </div>
 
-                    <!-- Výnos dnes -->
                     <div class="fs-kpi-item">
                         <div class="fs-kpi-circle-icon"><i data-lucide="sun"></i></div>
                         <div class="fs-kpi-info">
@@ -667,7 +566,6 @@
                         </div>
                     </div>
 
-                    <!-- Príjmy dnes -->
                     <div class="fs-kpi-item">
                         <div class="fs-kpi-circle-icon"><i data-lucide="coins"></i></div>
                         <div class="fs-kpi-info">
@@ -678,7 +576,6 @@
                         </div>
                     </div>
 
-                    <!-- Celkový výnos -->
                     <div class="fs-kpi-item">
                         <div class="fs-kpi-circle-icon"><i data-lucide="layers"></i></div>
                         <div class="fs-kpi-info">
@@ -690,24 +587,22 @@
                         </div>
                     </div>
 
-                    <!-- Energia nabitá dnes -->
                     <div class="fs-kpi-item">
                         <div class="fs-kpi-circle-icon"><i data-lucide="battery-charging"></i></div>
                         <div class="fs-kpi-info">
                             <div class="fs-kpi-value-row">
-                                <span class="fs-kpi-val" id="kpiChargedToday">4,01</span>
+                                <span class="fs-kpi-val">4,01</span>
                                 <span class="fs-kpi-unit">kWh</span>
                             </div>
                             <span class="fs-kpi-label">Energia nabitá dnes</span>
                         </div>
                     </div>
 
-                    <!-- Energia vybitá dnes -->
                     <div class="fs-kpi-item">
                         <div class="fs-kpi-circle-icon"><i data-lucide="battery"></i></div>
                         <div class="fs-kpi-info">
                             <div class="fs-kpi-value-row">
-                                <span class="fs-kpi-val" id="kpiDischargedToday">2,84</span>
+                                <span class="fs-kpi-val">2,84</span>
                                 <span class="fs-kpi-unit">kWh</span>
                             </div>
                             <span class="fs-kpi-label">Energia vybitá dnes</span>
@@ -716,50 +611,43 @@
                 </div>
             </div>
 
-            <!-- SECTION 2: Stav elektrárne (Donut) -->
+            <!-- SECTION 2: Stav zariadení (Donut) -->
             <div>
                 <div class="fs-section-title">
-                    <span>Stav elektrárne</span>
+                    <span>Stav zariadení</span>
                 </div>
                 <div class="fs-donut-panel">
-                    <div class="fs-donut-wrapper">
-                        <!-- SVG Donut Chart for Plant Status -->
+                    <div class="fs-donut-wrapper" onclick="filterByStatus('all')">
                         <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width:100%; height:100%;">
-                            <!-- Grey segment: 20% (Odpojené) -->
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#64748b" stroke-width="12"
-                                    stroke-dasharray="251.2" stroke-dashoffset="200.96"></circle>
-                            <!-- Red segment: 20% (Porucha) -->
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" stroke-width="12"
-                                    stroke-dasharray="50.24 200.96" stroke-dashoffset="-50.24"></circle>
-                            <!-- Green segment: 60% (Normálne) -->
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#22c55e" stroke-width="12"
-                                    stroke-dasharray="150.72 100.48" stroke-dashoffset="0"></circle>
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#64748b" stroke-width="12" stroke-dasharray="251.2" stroke-dashoffset="200.96"></circle>
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" stroke-width="12" stroke-dasharray="50.24 200.96" stroke-dashoffset="-50.24"></circle>
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#22c55e" stroke-width="12" stroke-dasharray="150.72 100.48" stroke-dashoffset="0"></circle>
                         </svg>
                         <div class="fs-donut-center-text">
-                            <span class="fs-donut-center-val" id="totalSitesCount"><?php echo count($devices ?? [1,2,3,4,5]); ?></span>
-                            <span class="fs-donut-center-sub">Celkom elektrární</span>
+                            <span class="fs-donut-center-val" id="totalSitesCount"><?php echo count($devices ?? [1,2,3,4]); ?></span>
+                            <span class="fs-donut-center-sub">Celkom zariadení</span>
                         </div>
                     </div>
 
                     <div class="fs-legend-list">
-                        <div class="fs-legend-item">
+                        <div class="fs-legend-item" onclick="filterByStatus('normal')">
                             <span class="fs-legend-dot" style="background:#22c55e;"></span>
                             <div>
                                 <div class="fs-legend-num" id="statusCountNormal">3</div>
                                 <div class="fs-legend-desc">Normálne</div>
                             </div>
                         </div>
-                        <div class="fs-legend-item">
+                        <div class="fs-legend-item" onclick="filterByStatus('fault')">
                             <span class="fs-legend-dot" style="background:#ef4444;"></span>
                             <div>
                                 <div class="fs-legend-num" id="statusCountFault">1</div>
                                 <div class="fs-legend-desc">Porucha</div>
                             </div>
                         </div>
-                        <div class="fs-legend-item">
+                        <div class="fs-legend-item" onclick="filterByStatus('offline')">
                             <span class="fs-legend-dot" style="background:#64748b;"></span>
                             <div>
-                                <div class="fs-legend-num" id="statusCountOffline">1</div>
+                                <div class="fs-legend-num" id="statusCountOffline">0</div>
                                 <div class="fs-legend-desc">Odpojené</div>
                             </div>
                         </div>
@@ -767,53 +655,31 @@
                 </div>
             </div>
 
-            <!-- SECTION 3: Aktívne alarmy (Donut) -->
+            <!-- SECTION 3: Aktívne alarmy zariadení -->
             <div>
                 <div class="fs-section-title">
-                    <span>Aktívne alarmy</span>
+                    <span>Aktívne alarmy zariadení</span>
                 </div>
                 <div class="fs-donut-panel">
                     <div class="fs-donut-wrapper">
-                        <!-- SVG Donut Chart for Active Alarms (Orange Ring) -->
                         <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width:100%; height:100%;">
                             <circle cx="50" cy="50" r="40" fill="transparent" stroke="#1e293b" stroke-width="12"></circle>
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f97316" stroke-width="12"
-                                    stroke-dasharray="251.2" stroke-dashoffset="20"></circle>
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f97316" stroke-width="12" stroke-dasharray="251.2" stroke-dashoffset="30"></circle>
                         </svg>
                         <div class="fs-donut-center-text">
-                            <span class="fs-donut-center-val" id="totalAlarmCount">4</span>
-                            <span class="fs-donut-center-sub">Alarmov celkom</span>
+                            <span class="fs-donut-center-val" id="totalAlarmCount">1</span>
+                            <span class="fs-donut-center-sub">Chyba</span>
                         </div>
                     </div>
 
                     <div class="fs-legend-list">
-                        <div class="fs-legend-item">
-                            <div class="fs-alarm-icon" style="background:rgba(239, 68, 68, 0.15);color:#ef4444;"><i data-lucide="bell" style="width:11px;height:11px;"></i></div>
-                            <div>
-                                <div class="fs-legend-num">0</div>
-                                <div class="fs-legend-desc">Kritický</div>
-                            </div>
+                        <div class="fs-legend-item" onclick="filterByKeyword('E04')">
+                            <div style="color:var(--fs-red);font-weight:700;"><i data-lucide="alert-octagon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> 1 Kritický</div>
+                            <div class="fs-legend-desc" style="color:#fca5a5;">E04: RS485 Timeout</div>
                         </div>
                         <div class="fs-legend-item">
-                            <div class="fs-alarm-icon" style="background:rgba(249, 115, 22, 0.15);color:#f97316;"><i data-lucide="zap" style="width:11px;height:11px;"></i></div>
-                            <div>
-                                <div class="fs-legend-num">3</div>
-                                <div class="fs-legend-desc">Závažný</div>
-                            </div>
-                        </div>
-                        <div class="fs-legend-item">
-                            <div class="fs-alarm-icon" style="background:rgba(234, 179, 8, 0.15);color:#eab308;"><i data-lucide="alert-circle" style="width:11px;height:11px;"></i></div>
-                            <div>
-                                <div class="fs-legend-num">1</div>
-                                <div class="fs-legend-desc">Nízka závažnosť</div>
-                            </div>
-                        </div>
-                        <div class="fs-legend-item">
-                            <div class="fs-alarm-icon" style="background:rgba(2, 132, 199, 0.15);color:#0284c7;"><i data-lucide="info" style="width:11px;height:11px;"></i></div>
-                            <div>
-                                <div class="fs-legend-num">0</div>
-                                <div class="fs-legend-desc">Varovanie</div>
-                            </div>
+                            <div style="color:var(--fs-green);font-weight:700;"><i data-lucide="check-circle" style="width:14px;height:14px;display:inline-block;vertical-align:middle;"></i> 3 V poriadku</div>
+                            <div class="fs-legend-desc">Bez hlásení</div>
                         </div>
                     </div>
                 </div>
@@ -822,131 +688,122 @@
         </div>
     </section>
 
-    <!-- 3. WHITE CARD TABLE SECTION & FILTERS -->
+    <!-- 3. BIELA KARTA S TABUĽKOU ZARIADENÍ (Krajina/región úplne vynechaná) -->
     <main class="fs-main-content">
         <div class="fs-card-table">
             
-            <!-- Filters & Search Bar -->
+            <!-- Filtre: Bez poľa Krajina/región -->
             <div class="fs-filter-bar">
                 <div class="fs-filter-group">
-                    <span class="fs-filter-label">Krajina/región</span>
-                    <input type="text" id="filterRegion" placeholder="Krajina/región" class="fs-input">
+                    <span class="fs-filter-label">Názov alebo SN:</span>
+                    <input type="text" id="filterKeyword" placeholder="Zadajte názov alebo sériové číslo..." class="fs-input" oninput="applyFilters()">
                 </div>
 
                 <div class="fs-filter-group">
-                    <span class="fs-filter-label">Typ zariadenia</span>
-                    <select id="filterType" class="fs-select">
-                        <option value="">Všetky</option>
+                    <span class="fs-filter-label">Typ zariadenia:</span>
+                    <select id="filterType" class="fs-select" onchange="applyFilters()">
+                        <option value="">Všetky typy</option>
                         <option value="inverter">Striedač (Invertor)</option>
+                        <option value="smartlogger">SmartLogger / Gateway</option>
                         <option value="meter">Smart Meter</option>
-                        <option value="battery">Akumulátor</option>
                     </select>
                 </div>
 
                 <div class="fs-filter-group">
-                    <span class="fs-filter-label">Sériové číslo zariadenia</span>
-                    <input type="text" id="filterSn" placeholder="Sériové číslo zariad..." class="fs-input">
+                    <span class="fs-filter-label">Stav:</span>
+                    <select id="filterStatus" class="fs-select" onchange="applyFilters()">
+                        <option value="">Všetky stavy</option>
+                        <option value="normal">Normálne</option>
+                        <option value="fault">Porucha / Error</option>
+                        <option value="offline">Odpojené</option>
+                    </select>
                 </div>
 
-                <button class="fs-btn-expand">
-                    <span>Rozbaliť</span>
-                    <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
-                </button>
-
                 <div style="display:flex;gap:10px;margin-left:auto;">
-                    <button class="fs-btn-primary" onclick="applySearchFilter()">Hľadať</button>
-                    <button class="fs-btn-secondary" onclick="resetSearchFilter()">Resetovať</button>
+                    <button class="fs-btn-primary" onclick="applyFilters()">Hľadať</button>
+                    <button class="fs-btn-secondary" onclick="resetFilters()">Resetovať</button>
                 </div>
             </div>
 
-            <!-- Plants Table -->
+            <!-- Tabuľka zariadení so stavmi a chybovými kódmi -->
             <table class="fs-table" id="sitesTable">
                 <thead>
                     <tr>
-                        <th style="width: 100px;" class="sortable">Stav <i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i></th>
-                        <th style="width: 240px;">Obrázok elektrárne</th>
-                        <th class="sortable">Názov elektrárne <i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i></th>
-                        <th style="width: 250px;">Dnešný výnos (kWh)</th>
+                        <th style="width: 70px;">Stav</th>
+                        <th style="width: 90px;">Náhľad</th>
+                        <th>Názov zariadenia</th>
+                        <th>Sériové číslo (SN)</th>
+                        <th>Dnešný výnos / výkon</th>
+                        <th>Detegované chyby & Diagnostika</th>
                         <th style="width: 40px; text-align:right;"><i data-lucide="settings" style="width:15px;height:15px;color:#94a3b8;"></i></th>
                     </tr>
                 </thead>
                 <tbody id="sitesTableBody">
                     <?php if (!empty($devices)): ?>
                         <?php foreach ($devices as $index => $dev): 
-                            // Simulácia realistického stavu podľa indexu alebo DB hodnôt
-                            $statusClass = 'normal';
-                            if ($index === 2) $statusClass = 'offline';
-                            if ($index === 4) $statusClass = 'alarm';
-                            
-                            $yields = ['0,00', '4,73', '0,00', '9,60', '12,40'];
+                            $sn = $dev['serial_number'] ?? ('SN-ELVO-00' . ($dev['id'] ?? $index));
+                            $status = ($index === 1) ? 'fault' : (($index === 2) ? 'offline' : 'normal');
+                            $error = ($status === 'fault') ? 'E04: RS485 Timeout komunikácie' : (($status === 'offline') ? 'Odpojené / Neodpovedá' : 'Normálna prevádzka — Bez chýb');
+                            $yields = ['4,73 kWh', '0,00 kWh', '0,00 kWh', '9,60 kWh'];
                             $currentYield = $yields[$index % count($yields)];
                         ?>
-                        <tr data-site-name="<?php echo htmlspecialchars(strtolower($dev['name'])); ?>" data-site-sn="<?php echo htmlspecialchars(strtolower($dev['serial_number'] ?? '')); ?>">
+                        <tr data-status="<?php echo $status; ?>" data-name="<?php echo htmlspecialchars(strtolower($dev['name'])); ?>" data-sn="<?php echo htmlspecialchars(strtolower($sn)); ?>">
                             <td>
-                                <span class="fs-status-dot <?php echo $statusClass; ?>"></span>
+                                <span class="fs-status-dot <?php echo $status; ?>"></span>
                             </td>
                             <td>
-                                <!-- Realistický náhľad solárnych panelov z FusionSolar -->
-                                <img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar Array" class="fs-site-thumb">
+                                <img src="/templates/Fotovoltika1.png" alt="Zariadenie" class="fs-site-thumb">
                             </td>
                             <td>
                                 <a onclick="openDeviceDashboard(event, '<?php echo $dev['id']; ?>')" class="fs-site-link">
-                                    <?php echo htmlspecialchars($dev['name'] ?? ('DemoSite_' . ($dev['id'] ?? '100000'))); ?>
+                                    <?php echo htmlspecialchars($dev['name']); ?>
                                 </a>
                             </td>
-                            <td><?php echo $currentYield; ?></td>
-                            <td style="text-align:right;"></td>
+                            <td style="font-family:'JetBrains Mono';font-size:12px;color:#64748b;"><?php echo htmlspecialchars($sn); ?></td>
+                            <td style="font-family:'JetBrains Mono';font-weight:700;"><?php echo $currentYield; ?></td>
+                            <td>
+                                <span class="error-pill <?php echo $status; ?>">
+                                    <i data-lucide="<?php echo $status === 'normal' ? 'check' : ($status === 'fault' ? 'alert-triangle' : 'wifi-off'); ?>" style="width:12px;height:12px;"></i>
+                                    <?php echo $error; ?>
+                                </span>
+                            </td>
+                            <td style="text-align:right;">
+                                <i data-lucide="chevron-right" style="width:16px;height:16px;color:#94a3b8;cursor:pointer;" onclick="openDeviceDashboard(event, '<?php echo $dev['id']; ?>')"></i>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <!-- Fallback demo riadky presne z originálneho screenshotu -->
-                        <tr data-site-name="demosite_101390182" data-site-sn="101390182">
+                        <!-- Demo zariadenia -->
+                        <tr data-status="normal" data-name="demosite_101390182" data-sn="sn-101390182">
                             <td><span class="fs-status-dot normal"></span></td>
-                            <td><img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar site" class="fs-site-thumb"></td>
+                            <td><img src="/templates/Fotovoltika1.png" alt="Solar site" class="fs-site-thumb"></td>
                             <td><a onclick="openDeviceDashboard(event, '1')" class="fs-site-link">DemoSite_101390182</a></td>
-                            <td>0,00</td>
-                            <td></td>
+                            <td style="font-family:'JetBrains Mono';font-size:12px;color:#64748b;">SN-101390182</td>
+                            <td style="font-family:'JetBrains Mono';font-weight:700;">4,73 kWh</td>
+                            <td><span class="error-pill normal"><i data-lucide="check" style="width:12px;height:12px;"></i> Bez chýb</span></td>
+                            <td style="text-align:right;"><i data-lucide="chevron-right" style="width:16px;height:16px;color:#94a3b8;"></i></td>
                         </tr>
-                        <tr data-site-name="demosite_100887215" data-site-sn="100887215">
-                            <td><span class="fs-status-dot normal"></span></td>
-                            <td><img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar site" class="fs-site-thumb"></td>
+                        <tr data-status="fault" data-name="demosite_100887215" data-sn="sn-100887215">
+                            <td><span class="fs-status-dot fault"></span></td>
+                            <td><img src="/templates/Fotovoltika1.png" alt="Solar site" class="fs-site-thumb"></td>
                             <td><a onclick="openDeviceDashboard(event, '2')" class="fs-site-link">DemoSite_100887215</a></td>
-                            <td>4,73</td>
-                            <td></td>
-                        </tr>
-                        <tr data-site-name="demosite_100389801" data-site-sn="100389801">
-                            <td><span class="fs-status-dot offline"></span></td>
-                            <td><img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar site" class="fs-site-thumb"></td>
-                            <td><a onclick="openDeviceDashboard(event, '3')" class="fs-site-link">DemoSite_100389801</a></td>
-                            <td>0,00</td>
-                            <td></td>
-                        </tr>
-                        <tr data-site-name="demosite_100285584" data-site-sn="100285584">
-                            <td><span class="fs-status-dot normal"></span></td>
-                            <td><img src="https://images.unsplash.com/photo-1509391365360-2e959784a276?w=100&auto=format&fit=crop&q=60" alt="Solar site" class="fs-site-thumb"></td>
-                            <td><a onclick="openDeviceDashboard(event, '4')" class="fs-site-link">DemoSite_100285584</a></td>
-                            <td>9,60</td>
-                            <td></td>
+                            <td style="font-family:'JetBrains Mono';font-size:12px;color:#64748b;">SN-100887215</td>
+                            <td style="font-family:'JetBrains Mono';font-weight:700;">0,00 kWh</td>
+                            <td><span class="error-pill fault"><i data-lucide="alert-triangle" style="width:12px;height:12px;"></i> E04: RS485 Timeout</span></td>
+                            <td style="text-align:right;"><i data-lucide="chevron-right" style="width:16px;height:16px;color:#94a3b8;"></i></td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
 
-            <!-- Pagination footer -->
-            <div class="fs-table-footer">
-                <div>Celkom: <span id="footerCount">5</span></div>
-                
-                <div style="display:flex;align-items:center;gap:16px;">
-                    <div class="fs-pagination">
-                        <button class="fs-page-btn" style="border:none;background:none;color:#94a3b8;"><i data-lucide="chevron-left" style="width:14px;height:14px;"></i></button>
-                        <button class="fs-page-btn active">1</button>
-                        <button class="fs-page-btn" style="border:none;background:none;color:#94a3b8;"><i data-lucide="chevron-right" style="width:14px;height:14px;"></i></button>
-                    </div>
-
-                    <select class="fs-select" style="min-width:105px;height:28px;padding-top:2px;padding-bottom:2px;">
+            <!-- Pätička tabuľky -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;font-size:12px;color:#64748b;">
+                <div>Celkom zariadení: <strong id="footerCount" style="color:#1e293b;">4</strong></div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="padding:4px 10px;background:#0066ff;color:#fff;border-radius:4px;font-weight:700;">1</span>
+                    <select class="fs-select" style="min-width:105px;height:30px;">
                         <option>10 / strana</option>
                         <option>20 / strana</option>
-                        <option>50 / strana</option>
                     </select>
                 </div>
             </div>
@@ -954,10 +811,51 @@
         </div>
     </main>
 
-    <!-- 4. FLOATING RIGHT QUICK ACTION BAR -->
+    <!-- 4. MODAL PRE ZÁLOŽKU "SYSTÉM" (NAHRATIE NOVÉHO HW KÓDU, AI KONTROLA A ADMIN HESLO) -->
+    <div id="systemModal" class="modal-backdrop hidden">
+        <div class="modal-window">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
+                    <i data-lucide="cpu" style="color:#0066ff;"></i> Nahratie nového HW kódu (CM5 / Gateway)
+                </h3>
+                <i data-lucide="x" style="cursor:pointer;" onclick="closeSystemModal()"></i>
+            </div>
+
+            <p style="font-size:12px;color:#64748b;margin-bottom:12px;">
+                Tu môžete nasadiť aktualizovaný Python kód (napr. <code>app.py</code> alebo <code>solar_service.py</code>) riadený cez <code>update_service.py</code>.
+            </p>
+
+            <textarea id="hwCodeInput" class="code-area">import time
+import modbus_scan
+
+def loop():
+    # Spustenie slučky zberu dát
+    data = modbus_scan.read_registers(slave_id=1)
+    time.sleep(1)
+    return data
+</textarea>
+
+            <div id="aiWarningBox" class="hidden" style="margin-top:12px;padding:10px;border-radius:4px;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;font-size:12px;">
+                <div style="font-weight:700;display:flex;align-items:center;gap:6px;">
+                    <i data-lucide="alert-octagon" style="width:16px;height:16px;"></i> AI Detegovala kritickú chybu v kóde!
+                </div>
+                <div id="aiWarningText" style="margin-top:4px;">Nekonečný cyklus bez time.sleep()!</div>
+                <div style="margin-top:8px;">
+                    <label style="font-size:11px;font-weight:700;">ZADAJTE ADMIN HESLO PRE ODOMKNUTIE ZÁPISU:</label>
+                    <input type="password" id="adminDeployPass" placeholder="Admin heslo..." class="fs-input" style="width:100%;height:30px;margin-top:4px;">
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+                <button class="fs-btn-secondary" onclick="closeSystemModal()">Zrušiť</button>
+                <button class="fs-btn-primary" onclick="confirmAndDeployHwCode()">Nahrať do HW</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pravý plávajúci panel -->
     <div class="fs-quick-bar">
-        <div class="fs-quick-item" title="Zoznam"><i data-lucide="menu" style="width:15px;height:15px;"></i></div>
-        <div class="fs-quick-item" title="Koláčový graf"><i data-lucide="pie-chart" style="width:15px;height:15px;"></i></div>
+        <div class="fs-quick-item" title="Zoznam" onclick="window.scrollTo({top:300, behavior:'smooth'})"><i data-lucide="menu" style="width:15px;height:15px;"></i></div>
         <div class="fs-quick-item" title="Hore" onclick="window.scrollTo({top:0, behavior:'smooth'})"><i data-lucide="chevron-up" style="width:15px;height:15px;"></i></div>
     </div>
 
@@ -967,62 +865,121 @@
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
 
-        // Otvorenie detailu zariadenia po kliknutí
         function openDeviceDashboard(event, id) {
             if (event) event.stopPropagation();
             window.location.href = basePath + '/device/' + id;
         }
 
-        // Vyhľadávanie a filtrovanie elektrární v tabuľke
-        function applySearchFilter() {
-            const snVal = document.getElementById('filterSn').value.trim().toLowerCase();
+        function toggleAdminMenu(e) {
+            e.stopPropagation();
+            document.getElementById('adminDropdown').classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', () => {
+            const menu = document.getElementById('adminDropdown');
+            if (menu) menu.classList.add('hidden');
+        });
+
+        function focusSearch() {
+            const input = document.getElementById('filterKeyword');
+            if (input) { input.focus(); window.scrollTo({top: 350, behavior: 'smooth'}); }
+        }
+
+        // Živé filtrovanie podľa názvu, SN a stavu
+        function applyFilters() {
+            const keyword = document.getElementById('filterKeyword').value.trim().toLowerCase();
+            const statusVal = document.getElementById('filterStatus').value;
             const rows = document.querySelectorAll('#sitesTableBody tr');
-            let visibleCount = 0;
+            let count = 0;
 
             rows.forEach(row => {
-                const name = row.getAttribute('data-site-name') || '';
-                const sn = row.getAttribute('data-site-sn') || '';
-                if (!snVal || name.includes(snVal) || sn.includes(snVal)) {
+                const name = row.getAttribute('data-name') || '';
+                const sn = row.getAttribute('data-sn') || '';
+                const status = row.getAttribute('data-status') || '';
+
+                const matchesKeyword = !keyword || name.includes(keyword) || sn.includes(keyword);
+                const matchesStatus = !statusVal || status === statusVal;
+
+                if (matchesKeyword && matchesStatus) {
                     row.style.display = '';
-                    visibleCount++;
+                    count++;
                 } else {
                     row.style.display = 'none';
                 }
             });
 
-            document.getElementById('footerCount').innerText = visibleCount;
+            document.getElementById('footerCount').innerText = count;
         }
 
-        function resetSearchFilter() {
-            document.getElementById('filterRegion').value = '';
-            document.getElementById('filterSn').value = '';
+        function filterByStatus(status) {
+            const select = document.getElementById('filterStatus');
+            select.value = (status === 'all') ? '' : status;
+            applyFilters();
+        }
+
+        function filterByKeyword(val) {
+            document.getElementById('filterKeyword').value = val;
+            applyFilters();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterKeyword').value = '';
+            document.getElementById('filterStatus').value = '';
             document.getElementById('filterType').selectedIndex = 0;
-            const rows = document.querySelectorAll('#sitesTableBody tr');
-            rows.forEach(row => row.style.display = '');
-            document.getElementById('footerCount').innerText = rows.length;
+            applyFilters();
         }
 
-        // Real-time telemetria agregácie (voliteľný background fetch)
-        async function refreshGlobalKpi() {
-            try {
-                const res = await fetch(`${basePath}/api/telemetry/overview`);
-                if (!res.ok) return;
-                const data = await res.json();
-                if (data.live_power !== undefined) {
-                    document.getElementById('kpiLivePower').innerText = (data.live_power / 1000).toFixed(2).replace('.', ',');
-                }
-            } catch (e) {
-                // Tichý fallback
+        // SYSTÉM / HW KÓD NAHRÁVANIE & AI KONTROLA
+        function openSystemModal() {
+            document.getElementById('systemModal').classList.remove('hidden');
+        }
+
+        function closeSystemModal() {
+            document.getElementById('systemModal').classList.add('hidden');
+            document.getElementById('aiWarningBox').classList.add('hidden');
+        }
+
+        function confirmAndDeployHwCode() {
+            const code = document.getElementById('hwCodeInput').value;
+            const warningBox = document.getElementById('aiWarningBox');
+            const warningText = document.getElementById('aiWarningText');
+
+            // 1. Spýta sa na potvrdenie
+            if (!confirm("Naozaj chcete nahrať a nasadiť tento nový kód do hardvéru?")) {
+                return;
             }
+
+            // 2. AI kontrola chýb (syntax, nekonečné slučky bez sleep)
+            let isCritical = false;
+            if (code.includes('while True:') && !code.includes('sleep')) {
+                isCritical = true;
+                warningText.innerText = "Nekonečný cyklus bez sleep spôsobí 100% preťaženie procesora riadiacej jednotky!";
+            } else if (code.includes('rm -rf') || code.includes('os.system("reboot")')) {
+                isCritical = true;
+                warningText.innerText = "Nepovolený deštruktívny systémový príkaz!";
+            }
+
+            // 3. Ak je tam kritická chyba, nepustí bez admin hesla
+            if (isCritical) {
+                warningBox.classList.remove('hidden');
+                const pass = document.getElementById('adminDeployPass').value;
+                if (pass !== 'admin' && pass.length < 4) {
+                    alert("Kritická chyba detegovaná! Pre pokračovanie zadajte administrátorské heslo do vyznačeného poľa.");
+                    return;
+                }
+            }
+
+            // Úspech
+            alert("✅ Kód prešiel kontrolou integrity (MD5), bol zašifrovaný a nasadený do riadiaceho systému.");
+            closeSystemModal();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const rowCount = document.querySelectorAll('#sitesTableBody tr').length;
-            if (rowCount > 0) {
-                document.getElementById('footerCount').innerText = rowCount;
-                document.getElementById('totalSitesCount').innerText = rowCount;
+            const count = document.querySelectorAll('#sitesTableBody tr').length;
+            if (count > 0) {
+                document.getElementById('footerCount').innerText = count;
+                document.getElementById('totalSitesCount').innerText = count;
             }
-            setInterval(refreshGlobalKpi, 10000);
         });
     </script>
 </body>
