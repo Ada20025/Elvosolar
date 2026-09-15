@@ -432,15 +432,16 @@ elseif ($path === '/profile' && $method === 'GET') {
 }
 
 // =============================================================================
-// ADMIN DEVICE DETAIL (PREHĽAD, RIADENIE, TERMINÁL)
+// ADMIN DEVICE DETAIL (PODPORUJE: /admin_device.html, /admin/device/1, /admin_device/1)
 // =============================================================================
-
-elseif (preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches) && $method === 'GET') {
+elseif ((preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches) || $path === '/admin_device.html' || $path === '/admin_device') && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) { 
         header("Location: " . $base_path . "/login"); 
         exit; 
     }
-    $dev_id = intval($matches[1]);
+    
+    // Zistí ID zariadenia buď z URL cesty alebo z GET parametra ?id=...
+    $dev_id = isset($matches[1]) ? intval($matches[1]) : intval($_GET['id'] ?? 1);
     
     // Načítanie zariadenia z databázy
     $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ?");
@@ -448,7 +449,6 @@ elseif (preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches) 
     $device = $stmt->fetch();
     
     if (!$device) {
-        // Fallback pre zobrazenie, ak by ID ešte nebolo v DB
         $device = [
             'id' => $dev_id,
             'name' => 'Striedač #' . $dev_id,
@@ -457,7 +457,7 @@ elseif (preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches) 
         ];
     }
     
-    // Načítaj šablónu admin_device.html
+    // Zobrazí šablónu admin_device.html
     render_template('admin_device.html', [
         'device' => $device, 
         'device_id' => $dev_id,
