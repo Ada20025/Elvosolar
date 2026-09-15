@@ -99,7 +99,7 @@ class InverterPowerRequest(BaseModel):
 class SmartLoggerTestRequest(BaseModel):
     mode: str = "tcp"
     ip: str = "192.168.0.10"
-    port: int = 502
+    port: int = 205
     unit_id: int = 1
     rtu_port: str = "/dev/ttyAMA3"
     baud: int = 9600
@@ -434,7 +434,7 @@ def api_system_discover(brand: str = "", category: str = "", model: str = ""):
 
 
 @app.get("/api/system/discover-network")
-def api_discover_network(port: int = 502, timeout: float = 0.3):
+def api_discover_network(port: int = 205, timeout: float = 0.3):
     """Komplexne skenuje siet - Modbus TCP + ARP + HTTP + UDP broadcast."""
     try:
         from network_scan import scan_network, get_local_ip, get_interfaces
@@ -486,7 +486,7 @@ def api_save_smartlogger():
     """Ulozi IP SmartLoggera pre modbus TCP komunikaciu."""
     data = get_json_input()
     ip = data.get('ip', '')
-    port = data.get('port', 502)
+    port = data.get('port', 205)
     device_id = data.get('device_id', 0)
     
     if not ip:
@@ -678,7 +678,7 @@ def api_announce():
             'device': 'ElvoControll CM5',
             'ip': my_ip,
             'http_port': 80,
-            'modbus_port': 502,
+            'modbus_port': 205,
             'version': '3.2.0'
         }).encode()
         
@@ -1419,7 +1419,7 @@ def cloud_sync_loop():
                 model_id = config.get("model_id", "1")
                 conn_type = str(config.get("connection", "")).lower()
                 disc_ip = config.get("ip", "")
-                disc_port = int(config.get("port", 502) or 502)
+                disc_port = int(config.get("port", 205) or 205)
                 discovered_slaves = []
                 discovered_port = "unknown"
 
@@ -1457,7 +1457,7 @@ def cloud_sync_loop():
                     if target_ip:
                         tcp_targets = [target_ip]
                     else:
-                        # auto: najdi hosts s otvorenym 502 v lokalnej sieti
+                        # auto: najdi hosts s otvorenym 205 v lokalnej sieti
                         try:
                             from network_scan import scan_network as _scan_net
                             nres = _scan_net(port=disc_port, timeout=0.3)
@@ -1523,7 +1523,7 @@ def cloud_sync_loop():
                             "status": "error",
                             "slaves": [],
                             "discovered_count": 0,
-                            "message": "SmartLogger neodpoveda na " + (disc_ip or "zadanej IP") + ". Overte IP, port 502 a Modbus TCP Enable."
+                            "message": "SmartLogger neodpoveda na " + (disc_ip or "zadanej IP") + ". Overte IP, port 205 a Modbus TCP Enable."
                         }
                         try:
                             for _retry in range(3):
@@ -1633,7 +1633,7 @@ def cloud_sync_loop():
             elif action == "save_smartlogger":
                 # Ulozi SmartLogger nastavenie do lokalnej DB (z setup wizardu)
                 ip = config.get("ip", "")
-                port = int(config.get("port", 502) or 502)
+                port = int(config.get("port", 205) or 205)
                 slave_id = int(config.get("slave_id", 205) or 205)
                 mode = config.get("mode", "tcp")
                 if ip:
