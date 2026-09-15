@@ -417,6 +417,10 @@ elseif ($path === '/logout') {
     exit;
 }
 
+elseif ($path === '/setup' || $path === '/setup.html') {
+    render_template('setup.html');
+}
+
 elseif ($path === '/dashboard' && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) {
         header("Location: " . $base_path . "/login");
