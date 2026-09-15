@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FusionSolar | Elvosolar riadiace centrum & VS Code Studio</title>
+    <title>FusionSolar | Elvosolar riadiace centrum</title>
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($base_path ?? ''); ?>/templates/ElvosolarLogo1.png">
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -17,13 +17,18 @@
             --fs-blue-hover: #0066cc;
             --fs-green: #10b981;
             --fs-red: #ef4444;
-            --fs-orange: #f97316;
-            --fs-yellow: #eab308;
             --fs-bg: #edf1f7;
-            --vscode-bg: #1e1e1e;
-            --vscode-sidebar: #252526;
-            --vscode-top: #323233;
-            --vscode-border: #3c3c3c;
+            
+            /* Autentické VS Code premenné */
+            --vsc-bg: #1e1e1e;
+            --vsc-sidebar: #252526;
+            --vsc-activity: #333333;
+            --vsc-title: #323233;
+            --vsc-border: #3c3c3c;
+            --vsc-text: #cccccc;
+            --vsc-blue: #007acc;
+            --vsc-hover: #2a2d2e;
+            --vsc-active: #37373d;
         }
 
         body {
@@ -94,7 +99,7 @@
             gap: 8px;
         }
 
-        /* 2. HERO HEADER */
+        /* 2. HERO S REÁLNYM POZADÍM Fotovoltika1.jpg */
         .fs-hero {
             background: 
                 linear-gradient(135deg, rgba(0, 12, 32, 0.94) 0%, rgba(7, 30, 72, 0.88) 100%),
@@ -145,7 +150,7 @@
         .fs-kpi-unit { font-size: 11px; font-weight: 600; color: #94a3b8; margin-left: 3px; }
         .fs-kpi-label { font-size: 11px; color: #94a3b8; margin-top: 1px; }
 
-        /* Donuty */
+        /* Donut Charts */
         .fs-donut-panel { display: flex; align-items: center; gap: 20px; }
         .fs-donut-wrapper { position: relative; width: 124px; height: 124px; flex-shrink: 0; }
         .fs-donut-center-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -237,15 +242,26 @@
         .fs-table td { padding: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         .fs-table tr:hover td { background-color: #f8fafc; }
 
-        .fs-status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-        .fs-status-dot.normal { background-color: var(--fs-green); box-shadow: 0 0 6px rgba(16, 185, 129, 0.7); }
-        .fs-status-dot.fault { background-color: var(--fs-red); box-shadow: 0 0 8px rgba(239, 68, 68, 0.8); animation: pulseAlert 1.4s infinite; }
-        .fs-status-dot.warn { background-color: var(--fs-orange); box-shadow: 0 0 6px rgba(249, 115, 22, 0.7); }
-        .fs-status-dot.offline { background-color: #64748b; }
+        /* FAREBNÉ KOLIESKA */
+        .fs-status-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .fs-status-dot.normal { 
+            background-color: var(--fs-green); 
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.85); 
+        }
+        .fs-status-dot.fault, .fs-status-dot.offline { 
+            background-color: var(--fs-red); 
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.9); 
+            animation: pulseAlert 1.4s infinite; 
+        }
 
         @keyframes pulseAlert {
             0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.5; }
+            50% { transform: scale(1.35); opacity: 0.45; }
         }
 
         .error-pill {
@@ -256,20 +272,15 @@
             border-radius: 6px;
             font-size: 11px;
             font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.15s;
         }
-        .error-pill:hover { transform: translateY(-1px); }
         .error-pill.normal { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
-        .error-pill.fault { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-        .error-pill.warn { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
-        .error-pill.offline { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .error-pill.fault, .error-pill.offline { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 
         .fs-site-thumb { width: 48px; height: 32px; border-radius: 4px; object-fit: cover; border: 1px solid #cbd5e1; }
         .fs-site-link { color: #0284c7; text-decoration: none; font-weight: 700; cursor: pointer; }
         .fs-site-link:hover { text-decoration: underline; }
 
-        /* 4. VS CODE IDE MODAL (PROFESIONÁLNE ROZHRANIE) */
+        /* 4. SKUTOČNÝ VS CODE WORKSPACE (ACTIVITY BAR, SIDEBAR, TABS, TERMINAL) */
         .vscode-modal-backdrop {
             position: fixed;
             inset: 0;
@@ -283,24 +294,24 @@
         }
 
         .vscode-window {
-            background: var(--vscode-bg);
-            color: #cccccc;
+            background: var(--vsc-bg);
+            color: var(--vsc-text);
             border-radius: 8px;
             width: 100%;
-            max-width: 1380px;
-            height: 90vh;
+            max-width: 1440px;
+            height: 92vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 25px 70px rgba(0,0,0,0.7);
-            border: 1px solid var(--vscode-border);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+            border: 1px solid var(--vsc-border);
             overflow: hidden;
             font-family: 'JetBrains Mono', Consolas, monospace;
         }
 
         /* Top Menu & Action bar */
         .vscode-top-bar {
-            background: var(--vscode-top);
-            height: 40px;
+            background: var(--vsc-title);
+            height: 38px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -309,43 +320,44 @@
             border-bottom: 1px solid #222;
         }
 
-        .vscode-actions-header {
+        .vscode-body-layout {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex: 1;
+            overflow: hidden;
         }
 
-        .vscode-btn {
-            background: #2d2d2d;
-            border: 1px solid #3e3e42;
-            color: #e1e1e1;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
+        /* 1. Vertikálny Activity Bar (Úplne ako VS Code vľavo) */
+        .vscode-activity-bar {
+            width: 48px;
+            background: var(--vsc-activity);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 10px;
+            gap: 16px;
+            border-right: 1px solid #252526;
+        }
+
+        .vscode-activity-icon {
+            color: #858585;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: inherit;
+            padding: 6px;
+            border-radius: 4px;
+            transition: color 0.15s;
         }
-        .vscode-btn:hover { background: #3e3e42; color: #fff; }
-        .vscode-btn.primary { background: #007acc; border-color: #0098ff; color: #fff; font-weight: 700; }
-        .vscode-btn.primary:hover { background: #0062a3; }
-        .vscode-btn.danger { background: #a80000; border-color: #ff3838; }
+        .vscode-activity-icon:hover { color: #ffffff; }
+        .vscode-activity-icon.active { color: #ffffff; border-left: 2px solid #007acc; }
 
-        /* Workspace body */
-        .vscode-body { display: flex; flex: 1; overflow: hidden; }
-
-        /* Explorer Sidebar */
+        /* 2. File Explorer Sidebar */
         .vscode-sidebar {
-            width: 260px;
-            background: var(--vscode-sidebar);
-            border-right: 1px solid var(--vscode-border);
+            width: 250px;
+            background: var(--vsc-sidebar);
+            border-right: 1px solid var(--vsc-border);
             display: flex;
             flex-direction: column;
         }
 
-        .vscode-sidebar-title {
+        .vscode-sidebar-header {
             padding: 10px 14px;
             font-size: 11px;
             text-transform: uppercase;
@@ -365,25 +377,22 @@
             padding: 7px 14px;
             font-size: 12px;
             cursor: pointer;
-            color: #cccccc;
+            color: var(--vsc-text);
             transition: background 0.15s;
         }
-        .vscode-file-item:hover { background: #2a2d2e; }
-        .vscode-file-item.active { background: #37373d; color: #ffffff; font-weight: 600; }
+        .vscode-file-item:hover { background: var(--vsc-hover); }
+        .vscode-file-item.active { background: var(--vsc-active); color: #ffffff; font-weight: 600; }
 
-        .vscode-file-delete {
-            opacity: 0;
-            color: #f87171;
-            cursor: pointer;
-            padding: 2px 4px;
-        }
-        .vscode-file-item:hover .vscode-file-delete { opacity: 1; }
+        .vscode-file-actions { display: none; align-items: center; gap: 6px; }
+        .vscode-file-item:hover .vscode-file-actions { display: flex; }
+        .vscode-file-action-btn { color: #94a3b8; cursor: pointer; }
+        .vscode-file-action-btn:hover { color: #ef4444; }
 
-        /* Editor Main Area */
-        .vscode-editor-area { flex: 1; display: flex; flex-direction: column; background: var(--vscode-bg); }
+        /* 3. Editor & Terminal */
+        .vscode-editor-area { flex: 1; display: flex; flex-direction: column; background: var(--vsc-bg); }
 
         .vscode-tabs {
-            background: var(--vscode-sidebar);
+            background: var(--vsc-sidebar);
             display: flex;
             height: 36px;
             overflow-x: auto;
@@ -391,17 +400,25 @@
         }
 
         .vscode-tab {
-            background: var(--vscode-bg);
+            background: var(--vsc-bg);
             color: #ffffff;
-            padding: 0 16px;
+            padding: 0 14px;
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 12px;
-            border-top: 2px solid #007acc;
-            min-width: 140px;
+            border-top: 2px solid var(--vsc-blue);
+            min-width: 130px;
             justify-content: space-between;
+            cursor: pointer;
         }
+
+        .vscode-tab-close {
+            color: #858585;
+            border-radius: 3px;
+            padding: 1px 3px;
+        }
+        .vscode-tab-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
         .vscode-editor-container {
             display: flex;
@@ -412,7 +429,7 @@
 
         .vscode-line-numbers {
             width: 52px;
-            background: var(--vscode-bg);
+            background: var(--vsc-bg);
             color: #858585;
             padding: 12px 0;
             text-align: right;
@@ -425,7 +442,7 @@
 
         .vscode-code-input {
             flex: 1;
-            background: var(--vscode-bg);
+            background: var(--vsc-bg);
             color: #9cdcfe;
             font-family: 'JetBrains Mono', Consolas, monospace;
             font-size: 13px;
@@ -438,7 +455,7 @@
             overflow: auto;
         }
 
-        /* Interactive Terminal */
+        /* 4. Linux Bash Terminál */
         .vscode-terminal-wrap {
             height: 190px;
             background: #141414;
@@ -466,14 +483,14 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 3px;
         }
 
         .vscode-terminal-prompt {
             display: flex;
             align-items: center;
             background: #141414;
-            padding: 4px 14px;
+            padding: 6px 14px;
             border-top: 1px solid #222;
         }
         .terminal-input {
@@ -487,9 +504,8 @@
             margin-left: 8px;
         }
 
-        /* Status Footer */
         .vscode-footer {
-            background: #007acc;
+            background: var(--vsc-blue);
             color: #ffffff;
             height: 24px;
             display: flex;
@@ -499,50 +515,26 @@
             font-size: 11px;
         }
 
-        /* 5. DIAGNOSTICS INFO MODAL */
-        .diag-modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 10, 25, 0.75);
-            backdrop-filter: blur(5px);
-            z-index: 1100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .diag-card {
-            background: #ffffff;
-            border-radius: 8px;
-            max-width: 620px;
-            width: 100%;
-            padding: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            border-left: 6px solid #f97316;
-        }
-
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- PHP BACKEND DÁTA A LOGIKA S ROZDELENÝMI CHYBAMI -->
+    <!-- PHP BACKEND: DYNAMICKÉ NAČÍTANIE PRIAMO Z DB -->
     <?php
         $rawDevices = $devices ?? [];
 
+        // Ak by databáza nevrátila nič, poskytneme férovú demo štruktúru pripravenú pre Modbus
         if (empty($rawDevices)) {
-            // Reálne a pestré stavy: žiadne rovnaké chyby na všetkých 4 zariadeniach!
             $devicesList = [
                 [
                     'id' => 1,
                     'name' => 'Striedač FTV Hala A (SUN2000-100KTL)',
                     'serial_number' => 'SN-HW-2101004921',
                     'status' => 'normal',
-                    'power_kw' => 86.40,
-                    'yield_today_kwh' => 318.50,
-                    'error_code' => 'Bez chýb — Všetky PV stringy a menič v norme',
-                    'desc' => 'Zariadenie funguje na plný výkon, zbernica RS485 odpovedá stabilne.'
+                    'power_kw' => 84.50,
+                    'yield_today_kwh' => 312.40,
+                    'error_code' => 'OK: Menovitá prevádzka bez chýb'
                 ],
                 [
                     'id' => 2,
@@ -550,90 +542,76 @@
                     'serial_number' => 'SN-HW-2101008872',
                     'status' => 'fault',
                     'power_kw' => 0.00,
-                    'yield_today_kwh' => 14.20,
-                    'error_code' => 'E04-BUS: RS485 Komunikačný Timeout',
-                    'desc' => 'Prerušené vedenie tieniaceho páru alebo nesprávne nastavená slave adresa striedača.'
+                    'yield_today_kwh' => 0.00,
+                    'error_code' => 'E04-BUS: RS485 Komunikačný Timeout'
                 ],
                 [
                     'id' => 3,
-                    'name' => 'Striedač Strecha Sklad (SUN2000-60KTL)',
-                    'serial_number' => 'SN-HW-4910294102',
-                    'status' => 'warn',
-                    'power_kw' => 18.20,
-                    'yield_today_kwh' => 62.40,
-                    'error_code' => 'E08-ISO: Nízky izolačný odpor na PV paneli',
-                    'desc' => 'Izolačný odpor DC stringu 3 klesol pod 0.5 MΩ. Príčinou je vlhkosť v MC4 konektore alebo načatá izolácia.'
-                ],
-                [
-                    'id' => 4,
                     'name' => 'Riadiaca jednotka Gateway Elvo-CM5',
                     'serial_number' => 'SN-GW-9048102391',
                     'status' => 'offline',
                     'power_kw' => 0.00,
                     'yield_today_kwh' => 0.00,
-                    'error_code' => 'COMM-OFFLINE: Spojenie s Gateway prerušené',
-                    'desc' => 'Riadiaca jednotka stratila LTE/LAN spojenie s cloudovým serverom.'
+                    'error_code' => 'OFFLINE: Zariadenie neodpovedá na ping'
                 ],
+                [
+                    'id' => 4,
+                    'name' => 'Striedač FTV Administratíva (SUN2000-30KTL)',
+                    'serial_number' => 'SN-HW-1013901824',
+                    'status' => 'normal',
+                    'power_kw' => 24.20,
+                    'yield_today_kwh' => 98.10,
+                    'error_code' => 'OK: Menovitá prevádzka bez chýb'
+                ]
             ];
         } else {
-            // Ak prišli dáta z DB, mapujeme ich rozmanito
+            // Spracovanie priamo z DB
             $devicesList = [];
-            $simulatedErrors = [
-                ['st' => 'normal', 'code' => 'Bez chýb — Všetko v poriadku', 'desc' => 'Menovitá prevádzka.'],
-                ['st' => 'fault', 'code' => 'E04-BUS: RS485 Komunikačný Timeout', 'desc' => 'Chyba fyzickej zbernice Modbus.'],
-                ['st' => 'warn', 'code' => 'E08-ISO: Nízky izolačný odpor na PV paneli', 'desc' => 'DC zvodový prúd / poškodený konektor.'],
-                ['st' => 'offline', 'code' => 'COMM-OFFLINE: Neodpovedá (LTE Linka)', 'desc' => 'Výpadok sieťového rozhrania.']
-            ];
-
             foreach ($rawDevices as $idx => $row) {
-                $rawSt = strtolower($row['status'] ?? '');
-                if ($rawSt === 'normal' || $rawSt === 'ok') {
-                    $st = 'normal';
-                    $err = 'Bez chýb — Všetko v poriadku';
-                    $desc = 'Menovitá prevádzka.';
-                } else {
-                    $item = $simulatedErrors[$idx % count($simulatedErrors)];
-                    $st = $item['st'];
-                    $err = $row['error_code'] ?? $item['code'];
-                    $desc = $item['desc'];
+                $rawStatus = strtolower($row['status'] ?? 'offline');
+                $power = (float)($row['power_kw'] ?? 0);
+                
+                // Ak je status 'normal' alebo 'ok', koliesko je zelené
+                $isNormal = ($rawStatus === 'normal' || $rawStatus === 'ok');
+                $status = $isNormal ? 'normal' : 'fault';
+
+                // Diagnostická hláška sa ťahá priamo z DB (stĺpec error_code alebo error_msg)
+                $errFromDb = $row['error_code'] ?? ($row['last_error'] ?? null);
+                if (!$errFromDb) {
+                    $errFromDb = $isNormal ? 'OK: Menovitá prevádzka bez chýb' : 'OFFLINE: Zariadenie neodpovedá';
                 }
 
                 $devicesList[] = [
                     'id' => $row['id'] ?? ($idx + 1),
                     'name' => $row['name'] ?? ('Zariadenie #' . ($idx + 1)),
                     'serial_number' => $row['serial_number'] ?? ('SN-ELVO-0' . ($idx + 1)),
-                    'status' => $st,
-                    'power_kw' => (float)($row['power_kw'] ?? ($st === 'normal' ? 72.1 : ($st === 'warn' ? 15.0 : 0.0))),
-                    'yield_today_kwh' => (float)($row['yield_today_kwh'] ?? ($st === 'normal' ? 240.5 : 12.0)),
-                    'error_code' => $err,
-                    'desc' => $desc
+                    'status' => $status,
+                    'power_kw' => $power,
+                    'yield_today_kwh' => (float)($row['yield_today_kwh'] ?? 0),
+                    'error_code' => $errFromDb
                 ];
             }
         }
 
-        // Štatistiky
+        // Výpočet súčtov pre Donut a KPI
         $totalDevs = count($devicesList);
         $countNormal = 0;
         $countFault = 0;
-        $countWarn = 0;
-        $countOffline = 0;
         $sumLivePower = 0.0;
         $sumDailyYield = 0.0;
 
         foreach ($devicesList as $dev) {
-            $st = $dev['status'];
-            if ($st === 'normal') $countNormal++;
-            elseif ($st === 'fault') $countFault++;
-            elseif ($st === 'warn') $countWarn++;
-            elseif ($st === 'offline') $countOffline++;
-
+            if ($dev['status'] === 'normal') {
+                $countNormal++;
+            } else {
+                $countFault++;
+            }
             $sumLivePower += $dev['power_kw'];
             $sumDailyYield += $dev['yield_today_kwh'];
         }
-        $totalIssues = $countFault + $countWarn + $countOffline;
     ?>
 
-    <!-- 1. HLAVIČKA -->
+    <!-- 1. TOP NAV -->
     <header class="fs-nav">
         <div class="fs-nav-left">
             <a href="<?php echo htmlspecialchars($base_path ?? ''); ?>/dashboard">
@@ -665,7 +643,7 @@
         </div>
     </header>
 
-    <!-- 2. HERO S REÁLNOU FOTKOU Fotovoltika1.jpg -->
+    <!-- 2. DARK HERO S FOTKOU Fotovoltika1.jpg -->
     <section class="fs-hero">
         <div class="fs-hero-inner">
             
@@ -722,23 +700,25 @@
                 </div>
             </div>
 
-            <!-- Stĺpec 2: Stav zariadení -->
+            <!-- Stĺpec 2: Stav zariadení (Dynamické Donut koliesko) -->
             <div>
                 <div class="fs-section-title">
                     <i data-lucide="pie-chart" style="width:15px;height:15px;color:#38bdf8;"></i>
-                    <span>Stav zariadení</span>
+                    <span>Stav zariadení (Podľa DB)</span>
                 </div>
                 <div class="fs-donut-panel">
                     <div class="fs-donut-wrapper">
                         <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width:100%; height:100%;">
                             <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.1)" stroke-width="12"></circle>
+                            <!-- Červený chybový oblúk -->
                             <circle cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" stroke-width="12" 
                                     stroke-dasharray="251.2" 
-                                    stroke-dashoffset="<?php echo 251.2 - (($totalIssues / max($totalDevs, 1)) * 251.2); ?>"></circle>
+                                    stroke-dashoffset="<?php echo 251.2 - (($countFault / max($totalDevs, 1)) * 251.2); ?>"></circle>
+                            <!-- Zelený bežiaci oblúk -->
                             <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="12" 
                                     stroke-dasharray="251.2" 
                                     stroke-dashoffset="<?php echo 251.2 - (($countNormal / max($totalDevs, 1)) * 251.2); ?>"
-                                    style="transform: rotate(<?php echo ($totalIssues / max($totalDevs, 1)) * 360; ?>deg); transform-origin: center;"></circle>
+                                    style="transform: rotate(<?php echo ($countFault / max($totalDevs, 1)) * 360; ?>deg); transform-origin: center;"></circle>
                         </svg>
                         <div class="fs-donut-center-text">
                             <span class="fs-donut-center-val"><?php echo $totalDevs; ?></span>
@@ -752,52 +732,42 @@
                             <strong style="color:#10b981;font-family:'JetBrains Mono';"><?php echo $countNormal; ?></strong>
                         </div>
                         <div class="fs-legend-item" onclick="filterByStatus('fault')">
-                            <div><span class="fs-legend-dot" style="background:#ef4444;"></span> Kritická porucha</div>
+                            <div><span class="fs-legend-dot" style="background:#ef4444;"></span> Porucha / Offline</div>
                             <strong style="color:#ef4444;font-family:'JetBrains Mono';"><?php echo $countFault; ?></strong>
-                        </div>
-                        <div class="fs-legend-item" onclick="filterByStatus('warn')">
-                            <div><span class="fs-legend-dot" style="background:#f97316;"></span> Výstraha stringu (E08)</div>
-                            <strong style="color:#f97316;font-family:'JetBrains Mono';"><?php echo $countWarn; ?></strong>
-                        </div>
-                        <div class="fs-legend-item" onclick="filterByStatus('offline')">
-                            <div><span class="fs-legend-dot" style="background:#64748b;"></span> Offline linka</div>
-                            <strong style="color:#94a3b8;font-family:'JetBrains Mono';"><?php echo $countOffline; ?></strong>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Stĺpec 3: Diagnostika & Rozdelenie chýb -->
+            <!-- Stĺpec 3: Diagnostika z DB -->
             <div>
                 <div class="fs-section-title">
                     <i data-lucide="alert-triangle" style="width:15px;height:15px;color:#ef4444;"></i>
-                    <span>Diagnostika & Detaily chýb</span>
+                    <span>Aktívne alarmy z DB</span>
                 </div>
                 <div class="fs-donut-panel">
                     <div class="fs-donut-wrapper">
                         <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width:100%; height:100%;">
                             <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.1)" stroke-width="12"></circle>
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f97316" stroke-width="12" stroke-dasharray="251.2" stroke-dashoffset="<?php echo $totalIssues > 0 ? (251.2 - ($totalIssues/$totalDevs*251.2)) : 251.2; ?>"></circle>
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" stroke-width="12" stroke-dasharray="251.2" stroke-dashoffset="<?php echo $countFault > 0 ? 60 : 251.2; ?>"></circle>
                         </svg>
                         <div class="fs-donut-center-text">
-                            <span class="fs-donut-center-val" style="color:#f87171;"><?php echo $totalIssues; ?></span>
+                            <span class="fs-donut-center-val" style="color:#f87171;"><?php echo $countFault; ?></span>
                             <span class="fs-donut-center-sub">Chýb</span>
                         </div>
                     </div>
 
                     <div class="fs-legend-list">
-                        <div class="fs-legend-item" onclick="showDiagModal('E04-BUS: RS485 Komunikačný Timeout', 'Chyba na fyzickej linke RS485 medzi jednotkou CM5 a meničom.', 'Skontrolujte zapojenie pinov A/B, zakončovací 120Ω odpor a slave adresu meniča.')">
-                            <div style="color:#fca5a5;"><i data-lucide="radio" style="width:12px;height:12px;vertical-align:middle;"></i> E04: RS485 Timeout</div>
-                            <span style="font-size:11px;color:#cbd5e1;"><?php echo $countFault; ?>x</span>
-                        </div>
-                        <div class="fs-legend-item" onclick="showDiagModal('E08-ISO: Nízky izolačný odpor na PV paneli', 'Izolačný odpor medzi DC pólmi a zemou je príliš nízky (< 1 MΩ). Riziko oblúka a zvodového prúdu!', 'Skontrolujte MC4 konektory na streche (vlhkosť), poškodenú izoláciu káblov alebo mikrotrhliny solárneho panelu.')">
-                            <div style="color:#fdba74;"><i data-lucide="shield-alert" style="width:12px;height:12px;vertical-align:middle;"></i> E08: Nízky izolačný odpor</div>
-                            <span style="font-size:11px;color:#cbd5e1;"><?php echo $countWarn; ?>x</span>
-                        </div>
-                        <div class="fs-legend-item" onclick="showDiagModal('COMM-OFFLINE: Spojenie prerušené', 'Gateway Elvo-CM5 neodpovedá na sieťové pingy ani cloudové požiadavky.', 'Skontrolujte napájanie 24V na DIN lište, pripojenie ethernet kábla alebo signál 4G/LTE antény.')">
-                            <div style="color:#cbd5e1;"><i data-lucide="wifi-off" style="width:12px;height:12px;vertical-align:middle;"></i> COMM: Gateway offline</div>
-                            <span style="font-size:11px;color:#cbd5e1;"><?php echo $countOffline; ?>x</span>
-                        </div>
+                        <?php if ($countFault > 0): ?>
+                            <div class="fs-legend-item" style="border-color:rgba(239, 68, 68, 0.4);" onclick="filterByStatus('fault')">
+                                <div style="color:#fca5a5;"><i data-lucide="alert-octagon" style="width:13px;height:13px;vertical-align:middle;"></i> Vyžaduje servis:</div>
+                                <span style="font-size:11px;color:#f87171;font-weight:700;"><?php echo $countFault; ?> zariadenia</span>
+                            </div>
+                        <?php else: ?>
+                            <div class="fs-legend-item">
+                                <div style="color:#6ee7b7;"><i data-lucide="check-circle" style="width:13px;height:13px;vertical-align:middle;"></i> Všetky zariadenia bez hlásení</div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -810,14 +780,12 @@
         <div class="fs-card-table">
             
             <div class="fs-filter-bar">
-                <input type="text" id="filterKeyword" placeholder="Hľadať podľa názvu, SN alebo chybového kódu..." class="fs-input" style="min-width: 320px;" oninput="applyFilters()">
+                <input type="text" id="filterKeyword" placeholder="Hľadať podľa názvu alebo SN..." class="fs-input" style="min-width: 320px;" oninput="applyFilters()">
                 
                 <select id="filterStatus" class="fs-select" onchange="applyFilters()">
                     <option value="">Všetky stavy (Všetko)</option>
-                    <option value="normal">Normálne (Online)</option>
-                    <option value="fault">Kritické poruchy (E04)</option>
-                    <option value="warn">Výstrahy stringov (E08)</option>
-                    <option value="offline">Odpojené / Neodpovedá</option>
+                    <option value="normal">Iba normálne (Online 🟢)</option>
+                    <option value="fault">Porucha & Offline (🔴)</option>
                 </select>
 
                 <div style="margin-left:auto;display:flex;gap:10px;">
@@ -834,13 +802,14 @@
                         <th>Názov zariadenia</th>
                         <th>Sériové číslo (SN)</th>
                         <th>Výkon / Dnešná výroba</th>
-                        <th>Diagnostika (Kliknite pre detaily)</th>
+                        <th>Diagnostické hlásenie z DB</th>
                         <th style="text-align:right;">Akcia</th>
                     </tr>
                 </thead>
                 <tbody id="sitesTableBody">
                     <?php foreach ($devicesList as $dev): 
                         $st = $dev['status'];
+                        $isNormal = ($st === 'normal');
                         $errText = $dev['error_code'];
                         $power = number_format($dev['power_kw'], 2, ',', ' ') . ' kW';
                         $yield = number_format($dev['yield_today_kwh'], 2, ',', ' ') . ' kWh';
@@ -850,7 +819,8 @@
                         data-sn="<?php echo htmlspecialchars(strtolower($dev['serial_number'])); ?>"
                         data-err="<?php echo htmlspecialchars(strtolower($errText)); ?>">
                         <td>
-                            <span class="fs-status-dot <?php echo $st; ?>" title="<?php echo strtoupper($st); ?>"></span>
+                            <!-- FAREBNÉ SVIETIACE KOLIESKO -->
+                            <span class="fs-status-dot <?php echo $isNormal ? 'normal' : 'fault'; ?>" title="<?php echo $isNormal ? 'Online' : 'Offline / Chyba'; ?>"></span>
                         </td>
                         <td>
                             <img src="/templates/Fotovoltika1.jpg" alt="Zariadenie" class="fs-site-thumb">
@@ -867,13 +837,8 @@
                             <?php echo $power; ?> <span style="color:#94a3b8;font-weight:400;">/</span> <?php echo $yield; ?>
                         </td>
                         <td>
-                            <span class="error-pill <?php echo $st; ?>" onclick="showDiagModal('<?php echo htmlspecialchars($errText); ?>', '<?php echo htmlspecialchars($dev['desc']); ?>')">
-                                <i data-lucide="<?php 
-                                    if ($st === 'normal') echo 'check-circle';
-                                    elseif ($st === 'fault') echo 'alert-octagon';
-                                    elseif ($st === 'warn') echo 'alert-triangle';
-                                    else echo 'wifi-off';
-                                ?>" style="width:13px;height:13px;"></i>
+                            <span class="error-pill <?php echo $isNormal ? 'normal' : 'fault'; ?>">
+                                <i data-lucide="<?php echo $isNormal ? 'check-circle' : 'alert-octagon'; ?>" style="width:13px;height:13px;"></i>
                                 <?php echo htmlspecialchars($errText); ?>
                             </span>
                         </td>
@@ -889,92 +854,97 @@
 
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;font-size:12px;color:#64748b;">
                 <div>Počet aktívnych zariadení: <strong id="footerCount" style="color:#1e293b;"><?php echo count($devicesList); ?></strong></div>
-                <div>Elvosolar Diagnostics Engine &bull; Ready</div>
+                <div>Elvosolar Telemetry Engine &bull; Ready</div>
             </div>
 
         </div>
     </main>
 
-    <!-- 4. PLNOHODNOTNÝ VS CODE IDE MODAL S NAHRÁVANÍM A SŤAHOVANÍM -->
+    <!-- 4. SKUTOČNÉ VS CODE IDE ROZHRANIE -->
     <div id="vscodeModal" class="vscode-modal-backdrop hidden">
         <div class="vscode-window">
             
-            <!-- VS Code Menu bar -->
+            <!-- VS Code Title Bar -->
             <div class="vscode-top-bar">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <svg width="18" height="18" viewBox="0 0 100 100" fill="none">
                         <path d="M72.2 4.2L28.6 37.8 11.2 24.5 3 28.5l14.4 21.5L3 71.5l8.2 4 17.4-13.3L72.2 95.8l24.8-11.8V16z" fill="#007ACC"/>
                     </svg>
-                    <span style="font-weight:600;">ElvoControl VS Code Studio — Embedded Gateway CM5</span>
+                    <span style="font-weight:600;">app.py — ElvoControl Gateway Studio [VS Code Dark+]</span>
                 </div>
 
-                <!-- Tlačidlá akcií v hornej lište -->
-                <div class="vscode-actions-header">
-                    <!-- Skrytý input na upload súboru -->
+                <div style="display:flex;align-items:center;gap:10px;">
                     <input type="file" id="fileUploadInput" class="hidden" onchange="handleFileUpload(event)">
-                    
-                    <button class="vscode-btn" onclick="triggerUploadFile()">
-                        <i data-lucide="upload" style="width:13px;height:13px;"></i> Nahrať súbor
+                    <button class="vscode-btn" onclick="triggerUploadFile()" style="background:#2d2d2d;border:1px solid #444;color:#fff;padding:3px 10px;font-size:11px;border-radius:3px;cursor:pointer;">
+                        <i data-lucide="upload" style="width:12px;height:12px;vertical-align:middle;"></i> Nahrať z PC
                     </button>
-                    <button class="vscode-btn" onclick="downloadCurrentFile()">
-                        <i data-lucide="download" style="width:13px;height:13px;"></i> Stiahnuť
+                    <button class="vscode-btn" onclick="downloadCurrentFile()" style="background:#2d2d2d;border:1px solid #444;color:#fff;padding:3px 10px;font-size:11px;border-radius:3px;cursor:pointer;">
+                        <i data-lucide="download" style="width:12px;height:12px;vertical-align:middle;"></i> Stiahnuť
                     </button>
-                    <button class="vscode-btn" onclick="createNewFilePrompt()">
-                        <i data-lucide="file-plus" style="width:13px;height:13px;"></i> Nový súbor
-                    </button>
-                    <button class="vscode-btn primary" onclick="deployHwCode()">
-                        <i data-lucide="zap" style="width:13px;height:13px;"></i> Flash do HW
+                    <button class="vscode-btn" onclick="deployHwCode()" style="background:#007acc;border:none;color:#fff;font-weight:700;padding:3px 12px;font-size:11px;border-radius:3px;cursor:pointer;">
+                        ▶ Flash do HW
                     </button>
                     <i data-lucide="x" style="width:18px;height:18px;cursor:pointer;margin-left:8px;" onclick="closeVsCodeModal()"></i>
                 </div>
             </div>
 
-            <!-- VS Code Body -->
-            <div class="vscode-body">
+            <!-- VS Code Layout (Activity Bar + Sidebar + Editor) -->
+            <div class="vscode-body-layout">
                 
-                <!-- Prieskumník súborov -->
-                <div class="vscode-sidebar">
-                    <div class="vscode-sidebar-title">
-                        <span>Prieskumník projektov</span>
-                        <i data-lucide="refresh-cw" style="width:12px;height:12px;cursor:pointer;" onclick="renderFileList()"></i>
+                <!-- Activity Bar (Vľavo ikony presne ako v originálnom VS Code) -->
+                <div class="vscode-activity-bar">
+                    <div class="vscode-activity-icon active" title="Prieskumník (Explorer)">
+                        <i data-lucide="files" style="width:20px;height:20px;"></i>
                     </div>
-                    <div class="vscode-file-list" id="vsFileList">
-                        <!-- Dynamicky generované položky súborov -->
+                    <div class="vscode-activity-icon" title="Hľadať (Search)">
+                        <i data-lucide="search" style="width:20px;height:20px;"></i>
+                    </div>
+                    <div class="vscode-activity-icon" title="Source Control (Git)">
+                        <i data-lucide="git-branch" style="width:20px;height:20px;"></i>
+                    </div>
+                    <div class="vscode-activity-icon" title="Nastavenia">
+                        <i data-lucide="settings" style="width:20px;height:20px;"></i>
                     </div>
                 </div>
 
-                <!-- Editor Center -->
-                <div class="vscode-editor-area">
-                    <div class="vscode-tabs" id="vsTabsBar">
-                        <!-- Dynamicky generované taby -->
+                <!-- Explorer Sidebar -->
+                <div class="vscode-sidebar">
+                    <div class="vscode-sidebar-header">
+                        <span>Prieskumník súborov</span>
+                        <i data-lucide="file-plus" style="width:14px;height:14px;cursor:pointer;" onclick="createNewFilePrompt()" title="Nový súbor"></i>
                     </div>
+                    <div class="vscode-file-list" id="vsFileList"></div>
+                </div>
+
+                <!-- Editor Workspace -->
+                <div class="vscode-editor-area">
+                    <div class="vscode-tabs" id="vsTabsBar"></div>
 
                     <div class="vscode-editor-container">
                         <div class="vscode-line-numbers" id="lineNumbers"></div>
                         <textarea id="vscodeSource" class="vscode-code-input" spellcheck="false" oninput="handleCodeInput()"></textarea>
                     </div>
 
-                    <!-- Spodný terminál -->
+                    <!-- Spodný Linux Bash Terminál -->
                     <div class="vscode-terminal-wrap">
                         <div class="vscode-terminal-header">
                             <div style="display:flex;gap:14px;">
                                 <span style="color:#fff;border-bottom:1px solid #007acc;padding-bottom:2px;">BASH TERMINÁL</span>
                                 <span>OUTPUT</span>
-                                <span>DEBUG CONSOLE</span>
+                                <span>MODBUS LOGS</span>
                             </div>
-                            <span style="cursor:pointer;" onclick="clearVsTerminal()">Vymazať</span>
+                            <span style="cursor:pointer;" onclick="clearVsTerminal()">Vymazať výpis</span>
                         </div>
                         <div class="vscode-terminal-body" id="vscodeTerminalBody">
-                            <div>[SYSTEM] ElvoControl CM5 (Linux 6.1.0-rpi-arm64) pripojené cez SSH.</div>
-                            <div>[MODBUS] Port /dev/ttyAMA0 inicializovaný. Baudrate: 9600 8N1.</div>
-                            <div style="color:#22c55e;">[AI LINTER] Pripravené. Syntax je validná.</div>
+                            <div>[SYSTEM] Pripojené k Raspberry Pi CM5 (IP: 192.168.1.120).</div>
+                            <div>[MODBUS] RS485 port /dev/ttyAMA0 inicializovaný. Baudrate: 9600 8N1.</div>
+                            <div style="color:#22c55e;">[AI LINTER] Analýza integrity kódu dokončená: Žiadne chyby.</div>
                         </div>
                         <div class="vscode-terminal-prompt">
                             <span style="color:#38bdf8;">root@elvo-cm5:~$</span>
-                            <input type="text" id="terminalCmdInput" class="terminal-input" placeholder="Zadajte príkaz (napr. help, deploy, ls, ping)..." onkeydown="handleTerminalCommand(event)">
+                            <input type="text" id="terminalCmdInput" class="terminal-input" placeholder="Zadajte príkaz (napr. ls, cat app.py, python app.py, ping, help)..." onkeydown="handleTerminalCommand(event)">
                         </div>
                     </div>
-
                 </div>
 
             </div>
@@ -989,33 +959,10 @@
                     <span id="aiCheckLabel" style="color:#a7f3d0;"><i data-lucide="check" style="width:11px;height:11px;vertical-align:middle;"></i> AI: Safe Code</span>
                 </div>
                 <div>
-                    <span>Riadiaca jednotka: ElvoControl-CM5 (Online)</span>
+                    <span>Riadiaca jednotka: ElvoControl CM5 (Debian 12)</span>
                 </div>
             </div>
 
-        </div>
-    </div>
-
-    <!-- 5. DIAGNOSTIKÝ DETAIL MODAL -->
-    <div id="diagModal" class="diag-modal-backdrop hidden">
-        <div class="diag-card">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
-                <h3 id="diagModalTitle" style="font-size:16px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px;">
-                    <i data-lucide="alert-triangle" style="color:#f97316;"></i> Hlásenie
-                </h3>
-                <i data-lucide="x" style="cursor:pointer;" onclick="closeDiagModal()"></i>
-            </div>
-            <div style="margin-bottom:12px;">
-                <strong style="font-size:12px;color:#64748b;text-transform:uppercase;">Čo to znamená:</strong>
-                <p id="diagModalDesc" style="font-size:13px;color:#334155;margin-top:4px;line-height:1.5;"></p>
-            </div>
-            <div style="background:#f8fafc;padding:12px;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:16px;">
-                <strong style="font-size:12px;color:#0284c7;text-transform:uppercase;">Odporúčaný servisný postup:</strong>
-                <p id="diagModalAction" style="font-size:13px;color:#1e293b;margin-top:4px;line-height:1.5;"></p>
-            </div>
-            <div style="display:flex;justify-content:flex-end;">
-                <button class="fs-btn-primary" onclick="closeDiagModal()">Rozumiem</button>
-            </div>
         </div>
     </div>
 
@@ -1025,7 +972,7 @@
         // Databáza súborov pre VS Code IDE
         let currentActiveFile = 'app.py';
         const fileDatabase = {
-            'app.py': `# ElvoControl Telemetry Collector
+            'app.py': `# ElvoControl Telemetry Collector & Modbus Daemon
 import time
 import modbus_scan
 from logger import log_event
@@ -1038,11 +985,11 @@ def run_loop():
             if not data:
                 log_event("WARN", "RS485 neodpovedá...")
             else:
-                log_event("INFO", f"Výkon: {data.get('power_kw', 0)} kW")
+                log_event("INFO", f"Výkon meniča: {data.get('power_kw', 0)} kW")
         except Exception as e:
-            log_event("ERROR", f"Chyba: {str(e)}")
+            log_event("ERROR", f"Chyba Modbus komunikácie: {str(e)}")
             
-        time.sleep(2) # Bezpečný spánok pre ochranu CPU
+        time.sleep(2) # Ochrana pred 100% preťažením procesora
 
 if __name__ == "__main__":
     run_loop()
@@ -1070,7 +1017,7 @@ def restart_service():
             'config.json': `{\n  "gateway_id": "GW-CM5-ELVO-01",\n  "baudrate": 9600,\n  "modbus_slaves": [1, 2, 3, 4],\n  "cloud_sync_interval_sec": 5\n}`
         };
 
-        // Filtrovanie hlavnej tabuľky
+        // Filtrovanie tabuľky
         function applyFilters() {
             const keyword = document.getElementById('filterKeyword').value.trim().toLowerCase();
             const statusVal = document.getElementById('filterStatus').value;
@@ -1109,7 +1056,7 @@ def restart_service():
             applyFilters();
         }
 
-        // VS CODE OTVÁRANIE A SÚBORY
+        // VS CODE INTERAKTÍVNA LOGIKA
         function openVsCodeModal() {
             document.getElementById('vscodeModal').classList.remove('hidden');
             renderFileList();
@@ -1134,10 +1081,12 @@ def restart_service():
                         <i data-lucide="file-code" style="width:14px;height:14px;color:${iconColor};"></i>
                         <span>${file}</span>
                     </div>
-                    <i data-lucide="trash-2" class="vscode-file-delete" onclick="deleteVsFile(event, '${file}')"></i>
+                    <div class="vscode-file-actions">
+                        <i data-lucide="trash-2" class="vscode-file-action-btn" onclick="deleteVsFile(event, '${file}')"></i>
+                    </div>
                 `;
                 div.onclick = (e) => {
-                    if (e.target.closest('.vscode-file-delete')) return;
+                    if (e.target.closest('.vscode-file-action-btn')) return;
                     selectVsFile(file);
                 };
                 container.appendChild(div);
@@ -1155,13 +1104,13 @@ def restart_service():
                         <i data-lucide="file-code" style="width:13px;height:13px;color:#38bdf8;"></i>
                         <span>${currentActiveFile}</span>
                     </div>
+                    <span class="vscode-tab-close" onclick="event.stopPropagation();">&times;</span>
                 </div>
             `;
             lucide.createIcons();
         }
 
         function selectVsFile(fileName) {
-            // Uložíme zmeny starého súboru
             if (fileDatabase[currentActiveFile] !== undefined) {
                 fileDatabase[currentActiveFile] = document.getElementById('vscodeSource').value;
             }
@@ -1195,7 +1144,7 @@ def restart_service():
             lucide.createIcons();
         }
 
-        // NAHRÁVANIE SÚBOROV Z POČÍTAČA (UPLOAD)
+        // NAHRÁVANIE Z PC (UPLOAD)
         function triggerUploadFile() {
             document.getElementById('fileUploadInput').click();
         }
@@ -1206,18 +1155,16 @@ def restart_service():
 
             const reader = new FileReader();
             reader.onload = function(event) {
-                const content = event.target.result;
-                fileDatabase[file.name] = content;
+                fileDatabase[file.name] = event.target.result;
                 selectVsFile(file.name);
-                
                 const term = document.getElementById('vscodeTerminalBody');
-                term.innerHTML += `<div style="color:#38bdf8;">[UPLOAD] Súbor ${file.name} bol úspešne nahratý do projektu.</div>`;
+                term.innerHTML += `<div style="color:#38bdf8;">[UPLOAD] Súbor ${file.name} bol nahratý do Gateway projektu.</div>`;
                 term.scrollTop = term.scrollHeight;
             };
             reader.readAsText(file);
         }
 
-        // SŤAHOVANIE SÚBORU DO POČÍTAČA (DOWNLOAD)
+        // SŤAHOVANIE DO PC (DOWNLOAD)
         function downloadCurrentFile() {
             const content = document.getElementById('vscodeSource').value;
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -1231,15 +1178,14 @@ def restart_service():
             URL.revokeObjectURL(url);
         }
 
-        // VYTVORENIE NOVÉHO SÚBORU
         function createNewFilePrompt() {
-            const name = prompt("Zadajte názov nového súboru (napr. test_loop.py):", "novy_skript.py");
+            const name = prompt("Názov nového súboru (napr. test.py):", "novy_skript.py");
             if (!name) return;
             if (fileDatabase[name]) {
-                alert("Súbor s týmto názvom už existuje!");
+                alert("Tento súbor už existuje!");
                 return;
             }
-            fileDatabase[name] = "# Nový python skript\nimport time\n\nprint('Ahoj ElvoControl!')\n";
+            fileDatabase[name] = "# Nový python skript pre ElvoControl\nimport time\n\nprint('Ready')\n";
             selectVsFile(name);
         }
 
@@ -1249,81 +1195,77 @@ def restart_service():
                 alert("V projekte musí zostať aspoň jeden súbor!");
                 return;
             }
-            if (confirm(`Naozaj chcete vymazať súbor ${fileName}?`)) {
+            if (confirm(`Naozaj chcete vymazať ${fileName}?`)) {
                 delete fileDatabase[fileName];
                 currentActiveFile = Object.keys(fileDatabase)[0];
                 selectVsFile(currentActiveFile);
             }
         }
 
-        // FLASH DO HW & AI VALIDÁCIA
+        // FLASH DO HW & AI KONTROLA
         function deployHwCode() {
             const code = document.getElementById('vscodeSource').value;
             const term = document.getElementById('vscodeTerminalBody');
 
             if (code.includes('while True:') && !code.includes('sleep')) {
-                term.innerHTML += `<div style="color:#ef4444;">[BLOCKED] AI zablokovala nahrávanie: Chýba time.sleep()! Preťažilo by riadiacu jednotku.</div>`;
+                term.innerHTML += `<div style="color:#ef4444;">[AI ERROR] CHYBA: Zistený nekonečný cyklus bez time.sleep()! Preťažilo by CPU riadiacej jednotky!</div>`;
                 alert("Zápis zablokovaný! V slučke chýba funkcia time.sleep().");
                 term.scrollTop = term.scrollHeight;
                 return;
             }
 
-            if (!confirm(`Naozaj chcete zapísať ${currentActiveFile} do Gateway a reštartovať službu?`)) {
+            if (!confirm(`Naozaj chcete zapísať ${currentActiveFile} do Gateway pamäte a reštartovať zber dát?`)) {
                 return;
             }
 
-            term.innerHTML += `<div>[FLASH] Kompilujem bytecode a zapisujem do Flash...</div>`;
+            term.innerHTML += `<div>[FLASH] Zapisujem kód do pamäte riadiacej jednotky...</div>`;
             setTimeout(() => {
-                term.innerHTML += `<div style="color:#22c55e;font-weight:700;">[OK] Súbor ${currentActiveFile} úspešne nasadený! Riadiaci démon reštartovaný.</div>`;
+                term.innerHTML += `<div style="color:#22c55e;font-weight:700;">[SUCCESS] Súbor ${currentActiveFile} úspešne zapísaný. Démon reštartovaný.</div>`;
                 term.scrollTop = term.scrollHeight;
-                alert("✅ Kód bol úspešne nahratý do HW a služba bola reštartovaná!");
+                alert("✅ Kód bol úspešne nahratý do HW!");
             }, 600);
         }
 
-        // INTERAKTÍVNY TERMINÁL
+        // INTERAKTÍVNY TERMINÁL (COMMAND LINE)
         function handleTerminalCommand(e) {
             if (e.key !== 'Enter') return;
             const input = document.getElementById('terminalCmdInput');
-            const cmd = input.value.trim().toLowerCase();
+            const cmd = input.value.trim();
             input.value = '';
             const term = document.getElementById('vscodeTerminalBody');
 
             term.innerHTML += `<div><span style="color:#38bdf8;">root@elvo-cm5:~$</span> ${cmd}</div>`;
 
-            if (cmd === 'help') {
-                term.innerHTML += `<div>Dostupné príkazy: <b>help</b>, <b>ls</b>, <b>deploy</b>, <b>clear</b>, <b>status</b>, <b>ping</b></div>`;
-            } else if (cmd === 'ls') {
+            const lower = cmd.toLowerCase();
+            if (lower === 'help') {
+                term.innerHTML += `<div>Dostupné príkazy: <b>ls</b>, <b>cat [file]</b>, <b>python [file]</b>, <b>deploy</b>, <b>clear</b>, <b>ping</b></div>`;
+            } else if (lower === 'ls') {
                 term.innerHTML += `<div>${Object.keys(fileDatabase).join('   ')}</div>`;
-            } else if (cmd === 'clear') {
+            } else if (lower.startsWith('cat ')) {
+                const f = cmd.substring(4).trim();
+                if (fileDatabase[f]) {
+                    term.innerHTML += `<pre style="color:#cbd5e1;font-size:11px;">${fileDatabase[f]}</pre>`;
+                } else {
+                    term.innerHTML += `<div style="color:#ef4444;">cat: ${f}: Súbor neexistuje</div>`;
+                }
+            } else if (lower.startsWith('python ')) {
+                term.innerHTML += `<div style="color:#a7f3d0;">[EXEC] Spúšťam ${cmd.substring(7)} v sandboxe... Úspešne ukončené.</div>`;
+            } else if (lower === 'clear') {
                 clearVsTerminal();
                 return;
-            } else if (cmd === 'status') {
-                term.innerHTML += `<div style="color:#22c55e;">Systemd: elvo-telemetry.service [ACTIVE / RUNNING]</div>`;
-            } else if (cmd === 'ping') {
-                term.innerHTML += `<div>64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=0.824 ms</div>`;
-            } else if (cmd === 'deploy') {
+            } else if (lower === 'deploy') {
                 deployHwCode();
+            } else if (lower === 'ping') {
+                term.innerHTML += `<div>64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=0.812 ms</div>`;
             } else {
-                term.innerHTML += `<div style="color:#ef4444;">bash: ${cmd}: príkaz nebol nájdený. Zadajte 'help'.</div>`;
+                term.innerHTML += `<div style="color:#ef4444;">bash: ${cmd}: príkaz nebol nájdený. Napíšte 'help'.</div>`;
             }
+
             term.scrollTop = term.scrollHeight;
         }
 
         function clearVsTerminal() {
             document.getElementById('vscodeTerminalBody').innerHTML = '<div style="color:#858585;">[TERMINÁL VYČISTENÝ]</div>';
-        }
-
-        // DIAGNOSTICKÝ MODAL
-        function showDiagModal(title, desc, action) {
-            document.getElementById('diagModalTitle').innerHTML = `<i data-lucide="alert-triangle" style="color:#f97316;"></i> ${title}`;
-            document.getElementById('diagModalDesc').innerText = desc;
-            document.getElementById('diagModalAction').innerText = action || "Skontrolujte zapojenie vodičov a premerajte multimetrom hodnoty na svorkovnici.";
-            document.getElementById('diagModal').classList.remove('hidden');
-            lucide.createIcons();
-        }
-
-        function closeDiagModal() {
-            document.getElementById('diagModal').classList.add('hidden');
         }
     </script>
 </body>
