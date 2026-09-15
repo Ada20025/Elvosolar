@@ -548,21 +548,57 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');
     
-    $stmt = $pdo->prepare("SELECT id, admin_command, config_json FROM cm5_config WHERE (serial_number = ? OR serial_number = 'CM5-DEFAULT') AND status = 'pending' ORDER BY id DESC LIMIT 1");
-    $stmt->execute([$serial]);
-    $row = $stmt->fetch();
-    
-    if ($row) {
-        $pdo->prepare("UPDATE cm5_config SET status = 'sent' WHERE id = ?")->execute([$row['id']]);
-        send_json([
-            'status' => 'success',
-            'command' => $row['admin_command'],
-            'config' => json_decode($row['config_json'] ?? '{}', true),
-            'id' => $row['id']
-        ]);
-    } else {
+    try {
+        $stmt = $pdo->prepare("SELECT id, admin_command, config_json FROM cm5_config WHERE (serial_number = ? OR serial_number = 'CM5-DEFAULT') AND status = 'pending' ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$serial]);
+        $row = $stmt->fetch();
+        
+        if ($row) {
+            try {
+                $pdo->prepare("UPDATE cm5_config SET status = 'sent' WHERE id = ?")->execute([$row['id']]);
+            } catch (Exception $e) {
+                // Status update failed - ignore (data truncated)
+            }
+            send_json([
+                'status' => 'success',
+                'command' => $row['admin_command'],
+                'config' => json_decode($row['config_json'] ?? '{}', true),
+                'id' => $row['id']
+            ]);
+        } else {
+            send_json(['status' => 'no_pending']);
+        }
+    } catch (Exception $e) {
+        // cm5_config table might not exist yet or has schema issues
         send_json(['status' => 'no_pending']);
     }
+}
+
+// --- CM5 REPORT IP (keepalive) ---
+elseif ($path === '/api/report-ip' && $method === 'POST') {
+    $data = get_json_input();
+    $ip = trim($data['ip'] ?? '');
+    $serial = trim($data['serial'] ?? '');
+    if ($ip && $serial) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'online') ON DUPLICATE KEY UPDATE updated_at = NOW()");
+            $stmt->execute([$serial, json_encode(['ip' => $ip])]);
+        } catch (Exception $e) { /* ignore */ }
+    }
+    send_json(['status' => 'success']);
+}
+
+// --- CM5 REGISTER ---
+elseif ($path === '/api/cm5/register' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = trim($data['serial'] ?? '');
+    if ($serial) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, status) VALUES (?, 'registered') ON DUPLICATE KEY UPDATE updated_at = NOW()");
+            $stmt->execute([$serial]);
+        } catch (Exception $e) { /* ignore */ }
+    }
+    send_json(['status' => 'success', 'serial' => $serial]);
 }
 
 // --- HEALTHCHECK ---
