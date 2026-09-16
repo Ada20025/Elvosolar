@@ -712,27 +712,23 @@ class PowerAdjustRequest(BaseModel):
 
 @app.post("/api/system/smartlogger/power")
 def api_smartlogger_power(data: PowerAdjustRequest):
-    """Nastavi aktivny vykon na SmartLoggeri (register 40428, gain 10)."""
+    """Nastavi aktivny vykon na SmartLoggeri (register 40428, gain 10).
+    Pouziva connection pool zo solar_service namiesto noveho socketu."""
     try:
         reg_val = int(data.power_percent * 10)  # gain 10: 49.0% = 490
         reg_val = max(-1000, min(1000, reg_val))  # clamp -100% to 100%
-        # I16 signed: pre negativne hodnoty
         if reg_val < 0: reg_val += 0x10000
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(3.0)
-        sock.connect((data.ip, data.port))
-        trans_id = int(time.time() * 1000) & 0xFFFF
-        # FC06 Write Single Register (40428)
-        packet = struct.pack('>HHBBHHH', trans_id, 0, 6, data.unit_id, 6, 40428, reg_val)
-        sock.sendall(packet)
-        resp = sock.recv(256)
-        sock.close()
-        if len(resp) >= 8 and resp[7] == 0x06:
+        
+        # Pouzijeme solar_service connection pool
+        dev_id = data.device_id if hasattr(data, 'device_id') else 1
+        try:
+            bg_service.tcp_connect(dev_id, data.ip, data.port)
+        except: pass
+        ok = bg_service.tcp_write_register(dev_id, data.unit_id, 40428, reg_val)
+        if ok:
             return {"status": "success", "power_percent": data.power_percent, "register": 40428, "raw_value": reg_val}
-        elif len(resp) >= 9 and resp[7] == 0x86:
-            exc = resp[8] if len(resp) > 8 else 0
-            return {"status": "error", "message": f"Modbus Exception 0x{exc:02X}"}
-        return {"status": "warning", "message": "Odpoveď nečakaná", "raw": resp.hex()}
+        else:
+            return {"status": "error", "message": "Zapis na SmartLogger zlyhal"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

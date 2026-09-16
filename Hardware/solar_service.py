@@ -273,6 +273,41 @@ class SolarBackgroundService:
             conn['sock'] = None
             return None
 
+    def tcp_write_register(self, device_id, slave_id, address, value, timeout=2.0):
+        """Zapis jedneho Hold Reg cez Modbus TCP (FC06). Pouziva sa pre nastavenie vykonu (40428)."""
+        key = str(device_id)
+        conn = self.tcp_connections.get(key)
+        if not conn or not conn.get('sock'):
+            return False
+        try:
+            transaction_id = int(time.time() * 1000) & 0xFFFF
+            # FC06 Write Single Register: 6 bytes PDU
+            packet = struct.pack('>HHBBHHH',
+                transaction_id,
+                0,               # Protocol ID
+                6,               # Length
+                slave_id,        # Unit ID
+                6,               # FC06: Write Single Register
+                address,         # Register address
+                value & 0xFFFF   # Value (16-bit)
+            )
+            conn['sock'].sendall(packet)
+            resp = conn['sock'].recv(256)
+            if len(resp) >= 8 and resp[7] == 0x06:
+                conn['last_ok'] = time.time()
+                self.log_to_terminal(f"[TCP WRITE] Zapis OK: slave={slave_id} reg={address} val={value}")
+                return True
+            elif len(resp) >= 8 and (resp[7] & 0x80):
+                self.log_to_terminal(f"[TCP WRITE] Exception: slave={slave_id} reg={address} fc={resp[7]:#04x}")
+                return False
+            return False
+        except Exception as e:
+            self.log_to_terminal(f"[TCP WRITE] Chyba zapisu na {conn.get('ip','?')}: {e}")
+            try: conn['sock'].close()
+            except: pass
+            conn['sock'] = None
+            return False
+
     def tcp_read_single(self, device_id, slave_id, register, fc=3):
         """Precita jednu hodnotu cez Modbus TCP."""
         if fc == 3:
@@ -717,6 +752,33 @@ class SolarBackgroundService:
                                 success = self.raw_write_register(local_ser, slave_id, reg, val, function_code=16)
                     except Exception:
                         pass
+                
+                # SmartLogger TCP: zapis vykonu na register 40428
+                if self.is_tcp_device(dev.get('config', {})):
+                    try:
+                        cfg = dev.get('config', {})
+                        dev_id = dev.get('id', 1)
+                        tcp_ip = cfg.get('ip', '')
+                        tcp_port = int(cfg.get('port', 502))
+                        tcp_unit = int(cfg.get('unit_id', 0))
+                        
+                        if tcp_ip:
+                            # Nastav vykon: ON=100%, OFF=0%, AUTO=AI rozhodne
+                            power_pct = 100 if target_on else 0
+                            reg_val = int(power_pct * 10)  # gain 10
+                            if reg_val < 0: reg_val += 0x10000
+                            
+                            # Uisti ze je pripojeny
+                            if not self.tcp_connections.get(str(dev_id)) or not self.tcp_connections[str(dev_id)].get('sock'):
+                                self.tcp_connect(dev_id, tcp_ip, tcp_port)
+                            
+                            ok = self.tcp_write_register(dev_id, tcp_unit, 40428, reg_val)
+                            if ok:
+                                self.log_to_terminal(f"[TCP WRITE] SmartLogger {tcp_ip}: vykon nastaveny na {power_pct}%")
+                            else:
+                                self.log_to_terminal(f"[TCP WRITE] SmartLogger {tcp_ip}: zapis zlyhal")
+                    except Exception as e:
+                        self.log_to_terminal(f"[TCP WRITE] SmartLogger chyba: {e}")
             except Exception as e:
                 self.log_to_terminal(f"Chyba pri vykonávaní riadiacich príkazov: {e}")
 
