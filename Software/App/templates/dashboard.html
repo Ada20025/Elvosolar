@@ -1391,6 +1391,7 @@
                                     <span id="gearModalMinVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);">0%</span>
                                     <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">+100%</span>
                                 </div>
+                                <div style="font-size:9px;color:var(--text-muted);margin-top:6px;">⚡ <strong>Pozitívne</strong> = výkon do siete (predaj) · <strong>Negatívne</strong> = výkon zo siete (nabíjanie batérie)</div>
                             </div>
                             <div class="glass-card" style="margin:0;padding:20px;">
                                 <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Max výkon (%)</label>
@@ -1400,6 +1401,7 @@
                                     <span id="gearModalMaxVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);">100%</span>
                                     <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">+100%</span>
                                 </div>
+                                <div style="font-size:9px;color:var(--text-muted);margin-top:6px;">🔋 Určuje maximálny výkon ktorým sa FVE nabíja alebo predáva. Pre SmartLogger: I16 register 40428.</div>
                             </div>
                         </div>
                         <!-- Min OKTE Price -->
@@ -3504,6 +3506,54 @@
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             }
         }
+    // === INTERACTIVE ONBOARDING TOUR ===
+    function startOnboarding() {
+        if (localStorage.getItem('elvo_onboarding_done')) return;
+        const steps = [
+            { el: 'header', title: '🔑 Hlavička', text: 'Tu vidíš meno zariadenia a stav pripojenia (online/offline). Klikni na šípku pre výber zariadenia.' },
+            { el: 'tabBtnOverview', title: '📊 Prehľad', text: 'Tu sa zobrazujú aktuálne dáta: výkon FVE, batéria SOC, OKTE ceny, teplota.' },
+            { el: 'tabBtnRiadenie', title: '⚙️ Riadenie', text: 'Tu nastavuješ výkon (gear wheels), AI modely, Smart Meter a Dovolenku.' },
+            { el: 'tabBtnRele', title: '🔌 Relé', text: 'Tu ovládaš Shelly relé (bojler, klima, sauna, filtrácia). Pridaj nové cez + tlačidlo.' },
+            { el: 'gearMinBtn', title: '🔧 Gear Wheels', text: 'Klikni na ozubené koliesko pre nastavenie min/max výkonu a min OKTE ceny.' }
+        ];
+        let current = 0;
+        const overlay = document.createElement('div');
+        overlay.id = 'onboardingOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(2,6,23,0.85);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;';
+        document.body.appendChild(overlay);
+        function showStep() {
+            if (current >= steps.length) {
+                overlay.remove();
+                localStorage.setItem('elvo_onboarding_done', '1');
+                return;
+            }
+            const s = steps[current];
+            const target = document.getElementById(s.el);
+            if (!target) { current++; showStep(); return; }
+            overlay.innerHTML = `
+                <div style="background:var(--bg-secondary);border:1px solid var(--border-card);border-radius:16px;padding:24px;max-width:340px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                    <div style="font-size:22px;margin-bottom:8px;">${s.title}</div>
+                    <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:20px;">${s.text}</div>
+                    <div style="display:flex;gap:8px;justify-content:center;">
+                        <button onclick="document.getElementById('onboardingOverlay').remove();localStorage.setItem('elvo_onboarding_done','1');" style="padding:8px 16px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-card);color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;">Preskočiť</button>
+                        <button onclick="current++;showStep();" style="padding:8px 16px;border-radius:8px;background:var(--accent-solar);color:white;font-size:12px;font-weight:700;border:none;cursor:pointer;">${current < steps.length - 1 ? 'Ďalší →' : 'Hotovo ✓'}</button>
+                    </div>
+                    <div style="font-size:10px;color:var(--text-muted);margin-top:12px;">${current + 1} / ${steps.length}</div>
+                </div>`;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.style.outline = '2px solid var(--accent-solar)';
+            target.style.outlineOffset = '4px';
+            target.style.borderRadius = '12px';
+            setTimeout(() => { target.style.outline = ''; target.style.outlineOffset = ''; }, 2000);
+        }
+        showStep();
+        window.currentStep = steps; window.currentIdx = 0;
+        window.showStep = showStep;
+    }
+    // Spusti onboarding po nacitani
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => { try { startOnboarding(); } catch(e) {} }, 1500);
+    });
     </script>
 </body>
 </html>
