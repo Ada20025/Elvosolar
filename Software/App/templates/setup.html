@@ -426,11 +426,15 @@
                             </div>
                         </div>
 
-                        <!-- Návod — SmartLogger + Huawei SUN2000 -->
-                        <div id="smartloggerGuide" class="hidden p-4 bg-slate-950/60 rounded-2xl border border-purple-900/50 space-y-4">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-purple-400 flex items-center justify-between">
-                                <span>Návod: Pripojenie zariadenia</span>
-                                <span class="px-2 py-0.5 rounded-full bg-purple-950/50 text-purple-300 text-[8px] font-bold">ODPORÚČANÉ: SMARTLOGGER</span>
+                        <!-- Návod — SmartLogger + Huawei SUN2000 (scrollable modal) -->
+                        <div id="smartloggerGuide" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(2,6,23,0.9);backdrop-filter:blur(8px);">
+                        <div class="bg-slate-900 border border-purple-900/50 rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto p-4 space-y-3 shadow-2xl">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-purple-400">Návod: Pripojenie zariadenia</div>
+                                    <span class="px-2 py-0.5 rounded-full bg-purple-950/50 text-purple-300 text-[8px] font-bold mt-1 inline-block">ODPORÚČANÉ: SMARTLOGGER</span>
+                                </div>
+                                <button onclick="toggleSmartLoggerGuide()" class="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm font-bold cursor-pointer">✕</button>
                             </div>
 
                             <!-- Odporucanie -->
@@ -530,6 +534,8 @@
                                 <p class="text-[10px] text-slate-400 ml-7 mt-2">Priame RS485 pripojenie: <strong class="text-white">RS485+ → A</strong>, <strong class="text-white">RS485- → B</strong>, <strong class="text-white">GND → G</strong>. Baud: <strong class="text-white">9600</strong>, Slave ID: <strong class="text-white">1</strong>.</p>
                             </div>
                         </div>
+                        </div><!-- end guide inner -->
+                        </div><!-- end guide modal -->
 
 <!-- Discover buttons removed - setup sends JSON config directly -->
 
@@ -845,23 +851,31 @@
             const g = document.getElementById('smartloggerGuide');
             if (g) g.classList.toggle('hidden');
         }
+        // Close guide when clicking outside
+        document.addEventListener('click', function(e) {
+            const guide = document.getElementById('smartloggerGuide');
+            if (guide && !guide.classList.contains('hidden')) {
+                if (e.target === guide) { guide.classList.add('hidden'); }
+            }
+        });
 
         function showGuideTab(tab) {
             const slGuide = document.getElementById('smartloggerGuide');
             const tabSl = document.getElementById('guideTabSl');
             const tabHu = document.getElementById('guideTabHu');
-            const slContent = slGuide.querySelectorAll('.space-y-4 > div:not(#sun2000Guide)');
             const huContent = document.getElementById('sun2000Guide');
+            // Find all SmartLogger steps (p-3 bg-slate-900/60 divs)
+            const slSteps = slGuide.querySelectorAll('.p-3.bg-slate-900\\/60');
             if (tab === 'smartlogger') {
                 tabSl.className = 'flex-1 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-[10px] font-bold text-purple-300 cursor-pointer';
                 tabHu.className = 'flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/30 text-[10px] font-bold text-slate-400 cursor-pointer';
-                slContent.forEach(el => el.classList.remove('hidden'));
-                if (huContent) huContent.classList.add('hidden');
+                slSteps.forEach(el => el.style.display = '');
+                if (huContent) huContent.style.display = 'none';
             } else {
                 tabHu.className = 'flex-1 py-2 rounded-lg bg-red-600/20 border border-red-500/30 text-[10px] font-bold text-red-300 cursor-pointer';
                 tabSl.className = 'flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/30 text-[10px] font-bold text-slate-400 cursor-pointer';
-                slContent.forEach(el => el.classList.add('hidden'));
-                if (huContent) huContent.classList.remove('hidden');
+                slSteps.forEach(el => el.style.display = 'none');
+                if (huContent) huContent.style.display = '';
             }
         }
 
