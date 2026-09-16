@@ -957,6 +957,7 @@
          data-device-id="<?php echo htmlspecialchars($devices[0]['id'] ?? 1); ?>"
          data-base-path="<?php echo htmlspecialchars($base_path); ?>"
          data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>"
+         data-device-types="<?php echo htmlspecialchars(json_encode(array_map(function($d) { return (strpos(strtolower($d['model_name'] ?? ''), 'smartlogger') !== false || strpos(strtolower($d['sub_type'] ?? ''), 'smartlogger') !== false) ? 'smartlogger' : 'inverter'; }, $devices))); ?>"
          class="hidden"></div>
 
     <!-- Header -->
@@ -1884,8 +1885,9 @@
                 if(d.status==='success'){
                     const minEl=document.getElementById('riadenieMinVal');
                     const maxEl=document.getElementById('riadenieMaxVal');
-                    if(minEl){minEl.textContent=Math.round(d.min_power_pct??0)+'%';updateGearArrow('min',Math.round(d.min_power_pct??0));}
-                    if(maxEl){maxEl.textContent=Math.round(d.max_power_pct??100)+'%';updateGearArrow('max',Math.round(d.max_power_pct??100));}
+                    const minV=Math.round(d.min_power_pct??0);const maxV=Math.round(d.max_power_pct??100);
+                    if(minEl){minEl.textContent=(minV>0?'+':'')+minV+'%';updateGearArrow('min',minV);}
+                    if(maxEl){maxEl.textContent=(maxV>0?'+':'')+maxV+'%';updateGearArrow('max',maxV);}
                     const okteEl=document.getElementById('gearModalOkte');
                     if(okteEl){okteEl.value=Math.round(d.min_okte_price??0);const v=document.getElementById('gearModalOkteVal');if(v)v.textContent=Math.round(d.min_okte_price??0)+' €/MWh';}
                 }
@@ -2276,17 +2278,30 @@
             const modal = document.getElementById('gearModal');
             const minSlider = document.getElementById('gearModalMin');
             const maxSlider = document.getElementById('gearModalMax');
+            // Zisti ci je SmartLogger alebo striadac
+            const devTypes = metaEl ? JSON.parse(metaEl.getAttribute('data-device-types') || '[]') : [];
+            const activeIdx = metaEl ? devTypes.indexOf(metaEl.getAttribute('data-device-id')) : -1;
+            const isLogger = devTypes.some(t => t === 'smartlogger');
+            // SmartLogger: -100..+100, striadac: 0..100
+            const rangeMin = isLogger ? -100 : 0;
+            const rangeMax = 100;
+            minSlider.min = rangeMin; minSlider.max = rangeMax;
+            maxSlider.min = rangeMin; maxSlider.max = rangeMax;
+            // Update labels
+            const minLabels = minSlider.parentElement.querySelectorAll('span');
+            const maxLabels = maxSlider.parentElement.querySelectorAll('span');
+            if (minLabels.length >= 3) { minLabels[0].textContent = rangeMin + '%'; minLabels[2].textContent = '+' + rangeMax + '%'; }
+            if (maxLabels.length >= 3) { maxLabels[0].textContent = rangeMin + '%'; maxLabels[2].textContent = '+' + rangeMax + '%'; }
             const minText = document.getElementById('riadenieMinVal').textContent.replace('%','').trim();
             const maxText = document.getElementById('riadenieMaxVal').textContent.replace('%','').trim();
-            const minVal = parseInt(minText) || 0;
-            const maxVal = parseInt(maxText) || 100;
+            const minVal = Math.max(rangeMin, Math.min(rangeMax, parseInt(minText) || 0));
+            const maxVal = Math.max(rangeMin, Math.min(rangeMax, parseInt(maxText) || 100));
             minSlider.value = minVal;
             maxSlider.value = maxVal;
-            document.getElementById('gearModalMinVal').textContent = minVal + '%';
-            document.getElementById('gearModalMaxVal').textContent = maxVal + '%';
-            document.getElementById('gearScreenMinVal').textContent = minVal;
-            document.getElementById('gearScreenMaxVal').textContent = maxVal;
-            // Update gear arrows on full-screen
+            document.getElementById('gearModalMinVal').textContent = (minVal > 0 ? '+' : '') + minVal + '%';
+            document.getElementById('gearModalMaxVal').textContent = (maxVal > 0 ? '+' : '') + maxVal + '%';
+            document.getElementById('gearScreenMinVal').textContent = (minVal > 0 ? '+' : '') + minVal;
+            document.getElementById('gearScreenMaxVal').textContent = (maxVal > 0 ? '+' : '') + maxVal;
             updateGearScreenArrow('min', minVal);
             updateGearScreenArrow('max', maxVal);
             modal.style.display = 'block';
