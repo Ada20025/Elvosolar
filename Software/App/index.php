@@ -758,6 +758,38 @@ elseif ($path === '/api/system/save-smartlogger' && $method === 'POST') {
     send_json(['status' => 'success', 'message' => 'SmartLogger konfigurácia uložená.']);
 }
 
+// --- POWER LIMITS (min/max % + min OKTE price) ---
+elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    $min_pct = max(0, min(100, floatval($data['min_power_pct'] ?? 0)));
+    $max_pct = max(0, min(100, floatval($data['max_power_pct'] ?? 100)));
+    $min_okte = max(0, floatval($data['min_okte_price'] ?? 0));
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE devices SET min_power_pct = ?, max_power_pct = ?, min_okte_price_cz_eur = ? WHERE id = ?");
+        $stmt->execute([$min_pct, $max_pct, $min_okte, $dev_id]);
+    } catch (Exception $e) { /* ignore */ }
+    
+    send_json(['status' => 'success', 'min_power_pct' => $min_pct, 'max_power_pct' => $max_pct, 'min_okte_price' => $min_okte]);
+}
+
+elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && $method === 'GET') {
+    $dev_id = intval($matches[1]);
+    try {
+        $stmt = $pdo->prepare("SELECT min_power_pct, max_power_pct, min_okte_price_cz_eur FROM devices WHERE id = ?");
+        $stmt->execute([$dev_id]);
+        $row = $stmt->fetch();
+    } catch (Exception $e) { $row = null; }
+    
+    send_json([
+        'status' => 'success',
+        'min_power_pct' => $row ? floatval($row['min_power_pct'] ?? 0) : 0,
+        'max_power_pct' => $row ? floatval($row['max_power_pct'] ?? 100) : 100,
+        'min_okte_price' => $row ? floatval($row['min_okte_price_cz_eur'] ?? 0) : 0
+    ]);
+}
+
 // --- 404 HANDLER ---
 else {
     http_response_code(404);

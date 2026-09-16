@@ -1401,6 +1401,17 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Min OKTE Price -->
+                        <div class="glass-card" style="margin:0;padding:20px;">
+                            <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Min cena OKTE (€/MWh) — predaj iba nad</label>
+                            <input type="range" id="gearModalOkte" min="0" max="200" step="5" value="0" oninput="updateGearModal('okte',this.value)" style="width:100%;accent-color:var(--accent-solar);height:6px;">
+                            <div style="display:flex;justify-content:space-between;margin-top:8px;">
+                                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">0 €</span>
+                                <span id="gearModalOkteVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);">0 €/MWh</span>
+                                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">200 €</span>
+                            </div>
+                            <div style="font-size:9px;color:var(--text-muted);margin-top:6px;">Ak je cena OKTE pod touto hodnotou, FVE sa nepredáva do siete (iba spotreba/domácnosť).</div>
+                        </div>
                         <!-- Save Button -->
                         <button onclick="saveGearSettings()" style="width:100%;padding:16px;margin-top:24px;border-radius:14px;background:linear-gradient(135deg,var(--accent-battery),var(--accent-grid));color:white;font-size:13px;font-weight:800;border:none;cursor:pointer;font-family:'Plus Jakarta Sans';box-shadow:0 4px 20px rgba(16,185,129,0.3);">Uložiť nastavenia</button>
                     </div>
@@ -1875,6 +1886,8 @@
                     const maxEl=document.getElementById('riadenieMaxVal');
                     if(minEl){minEl.textContent=Math.round(d.min_power_pct??0)+'%';updateGearArrow('min',Math.round(d.min_power_pct??0));}
                     if(maxEl){maxEl.textContent=Math.round(d.max_power_pct??100)+'%';updateGearArrow('max',Math.round(d.max_power_pct??100));}
+                    const okteEl=document.getElementById('gearModalOkte');
+                    if(okteEl){okteEl.value=Math.round(d.min_okte_price??0);const v=document.getElementById('gearModalOkteVal');if(v)v.textContent=Math.round(d.min_okte_price??0)+' €/MWh';}
                 }
             }).catch(()=>{});
             fetchTelemetry();
@@ -2295,6 +2308,11 @@
             if (valEl) valEl.textContent = v;
         }
         function updateGearModal(type, value) {
+            if (type === 'okte') {
+                const v = document.getElementById('gearModalOkteVal');
+                if (v) v.textContent = value + ' €/MWh';
+                return;
+            }
             const pVal = value + '%';
             if (document.getElementById('gearModalMinVal')) document.getElementById('gearModalMinVal').textContent = type === 'min' ? pVal : document.getElementById('gearModalMinVal').textContent;
             if (document.getElementById('gearModalMaxVal')) document.getElementById('gearModalMaxVal').textContent = type === 'max' ? pVal : document.getElementById('gearModalMaxVal').textContent;
@@ -2303,19 +2321,20 @@
         function saveGearSettings() {
             const minV = parseInt(document.getElementById('gearModalMin').value);
             const maxV = parseInt(document.getElementById('gearModalMax').value);
+            const okteV = parseInt(document.getElementById('gearModalOkte')?.value || 0);
             // Update display on main dashboard
             const minEl = document.getElementById('riadenieMinVal');
             const maxEl = document.getElementById('riadenieMaxVal');
             if (minEl) { minEl.textContent = minV + '%'; updateGearArrow('min', minV); }
             if (maxEl) { maxEl.textContent = maxV + '%'; updateGearArrow('max', maxV); }
             closeGearModal();
-            // Save to backend as percentages
+            // Save to backend
             try {
                 const devId = metaEl.getAttribute('data-device-id');
                 fetch(`${basePath}/api/device/${devId}/power-limits`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({min_power_pct: minV, max_power_pct: maxV})
+                    body: JSON.stringify({min_power_pct: minV, max_power_pct: maxV, min_okte_price: okteV})
                 });
             } catch(e) {}
         }
