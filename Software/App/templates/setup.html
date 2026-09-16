@@ -24,6 +24,8 @@
         }
         @media (orientation: landscape) and (max-height: 500px) { .solar-bg { background-position: center 30%; } }
         .indicator-step { height: 4px; transition: all 0.3s ease; }
+        .indicator-step.active { background: linear-gradient(90deg, #06b6d4, #3b82f6); box-shadow: 0 0 8px rgba(6,182,212,0.4); }
+        .indicator-step.done { background: linear-gradient(90deg, #10b981, #06b6d4); }
         .slider-viewport { overflow: hidden; width: 100%; position: relative; }
         .slider-container { display: flex; width: 600%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .slide { width: 16.6666%; flex-shrink: 0; }
@@ -94,21 +96,19 @@
                     <div class="slide space-y-5 text-center px-1">
                         <div class="space-y-2">
                             <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Komunikačné rozhranie</span>
-                            <h2 class="text-xl font-extrabold text-white">Pripojenie k modulu</h2>
-                            <p class="text-xs text-slate-400 max-w-xs mx-auto">Zvoľte spôsob pripojenia k doske Waveshare / CM5.</p>
+                            <h2 class="text-2xl font-extrabold text-white tracking-tight">Pripojenie k modulu</h2>
+                            <p class="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">Zvoľte spôsob pripojenia k doske CM5. Pripojte kábel a pokračujte.</p>
                         </div>
                         <div id="cableVerifyBox" class="p-3 bg-slate-950/50 border border-slate-850 rounded-xl flex items-center justify-center gap-2.5 text-xs">
                             <span id="cablePulse" class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                            <span id="cableText" class="text-slate-300">Pripojte CM5 káblom (LAN/USB) a pokračujte...</span>
+                            <span id="cableText" class="text-slate-300 font-semibold">Pripojte CM5 káblom (LAN/USB) a pokračujte...</span>
                         </div>
                         
                         <div id="connectionMethodButtons" class="space-y-2.5 pt-2">
                             <button onclick="showCableDeviceSelector()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg hover:opacity-95 cursor-pointer">
                                 🔌 PRIAME PRIPOJENIE KÁBLOM / LAN
                             </button>
-                            <button onclick="goToSlide(1)" class="w-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-xs py-3 rounded-xl transition border border-slate-700/80 cursor-pointer">
-                                ⚡ Pokračovať na nastavenie striedača ➔
-                            </button>
+
                         </div>
 
                         <div id="cableDeviceSelector" class="hidden text-left bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-4">
@@ -121,7 +121,6 @@
 
                             <div class="flex gap-2 pt-1">
 <button onclick="requestUsbSerialPort()" id="btnRequestSerial" class="flex-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 font-bold text-[11px] py-3 rounded-xl transition border border-cyan-500/20">
- 33c966b (fix: setup - add missing endpoints, SmartLogger TCP-only, Unit ID 0, visible name input)
                                     🔌 Pripojiť cez USB UART
                                 </button>
                             </div>
@@ -132,14 +131,13 @@
                     <div class="slide space-y-4 px-1">
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 1 z 5</span>
-                            <h2 class="text-lg font-extrabold text-white">Pripojené zariadenie</h2>
+                            <h2 class="text-xl font-extrabold text-white tracking-tight">Pripojené zariadenie</h2>
                             <p class="text-xs text-slate-400">Pomenujte zariadenie a vyberte značku striedača.</p>
                         </div>
                         <div class="space-y-3">
                             <div>
 <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Meno zariadenia</label>
                                 <input id="deviceName" type="text" value="ElvoControll" placeholder="Názov vášho zariadenia" class="w-full bg-slate-950 border border-slate-700 text-white text-sm font-bold rounded-xl px-4 py-3.5 outline-none focus:border-cyan-500 transition placeholder-slate-600">
- 33c966b (fix: setup - add missing endpoints, SmartLogger TCP-only, Unit ID 0, visible name input)
                             </div>
 
                             <div>
@@ -350,8 +348,8 @@
                     <div class="slide space-y-4 px-1">
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 5 z 5</span>
-                            <h2 class="text-lg font-extrabold text-white">Autodetekcia zbernice</h2>
-                            <p class="text-xs text-slate-400">Jednotka preverí odozvu pripojených zariadení.</p>
+                            <h2 class="text-xl font-extrabold text-white tracking-tight">Komunikácia so SmartLoggerom</h2>
+                            <p class="text-sm text-slate-400">Nastavte parametre pripojenia a otestujte spojenie.</p>
                         </div>
                         
                         <div class="flex items-center justify-between mb-2">
@@ -469,7 +467,8 @@
                                     <div class="bg-slate-950 p-2.5 space-y-1.5">
                                         <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Modbus TCP Server</span><span class="px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-700 text-[8px] font-bold text-emerald-400">● ENABLE</span></div>
                                         <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Port</span><span class="text-[9px] font-mono text-white font-bold">502</span></div>
-                                        <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Unit ID</span><span class="text-[9px] font-mono text-white font-bold">1</span></div>
+                                        <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Unit ID / Logger address</span><span class="text-[9px] font-mono text-white font-bold">0</span></div>
+                                        <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Link setting</span><span class="text-[9px] font-mono text-white font-bold">Enable (Unlimited)</span></div>
                                         <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Allowed IP</span><span class="text-[9px] font-mono text-white font-bold">0.0.0.0</span></div>
                                     </div>
                                 </div>
@@ -487,9 +486,8 @@
                         </div>
 
 <!-- Discover buttons removed - setup sends JSON config directly -->
- 33c966b (fix: setup - add missing endpoints, SmartLogger TCP-only, Unit ID 0, visible name input)
 
-                        <div id="scanStatus" class="p-4 bg-slate-950/50 border border-slate-850 rounded-xl text-xs text-center font-bold text-amber-400 font-sans">Pripravené na overenie komunikácie...</div>
+                        <div id="scanStatus" class="p-4 bg-slate-950/50 border border-slate-850 rounded-xl text-xs text-center font-bold text-amber-400 font-sans">Kliknite na tlačidlo pre otestovanie spojenia so SmartLoggerom</div>
 
                         <div id="diagnosticGrid" class="hidden grid grid-cols-8 gap-1.5 p-3 bg-slate-950/60 rounded-2xl border border-slate-800/80 text-[10px] font-mono"></div>
 
@@ -507,7 +505,7 @@
                             </div>
                         </div>
                         <div class="button-group flex gap-2 pt-2">
-                            <button id="finishBtn" onclick="completeSetup()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider cursor-pointer">DOKONČIŤ NASTAVENIE</button>
+                            <button id="finishBtn" onclick="completeSetup()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider cursor-pointer">🎉 DOKONČIŤ NASTAVENIE</button>
                         </div>
                     </div>
 
@@ -908,7 +906,7 @@
             grid.classList.remove("hidden");
             generateDiagnosticGrid();
 
-            status.innerText = "Kliknite na DOKONČIŤ NASTAVENIE pre aktiváciu jednotky...";
+            status.innerText = "Kliknite na 🎉 DOKONČIŤ NASTAVENIE pre aktiváciu jednotky...";
             status.className = "p-4 bg-slate-950/50 border border-cyan-800 rounded-xl text-xs text-center font-bold text-cyan-400";
             discoveredSlaveIds = [1];
             document.getElementById("finishBtn").classList.remove("hidden");
@@ -1181,7 +1179,6 @@ const cat = document.getElementById('categorySelect');
                     guide.classList.remove('hidden');
                 }
             } catch(e) {}
- 33c966b (fix: setup - add missing endpoints, SmartLogger TCP-only, Unit ID 0, visible name input)
             const brand_id = document.getElementById('brandSelect').value;
             const cat_id = document.getElementById('categorySelect').value;
             const modelContainer = document.getElementById('modelContainer');
