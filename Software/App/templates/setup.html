@@ -120,10 +120,8 @@
                             <div class="space-y-2 max-h-48 overflow-y-auto pr-1" id="cableDevicesList"></div>
 
                             <div class="flex gap-2 pt-1">
-                                <button onclick="scanForCableDevices()" id="btnScanCable" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] py-2.5 rounded-xl transition border border-slate-700 cursor-pointer">
-                                    🔄 Hľadať LAN
-                                </button>
-                                <button onclick="requestUsbSerialPort()" id="btnRequestSerial" class="flex-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 font-bold text-[11px] py-2.5 rounded-xl transition border border-cyan-500/20 cursor-pointer">
+<button onclick="requestUsbSerialPort()" id="btnRequestSerial" class="flex-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 font-bold text-[11px] py-3 rounded-xl transition border border-cyan-500/20">
+ 33c966b (fix: setup - add missing endpoints, SmartLogger TCP-only, Unit ID 0, visible name input)
                                     🔌 Pripojiť cez USB UART
                                 </button>
                             </div>
@@ -139,8 +137,9 @@
                         </div>
                         <div class="space-y-3">
                             <div>
-                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Názov stanice</label>
-                                <input id="deviceName" type="text" value="ElvoControll" class="w-full bg-slate-950 border border-slate-850 text-white text-xs rounded-xl px-3 py-3 outline-none font-mono">
+<label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Meno zariadenia</label>
+                                <input id="deviceName" type="text" value="ElvoControll" placeholder="Názov vášho zariadenia" class="w-full bg-slate-950 border border-slate-700 text-white text-sm font-bold rounded-xl px-4 py-3.5 outline-none focus:border-cyan-500 transition placeholder-slate-600">
+ 33c966b (fix: setup - add missing endpoints, SmartLogger TCP-only, Unit ID 0, visible name input)
                             </div>
 
                             <div>
@@ -363,6 +362,7 @@
                         <!-- SPÔSOB PRIPOJENIA K SMARTLOGGERU / STRIEDAČU -->
                         <div class="p-4 bg-slate-950/70 rounded-2xl border border-slate-800 space-y-3">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Typ prepojenia (SmartLogger / Striedač)</label>
+                            <div id="connTypeNote" class="hidden text-[9px] text-cyan-400 font-semibold">SmartLogger komunikuje iba cez Modbus TCP cez LAN</div>
                             
                             <div class="grid grid-cols-3 gap-2">
                                 <label class="cursor-pointer bg-slate-900 border-2 border-cyan-500 rounded-xl p-2.5 text-center block transition hover:border-cyan-400" id="lblConnTcp">
@@ -396,7 +396,7 @@
                                 </div>
                                 <div>
                                     <label class="text-[9px] font-bold text-slate-400">Modbus Unit ID (Device Address)</label>
-                                    <input id="smartloggerUnitIdInput" type="number" value="1" min="1" max="247" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none font-mono focus:border-cyan-500 transition">
+                                    <input id="smartloggerUnitIdInput" type="number" value="0" min="0" max="247" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 outline-none font-mono focus:border-cyan-500 transition">
                                 </div>
                             </div>
 
@@ -486,14 +486,8 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="runDiscoverAndAnimate()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[11px] py-3 rounded-xl transition border border-slate-700 cursor-pointer">
-                                🔌 RS485 AUTODETEKCIA
-                            </button>
-                            <button onclick="runNetworkDiscovery()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[11px] py-3 rounded-xl transition border border-slate-700 cursor-pointer">
-                                🔍 HĽADAŤ V SIETI (LAN)
-                            </button>
-                        </div>
+<!-- Discover buttons removed - setup sends JSON config directly -->
+ 33c966b (fix: setup - add missing endpoints, SmartLogger TCP-only, Unit ID 0, visible name input)
 
                         <div id="scanStatus" class="p-4 bg-slate-950/50 border border-slate-850 rounded-xl text-xs text-center font-bold text-amber-400 font-sans">Pripravené na overenie komunikácie...</div>
 
@@ -1159,6 +1153,35 @@
         }
 
         function handleCategoryChange() {
+const cat = document.getElementById('categorySelect');
+            const catVal = cat ? cat.value : '';
+            const isSmartLogger = catVal.toLowerCase().includes('smartlogger') || catVal.toLowerCase().includes('enspire');
+            
+            const lblRtu = document.getElementById('lblConnRtu');
+            const lblHybrid = document.getElementById('lblConnHybrid');
+            const connNote = document.getElementById('connTypeNote');
+            
+            if (isSmartLogger) {
+                if (lblRtu) lblRtu.style.display = 'none';
+                if (lblHybrid) lblHybrid.style.display = 'none';
+                if (connNote) connNote.classList.remove('hidden');
+                // Force TCP selection
+                switchSmartConnType('tcp');
+            } else {
+                if (lblRtu) lblRtu.style.display = '';
+                if (lblHybrid) lblHybrid.style.display = '';
+                if (connNote) connNote.classList.add('hidden');
+            }
+            // Auto-otvor SmartLogger navod ked je vybrata SmartLogger kategoria
+            try {
+                const catSel = document.getElementById('categorySelect');
+                const catText = catSel && catSel.selectedOptions[0] ? catSel.selectedOptions[0].textContent.toLowerCase() : '';
+                const guide = document.getElementById('smartloggerGuide');
+                if (guide && (catText.includes('smartlogger') || catText.includes('enspire') || catText.includes('ezlogger'))) {
+                    guide.classList.remove('hidden');
+                }
+            } catch(e) {}
+ 33c966b (fix: setup - add missing endpoints, SmartLogger TCP-only, Unit ID 0, visible name input)
             const brand_id = document.getElementById('brandSelect').value;
             const cat_id = document.getElementById('categorySelect').value;
             const modelContainer = document.getElementById('modelContainer');
