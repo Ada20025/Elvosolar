@@ -52,6 +52,29 @@ for PORT in 80 5020; do
 done
 
 # ===================================================================
+# KROK 1.5: NETWORK ROUTE PRE SMARTLOGGER
+# ===================================================================
+SMARTLOGGER_IP=$(sqlite3 /home/pi/Hardware/database.db "SELECT value FROM system_settings WHERE key='smartlogger_ip'" 2>/dev/null)
+if [ -n "$SMARTLOGGER_IP" ] && [ "$SMARTLOGGER_IP" != "" ]; then
+    SUBNET=$(echo $SMARTLOGGER_IP | awk -F. '{print $1"."$2"."$3".0/24"}')
+    if ! ip route show | grep -q "$SUBNET"; then
+        DEFAULT_GW=$(ip route show default | awk '{print $3}' | head -1)
+        if [ -n "$DEFAULT_GW" ]; then
+            sudo ip route add $SUBNET via $DEFAULT_GW 2>/dev/null && echo "[NETWORK] Route pridaná: $SUBNET via $DEFAULT_GW"
+        else
+            sudo ip route add $SUBNET dev eth0 2>/dev/null && echo "[NETWORK] Route pridaná: $SUBNET dev eth0"
+        fi
+    fi
+    if ping -c 1 -W 2 $SMARTLOGGER_IP >/dev/null 2>&1; then
+        echo "[NETWORK] ✅ SmartLogger $SMARTLOGGER_IP dostupný"
+    else
+        echo "[NETWORK] ⚠️ SmartLogger $SMARTLOGGER_IP neodpovedá"
+    fi
+else
+    echo "[NETWORK] SmartLogger IP nie je nakonfigurované"
+fi
+
+# ===================================================================
 # KROK 2: UPDATER (background, kazdu hodinu)
 # ===================================================================
 run_updater() {

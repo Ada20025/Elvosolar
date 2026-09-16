@@ -482,6 +482,43 @@ def api_discover_network(port: int = 205, timeout: float = 0.3):
         return {"status": "error", "message": str(e), "devices": []}
 
 
+
+def setup_network_route(smartlogger_ip):
+    """Automaticky nastavi sieťovu routing aby CM5 dosiahla SmartLogger."""
+    try:
+        if not smartlogger_ip:
+            return
+        parts = smartlogger_ip.split('.')
+        if len(parts) != 4:
+            return
+        subnet = f"{parts[0]}.{parts[1]}.{parts[2]}.0/24"
+        
+        gw_ip = ''
+        try:
+            r = subprocess.run(['ip', 'route', 'show', 'default'], capture_output=True, text=True, timeout=3)
+            if 'via' in r.stdout:
+                gw_ip = r.stdout.split('via')[1].split()[0]
+        except: pass
+        
+        try:
+            check = subprocess.run(['ip', 'route', 'show', subnet], capture_output=True, text=True, timeout=3)
+            if subnet not in check.stdout:
+                if gw_ip:
+                    subprocess.run(['ip', 'route', 'add', subnet, 'via', gw_ip], capture_output=True, timeout=3)
+                else:
+                    subprocess.run(['ip', 'route', 'add', subnet, 'dev', 'eth0'], capture_output=True, timeout=3)
+                bg_service.log_to_terminal(f"[NETWORK] Route pridana: {subnet}")
+        except: pass
+        
+        try:
+            ping = subprocess.run(['ping', '-c', '1', '-W', '2', smartlogger_ip], capture_output=True, timeout=5)
+            if ping.returncode == 0:
+                bg_service.log_to_terminal(f"[NETWORK] SmartLogger {smartlogger_ip} dostupny")
+            else:
+                bg_service.log_to_terminal(f"[NETWORK] SmartLogger {smartlogger_ip} neodpoveda")
+        except: pass
+    except: pass
+
 @app.post("/api/system/save-smartlogger")
 def api_save_smartlogger():
     """Ulozi IP SmartLoggera pre modbus TCP komunikaciu."""
@@ -511,6 +548,9 @@ def api_save_smartlogger():
     conn.close()
     
     bg_service.log_to_terminal(f"[TCP] SmartLogger IP ulozeny: {ip}:{port}")
+    
+    # Automaticky nastav sitovu routing
+    setup_network_route(ip)
     
     # Okamzite sa pokus pripojit
     try:
