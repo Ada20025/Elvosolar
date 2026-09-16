@@ -1384,20 +1384,20 @@
                         <div style="display:flex;flex-direction:column;gap:24px;">
                             <div class="glass-card" style="margin:0;padding:20px;">
                                 <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Min výkon (%)</label>
-                                <input type="range" id="gearModalMin" min="0" max="100" step="1" value="0" oninput="updateGearModal('min',this.value)" style="width:100%;accent-color:var(--accent-battery);height:6px;">
+                                <input type="range" id="gearModalMin" min="-100" max="100" step="1" value="0" oninput="updateGearModal('min',this.value)" style="width:100%;accent-color:var(--accent-battery);height:6px;">
                                 <div style="display:flex;justify-content:space-between;margin-top:8px;">
-                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">0%</span>
+                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">-100%</span>
                                     <span id="gearModalMinVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);">0%</span>
-                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">100%</span>
+                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">+100%</span>
                                 </div>
                             </div>
                             <div class="glass-card" style="margin:0;padding:20px;">
                                 <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:10px;">Max výkon (%)</label>
-                                <input type="range" id="gearModalMax" min="0" max="100" step="1" value="100" oninput="updateGearModal('max',this.value)" style="width:100%;accent-color:var(--accent-solar);height:6px;">
+                                <input type="range" id="gearModalMax" min="-100" max="100" step="1" value="100" oninput="updateGearModal('max',this.value)" style="width:100%;accent-color:var(--accent-solar);height:6px;">
                                 <div style="display:flex;justify-content:space-between;margin-top:8px;">
-                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">0%</span>
+                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">-100%</span>
                                     <span id="gearModalMaxVal" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);">100%</span>
-                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">100%</span>
+                                    <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono';">+100%</span>
                                 </div>
                             </div>
                         </div>
@@ -2298,14 +2298,14 @@
         }
         function updateGearScreenArrow(type, value) {
             const v = parseInt(value) || 0;
-            const min = 0;
+            const min = -100;
             const max = 100;
             const pct = Math.max(0, Math.min(1, (v - min) / (max - min)));
             const angle = -90 + (pct * 180);
             const arrow = document.getElementById(type === 'min' ? 'gearScreenMinArrow' : 'gearScreenMaxArrow');
             if (arrow) arrow.style.transform = 'rotate(' + angle + 'deg)';
             const valEl = document.getElementById(type === 'min' ? 'gearScreenMinVal' : 'gearScreenMaxVal');
-            if (valEl) valEl.textContent = v;
+            if (valEl) valEl.textContent = (v > 0 ? '+' : '') + v;
         }
         function updateGearModal(type, value) {
             if (type === 'okte') {

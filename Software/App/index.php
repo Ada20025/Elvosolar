@@ -762,8 +762,8 @@ elseif ($path === '/api/system/save-smartlogger' && $method === 'POST') {
 elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && $method === 'POST') {
     $dev_id = intval($matches[1]);
     $data = get_json_input();
-    $min_pct = max(0, min(100, floatval($data['min_power_pct'] ?? 0)));
-    $max_pct = max(0, min(100, floatval($data['max_power_pct'] ?? 100)));
+    $min_pct = max(-100, min(100, floatval($data['min_power_pct'] ?? 0)));
+    $max_pct = max(-100, min(100, floatval($data['max_power_pct'] ?? 100)));
     $min_okte = max(0, floatval($data['min_okte_price'] ?? 0));
     
     try {
