@@ -441,18 +441,9 @@
                                 </div>
                                 <p class="text-[10px] text-slate-400 mb-2 ml-7">Do prehliadača zadajte IP adresu SmartLoggera (nájdete ju v routery). Otvorí sa prihlasovacia obrazovka:</p>
                                 <div class="ml-7 rounded-lg overflow-hidden border border-slate-700">
-                                    <div class="bg-gradient-to-r from-purple-900 to-indigo-900 px-3 py-1.5 flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                        <span class="text-[8px] text-purple-200 font-mono ml-2">https://192.168.8.10</span>
-                                    </div>
-                                    <div class="bg-slate-950 p-3 flex flex-col items-center gap-1.5">
-                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-[10px]">🔋</div>
-                                        <div class="text-[9px] font-bold text-white">SmartLogger3000</div>
-                                        <div class="w-full max-w-[180px] h-5 rounded bg-slate-800 border border-slate-700 px-2 flex items-center text-[8px] text-slate-500 font-mono">Username</div>
-                                        <div class="w-full max-w-[180px] h-5 rounded bg-slate-800 border border-slate-700 px-2 flex items-center text-[8px] text-slate-500 font-mono">Password</div>
-                                        <div class="w-full max-w-[180px] h-5 rounded bg-gradient-to-r from-purple-600 to-cyan-600 flex items-center justify-center text-[8px] font-bold text-white">Login</div>
-                                    </div>
+                                    <img src="/templates/smartlogger_opt/1home.asp.png" alt="SmartLogger prihlasenie" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
                                 </div>
+                                <p class="text-[9px] text-slate-500 mt-1 ml-7 font-mono">Obrázok: Skutočná prihlasovacia obrazovka SmartLoggera</p>
                             </div>
 
                             <!-- KROK 2: Modbus TCP -->
@@ -463,14 +454,15 @@
                                 </div>
                                 <p class="text-[10px] text-slate-400 mb-2 ml-7">V menu prejdite: <strong class="text-white">Settings → Comm. Param. → Modbus TCP</strong> a zapnite server:</p>
                                 <div class="ml-7 rounded-lg overflow-hidden border border-slate-700">
-                                    <div class="bg-slate-800 px-3 py-1.5 text-[8px] font-bold text-slate-300 font-mono">Settings ▸ Comm. Param. ▸ Modbus TCP</div>
-                                    <div class="bg-slate-950 p-2.5 space-y-1.5">
-                                        <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Modbus TCP Server</span><span class="px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-700 text-[8px] font-bold text-emerald-400">● ENABLE</span></div>
-                                        <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Port</span><span class="text-[9px] font-mono text-white font-bold">502</span></div>
-                                        <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Unit ID / Logger address</span><span class="text-[9px] font-mono text-white font-bold">0</span></div>
-                                        <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Link setting</span><span class="text-[9px] font-mono text-white font-bold">Enable (Unlimited)</span></div>
-                                        <div class="flex justify-between items-center"><span class="text-[9px] text-slate-400 font-mono">Allowed IP</span><span class="text-[9px] font-mono text-white font-bold">0.0.0.0</span></div>
-                                    </div>
+                                    <img src="/templates/smartlogger_opt/3home.asp.png" alt="SmartLogger Modbus nastavenia" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
+                                </div>
+                                <p class="text-[9px] text-slate-500 mt-1 ml-7 font-mono">Obrázok: Nastavenia Comm. Param. — Link setting: Enable(Unlimited), Logger address: 0</p>
+                                <div class="ml-7 mt-2 p-2 bg-emerald-950/30 border border-emerald-800/40 rounded-lg text-[9px] text-emerald-300 space-y-0.5">
+                                    <div>✅ <strong>Link setting</strong> = Enable (Unlimited)</div>
+                                    <div>✅ <strong>Logger address</strong> = 0</div>
+                                    <div>✅ <strong>Fast scheduling</strong> = Enable</div>
+                                    <div>✅ <strong>LAN port</strong> = Enable</div>
+                                    <div>⚠️ Kliknite <strong>Submit</strong> po zmene!</div>
                                 </div>
                                 <p class="text-[9px] text-amber-400/80 mt-1.5 ml-7">⚠️ Bez povolenia Modbus TCP sa CM5 nepripojí!</p>
                             </div>
