@@ -426,11 +426,23 @@
                             </div>
                         </div>
 
-                        <!-- SmartLogger Návod — vizuálny krok za krokom -->
+                        <!-- Návod — SmartLogger + Huawei SUN2000 -->
                         <div id="smartloggerGuide" class="hidden p-4 bg-slate-950/60 rounded-2xl border border-purple-900/50 space-y-4">
                             <div class="text-[10px] font-bold uppercase tracking-wider text-purple-400 flex items-center justify-between">
-                                <span>Huawei SmartLogger 3000 / Enspire — Ako na to</span>
-                                <span class="px-2 py-0.5 rounded-full bg-purple-950/50 text-purple-300 text-[8px] font-bold">3 KROKY · 2 MINÚTY</span>
+                                <span>Návod: Pripojenie zariadenia</span>
+                                <span class="px-2 py-0.5 rounded-full bg-purple-950/50 text-purple-300 text-[8px] font-bold">ODPORÚČANÉ: SMARTLOGGER</span>
+                            </div>
+
+                            <!-- Odporucanie -->
+                            <div class="p-3 bg-emerald-950/30 border border-emerald-700/30 rounded-xl">
+                                <div class="text-[11px] font-bold text-emerald-400 mb-1">⭐ Odporúčame: SmartLogger (Modbus TCP cez LAN)</div>
+                                <div class="text-[10px] text-slate-400">SmartLogger ponúka plnú komunikáciu cez sieť — žiadne káble navyše. Priame pripojenie cez Ethernet/Wi-Fi.</div>
+                            </div>
+
+                            <!-- TABS: SmartLogger vs SUN2000 -->
+                            <div class="flex gap-2">
+                                <button onclick="showGuideTab('smartlogger')" id="guideTabSl" class="flex-1 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-[10px] font-bold text-purple-300 cursor-pointer">📡 SmartLogger (TCP)</button>
+                                <button onclick="showGuideTab('sun2000')" id="guideTabHu" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/30 text-[10px] font-bold text-slate-400 cursor-pointer">⚡ SUN2000 (RS485)</button>
                             </div>
 
                             <!-- KROK 1: Prihlasenie -->
@@ -441,7 +453,7 @@
                                 </div>
                                 <p class="text-[10px] text-slate-400 mb-2 ml-7">Do prehliadača zadajte IP adresu SmartLoggera (nájdete ju v routery). Otvorí sa prihlasovacia obrazovka:</p>
                                 <div class="ml-7 rounded-lg overflow-hidden border border-slate-700">
-                                    <img src="/templates/smartlogger_opt/1home.asp.png" alt="SmartLogger prihlasenie" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
+                                    <img src="/templates/smartlogger_img/1home.asp.png" alt="SmartLogger prihlasenie" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
                                 </div>
                                 <p class="text-[9px] text-slate-500 mt-1 ml-7 font-mono">Obrázok: Skutočná prihlasovacia obrazovka SmartLoggera</p>
                             </div>
@@ -454,7 +466,7 @@
                                 </div>
                                 <p class="text-[10px] text-slate-400 mb-2 ml-7">V menu prejdite: <strong class="text-white">Settings → Comm. Param. → Modbus TCP</strong> a zapnite server:</p>
                                 <div class="ml-7 rounded-lg overflow-hidden border border-slate-700">
-                                    <img src="/templates/smartlogger_opt/3home.asp.png" alt="SmartLogger Modbus nastavenia" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
+                                    <img src="/templates/smartlogger_img/3home.asp.png" alt="SmartLogger Modbus nastavenia" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
                                 </div>
                                 <p class="text-[9px] text-slate-500 mt-1 ml-7 font-mono">Obrázok: Nastavenia Comm. Param. — Link setting: Enable(Unlimited), Logger address: 0</p>
                                 <div class="ml-7 mt-2 p-2 bg-emerald-950/30 border border-emerald-800/40 rounded-lg text-[9px] text-emerald-300 space-y-0.5">
@@ -474,6 +486,48 @@
                                     <span class="text-[11px] font-extrabold text-white">Alternatíva: RS485 kábel (Modbus RTU)</span>
                                 </div>
                                 <p class="text-[10px] text-slate-400 ml-7">Ak nepoužívate LAN: V <strong class="text-white">Settings → Comm. Param. → RS485</strong> nechajte <strong class="text-white">9600 · 8 · None · 1</strong> a kábel pripojte priamo do CM5. Adresa je <strong class="text-white">205</strong> — CM5 ju použije automaticky.</p>
+                            </div>
+                        </div>
+
+                        <!-- HUAWEI SUN2000 NÁVOD -->
+                        <div id="sun2000Guide" class="hidden space-y-4">
+                            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">1</span>
+                                    <span class="text-[11px] font-extrabold text-white">Prihláste sa do invertera</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mb-2 ml-7">Otvorte prehliadač a zadajte <strong class="text-white">192.168.100.1</strong> (default IP SUN2000).</p>
+                                <div class="ml-7 rounded-lg overflow-hidden border border-slate-700">
+                                    <img src="/templates/huawei_img/fusion_login.png" alt="FusionSolar prihlasenie" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
+                                </div>
+                                <p class="text-[9px] text-slate-500 mt-1 ml-7 font-mono">FusionSolar webové rozhranie</p>
+                            </div>
+
+                            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="w-5 h-5 rounded-full bg-cyan-600 text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">2</span>
+                                    <span class="text-[11px] font-extrabold text-white">Zapnite Modbus TCP</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mb-2 ml-7">V menu: <strong class="text-white">Settings → Advanced → Modbus TCP</strong></p>
+                                <div class="ml-7 rounded-lg overflow-hidden border border-slate-700">
+                                    <img src="/templates/huawei_img/modbus_settings.png" alt="Modbus nastavenia" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
+                                </div>
+                                <div class="ml-7 mt-2 p-2 bg-emerald-950/30 border border-emerald-800/40 rounded-lg text-[9px] text-emerald-300 space-y-0.5">
+                                    <div>✅ <strong>Modbus TCP</strong> = Enable</div>
+                                    <div>✅ <strong>Port</strong> = 502</div>
+                                    <div>✅ <strong>Slave ID</strong> = 1</div>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">3</span>
+                                    <span class="text-[11px] font-extrabold text-white">RS485 alternatíva (voliteľné)</span>
+                                </div>
+                                <div class="ml-7 rounded-lg overflow-hidden border border-slate-700">
+                                    <img src="/templates/huawei_img/rs485_wiring.png" alt="RS485 zapojenie" class="w-full h-auto rounded-lg" loading="lazy" onerror="this.style.display='none'">
+                                </div>
+                                <p class="text-[10px] text-slate-400 ml-7 mt-2">Priame RS485 pripojenie: <strong class="text-white">RS485+ → A</strong>, <strong class="text-white">RS485- → B</strong>, <strong class="text-white">GND → G</strong>. Baud: <strong class="text-white">9600</strong>, Slave ID: <strong class="text-white">1</strong>.</p>
                             </div>
                         </div>
 
@@ -790,6 +844,25 @@
         function toggleSmartLoggerGuide() {
             const g = document.getElementById('smartloggerGuide');
             if (g) g.classList.toggle('hidden');
+        }
+
+        function showGuideTab(tab) {
+            const slGuide = document.getElementById('smartloggerGuide');
+            const tabSl = document.getElementById('guideTabSl');
+            const tabHu = document.getElementById('guideTabHu');
+            const slContent = slGuide.querySelectorAll('.space-y-4 > div:not(#sun2000Guide)');
+            const huContent = document.getElementById('sun2000Guide');
+            if (tab === 'smartlogger') {
+                tabSl.className = 'flex-1 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-[10px] font-bold text-purple-300 cursor-pointer';
+                tabHu.className = 'flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/30 text-[10px] font-bold text-slate-400 cursor-pointer';
+                slContent.forEach(el => el.classList.remove('hidden'));
+                if (huContent) huContent.classList.add('hidden');
+            } else {
+                tabHu.className = 'flex-1 py-2 rounded-lg bg-red-600/20 border border-red-500/30 text-[10px] font-bold text-red-300 cursor-pointer';
+                tabSl.className = 'flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/30 text-[10px] font-bold text-slate-400 cursor-pointer';
+                slContent.forEach(el => el.classList.add('hidden'));
+                if (huContent) huContent.classList.remove('hidden');
+            }
         }
 
         let activeSmartConnType = 'tcp';
