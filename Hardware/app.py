@@ -484,39 +484,21 @@ def api_discover_network(port: int = 205, timeout: float = 0.3):
 
 
 def setup_network_route(smartlogger_ip):
-    """Automaticky nastavi sieťovu routing aby CM5 dosiahla SmartLogger."""
+    """Prida host route na SmartLogger - NIKDY nedava default gateway cez SmartLogger!"""
     try:
         if not smartlogger_ip:
             return
-        parts = smartlogger_ip.split('.')
-        if len(parts) != 4:
-            return
-        subnet = f"{parts[0]}.{parts[1]}.{parts[2]}.0/24"
-        
-        gw_ip = ''
-        try:
-            r = subprocess.run(['ip', 'route', 'show', 'default'], capture_output=True, text=True, timeout=3)
-            if 'via' in r.stdout:
-                gw_ip = r.stdout.split('via')[1].split()[0]
-        except: pass
-        
-        try:
-            check = subprocess.run(['ip', 'route', 'show', subnet], capture_output=True, text=True, timeout=3)
-            if subnet not in check.stdout:
-                if gw_ip:
-                    subprocess.run(['ip', 'route', 'add', subnet, 'via', gw_ip], capture_output=True, timeout=3)
-                else:
-                    subprocess.run(['ip', 'route', 'add', subnet, 'dev', 'eth0'], capture_output=True, timeout=3)
-                bg_service.log_to_terminal(f"[NETWORK] Route pridana: {subnet}")
-        except: pass
-        
-        try:
-            ping = subprocess.run(['ping', '-c', '1', '-W', '2', smartlogger_ip], capture_output=True, timeout=5)
-            if ping.returncode == 0:
-                bg_service.log_to_terminal(f"[NETWORK] SmartLogger {smartlogger_ip} dostupny")
-            else:
-                bg_service.log_to_terminal(f"[NETWORK] SmartLogger {smartlogger_ip} neodpoveda")
-        except: pass
+        # PRIDAJ LEN HOST ROUTE (nie subnet, nie cez gateway)
+        check = subprocess.run(['ip', 'route', 'show', smartlogger_ip], capture_output=True, text=True, timeout=3)
+        if smartlogger_ip not in check.stdout:
+            subprocess.run(['ip', 'route', 'add', smartlogger_ip, 'dev', 'eth0'], capture_output=True, timeout=3)
+            bg_service.log_to_terminal(f"[NETWORK] Host route pridana: {smartlogger_ip} dev eth0")
+        # Overenie pingom
+        ping = subprocess.run(['ping', '-c', '1', '-W', '2', smartlogger_ip], capture_output=True, timeout=5)
+        if ping.returncode == 0:
+            bg_service.log_to_terminal(f"[NETWORK] SmartLogger {smartlogger_ip} dostupny")
+        else:
+            bg_service.log_to_terminal(f"[NETWORK] SmartLogger {smartlogger_ip} neodpoveda")
     except: pass
 
 @app.post("/api/system/save-smartlogger")
