@@ -63,13 +63,17 @@ if (isset($pdo)) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS telemetry (
             id INTEGER PRIMARY KEY AUTO_INCREMENT,
             device_id INT NOT NULL,
-            battery_soc FLOAT DEFAULT 84,
-            power_ac FLOAT DEFAULT 3840,
-            temp FLOAT DEFAULT 32.5,
+            battery_soc FLOAT DEFAULT 0,
+            power_ac FLOAT DEFAULT 0,
+            temp FLOAT DEFAULT 0,
             freq FLOAT DEFAULT 50.0,
             status_msg VARCHAR(255) DEFAULT 'Online',
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )");
+        // Fix: ak existuje stara tabulka s wrong timestamp typom, oprav
+        try {
+            $pdo->exec("ALTER TABLE telemetry MODIFY timestamp DATETIME NULL");
+        } catch (Exception $e3) { /* ignore */ }
     } catch (Exception $e) {
         try {
             $pdo->exec("CREATE TABLE IF NOT EXISTS telemetry (
@@ -659,15 +663,17 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     
     if ($device_id) {
         try {
-            // Uloz telemetry zaznam
-            $stmt = $pdo->prepare("INSERT INTO telemetry (device_id, power_ac, battery_soc, temp, freq, status_msg, timestamp) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+            // Uloz telemetry zaznam - NOW() moze failnut na MySQL strict mode, pouzime date('Y-m-d H:i:s')
+            $ts = date('Y-m-d H:i:s');
+            $stmt = $pdo->prepare("INSERT INTO telemetry (device_id, power_ac, battery_soc, temp, freq, status_msg, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $device_id,
                 floatval($data['power_ac'] ?? 0),
                 floatval($data['battery_soc'] ?? 0),
                 floatval($data['temp'] ?? 0),
                 floatval($data['freq'] ?? 50),
-                substr($data['status_msg'] ?? 'Online', 0, 255)
+                substr($data['status_msg'] ?? 'Online', 0, 255),
+                $ts
             ]);
             // Aktualizuj devices - status online + posledne hodnoty
             $stmt2 = $pdo->prepare("UPDATE devices SET status = 'online', last_seen = NOW(), battery_soc = ?, fve_power_w = ?, temp = ? WHERE id = ?");
