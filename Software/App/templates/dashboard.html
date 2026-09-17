@@ -1902,9 +1902,6 @@
             document.getElementById('singleDeviceLabel').textContent = name;
             const hdrName = document.getElementById('headerDeviceName');
             if (hdrName) hdrName.textContent = name;
-            // Update header device name
-            const hdrName = document.getElementById('headerDeviceName');
-            if (hdrName) hdrName.textContent = name;
             document.getElementById('deviceDropdownMenu').classList.add('hidden');
             try { localStorage.setItem('elvo_active_device', id); } catch(e) {}
             // Highlight active device in dropdown
@@ -1982,7 +1979,12 @@
             const temp = data.temp || 0;
             const power = data.total_live_power || 0;
             const soc = data.avg_live_soc || 0;
-            const isOnline = power > 0 || soc > 0;
+            // Pouzi realny status z DB (is_online) alebo fallback na power/soc
+            const isOnline = data.is_online === true || (data.is_online === undefined && (power > 0 || soc > 0));
+            // Typ zariadenia: SmartLogger alebo Striedač (podla brand_id 11 = HUAWEI SL alebo sub_type)
+            const isLogger = data.connection_type === 'modbus_tcp' && data.smartlogger_ip ? true : (brandId === '11');
+            const deviceType = isLogger ? 'SmartLogger' : 'Striedač';
+            const deviceIcon = isLogger ? 'server' : 'zap';
             const statusBadge = document.getElementById('deviceStatusBadge');
             if (statusBadge) {
                 statusBadge.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
@@ -1991,7 +1993,7 @@
             }
             const totalKwh = data.total_kwh || 0;
 
-            if (titleEl) titleEl.textContent = brandName || 'Zariadenia';
+            if (titleEl) titleEl.textContent = 'Zariadenia';
 
             container.innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:4px;">
@@ -2000,7 +2002,11 @@
                             <span class="pulse-dot ${isOnline ? 'online' : 'offline'}"></span>
                             <div style="display:flex;flex-direction:column;">
                                 <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceName}</span>
-                                <span class="font-mono" style="font-size:9px;color:var(--text-muted);">${brandName || 'CM5 Controlér'} | ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</span>
+                                <span style="font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+                                    <i data-lucide="${deviceIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
+                                    ${deviceType} · ${brandName || 'CM5'}
+                                    <span class="font-mono" style="background:var(--bg-inset);padding:0 5px;border-radius:4px;color:var(--accent-okte);font-size:8px;">ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</span>
+                                </span>
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
