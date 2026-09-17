@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Provisioning CM5 | ElvoControll</title>
+    <title>Nastavenie zariadenia | ElvoControll</title>
     <link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#020617">
@@ -43,6 +43,16 @@
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.8); }
         ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(6, 182, 212, 0.8); }
+    
+        /* Mobile touch-friendly buttons */
+        .slide button, .slide input, .slide select {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .slide .button-group button {
+            min-height: 48px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-3 sm:p-6 relative overflow-y-auto" onload="initWizard()">
@@ -123,6 +133,9 @@
                             <div class="flex gap-2 pt-1">
 <button onclick="requestUsbSerialPort()" id="btnRequestSerial" class="flex-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 font-bold text-[11px] py-3 rounded-xl transition border border-cyan-500/20">
                                     🔌 Pripojiť cez USB UART
+                                </button>
+                                <button onclick="skipCableAndGoToSlide1()" class="flex-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 font-bold text-[11px] py-3 rounded-xl transition border border-slate-600/30">
+                                    ⏭️ Pokračovať bez kábla
                                 </button>
                             </div>
                         </div>
@@ -629,7 +642,16 @@
         // Gateway detekcia
         let localGatewayIP = window.location.origin;
 
-        async function initWizard() {
+        async function skipCableAndGoToSlide1() {
+            // Preskočenie USB pripojenia - pokračuj priamo na nastavenie
+            selectedTransport = 'HTTP';
+            const pulse = document.getElementById('cablePulse');
+            const txt = document.getElementById('cableText');
+            if (pulse) pulse.className = "h-2 w-2 rounded-full bg-emerald-500";
+            if (txt) txt.innerText = "Pokračujete bez priameho pripojenia (cez cloud).";
+            goToSlide(1);
+        }
+        function initWizard() {
             try {
                 // Pokus stiahnut devices z API, ak 404, ostava BACKUP_DEVICES bez chyby
                 try {
@@ -1347,6 +1369,14 @@ const cat = document.getElementById('categorySelect');
             const finishBtn = document.getElementById("finishBtn");
             finishBtn.disabled = true;
             finishBtn.innerText = "DOKONČUJEM...";
+
+            // Zozbieraj data
+            const brand_id = document.getElementById('brandSelect').value;
+            const cat_id = document.getElementById('categorySelect').value;
+            const model_id = document.getElementById('modelSelect').value;
+            const name = document.getElementById('deviceName').value.trim() || 'Moje zariadenie';
+            const ssid = (document.getElementById('wifiSsidManual')?.value || '').trim();
+            const pass = document.getElementById('wifiPass')?.value || '';
 
             try {
                 // Odoslanie claim požiadavky
