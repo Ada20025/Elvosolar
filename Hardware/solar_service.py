@@ -67,6 +67,34 @@ class SolarBackgroundService:
         except Exception:
             pass
 
+    def get_power_adjust_state(self):
+        """
+        Precita STAV registra 40428 (Active power adjustment %) zo SmartLoggera.
+        Vracia aktualne NASTAVENU hodnotu v percentach (-100 az +100), nie len posledny prikaz.
+        I16 signed, gain 10 => 490 = 49.0%
+        """
+        try:
+            for dev_id, conn in self.tcp_connections.items():
+                if not conn.get('sock'):
+                    continue
+                slave_id = conn.get('slave_id', 0)
+                regs = self.tcp_read_holding_registers(dev_id, slave_id, 40428, 1)
+                if regs and len(regs) >= 1:
+                    raw = regs[0]
+                    # I16 signed prevod
+                    if raw > 32767:
+                        raw -= 65536
+                    pct = raw / 10.0  # gain 10
+                    return {
+                        "percent": round(pct, 1),
+                        "raw": raw,
+                        "source": "smartlogger_40428",
+                        "readable": f"{pct:+.1f}%" if pct != 0 else "0% (AUTO)"
+                    }
+        except Exception as e:
+            self.log_to_terminal(f"[POWER STATE] Chyba citania 40428: {e}")
+        return {"percent": None, "raw": None, "source": "none", "readable": "--"}
+
     def check_self_healing(self):
         try:
             now_ts = time.time()

@@ -1017,6 +1017,8 @@ def get_dashboard_data(slave_id: int):
             "total_live_power": total_live_power,
             "live_okte_price": live_price,
             "active_model": bg_service.active_model_id,
+            # STAV vykonoveho registra 40428 (co je SKUTOCNE nastavene na SmartLoggery)
+            "power_adjust_state": bg_service.get_power_adjust_state(),
             "devices": devices_payload,
             "okte_schedule_today": today_okte_sched,
             "okte_schedule_tomorrow": tomorrow_okte_sched,
