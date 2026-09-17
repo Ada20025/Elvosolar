@@ -776,6 +776,18 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             if (!in_array('freq', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN freq FLOAT DEFAULT 50");
             if (!in_array('status_msg', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN status_msg VARCHAR(255) DEFAULT 'Online'");
         } catch (Exception $eSH) { /* ignore */ }
+        // Self-healing: aj devices tabulka moze mat staru schema bez tychto stlpcov
+        $devHasSoc = false; $devHasFve = false; $devHasTemp = false;
+        try {
+            $dcols = $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN);
+            $devHasSoc = in_array('battery_soc', $dcols);
+            $devHasFve = in_array('fve_power_w', $dcols);
+            $devHasTemp = in_array('temp', $dcols);
+            if (!$devHasSoc) $pdo->exec("ALTER TABLE devices ADD COLUMN battery_soc FLOAT DEFAULT 0");
+            if (!$devHasFve) $pdo->exec("ALTER TABLE devices ADD COLUMN fve_power_w FLOAT DEFAULT 0");
+            if (!$devHasTemp) $pdo->exec("ALTER TABLE devices ADD COLUMN temp FLOAT DEFAULT 0");
+            $devHasSoc = true; $devHasFve = true; $devHasTemp = true;
+        } catch (Exception $eSD) { /* ignore */ }
         try {
             // Uloz telemetry zaznam - NOW() moze failnut na MySQL strict mode, pouzime date('Y-m-d H:i:s')
             $ts = date('Y-m-d H:i:s');
@@ -789,14 +801,15 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                 substr($data['status_msg'] ?? 'Online', 0, 255),
                 $ts
             ]);
-            // Aktualizuj devices - status online + posledne hodnoty
-            $stmt2 = $pdo->prepare("UPDATE devices SET status = 'online', last_seen = NOW(), battery_soc = ?, fve_power_w = ?, temp = ? WHERE id = ?");
-            $stmt2->execute([
-                floatval($data['battery_soc'] ?? 0),
-                floatval($data['power_ac'] ?? 0),
-                floatval($data['temp'] ?? 0),
-                $device_id
-            ]);
+            // Aktualizuj devices - status online + posledne hodnoty (sety podla toho co tabulka ma)
+            $updParts = ["status = 'online'", "last_seen = NOW()"];
+            $updVals = [];
+            if ($devHasSoc) { $updParts[] = "battery_soc = ?"; $updVals[] = floatval($data['battery_soc'] ?? 0); }
+            if ($devHasFve) { $updParts[] = "fve_power_w = ?"; $updVals[] = floatval($data['power_ac'] ?? 0); }
+            if ($devHasTemp) { $updParts[] = "temp = ?"; $updVals[] = floatval($data['temp'] ?? 0); }
+            $updVals[] = $device_id;
+            $stmt2 = $pdo->prepare("UPDATE devices SET " . implode(', ', $updParts) . " WHERE id = ?");
+            $stmt2->execute($updVals);
             send_json(['status' => 'success', 'device_id' => $device_id]);
         } catch (Exception $e) {
             send_json(['status' => 'error', 'message' => $e->getMessage()]);
