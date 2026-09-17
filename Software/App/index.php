@@ -72,7 +72,15 @@ if (isset($pdo)) {
         )");
         // Fix: ak existuje stara tabulka s wrong timestamp typom, oprav
         try {
-            $pdo->exec("ALTER TABLE telemetry MODIFY timestamp DATETIME NULL");
+            $tcols = [];
+            $r = $pdo->query("SHOW COLUMNS FROM telemetry");
+            while ($trow = $r->fetch()) $tcols[] = $trow['Field'];
+            if (!in_array('battery_soc', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN battery_soc FLOAT DEFAULT 0");
+            if (!in_array('power_ac', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN power_ac FLOAT DEFAULT 0");
+            if (!in_array('temp', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN temp FLOAT DEFAULT 0");
+            if (!in_array('freq', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN freq FLOAT DEFAULT 50");
+            if (!in_array('status_msg', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN status_msg VARCHAR(255) DEFAULT 'Online'");
+            if (!in_array('device_id', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN device_id INT NOT NULL DEFAULT 1");
         } catch (Exception $e3) { /* ignore */ }
     } catch (Exception $e) {
         try {
