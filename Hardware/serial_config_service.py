@@ -138,7 +138,48 @@ def apply_config(config):
         return False
 
 
-def connect_wifi_if_needed(ssid, password):
+def register_to_cloud(config):
+    """
+    CM5 sa SAM zaregistruje do cloudovej DB (Railway).
+    Zavola sa po uspesnom aplikovani configu - ked CM5 dostane internet.
+    Skusa to opakovane kym sa to nepodari (WiFi moze prist neskor).
+    """
+    import requests
+
+    CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
+
+    payload = {
+        'brand_id': str(config.get('brand_id', 'huawei')),
+        'category_id': str(config.get('category_id', '')),
+        'model_id': str(config.get('model_id', '')),
+        'slave_id': int(config.get('slave_id', 1) or 1),
+        'has_battery': bool(config.get('has_battery', True)),
+        'name': str(config.get('device_name') or config.get('name') or 'Moje zariadenie'),
+        'serial': f"CM5-{int(time.time())}"
+    }
+
+    def _try_register():
+        try:
+            r = requests.post(f"{CLOUD}/api/user/claim-device", json=payload, timeout=8)
+            if r.status_code == 200:
+                log("✅ CM5 sa sam zaregistroval do cloudovej DB (Railway)")
+                return True
+            log(f"⚠️ Cloud registration: HTTP {r.status_code}")
+        except Exception as e:
+            log(f"⏳ Cloud nedostupny (skusam dalej): {e}")
+        return False
+
+    # Prvy pokus hned (mozno uz ma internet cez LAN)
+    if _try_register():
+        return
+
+    # Retry loop v backgrounde - kazdych 30s max 20 krat (~10 minut)
+    def _retry():
+        for _ in range(20):
+            time.sleep(30)
+            if _try_register():
+                return
+    threading.Thread(target=_retry, daemon=True).start()
     """Pokus sa pripojit na WiFi ak prisla v configu (nmcli)."""
     if not ssid:
         return
@@ -241,6 +282,8 @@ def serial_reader_loop():
                             log("📥 Prijaty JSON config z USB!")
                             if apply_config(obj):
                                 connect_wifi_if_needed(obj.get('ssid'), obj.get('password'))
+                                # CM5 sa SAM zaregistruje do cloudu (ked dostane internet)
+                                register_to_cloud(obj)
                                 # Confirm spat do PC
                                 try:
                                     ser.write(b'{"status":"config_applied"}\n')
