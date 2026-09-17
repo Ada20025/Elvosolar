@@ -15,6 +15,12 @@ require_once 'config.php';
 header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+// HTML stranky nikdy necachovat (vzdy cerstvy dashboard)
+if (!preg_match('#\.(png|jpg|svg|ico|css|js|json|woff2?)$#', $request_uri ?? '')) {
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+}
 
 // === MIGRATION CACHE: tazke schema migracie len 1x denne (rychlost!) ===
 $migrations_done = false;

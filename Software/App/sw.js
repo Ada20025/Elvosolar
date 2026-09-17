@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elvosolar-v2';
+const CACHE_NAME = 'elvosolar-v3';
 const urlsToCache = ['/', '/login', '/templates/ElvosolarLogo.png'];
 
 // Staticke subory -> cache-first (hned, bez cakania na siet)
@@ -10,7 +10,13 @@ const STATIC_PATTERNS = [
 ];
 
 self.addEventListener('install', e => { self.skipWaiting(); });
-self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
+self.addEventListener('activate', e => {
+    e.waitUntil(
+        caches.keys().then(names => Promise.all(
+            names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+        )).then(() => clients.claim())
+    );
+});
 
 self.addEventListener('push', e => {
     const data = e.data ? e.data.json() : { title: 'ElvoControll', body: 'Notifikácia' };
