@@ -541,16 +541,24 @@ elseif ($path === '/login') {
                         'device_hash' => $device_hash,
                         'stay' => isset($_POST['stay_logged_in'])
                     ];
-                    require_once __DIR__ . '/mail_helper.php';
-                    try {
-                        send_elvo_email($email, 'Overenie prihlásenia | ElvoControll', 'Overovací kód: ' . $code,
+                    $mail_sent = false;
+                    if (getenv('SMTP_PASS') && trim(getenv('SMTP_PASS')) !== '') {
+                        require_once __DIR__ . '/mail_helper.php';
+                        try {
+                            $mail_sent = send_elvo_email($email, 'Overenie prihlásenia | ElvoControll', 'Overovací kód: ' . $code,
                             '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Overenie prihlásenia</h2>' .
                             '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Niektoré zariadenie sa prihlási do vášho účtu ElvoControll <strong>prvýkrát</strong>. Pre potvrdenie zadajte tento kód v aplikácii:</p>' .
                             '<div style="margin:0 0 16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
                             '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . ' &middot; Čas: ' . date('d.m.Y H:i') . '</p>' .
                             '<p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
                             '#6366f1');
-                    } catch (Exception $me) { /* mail nie je kritický */ }
+                        } catch (Exception $me) { $mail_sent = false; }
+                    }
+                    if (!$mail_sent) {
+                        // SMTP nie je nastavene alebo zlyhalo -> kod zobraz priamo (dev rezim)
+                        $_SESSION['pending_login']['dev_code'] = $code;
+                        error_log("[LOGIN] SMTP neposlal mail - kod zobrazeny na obrazovke");
+                    }
                     header("Location: " . $base_path . "/verify-login");
                     exit;
                 }
@@ -610,7 +618,7 @@ elseif ($path === '/verify-login') {
     // Maskuj email: ad***@domena.sk
     $eparts = explode('@', $pl['email']);
     $mask_email = substr($eparts[0], 0, min(2, strlen($eparts[0]))) . '***@' . ($eparts[1] ?? '');
-    render_template('overenie.html', ['flash' => get_flash_messages(), 'mask_email' => $mask_email]);
+    render_template('overenie.html', ['flash' => get_flash_messages(), 'mask_email' => $mask_email, 'dev_code' => ($_SESSION['pending_login']['dev_code'] ?? '')]);
 }
 
 // --- ZNOVU POSLAT KOD ---
@@ -620,14 +628,19 @@ elseif ($path === '/verify-login/resend' && $method === 'GET') {
         $_SESSION['pending_login']['code_hash'] = password_hash($code, PASSWORD_DEFAULT);
         $_SESSION['pending_login']['expires'] = time() + 600;
         $_SESSION['pending_login']['attempts'] = 0;
-        require_once __DIR__ . '/mail_helper.php';
-        try {
-            send_elvo_email($_SESSION['pending_login']['email'], 'Nový overovací kód | ElvoControll', 'Nový kód: ' . $code,
+        unset($_SESSION['pending_login']['dev_code']);
+        $mail_sent2 = false;
+        if (getenv('SMTP_PASS') && trim(getenv('SMTP_PASS')) !== '') {
+            require_once __DIR__ . '/mail_helper.php';
+            try {
+                $mail_sent2 = send_elvo_email($_SESSION['pending_login']['email'], 'Nový overovací kód | ElvoControll', 'Nový kód: ' . $code,
                 '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Nový overovací kód</h2>' .
                 '<div style="margin:0 0 16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
-                '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút. Ak ste o kód nežiadali, zmente si heslo.</p>',
-                '#6366f1');
-        } catch (Exception $me) { /* ignore */ }
+                    '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút. Ak ste o kód nežiadali, zmente si heslo.</p>',
+                    '#6366f1');
+            } catch (Exception $me) { $mail_sent2 = false; }
+        }
+        if (!$mail_sent2) $_SESSION['pending_login']['dev_code'] = $code;
     }
     header("Location: " . $base_path . "/verify-login");
     exit;

@@ -58,17 +58,18 @@ $base_path = $base_path ?? '';
 
         .code-row { display: flex; gap: 9px; justify-content: center; margin: 26px 0 8px; }
         .code-input {
-            width: 48px; height: 60px;
-            background: rgba(2,6,23,.7);
-            border: 1.5px solid rgba(255,255,255,.12);
-            border-radius: 14px;
+            width: 52px; height: 64px;
+            background: linear-gradient(160deg, rgba(15,23,42,.9), rgba(2,6,23,.85));
+            border: 1.5px solid rgba(255,255,255,.14);
+            border-radius: 16px;
             color: #34d399;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 26px; font-weight: 800;
+            font-size: 28px; font-weight: 800;
             text-align: center;
             caret-color: #34d399;
-            transition: all .15s;
+            transition: all .18s cubic-bezier(.4,0,.2,1);
             outline: none;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,.35);
         }
         .code-input:focus { border-color: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,.15); transform: translateY(-2px); }
         .code-input.filled { border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.06); }
@@ -105,9 +106,16 @@ $base_path = $base_path ?? '';
         <div class="bg-orb bg-orb-2"></div>
     </div>
 
-    <?php if (!empty($flash)): foreach ($flash as $f): ?>
-        <div class="flash <?php echo $f['type'] === 'error' ? 'flash-error' : 'flash-success'; ?>" style="position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:50;width:calc(100% - 32px);max-width:420px;"><?php echo htmlspecialchars($f['message']); ?></div>
+    <?php if (!empty($flash)): foreach ($flash as $f): $fcat = $f['category'] ?? 'info'; ?>
+        <div class="flash <?php echo $fcat === 'error' ? 'flash-error' : 'flash-success'; ?>" style="position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:50;width:calc(100% - 32px);max-width:420px;text-align:center;"><?php echo htmlspecialchars($f['message']); ?></div>
     <?php endforeach; endif; ?>
+
+    <?php if (!empty($dev_code)): ?>
+    <div class="flash flash-success" style="position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:50;width:calc(100% - 32px);max-width:420px;text-align:center;">
+        <strong>DEV REŽIM (SMTP nenastavené):</strong> Tvoj kód je
+        <span style="font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:6px;font-weight:800;color:#34d399;display:block;margin-top:6px;"><?php echo htmlspecialchars($dev_code); ?></span>
+    </div>
+    <?php endif; ?>
 
     <div style="width:100%;display:flex;flex-direction:column;align-items:center;">
         <div class="verify-card">
