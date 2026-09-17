@@ -3102,8 +3102,8 @@
             if (hasOkte) {
                 okteData.prices.forEach(p => {
                     labels.push(p.hour);
+                    // REALNE OKTE ceny - hourly step krivka (zmena ceny kazdu hodinu)
                     oktePrices.push(p.price);
-                    // Simple prediction: OKTE price as proxy for irradiance pattern
                     predictionLine.push(null);
                 });
             }
@@ -3172,7 +3172,8 @@
                     data: oktePrices,
                     borderColor: '#818cf8',
                     backgroundColor: 'rgba(129, 140, 248, 0.04)',
-                    borderWidth: 2, yAxisID: 'yPrice', tension: 0.4, fill: true,
+                    borderWidth: 2, yAxisID: 'yPrice', tension: 0, fill: true,
+                    stepped: true,  // REALNE hodinove ceny - schody, nie hladka fake krivka
                     pointRadius: 0, pointHoverRadius: 4,
                 });
                 // Priemer OKTE - vodorovna ciara

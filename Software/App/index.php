@@ -349,24 +349,76 @@ function fetch_okte_prices($date_from = null, $date_to = null) {
         return json_decode(file_get_contents($cache_file), true);
     }
     
-    $base_prices = [
-        '00:00' => 58.20, '01:00' => 52.40, '02:00' => 48.90, '03:00' => 46.50,
-        '04:00' => 49.80, '05:00' => 64.20, '06:00' => 88.50, '07:00' => 118.40,
-        '08:00' => 132.80, '09:00' => 112.50, '10:00' => 84.60, '11:00' => 62.30,
-        '12:00' => 45.20, '13:00' => 42.50, '14:00' => 48.90, '15:00' => 74.50,
-        '16:00' => 105.20, '17:00' => 138.60, '18:00' => 148.00, '19:00' => 142.50,
-        '20:00' => 126.80, '21:00' => 104.20, '22:00' => 82.50, '23:00' => 65.40
-    ];
+    // REALNE OKTE ceny z isot.okte.sk API (zadne fake hardcoded hodnoty)
+    $userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    $url = "https://isot.okte.sk/api/v1/dam/results?deliveryDayFrom=" . $date_from . "&deliveryDayTo=" . $date_to;
+    $raw = null;
+    
+    if (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json', 'Accept-Language: sk,cs;q=0.9,en;q=0.8']);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($httpCode === 200 && $response) {
+            $raw = json_decode($response, true);
+            if (is_array($raw)) $raw = isset($raw['results']) ? $raw['results'] : $raw;
+        }
+    }
+    if ($raw === null && ini_get('allow_url_fopen')) {
+        $ctx = stream_context_create(['http' => ['method' => 'GET', 'header' => "User-Agent: " . $userAgent . "\r\nAccept: application/json\r\n", 'timeout' => 10], 'ssl' => ['verify_peer' => false, 'verify_peer_name' => false]]);
+        $response = @file_get_contents($url, false, $ctx);
+        if ($response) {
+            $raw = json_decode($response, true);
+            if (is_array($raw)) $raw = isset($raw['results']) ? $raw['results'] : $raw;
+        }
+    }
+    
+    // Ak API neodpoveda - vrat prazdny result (ziadne fake data!)
+    if (!is_array($raw) || count($raw) === 0) {
+        return ['date_from' => $date_from, 'date_to' => $date_to, 'prices' => [], 'avg' => 0, 'min' => 0, 'max' => 0, 'range_type' => 'none'];
+    }
+    
+    // Zorad podla deliveryDay + period
+    usort($raw, function($a, $b) {
+        if (($a['deliveryDay'] ?? '') === ($b['deliveryDay'] ?? '')) return ((int)($a['period'] ?? 0)) - ((int)($b['period'] ?? 0));
+        return strcmp($a['deliveryDay'] ?? '', $b['deliveryDay'] ?? '');
+    });
+    
+    // Premapuj na hourly format pre graf (96 x 15min -> 24 hodinovych priemerov)
+    $hourly = [];
+    foreach ($raw as $item) {
+        $period = (int)($item['period'] ?? 0);
+        if ($period < 1) continue;
+        $hourIdx = intdiv($period - 1, 4); // 4 x 15min na hodinu
+        if ($hourIdx < 0 || $hourIdx > 23) continue;
+        $price = floatval($item['price'] ?? 0);
+        if (!isset($hourly[$hourIdx])) $hourly[$hourIdx] = ['sum' => 0, 'n' => 0];
+        $hourly[$hourIdx]['sum'] += $price;
+        $hourly[$hourIdx]['n']++;
+    }
+    
     $prices = [];
     $total = 0; $min = PHP_INT_MAX; $max = PHP_INT_MIN;
-    $idx = 0;
-    foreach ($base_prices as $h => $p) {
-        $prices[] = ['hour' => $h, 'price' => $p, 'period' => $idx + 1];
-        $total += $p;
-        if ($p < $min) $min = $p;
-        if ($p > $max) $max = $p;
-        $idx++;
+    for ($h = 0; $h < 24; $h++) {
+        if (!isset($hourly[$h])) continue;
+        $avgP = round($hourly[$h]['sum'] / $hourly[$h]['n'], 2);
+        $prices[] = ['hour' => sprintf('%02d:00', $h), 'price' => $avgP, 'period' => $h + 1];
+        $total += $avgP;
+        if ($avgP < $min) $min = $avgP;
+        if ($avgP > $max) $max = $avgP;
     }
+    
+    if (count($prices) === 0) {
+        return ['date_from' => $date_from, 'date_to' => $date_to, 'prices' => [], 'avg' => 0, 'min' => 0, 'max' => 0, 'range_type' => 'none'];
+    }
+    
     $result = [
         'date_from' => $date_from, 'date_to' => $date_to, 'prices' => $prices,
         'avg' => round($total / count($prices), 2), 'min' => $min, 'max' => $max, 'range_type' => '24h'
@@ -720,7 +772,7 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
         // CM5 moze poslat bez session - ulozime pre user_id=1 (prvy user)
         $user_id = 1;
     }
-    $name = trim($data['name'] ?? 'ElvoControll');
+    $name = trim($data['name'] ?? 'Moje zariadenie');
     $brand_id = trim($data['brand_id'] ?? '');
     $category_id = trim($data['category_id'] ?? '');
     $model_id = trim($data['model_id'] ?? '');
