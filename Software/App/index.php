@@ -6,11 +6,28 @@ error_reporting(E_ALL);
 
 header('Content-Type: text/html; charset=utf-8');
 date_default_timezone_set('Europe/Bratislava');
+ini_set('session.gc_maxlifetime', 7776000); // 90 dni
+session_set_cookie_params(['lifetime' => 7776000, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax']);
 session_start();
 require_once 'config.php';
 
-// === AUTO-MIGRÁCIA: Pridanie chýbajúcich stĺpcov ===
+// === SECURITY HEADERS ===
+header('X-Frame-Options: SAMEORIGIN');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+
+// === MIGRATION CACHE: tazke schema migracie len 1x denne (rychlost!) ===
+$migrations_done = false;
 if (isset($pdo)) {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS migrations_state (id INTEGER PRIMARY KEY AUTO_INCREMENT, done_date VARCHAR(10) DEFAULT NULL)");
+        $mrow = $pdo->query("SELECT done_date FROM migrations_state WHERE id = 1")->fetch();
+        $migrations_done = ($mrow && ($mrow['done_date'] ?? '') === date('Y-m-d'));
+    } catch (Exception $e) { $migrations_done = false; }
+}
+
+// === AUTO-MIGRÁCIA: Pridanie chýbajúcich stĺpcov ===
+if (isset($pdo) && !$migrations_done) {
     try {
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
         $cols = [];
@@ -99,7 +116,7 @@ if (isset($pdo)) {
 }
 
 // === DB CLEANUP - odstran nepotrebne tabulky ===
-if (isset($pdo)) {
+if (isset($pdo) && !$migrations_done) {
     try {
         $pdo->exec("DROP TABLE IF EXISTS notifications_log");
         $pdo->exec("DROP TABLE IF EXISTS okte_price_log");
@@ -110,7 +127,7 @@ if (isset($pdo)) {
 }
 
 // === CORE TABLES (users, devices) ===
-if (isset($pdo)) {
+if (isset($pdo) && !$migrations_done) {
     try {
         $pdo->exec("
 CREATE TABLE IF NOT EXISTS users (
@@ -162,7 +179,7 @@ CREATE TABLE IF NOT EXISTS users (
 }
 
 // === DEMO USER SEED ===
-if (isset($pdo)) {
+if (isset($pdo) && !$migrations_done) {
     try {
         $demoCheck = $pdo->query("SELECT id FROM users WHERE email = 'demo@elvosolar.sk' LIMIT 1")->fetch();
         if (!$demoCheck) {
@@ -182,6 +199,13 @@ if (isset($pdo)) {
         if (!in_array('status', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN status VARCHAR(20) DEFAULT 'offline'");
         if (!in_array('last_seen', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN last_seen DATETIME NULL");
         if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
+    } catch (Exception $e) { /* ignore */ }
+}
+
+// Označ migrácie za hotové na dnes (dalsie requesty preskocia tazke query)
+if (isset($pdo) && !$migrations_done) {
+    try {
+        $pdo->exec("INSERT INTO migrations_state (id, done_date) VALUES (1, '" . date('Y-m-d') . "') ON DUPLICATE KEY UPDATE done_date = VALUES(done_date)");
     } catch (Exception $e) { /* ignore */ }
 }
 
@@ -206,7 +230,7 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 // --- SESSION TIMEOUT ---
 $stay_logged_in = $_SESSION['stay_logged_in'] ?? false;
-$timeout_seconds = $stay_logged_in ? (90 * 24 * 3600) : (30 * 60);
+$timeout_seconds = $stay_logged_in ? (90 * 24 * 3600) : (7 * 24 * 3600);
 
 $no_timeout_paths = ['/login', '/register', '/forgot-password', '/verify-reset-code', '/setup', '/setup.html', '/api/cm5/poll', '/api/cm5/result', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/cm5/register', '/healthcheck'];
 $apply_timeout = true;
@@ -465,35 +489,148 @@ if ($path === '/' || $path === '') {
 }
 
 elseif ($path === '/login') {
+    // Rate limit: max 5 neuspesnych pokusov -> 15 min lockout (per email+IP)
+    $attempt_key = 'login_att_' . md5(strtolower(trim($_POST['email'] ?? '')) . '|' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
+    $attempts = $_SESSION[$attempt_key] ?? ['count' => 0, 'until' => 0];
     if ($method === 'POST') {
-        $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
-        
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
-        
-        if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['last_activity'] = time();
-            // Prihlasovací email (bezpečnostná notifikácia)
-            require_once __DIR__ . '/mail_helper.php';
-            try {
-                send_elvo_email($email, 'Nové prihlásenie | ElvoControll', 'Boli ste prihlásený',
-                    '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Nové prihlásenie</h2>' .
-                    '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Do vášho účtu ElvoControll sa práve prihlásil používateľ <strong>' . htmlspecialchars($user['username']) . '</strong>.</p>' .
-                    '<p style="margin:0;font-size:12px;color:#94a3b8;">Čas: ' . date('d.m.Y H:i') . ' &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . '</p>' .
-                    '<p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Ak ste to neboli vy, okamžite si zmeňte heslo.</p>',
-                    '#3b82f6');
-            } catch (Exception $me) { /* mail nie je kritický */ }
-            header("Location: " . $base_path . "/");
-            exit;
+        if (time() < $attempts['until']) {
+            flash('Priveľa neúspešných pokusov. Skúste znova o ' . date('H:i:s', $attempts['until']) . '.', 'error');
         } else {
-            flash("Nesprávne prihlasovacie údaje.", 'error');
+            $email = trim($_POST['email'] ?? '');
+            $password = $_POST['password'] ?? '';
+            // Stabilny fingerprint zariadenia (z frontendu localStorage ID alebo UA fallback)
+            $device_hash = hash('sha256', ($_POST['device_id'] ?? '') ?: ('ua:' . ($_SERVER['HTTP_USER_AGENT'] ?? '-')));
+            
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+            
+            if ($user && password_verify($password, $user['password_hash'])) {
+                unset($_SESSION[$attempt_key]);
+                // Trusted device? (uz overene cez email)
+                $trusted = false;
+                try {
+                    $pdo->exec("CREATE TABLE IF NOT EXISTS login_devices (id INTEGER PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, device_hash VARCHAR(64) NOT NULL, device_name VARCHAR(100) DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login DATETIME NULL, UNIQUE KEY uq_userdev (user_id, device_hash))");
+                    $stmtT = $pdo->prepare("SELECT id FROM login_devices WHERE user_id = ? AND device_hash = ?");
+                    $stmtT->execute([$user['id'], $device_hash]);
+                    $trusted = (bool)$stmtT->fetch();
+                } catch (Exception $e) { /* ignore */ }
+                
+                if ($trusted) {
+                    // Rychle prihlasenie - zariadenie je uz overene
+                    session_regenerate_id(true);
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['last_activity'] = time();
+                    $_SESSION['stay_logged_in'] = isset($_POST['stay_logged_in']);
+                    try {
+                        $pdo->prepare("UPDATE login_devices SET last_login = NOW() WHERE user_id = ? AND device_hash = ?")->execute([$user['id'], $device_hash]);
+                    } catch (Exception $e) { /* ignore */ }
+                    header("Location: " . $base_path . "/");
+                    exit;
+                } else {
+                    // NOVE zariadenie -> overovaci kod na email (bezpecnostne potvrdenie)
+                    $code = strval(random_int(100000, 999999));
+                    $_SESSION['pending_login'] = [
+                        'user_id' => $user['id'],
+                        'username' => $user['username'],
+                        'email' => $email,
+                        'code_hash' => password_hash($code, PASSWORD_DEFAULT),
+                        'expires' => time() + 600,
+                        'attempts' => 0,
+                        'device_hash' => $device_hash,
+                        'stay' => isset($_POST['stay_logged_in'])
+                    ];
+                    require_once __DIR__ . '/mail_helper.php';
+                    try {
+                        send_elvo_email($email, 'Overenie prihlásenia | ElvoControll', 'Overovací kód: ' . $code,
+                            '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Overenie prihlásenia</h2>' .
+                            '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Niektoré zariadenie sa prihlási do vášho účtu ElvoControll <strong>prvýkrát</strong>. Pre potvrdenie zadajte tento kód v aplikácii:</p>' .
+                            '<div style="margin:0 0 16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
+                            '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . ' &middot; Čas: ' . date('d.m.Y H:i') . '</p>' .
+                            '<p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
+                            '#6366f1');
+                    } catch (Exception $me) { /* mail nie je kritický */ }
+                    header("Location: " . $base_path . "/verify-login");
+                    exit;
+                }
+            } else {
+                $attempts['count']++;
+                if ($attempts['count'] >= 5) { $attempts['until'] = time() + 900; $attempts['count'] = 0; }
+                $_SESSION[$attempt_key] = $attempts;
+                flash("Nesprávne prihlasovacie údaje.", 'error');
+            }
         }
     }
     render_template('prihlasenie.html', ['flash' => get_flash_messages()]);
+}
+
+// --- OVERENIE PRIHLASENIA EMAIL KODOM (nove zariadenie) ---
+elseif ($path === '/verify-login') {
+    if (!isset($_SESSION['pending_login'])) {
+        header("Location: " . $base_path . "/login");
+        exit;
+    }
+    $pl = $_SESSION['pending_login'];
+    if ($method === 'POST') {
+        $code = preg_replace('/\D/', '', $_POST['code'] ?? '');
+        if (time() > $pl['expires']) {
+            unset($_SESSION['pending_login']);
+            flash('Overovací kód vypršal. Prihláste sa znova.', 'error');
+            header("Location: " . $base_path . "/login");
+            exit;
+        }
+        if ($pl['attempts'] >= 5) {
+            unset($_SESSION['pending_login']);
+            flash('Priveľa pokusov. Prihláste sa znova.', 'error');
+            header("Location: " . $base_path . "/login");
+            exit;
+        }
+        if ($code && password_verify($code, $pl['code_hash'])) {
+            // Uspesne overenie -> uloz trusted device + prihlas
+            try {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS login_devices (id INTEGER PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, device_hash VARCHAR(64) NOT NULL, device_name VARCHAR(100) DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login DATETIME NULL, UNIQUE KEY uq_userdev (user_id, device_hash))");
+                $pdo->prepare("INSERT INTO login_devices (user_id, device_hash, device_name, last_login) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE last_login = NOW()")
+                    ->execute([$pl['user_id'], $pl['device_hash'], substr($_SERVER['HTTP_USER_AGENT'] ?? 'Zariadenie', 0, 100)]);
+            } catch (Exception $e) { /* ignore */ }
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $pl['user_id'];
+            $_SESSION['username'] = $pl['username'];
+            $_SESSION['last_activity'] = time();
+            $_SESSION['stay_logged_in'] = !empty($pl['stay']);
+            unset($_SESSION['pending_login']);
+            header("Location: " . $base_path . "/");
+            exit;
+        } else {
+            $_SESSION['pending_login']['attempts'] = $pl['attempts'] + 1;
+            $zostava = 5 - ($pl['attempts'] + 1);
+            flash('Nesprávny kód.' . ($zostava > 0 ? ' Zostáva ' . $zostava . ' pokusov.' : ''), 'error');
+        }
+    }
+    // Maskuj email: ad***@domena.sk
+    $eparts = explode('@', $pl['email']);
+    $mask_email = substr($eparts[0], 0, min(2, strlen($eparts[0]))) . '***@' . ($eparts[1] ?? '');
+    render_template('overenie.html', ['flash' => get_flash_messages(), 'mask_email' => $mask_email]);
+}
+
+// --- ZNOVU POSLAT KOD ---
+elseif ($path === '/verify-login/resend' && $method === 'GET') {
+    if (isset($_SESSION['pending_login'])) {
+        $code = strval(random_int(100000, 999999));
+        $_SESSION['pending_login']['code_hash'] = password_hash($code, PASSWORD_DEFAULT);
+        $_SESSION['pending_login']['expires'] = time() + 600;
+        $_SESSION['pending_login']['attempts'] = 0;
+        require_once __DIR__ . '/mail_helper.php';
+        try {
+            send_elvo_email($_SESSION['pending_login']['email'], 'Nový overovací kód | ElvoControll', 'Nový kód: ' . $code,
+                '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Nový overovací kód</h2>' .
+                '<div style="margin:0 0 16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
+                '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút. Ak ste o kód nežiadali, zmente si heslo.</p>',
+                '#6366f1');
+        } catch (Exception $me) { /* ignore */ }
+    }
+    header("Location: " . $base_path . "/verify-login");
+    exit;
 }
 
 elseif ($path === '/register') {

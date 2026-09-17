@@ -344,6 +344,7 @@
             <?php endif; ?>
 
             <form method="POST" action="<?php echo $base_path; ?>/login">
+                <input type="hidden" name="device_id" id="deviceIdInput" value="">
                 <div class="form-group">
                     <label class="form-label">E-mailová adresa</label>
                     <div class="input-wrapper">
@@ -396,6 +397,19 @@
         </div>
 
         <script>
+            // Stabilny fingerprint zariadenia pre trusted-device overenie
+            (function() {
+                try {
+                    var did = localStorage.getItem('elvo_device_id');
+                    if (!did) {
+                        did = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+                        localStorage.setItem('elvo_device_id', did);
+                    }
+                    var inp = document.getElementById('deviceIdInput');
+                    if (inp) inp.value = did;
+                } catch (e) { /* localStorage unavailable - UA fallback na serveri */ }
+            })();
+
             // PWA install prompt
             var deferredInstallPrompt = null;
             
