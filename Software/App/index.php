@@ -415,37 +415,38 @@ function fetch_okte_prices($date_from = null, $date_to = null, $cache_bust = '')
         return strcmp($a['deliveryDay'] ?? '', $b['deliveryDay'] ?? '');
     });
     
-    // Premapuj na hourly format pre graf (96 x 15min -> hodinove priemery)
-    // Zoskupujeme podla deliveryDay aby 48h (dnes + zajtra) fungovalo spravne
-    $hourly = []; // kluc: 'Y-m-d_H' => ['sum','n','day']
+    // REALNE 15-minutove ceny z OKTE (96 period/deň) - ziadne priemery
+    // Zoskupujeme podla deliveryDay; format: 'HH:MM' (00:00, 00:15, 00:30...)
+    $periods = [];
     foreach ($raw as $item) {
         $period = (int)($item['period'] ?? 0);
-        if ($period < 1) continue;
-        $hourIdx = intdiv($period - 1, 4); // 4 x 15min na hodinu
-        if ($hourIdx < 0 || $hourIdx > 23) continue;
+        if ($period < 1 || $period > 96) continue;
         $price = $item['price'] ?? null;
         if ($price === null || $price === '') continue; // zajtrajsie ceny mozu byt este null
         $day = substr($item['deliveryDay'] ?? $date_from, 0, 10);
-        $key = $day . '_' . $hourIdx;
-        if (!isset($hourly[$key])) $hourly[$key] = ['sum' => 0, 'n' => 0, 'day' => $day, 'h' => $hourIdx];
-        $hourly[$key]['sum'] += floatval($price);
-        $hourly[$key]['n']++;
+        $q = ($period - 1) % 4;               // stvrtrok hodiny
+        $hh = intdiv($period - 1, 4);
+        $mm = $q * 15;
+        $periods[] = [
+            'hour' => sprintf('%02d:%02d', $hh, $mm),
+            'price' => round(floatval($price), 2),
+            'period' => $period,
+            'day' => $day
+        ];
     }
     
-    // Zorad chronologicky podla dnia a hodiny
-    usort($hourly, function($a, $b) {
-        if ($a['day'] === $b['day']) return $a['h'] - $b['h'];
+    // Zorad chronologicky podla dnia a period
+    usort($periods, function($a, $b) {
+        if ($a['day'] === $b['day']) return $a['period'] - $b['period'];
         return strcmp($a['day'], $b['day']);
     });
     
-    $prices = [];
+    $prices = $periods;
     $total = 0; $min = PHP_INT_MAX; $max = PHP_INT_MIN;
-    foreach ($hourly as $h) {
-        $avgP = round($h['sum'] / $h['n'], 2);
-        $prices[] = ['hour' => sprintf('%02d:00', $h['h']), 'price' => $avgP, 'period' => $h['h'] + 1, 'day' => $h['day']];
-        $total += $avgP;
-        if ($avgP < $min) $min = $avgP;
-        if ($avgP > $max) $max = $avgP;
+    foreach ($prices as $pr) {
+        $total += $pr['price'];
+        if ($pr['price'] < $min) $min = $pr['price'];
+        if ($pr['price'] > $max) $max = $pr['price'];
     }
     
     if (count($prices) === 0) {
@@ -455,7 +456,7 @@ function fetch_okte_prices($date_from = null, $date_to = null, $cache_bust = '')
     $result = [
         'date_from' => $date_from, 'date_to' => $date_to, 'prices' => $prices,
         'avg' => round($total / count($prices), 2), 'min' => $min, 'max' => $max,
-        'range_type' => (count($prices) > 24 ? '48h' : '24h')
+        'range_type' => (count($prices) > 96 ? '48h' : '24h')
     ];
     @file_put_contents($cache_file, json_encode($result));
     return $result;
@@ -701,7 +702,12 @@ elseif ($path === '/dashboard' && $method === 'GET') {
         exit;
     }
     $devices = get_user_devices($pdo, $_SESSION['user_id']);
-    render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices]);
+    // Admin (alebo admin poducet ako mechanik) moze pridavat zariadenia
+    $stmtRole = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+    $stmtRole->execute([$_SESSION['user_id']]);
+    $roleRowD = $stmtRole->fetch();
+    $is_admin = ($roleRowD && in_array($roleRowD['role'] ?? '', ['admin', 'mechanik']));
+    render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices, 'is_admin' => $is_admin]);
 }
 
 elseif ($path === '/profile' && $method === 'GET') {
