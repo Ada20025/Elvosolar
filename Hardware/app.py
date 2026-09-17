@@ -1836,6 +1836,14 @@ cloud_thread = threading.Thread(target=_delayed_cloud_start, daemon=True)
 cloud_thread.start()
 log_message("[CLOUD SYNC] Background thread (3s delay, 5s poll)")
 
+# Serial Config Service - cita JSON config z USB kabla (setup bez WiFi)
+try:
+    from serial_config_service import start_serial_config_service
+    start_serial_config_service()
+    log_message("[SERIAL-CONFIG] USB config service spusteny")
+except Exception as _e:
+    log_message(f"[SERIAL-CONFIG] Nepodarilo sa spustit: {_e}")
+
 
 
 @app.get("/api/system/discover-direct")
