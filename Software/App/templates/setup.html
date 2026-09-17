@@ -89,6 +89,11 @@
             </div>
 
             <!-- Indikátory krokov -->
+            <div id="connStatusBar" class="hidden flex items-center justify-center gap-2 mb-4 px-4 py-2.5 rounded-xl text-[11px] font-bold" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);color:#34d399;">
+                <span id="connStatusDot" class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                <span id="connStatusText">Pripojené k zariadeniu</span>
+                <button onclick="goToSlide(0)" class="ml-2 underline text-[10px] opacity-70 hover:opacity-100 cursor-pointer">zmeniť</button>
+            </div>
             <div id="stepIndicators" class="grid grid-cols-5 gap-2 mb-6 transition-all duration-300">
                 <div id="ind1" class="indicator-step rounded-full bg-slate-800"></div>
                 <div id="ind2" class="indicator-step rounded-full bg-slate-800"></div>
@@ -117,7 +122,7 @@
                         
                         <div id="connectionMethodButtons" class="space-y-2.5 pt-2">
                             <button onclick="showCableDeviceSelector()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg hover:opacity-95 cursor-pointer">
-                                🔌 PRIAME PRIPOJENIE KÁBLOM / LAN
+                                🔌 PRIPOJENIE
                             </button>
 
                         </div>
@@ -633,7 +638,9 @@
         let activeWifiSsidName = ""; 
         let isManualWifi = false; 
         
-        let selectedTransport = 'HTTP'; 
+        let selectedTransport = 'HTTP';
+        let deviceConnected = false;  // globalny stav: ci je CM5 pripojeny (USB/LAN)
+        let deviceNameSaved = '';     // ulozene meno zariadenia
         let setupCharacteristic = null; 
         let activeSerialPort = null;
         let discoveredSlaveIds = [];    
@@ -643,12 +650,13 @@
         let localGatewayIP = window.location.origin;
 
         async function skipCableAndGoToSlide1() {
-            // Preskočenie USB pripojenia - pokračuj priamo na nastavenie
+            // Pokracovanie bez kabla - config pojde cez cloud (CM5 ho stiahne ked bude online)
             selectedTransport = 'HTTP';
+            deviceConnected = false;
             const pulse = document.getElementById('cablePulse');
             const txt = document.getElementById('cableText');
             if (pulse) pulse.className = "h-2 w-2 rounded-full bg-emerald-500";
-            if (txt) txt.innerText = "Pokračujete bez priameho pripojenia (cez cloud).";
+            if (txt) txt.innerText = "Pokračujete bez priameho pripojenia (config sa odošle cez cloud).";
             goToSlide(1);
         }
         function initWizard() {
@@ -690,6 +698,7 @@
                 const txt = document.getElementById('cableText');
                 pulse.className = "h-2 w-2 rounded-full bg-cyan-500 animate-pulse";
                 txt.innerText = "Pripojené k Waveshare USB TO UART.";
+                updateConnStatus(true, 'USB UART');
                 goToSlide(1);
             } catch (err) {
                 showValidationError("Zlyhalo otvorenie portu: " + err.message);
@@ -1032,6 +1041,7 @@
                 scanStatus.innerHTML = '\u2717 SmartLogger neodpovedá';
             }
             document.getElementById('finishBtn').classList.remove('hidden');
+        }
 
         async function runLocalDiscoveryOnDevice() {
             const status = document.getElementById("scanStatus");
@@ -1139,8 +1149,34 @@
                     }
                 }
             }
+            // Connection banner - zobraz na kazdom kroku ak je zariadenie pripojene
+            const connBar = document.getElementById('connStatusBar');
+            if (connBar) {
+                if (deviceConnected) {
+                    connBar.classList.remove('hidden');
+                    connBar.classList.add('flex');
+                } else {
+                    connBar.classList.add('hidden');
+                    connBar.classList.remove('flex');
+                }
+            }
             // Zosun pohľad hore pri prechode krokom
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateConnStatus(connected, transport) {
+            deviceConnected = connected;
+            const bar = document.getElementById('connStatusBar');
+            const dot = document.getElementById('connStatusDot');
+            const txt = document.getElementById('connStatusText');
+            if (!bar) return;
+            if (connected) {
+                bar.classList.remove('hidden'); bar.classList.add('flex');
+                dot.className = 'h-2 w-2 rounded-full bg-emerald-500';
+                txt.textContent = '✓ Zariadenie pripojené (' + transport + ')' + (deviceNameSaved ? ' — ' + deviceNameSaved : '');
+            } else {
+                bar.classList.add('hidden'); bar.classList.remove('flex');
+            }
         }
 
         function handleTransitionToStep3() {
@@ -1201,6 +1237,9 @@
         }
 
         function submitStep1() {
+            const nameInput = document.getElementById('deviceName');
+            if (nameInput && nameInput.value.trim()) deviceNameSaved = nameInput.value.trim();
+            if (deviceConnected) updateConnStatus(true, selectedTransport === 'SERIAL' ? 'USB UART' : 'Cloud');
             const brand_id = document.getElementById('brandSelect').value;
             const brand = dbDevices[brand_id];
             if (brand) {

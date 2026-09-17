@@ -340,12 +340,12 @@ if (preg_match('#\.(png|jpg|jpeg|gif)$#i', $path)) {
 }
 
 // --- OKTE SPOT CENY ---
-function fetch_okte_prices($date_from = null, $date_to = null) {
+function fetch_okte_prices($date_from = null, $date_to = null, $cache_bust = '') {
     if (!$date_from) $date_from = date('Y-m-d');
     if (!$date_to) $date_to = date('Y-m-d');
     
     $cache_file = __DIR__ . '/cache_okte_' . $date_from . '_' . $date_to . '.json';
-    if (file_exists($cache_file) && (time() - filemtime($cache_file)) < 900) {
+    if (!$cache_bust && file_exists($cache_file) && (time() - filemtime($cache_file)) < 900) {
         return json_decode(file_get_contents($cache_file), true);
     }
     
@@ -391,25 +391,34 @@ function fetch_okte_prices($date_from = null, $date_to = null) {
         return strcmp($a['deliveryDay'] ?? '', $b['deliveryDay'] ?? '');
     });
     
-    // Premapuj na hourly format pre graf (96 x 15min -> 24 hodinovych priemerov)
-    $hourly = [];
+    // Premapuj na hourly format pre graf (96 x 15min -> hodinove priemery)
+    // Zoskupujeme podla deliveryDay aby 48h (dnes + zajtra) fungovalo spravne
+    $hourly = []; // kluc: 'Y-m-d_H' => ['sum','n','day']
     foreach ($raw as $item) {
         $period = (int)($item['period'] ?? 0);
         if ($period < 1) continue;
         $hourIdx = intdiv($period - 1, 4); // 4 x 15min na hodinu
         if ($hourIdx < 0 || $hourIdx > 23) continue;
-        $price = floatval($item['price'] ?? 0);
-        if (!isset($hourly[$hourIdx])) $hourly[$hourIdx] = ['sum' => 0, 'n' => 0];
-        $hourly[$hourIdx]['sum'] += $price;
-        $hourly[$hourIdx]['n']++;
+        $price = $item['price'] ?? null;
+        if ($price === null || $price === '') continue; // zajtrajsie ceny mozu byt este null
+        $day = substr($item['deliveryDay'] ?? $date_from, 0, 10);
+        $key = $day . '_' . $hourIdx;
+        if (!isset($hourly[$key])) $hourly[$key] = ['sum' => 0, 'n' => 0, 'day' => $day, 'h' => $hourIdx];
+        $hourly[$key]['sum'] += floatval($price);
+        $hourly[$key]['n']++;
     }
+    
+    // Zorad chronologicky podla dnia a hodiny
+    usort($hourly, function($a, $b) {
+        if ($a['day'] === $b['day']) return $a['h'] - $b['h'];
+        return strcmp($a['day'], $b['day']);
+    });
     
     $prices = [];
     $total = 0; $min = PHP_INT_MAX; $max = PHP_INT_MIN;
-    for ($h = 0; $h < 24; $h++) {
-        if (!isset($hourly[$h])) continue;
-        $avgP = round($hourly[$h]['sum'] / $hourly[$h]['n'], 2);
-        $prices[] = ['hour' => sprintf('%02d:00', $h), 'price' => $avgP, 'period' => $h + 1];
+    foreach ($hourly as $h) {
+        $avgP = round($h['sum'] / $h['n'], 2);
+        $prices[] = ['hour' => sprintf('%02d:00', $h['h']), 'price' => $avgP, 'period' => $h['h'] + 1, 'day' => $h['day']];
         $total += $avgP;
         if ($avgP < $min) $min = $avgP;
         if ($avgP > $max) $max = $avgP;
@@ -421,7 +430,8 @@ function fetch_okte_prices($date_from = null, $date_to = null) {
     
     $result = [
         'date_from' => $date_from, 'date_to' => $date_to, 'prices' => $prices,
-        'avg' => round($total / count($prices), 2), 'min' => $min, 'max' => $max, 'range_type' => '24h'
+        'avg' => round($total / count($prices), 2), 'min' => $min, 'max' => $max,
+        'range_type' => (count($prices) > 24 ? '48h' : '24h')
     ];
     @file_put_contents($cache_file, json_encode($result));
     return $result;
@@ -629,6 +639,21 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
     $stmtT->execute([$device_id]);
     $latest = $stmtT->fetch();
     
+    // Historia pre graf: poslednych 48 hodin (najstarsie -> najnovsie)
+    $history = [];
+    try {
+        $stmtH = $pdo->prepare("SELECT power_ac, battery_soc, temp, freq, timestamp FROM telemetry WHERE device_id = ? AND timestamp >= (NOW() - INTERVAL 48 HOUR) ORDER BY id ASC");
+        $stmtH->execute([$device_id]);
+        while ($h = $stmtH->fetch()) {
+            $history[] = [
+                'power_ac' => (float)$h['power_ac'],
+                'battery_soc' => (float)$h['battery_soc'],
+                'temp' => (float)$h['temp'],
+                'timestamp' => strtotime($h['timestamp'])
+            ];
+        }
+    } catch (Exception $eH) { /* stara schema bez timestamp - ignore */ }
+    
     send_json([
         // REALNE DATA IBA - ziadne fake fallbacky (3840/84 boli fake)
         'total_live_power' => $latest ? (float)$latest['power_ac'] : 0,
@@ -637,6 +662,7 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'temp' => $latest ? (float)$latest['temp'] : 0,
         'freq' => $latest ? (float)$latest['freq'] : 0,
         'has_real_data' => $latest ? true : false,
+        'history' => $history,
         'manual_override' => $device['manual_override'] ?? 'AUTO',
         'name' => $device['name'] ?? '',
         'connection_type' => $device['connection_type'] ?? 'modbus_tcp',
@@ -650,14 +676,33 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
 
 // --- OKTE CENY API ---
 elseif ($path === '/api/okte/prices' && $method === 'GET') {
-    $from = date('Y-m-d', strtotime('-1 day'));
-    $to = date('Y-m-d', strtotime('+1 day'));
-    $data = fetch_okte_prices($from, $to);
-    if (!$data || !isset($data['prices']) || count($data['prices']) === 0) {
+    // Po 13:00 OKTE zverejni zajtrajsie ceny -> zobraz 48h (dnes + zajtra)
+    // Pred 13:00 su dostupne len dnesne -> 24h
+    $hour = (int)date('G');
+    $is_after_publish = ($hour >= 13); // OKTE zverejni zajtrajsie ceny o 13:00
+    $cache_bust = date('Y-m-d') . ($is_after_publish ? '_a' : '_b');
+    if ($is_after_publish) {
         $from = date('Y-m-d');
         $to = date('Y-m-d', strtotime('+1 day'));
-        $data = fetch_okte_prices($from, $to);
+        $range = '48h';
+    } else {
+        $from = date('Y-m-d');
+        $to = date('Y-m-d');
+        $range = '24h';
     }
+    $cache_file_check = __DIR__ . '/cache_okte_' . $from . '_' . $to . '.json';
+    if (file_exists($cache_file_check) && filemtime($cache_file_check) < strtotime($is_after_publish ? 'today 13:00' : 'today 00:00')) {
+        @unlink($cache_file_check); // stary cache - vynut fresh fetch
+    }
+    $data = fetch_okte_prices($from, $to, $cache_bust);
+    if (!$data || !isset($data['prices']) || count($data['prices']) === 0) {
+        // Fallback: vcera + dnes
+        $from = date('Y-m-d', strtotime('-1 day'));
+        $to = date('Y-m-d');
+        $data = fetch_okte_prices($from, $to);
+        $range = '24h';
+    }
+    if ($data) $data['range_type'] = $range;
     send_json(['status' => 'success', 'okte' => $data]);
 }
 
@@ -722,6 +767,15 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     } catch (Exception $e) { /* ignore */ }
     
     if ($device_id) {
+        // Self-healing: dopln chybajuce stlpce v telemetry tabulke (stara schema fix)
+        try {
+            $tcols = $pdo->query("SHOW COLUMNS FROM telemetry")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('battery_soc', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN battery_soc FLOAT DEFAULT 0");
+            if (!in_array('power_ac', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN power_ac FLOAT DEFAULT 0");
+            if (!in_array('temp', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN temp FLOAT DEFAULT 0");
+            if (!in_array('freq', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN freq FLOAT DEFAULT 50");
+            if (!in_array('status_msg', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN status_msg VARCHAR(255) DEFAULT 'Online'");
+        } catch (Exception $eSH) { /* ignore */ }
         try {
             // Uloz telemetry zaznam - NOW() moze failnut na MySQL strict mode, pouzime date('Y-m-d H:i:s')
             $ts = date('Y-m-d H:i:s');

@@ -373,15 +373,16 @@
             max-width: 1400px;
             margin: 0 auto;
             display: flex;
-            gap: 8px;
+            justify-content: center;
+            gap: 10px;
         }
 
         .nav-tab {
             background: none;
             border: none;
             border-bottom: 2px solid transparent;
-            padding: 14px 18px;
-            font-size: 11px;
+            padding: 15px 26px;
+            font-size: 13px;
             font-weight: 800;
             color: var(--text-secondary);
             cursor: pointer;
@@ -526,16 +527,18 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            padding: 11px 14px;
+            background: linear-gradient(160deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 13px 16px;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .inverter-status-row:hover {
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
         }
 
         /* Inverter Details Expandable Box */
@@ -702,7 +705,7 @@
             .dashboard-grid { grid-template-columns: 1fr !important; gap: 16px; }
             .header-inner { padding: 0 12px; height: 56px; }
             .nav-tabs-container { padding: 0 8px; }
-            .nav-tab { padding: 10px 12px; font-size: 10px; }
+            .nav-tab { padding: 12px 16px; font-size: 12px; }
             .main-wrapper { padding: 16px 12px; }
             .okte-mini-card { padding: 14px; }
             #okteSpotPrice { font-size: 26px !important; }
@@ -719,7 +722,7 @@
             .metric-label-styled { font-size: 8px; }
             .header-brand-center { display: none; }
             .brand-title { font-size: 13px; }
-            .nav-tab { padding: 8px 8px; font-size: 9px; gap: 4px; }
+            .nav-tab { padding: 10px 14px; font-size: 11px; gap: 6px; }
             .nav-tab i { width: 12px; height: 12px; }
             .okte-mini-card { border-radius: 14px; padding: 12px; }
             #okteSpotPrice { font-size: 22px !important; }
@@ -733,23 +736,41 @@
         }
 
         .metric-card {
-            background: rgba(255, 255, 255, 0.01);
+            background: linear-gradient(160deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.008) 100%);
             border: 1px solid var(--border-card);
-            border-radius: 18px;
-            padding: 18px;
+            border-radius: 20px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 8px;
             position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            border-color: color-mix(in srgb, var(--line-color, var(--accent-grid)) 45%, transparent);
+            box-shadow: 0 12px 32px -14px color-mix(in srgb, var(--line-color, var(--accent-grid)) 55%, transparent);
         }
 
         .metric-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; height: 2px;
-            background: var(--line-color, var(--accent-grid));
-            border-radius: 18px 18px 0 0;
-            opacity: 0.7;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--line-color, var(--accent-grid)), transparent 85%);
+            border-radius: 20px 20px 0 0;
+            opacity: 0.9;
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 110px; height: 110px;
+            border-radius: 50%;
+            background: radial-gradient(circle, color-mix(in srgb, var(--line-color, var(--accent-grid)) 16%, transparent) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         .metric-label-styled {
@@ -967,14 +988,20 @@
     
         /* Mobile gear modal fix */
         @media (max-width: 640px) {
-            #gearModal > div {
+            #gearModal > div,
+            #repeatModal > div {
                 max-height: 85vh !important;
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch !important;
                 margin: 8px !important;
                 padding: 16px !important;
             }
+            #gearModal input[type=range],
+            #repeatModal input[type=range] {
+                touch-action: pan-y;
+            }
         }
+        #gearModal, #repeatModal { overscroll-behavior: contain; }
         /* Smooth scroll for all modals */
         .modal-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
@@ -1012,7 +1039,7 @@
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
                 <div class="station-dropdown-container">                    <?php $activeDevName = 'Moje zariadenie'; if (isset($devices) && count($devices) > 0) { $activeDevName = htmlspecialchars($devices[0]['name'] ?? 'Moje zariadenie'); } ?>
                     <button id="deviceSelectDropdownBtn" onclick="toggleDeviceDropdown(event)" style="background:none;border:1px solid var(--border-card);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;transition:all 0.2s;">
-                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);display:flex;align-items:center;gap:6px;"><?php echo $activeDevName; ?> <span style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">zariadenie</span></span>
+                        <span id="singleDeviceLabel" style="font-weight:800;font-size:13px;color:var(--text-primary);display:flex;align-items:center;gap:6px;"><?php echo $activeDevName; ?></span>
                         <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
                     </button>
                     <div id="deviceDropdownMenu" class="station-dropdown-menu hidden" style="min-width:300px;max-height:70vh;overflow-y:auto;">
@@ -1029,13 +1056,11 @@
                                     <span style="display:flex;align-items:center;gap:6px;flex:1;">
                                         <span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:<?php echo $devOnline ? 'var(--accent-battery)' : '#ef4444'; ?>;"></span>
                                         <span class="device-name-label" id="deviceName_<?php echo $dev['id']; ?>" style="font-weight:800;font-size:12px;color:var(--text-primary);"><?php echo htmlspecialchars($dev['name']); ?></span>
-                                        <span style="font-size:8px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">zariadenie</span>
                                     </span>
-                                    <svg onclick="event.stopPropagation();renameDevice(<?php echo $dev['id']; ?>)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);cursor:pointer;flex-shrink:0;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:6px;padding:2px 12px 4px 24px;font-size:9px;color:var(--text-secondary);">
-                                    <span style="display:flex;align-items:center;gap:3px;"><i data-lucide="<?php echo $isLogger ? 'server' : 'zap'; ?>" style="width:9px;height:9px;color:var(--accent-solar);"></i> <?php echo htmlspecialchars($devTypeName); ?><?php echo htmlspecialchars($dev['model_name'] ? ' · ' . $dev['model_name'] : ''); ?></span>
-                                    <span style="font-family:'JetBrains Mono',monospace;background:var(--bg-inset);padding:0 5px;border-radius:4px;color:var(--accent-okte);font-size:8px;">ID: <?php echo $devId !== null && $devId !== '' ? htmlspecialchars($devId) : '—'; ?></span>
+                                    <span style="display:flex;align-items:center;gap:8px;">
+                                        <span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text-secondary);"><i data-lucide="<?php echo $isLogger ? 'server' : 'zap'; ?>" style="width:9px;height:9px;color:var(--accent-solar);"></i> <?php echo htmlspecialchars($devTypeName); ?></span>
+                                        <svg onclick="event.stopPropagation();renameDevice(<?php echo $dev['id']; ?>)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);cursor:pointer;flex-shrink:0;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                    </span>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -3099,39 +3124,75 @@
             let oktePrices = [];
             let predictionLine = []; // Predpoved osvitu (watt z krivky)
 
+            const pad2n = n => n.toString().padStart(2,'0');
+            // Kluc pre mapovanie historie: YYYY-MM-DD_HH (funguje aj pre 48h graf)
+            const histKeys = [];
+            if (hasDevice) {
+                history.forEach(h => {
+                    try {
+                        const d = new Date(h.timestamp * 1000 || h.timestamp);
+                        if (isNaN(d)) return;
+                        histKeys.push({
+                            key: d.getFullYear() + '-' + pad2n(d.getMonth()+1) + '-' + pad2n(d.getDate()) + '_' + d.getHours(),
+                            power: h.power_ac || 0,
+                            soc: h.battery_soc || 0
+                        });
+                    } catch(e) {}
+                });
+            }
+            const nowD = new Date();
+            const todayStr = nowD.getFullYear() + '-' + pad2n(nowD.getMonth()+1) + '-' + pad2n(nowD.getDate());
+            const tomorrowD = new Date(nowD.getTime() + 86400000);
+            const tomorrowStr = tomorrowD.getFullYear() + '-' + pad2n(tomorrowD.getMonth()+1) + '-' + pad2n(tomorrowD.getDate());
+            const dayNamesSk = ['Ne','Po','Ut','St','Št','Pi','So'];
+
             if (hasOkte) {
+                const multiDay = okteData.prices.length > 25 || okteData.range_type === '48h';
                 okteData.prices.forEach(p => {
-                    labels.push(p.hour);
+                    let lbl = p.hour;
+                    if (multiDay && p.day) {
+                        if (p.day === todayStr) lbl = p.hour;                       // dnes bez prefixu
+                        else if (p.day === tomorrowStr) lbl = 'Zaj ' + p.hour;      // zajtra
+                        else {
+                            try { const dd = new Date(p.day + 'T00:00:00'); lbl = (dayNamesSk[dd.getDay()] || '') + ' ' + p.hour; } catch(e) {}
+                        }
+                    }
+                    labels.push(lbl);
                     // REALNE OKTE ceny - hourly step krivka (zmena ceny kazdu hodinu)
                     oktePrices.push(p.price);
                     predictionLine.push(null);
                 });
             }
 
-            // Map device data onto OKTE timeline
+            // Map device data onto OKTE timeline (podla dnia + hodiny)
             let fveData = [];
             let socData = [];
             let avgFveLine = [];
 
             if (hasDevice && hasOkte) {
-                fveData = labels.map(l => {
-                    const match = history.find(h => {
-                        const d = new Date(h.timestamp * 1000 || h.timestamp);
-                        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') === l;
-                    });
-                    return match ? (match.power_ac || 0) : null;
+                fveData = okteData.prices.map(p => {
+                    const dayKey = p.day || todayStr;
+                    const hk = histKeys.find(x => x.key === dayKey + '_' + parseInt(p.hour));
+                    return hk ? hk.power : null;
                 });
-                socData = labels.map(l => {
-                    const match = history.find(h => {
-                        const d = new Date(h.timestamp * 1000 || h.timestamp);
-                        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') === l;
-                    });
-                    return match ? (match.battery_soc || 0) : null;
+                socData = okteData.prices.map(p => {
+                    const dayKey = p.day || todayStr;
+                    const hk = histKeys.find(x => x.key === dayKey + '_' + parseInt(p.hour));
+                    return hk ? hk.soc : null;
                 });
             } else if (hasDevice) {
+                const spanDays = histKeys.some(x => !x.key.startsWith(todayStr));
                 labels = history.map(h => {
-                    const d = new Date(h.timestamp * 1000 || h.timestamp);
-                    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+                    try {
+                        const d = new Date(h.timestamp * 1000 || h.timestamp);
+                        if (isNaN(d)) return '--:--';
+                        const hms = pad2n(d.getHours()) + ':' + pad2n(d.getMinutes());
+                        if (!spanDays) return hms;
+                        const ds = d.getFullYear() + '-' + pad2n(d.getMonth()+1) + '-' + pad2n(d.getDate());
+                        if (ds === todayStr) return hms;
+                        if (ds === tomorrowStr) return 'Zaj ' + hms;
+                        return (dayNamesSk[d.getDay()] || '') + ' ' + hms;
+                    } catch(e) { return '--:--'; }
                 });
                 fveData = history.map(h => h.power_ac || 0);
                 socData = history.map(h => h.battery_soc || 0);
@@ -3143,23 +3204,7 @@
             const avgFve = validFve.length > 0 ? validFve.reduce((a,b)=>a+b,0) / validFve.length : 0;
             avgFveLine = fveData.map(v => v !== null ? Math.round(avgFve) : null);
 
-            // Generate prediction curve (solar bell curve based on history pattern)
-            // Only for hours AFTER current time
-            if (hasOkte && hasDevice && validFve.length > 3) {
-                const maxFve = Math.max(...validFve);
-                predictionLine = labels.map((l, i) => {
-                    const parts = l.split(':');
-                    const hour = parseInt(parts[0]) + parseInt(parts[1]) / 60;
-                    // Solar bell: peak at 13:00, zero before 6 and after 20
-                    if (hour < 5.5 || hour > 20.5) return null;
-                    // Check if this is in the future
-                    if (l <= currentHHMM && fveData[i] !== null) return null; // Past - real data exists
-                    const peak = 13;
-                    const sigma = 4.5;
-                    const solar = maxFve * Math.exp(-0.5 * Math.pow((hour - peak) / sigma, 2));
-                    return Math.round(solar);
-                });
-            }
+            // ZIADNE FAKE PREDPOVEDI - graf ukazuje len realne data (OKTE ceny + telemetria zo zariadenia)
 
             if (labels.length === 0) labels = ['--'];
 
@@ -3284,8 +3329,7 @@
             // Badge
             const badge = document.getElementById('chartBadge');
             if (badge) {
-                const hasPred = predictionLine.some(v => v !== null);
-                badge.innerText = hasPred ? 'S PREDPOVEĎOU' : (okteData && okteData.range_type === '48h' ? '48 HODÍN' : '24 HODINY');
+                badge.innerText = (okteData && okteData.range_type === '48h') ? '48 HODÍN' : '24 HODINY';
             }
             } catch(e) { console.error('Chart init error:', e); }
         }
