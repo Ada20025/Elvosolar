@@ -964,6 +964,19 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
+    
+        /* Mobile gear modal fix */
+        @media (max-width: 640px) {
+            #gearModal > div {
+                max-height: 85vh !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                margin: 8px !important;
+                padding: 16px !important;
+            }
+        }
+        /* Smooth scroll for all modals */
+        .modal-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
     </style>
 </head>
 <body>
@@ -1084,14 +1097,14 @@
             <button onclick="switchTab('meter')" id="tabBtnMeter" class="nav-tab">
                 <i data-lucide="arrow-right-left" style="width:14px;height:14px;"></i> Riadenie
             </button>
+            <!-- Relé + Dovolenka skryté dočasne (BETA)
             <button onclick="switchTab('control')" id="tabBtnControl" class="nav-tab">
                 <i data-lucide="sliders" style="width:14px;height:14px;"></i> Relé
-                <span style="font-size:7px;font-weight:800;padding:2px 5px;border-radius:4px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid rgba(239,68,68,0.3);margin-left:2px;">BETA</span>
             </button>
             <button onclick="switchTab('holiday')" id="tabBtnHoliday" class="nav-tab">
                 <i data-lucide="tree-palm" style="width:14px;height:14px;"></i> Dovolenka
-                <span style="font-size:7px;font-weight:800;padding:2px 5px;border-radius:4px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid rgba(239,68,68,0.3);margin-left:2px;">BETA</span>
             </button>
+            -->
             <?php if (isset($is_admin) && $is_admin): ?>
             <button onclick="switchTab('terminal')" id="tabBtnTerminal" class="nav-tab">
                 <i data-lucide="terminal" style="width:14px;height:14px;"></i> Terminál
@@ -1218,6 +1231,7 @@
                             <span style="font-size:11px;font-weight:800;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
                                 <i data-lucide="layers" style="color:var(--accent-battery);width:14px;height:14px;"></i> <span id="invertersTitle">Zariadenia</span>
                             </span>
+                            <span id="deviceStatusBadge" style="font-size:8px;padding:2px 6px;border-radius:6px;font-weight:700;"></span>
                             <span class="font-mono" id="busStatus" style="font-size:9px;color:var(--accent-battery);font-weight:700;">--</span>
                         </div>
                         <div id="invertersList">
@@ -1886,6 +1900,8 @@
         // Select active device
         function selectActiveDevice(el, id, name) {
             document.getElementById('singleDeviceLabel').textContent = name;
+            const hdrName = document.getElementById('headerDeviceName');
+            if (hdrName) hdrName.textContent = name;
             // Update header device name
             const hdrName = document.getElementById('headerDeviceName');
             if (hdrName) hdrName.textContent = name;
@@ -1967,6 +1983,12 @@
             const power = data.total_live_power || 0;
             const soc = data.avg_live_soc || 0;
             const isOnline = power > 0 || soc > 0;
+            const statusBadge = document.getElementById('deviceStatusBadge');
+            if (statusBadge) {
+                statusBadge.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
+                statusBadge.style.background = isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                statusBadge.style.color = isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)';
+            }
             const totalKwh = data.total_kwh || 0;
 
             if (titleEl) titleEl.textContent = brandName || 'Zariadenia';
@@ -1978,7 +2000,7 @@
                             <span class="pulse-dot ${isOnline ? 'online' : 'offline'}"></span>
                             <div style="display:flex;flex-direction:column;">
                                 <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceName}</span>
-                                <span class="font-mono" style="font-size:9px;color:var(--text-muted);">${brandName || 'CM5 Controlér'}${brandName ? '' : ''} | ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</span>
+                                <span class="font-mono" style="font-size:9px;color:var(--text-muted);">${brandName || 'CM5 Controlér'} | ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</span>
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">

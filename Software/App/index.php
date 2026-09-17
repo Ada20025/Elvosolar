@@ -89,7 +89,17 @@ if (isset($pdo)) {
 // === CORE TABLES (users, devices, password_resets) ===
 if (isset($pdo)) {
     try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+        $pdo->exec("
+    // === DB CLEANUP - odstran nepotrebne tabulky ===
+    try {
+        $pdo->exec("DROP TABLE IF EXISTS notifications_log");
+        $pdo->exec("DROP TABLE IF EXISTS okte_price_log");
+        $pdo->exec("DROP TABLE IF EXISTS push_subscriptions");
+        $pdo->exec("DROP TABLE IF EXISTS system_settings");
+        $pdo->exec("DROP TABLE IF EXISTS password_resets");
+    } catch (Exception $e) { /* ignore */ }
+
+CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTO_INCREMENT,
             username VARCHAR(100) NOT NULL,
             email VARCHAR(190) NOT NULL UNIQUE,
