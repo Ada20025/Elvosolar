@@ -802,6 +802,22 @@
                     const writer = activeSerialPort.writable.getWriter();
                     await writer.write(encoder.encode(payloadString + "\n"));
                     writer.releaseLock();
+                    
+                    // *** ZAROVEN ULOZ DO CLOUDU (Railway) aby dashboard vedel o zariadeni ***
+                    try {
+                        await fetch('/api/user/claim-device', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                brand_id: brand_id,
+                                category_id: category_id,
+                                model_id: model_id,
+                                slave_id: 1,
+                                has_battery: has_battery,
+                                name: device_name
+                            })
+                        });
+                    } catch(cloudErr) { console.warn('Cloud save zlyhal:', cloudErr); }
                 } 
                 else {
                     const claimPromise = fetch(`${localGatewayIP}/api/admin/claim`, {
