@@ -2091,7 +2091,6 @@
                                 <span style="font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
                                     <i data-lucide="${deviceIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
                                     ${deviceType} · ${brandName || 'CM5'}
-                                    <span class="font-mono" style="background:var(--bg-inset);padding:0 5px;border-radius:4px;color:var(--accent-okte);font-size:8px;">ID: ${(data.slave_id || 1).toString().padStart(2,'0')}</span>
                                 </span>
                             </div>
                         </div>
@@ -2235,12 +2234,16 @@
                 const response = await fetch(`${basePath}/api/device/${devId}/telemetry`);
                 const data = await response.json();
                 
-                document.getElementById('dashLivePower').innerText = `${Math.round(data.total_live_power)} W`;
-                document.getElementById('dashBatterySoc').innerText = `${Math.round(data.avg_live_soc)}%`;
-                document.getElementById('dashConsumption').innerText = `${Math.round(data.consumption || 0)} W`;
-                document.getElementById('dashTotalSaved').innerText = `${data.total_saved_eur.toFixed(2)} €`;
+                const elPower = document.getElementById('dashLivePower');
+                const elSoc = document.getElementById('dashBatterySoc');
+                const elCons = document.getElementById('dashConsumption');
+                const elSaved = document.getElementById('dashTotalSaved');
+                if (elPower) elPower.innerText = `${Math.round(data.total_live_power || 0)} W`;
+                if (elSoc) elSoc.innerText = `${Math.round(data.avg_live_soc || 0)}%`;
+                if (elCons) elCons.innerText = `${Math.round(data.consumption || 0)} W`;
+                if (elSaved) elSaved.innerText = `${(parseFloat(data.total_saved_eur) || 0).toFixed(2)} €`;
 
-                const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : 98;
+                const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : (Math.round(data.avg_live_soc) || 0);
 
                 // Update holiday gauges
                 const socGauge = document.getElementById('gaugeSocVal');
@@ -2331,8 +2334,12 @@
                     const m = data.meter;
 
                     
-                    if (m.okte_price !== undefined) {
-                        document.getElementById('okteSpotPrice').innerText = m.okte_price.toFixed(2);
+                    if (m.okte_price !== undefined && m.okte_price !== null && m.okte_price > 0) {
+                        const sp = document.getElementById('okteSpotPrice');
+                        // Prepis IBA ak OKTE API nic nedal ( Este vzdy realna cena ma prioritu)
+                        if (sp && (sp.innerText === '–' || sp.innerText === '-' || sp.innerText === '')) {
+                            sp.innerText = parseFloat(m.okte_price).toFixed(2);
+                        }
                     }
                 }
             } catch (err) {}
