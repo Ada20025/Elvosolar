@@ -125,7 +125,11 @@ $base_path = $base_path ?? '';
                 </svg>
             </div>
             <h1>Overenie zariadenia</h1>
+            <?php if (empty($dev_code)): ?>
             <p class="sub">Toto zariadenie sa prihlasuje <strong>prvýkrát</strong>.<br>Poslali sme 6-miestny overovací kód na<br><span class="mask"><?php echo htmlspecialchars($mask_email ?? 'váš e-mail'); ?></span></p>
+            <?php else: ?>
+            <p class="sub">Toto zariadenie sa prihlasuje <strong>prvýkrát</strong>.<br><strong style="color:#fbbf24;">Emailová služba nie je zatiaľ pripojená.</strong><br>Tvoj overovací kód je zobrazený hore.</p>
+            <?php endif; ?>
 
             <form method="POST" action="<?php echo $base_path; ?>/verify-login" id="verifyForm" autocomplete="one-time-code">
                 <div class="code-row" id="codeRow">

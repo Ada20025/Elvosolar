@@ -3064,41 +3064,45 @@
         }
         function updateOkteWidget(okte) {
             const el = document.getElementById('okteSpotPrice');
+            // Aktualna hodinova cena: okte API vracia 'day' + 'hour' - najdi aktualnu hodinu DNES
             if (el && okte && okte.prices && okte.prices.length > 0) {
-                // Pouzi timestamp pre timezone-safe hladanie
-                const nowTs = Math.floor(Date.now() / 1000);
-                let found = okte.prices[okte.prices.length - 1];
+                const nowD = new Date();
+                const pad2n = n => n.toString().padStart(2,'0');
+                const todayStr = nowD.getFullYear() + '-' + pad2n(nowD.getMonth()+1) + '-' + pad2n(nowD.getDate());
+                const curHour = nowD.getHours();
+                let found = null;
                 for (const p of okte.prices) {
-                    if (p.timestamp && p.timestamp <= nowTs) found = p;
+                    const pd = p.day || todayStr;
+                    const ph = parseInt(p.hour) || 0;
+                    if (pd === todayStr && ph <= curHour) found = p; // posledna dostupna hodina dnes
                 }
-                const curPrice = (found && found.price !== undefined) ? found.price : 85.50;
-                el.innerText = curPrice.toFixed(2);
-                // Mobile spot price
-                const elM = document.getElementById('okteSpotPriceM');
-                if (elM) elM.innerText = curPrice.toFixed(2);
-            } else if (el && (el.innerText === '–' || el.innerText === '0' || el.innerText === '0.00')) {
-                el.innerText = '85.50';
-                const elM = document.getElementById('okteSpotPriceM');
-                if (elM) elM.innerText = '85.50';
+                if (!found) found = okte.prices.find(p => (p.day || todayStr) === todayStr) || okte.prices[0];
+                if (found && found.price !== undefined && found.price !== null) {
+                    const curPrice = parseFloat(found.price);
+                    el.innerText = (curPrice < 0 ? Math.ceil(curPrice) : curPrice.toFixed(2));
+                    el.style.color = curPrice < 0 ? '#34d399' : ''; // hlboky disk = zelena
+                    const elM = document.getElementById('okteSpotPriceM');
+                    if (elM) { elM.innerText = el.innerText; elM.style.color = curPrice < 0 ? '#34d399' : ''; }
+                }
             }
 
-            const minPrice = (okte && okte.min > 0) ? okte.min : 42.50;
-            const maxPrice = (okte && okte.max > 0) ? okte.max : 148.00;
-            const avgPrice = (okte && okte.avg > 0) ? okte.avg : 88.40;
-
+            // Min/max/priemer IBA z realnych dat (ziadne fallbacky)
             const minEl = document.getElementById('okteMinPrice');
             const maxEl = document.getElementById('okteMaxPrice');
             const avgEl = document.getElementById('okteAvgPrice');
-            if (minEl) minEl.innerText = minPrice.toFixed(2) + ' €/MWh';
-            if (maxEl) maxEl.innerText = maxPrice.toFixed(2) + ' €/MWh';
-            if (avgEl) avgEl.innerText = avgPrice.toFixed(2) + ' €/MWh';
-            // Mobile OKTE elements
             const minM = document.getElementById('okteMinPriceM');
             const maxM = document.getElementById('okteMaxPriceM');
             const avgM = document.getElementById('okteAvgPriceM');
-            if (minM) minM.innerText = minPrice.toFixed(2) + ' €/MWh';
-            if (maxM) maxM.innerText = maxPrice.toFixed(2) + ' €/MWh';
-            if (avgM) avgM.innerText = avgPrice.toFixed(2) + ' €/MWh';
+            if (okte && okte.min !== undefined && okte.max !== undefined && okte.avg !== undefined && okte.prices && okte.prices.length > 0) {
+                const minPrice = parseFloat(okte.min), maxPrice = parseFloat(okte.max), avgPrice = parseFloat(okte.avg);
+                const fmt = v => (v < 0 ? Math.round(v) : v.toFixed(2)) + ' €/MWh';
+                if (minEl) minEl.innerText = fmt(minPrice);
+                if (maxEl) maxEl.innerText = fmt(maxPrice);
+                if (avgEl) avgEl.innerText = fmt(avgPrice);
+                if (minM) minM.innerText = fmt(minPrice);
+                if (maxM) maxM.innerText = fmt(maxPrice);
+                if (avgM) avgM.innerText = fmt(avgPrice);
+            }
             // Badge
             document.querySelectorAll('.okte-badge').forEach(b => b.innerText = (okte && okte.range_type === '48h') ? '48 HODÍN' : '24 HODINY');
         }
@@ -3304,10 +3308,8 @@
                             callbacks: {
                                 label: function(ctx) {
                                     const v = ctx.parsed.y;
-                                    if (ctx.dataset.label.includes('OKTE')) return 'OKTE: ' + v.toFixed(2) + ' €/MWh';
+                                    if (ctx.dataset.label.includes('OKTE')) return 'OKTE: ' + v.toFixed(2) + ' €/MWh' + (v < 0 ? ' ⚡ HLBOKÝ DISK' : '');
                                     if (ctx.dataset.label.includes('SOC')) return 'SOC: ' + v + '%';
-                                    if (ctx.dataset.label.includes('Predpoveď')) return 'Predpoveď: ' + v + ' W';
-                                    if (ctx.dataset.label.includes('Priemer')) return 'Priemer: ' + v + ' W';
                                     return ctx.dataset.label + ': ' + v + ' W';
                                 }
                             }
@@ -3326,11 +3328,18 @@
                             grid: { display: false }, min: 0, max: 100,
                             ticks: { color: '#10b981', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '%' }
                         },
-                        yPrice: {
-                            type: 'linear', position: hasDevice ? 'right' : 'left', display: hasOkte,
-                            grid: { display: false },
-                            ticks: { color: '#818cf8', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '€' }
-                        }
+                        yPrice: (() => {
+                            // Os ceny: zacina od realneho min (aj zaporny = hlboky disk)
+                            const pmin = hasOkte && okteData && okteData.min !== undefined ? Math.floor(okteData.min) : 0;
+                            const pmax = hasOkte && okteData && okteData.max !== undefined ? Math.ceil(okteData.max) : 300;
+                            const pad = Math.max(5, Math.round((pmax - pmin) * 0.08));
+                            return {
+                                type: 'linear', position: hasDevice ? 'right' : 'left', display: hasOkte,
+                                min: pmin - pad, max: pmax + pad,
+                                grid: { color: c => (c.tick && c.tick.value < 0) ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.03)' },
+                                ticks: { color: '#818cf8', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '€' }
+                            };
+                        })()
                     }
                 }
             });
