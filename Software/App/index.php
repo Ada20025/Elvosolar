@@ -156,9 +156,18 @@ if (isset($pdo)) {
             $pdo->prepare("INSERT INTO users (username, email, password_hash, email_verified) VALUES (?, ?, ?, 1)")
                  ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $demoHash]);
             $demoUserId = $pdo->lastInsertId();
-            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, model_name, status, battery_soc, fve_power_w, grid_power_w, min_power_w, max_power_w, min_power_pct, max_power_pct, active_model_id, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                 ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'HUAWEI', 'SmartLogger 3000 / SUN2000', 'online', 84, 3840, -450, 0, 10000, 0, 100, '1', 'modbus_tcp', '192.168.0.10', 502, 205]);
+            // Demo zariadenie - OFFLINE s nulovymi datami (ziadne fake hodnoty)
+            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, model_name, status, battery_soc, fve_power_w, grid_power_w, min_power_w, max_power_w, min_power_pct, max_power_pct, active_model_id, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, ?, ?, ?, ?, 'offline', 0, 0, 0, 0, 10000, 0, 100, '1', 'modbus_tcp', '192.168.0.10', 502, 205)")
+                 ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'HUAWEI', 'SmartLogger 3000 / SUN2000']);
         }
+    } catch (Exception $e) { /* ignore */ }
+
+    // === DB MIGRACIA - pridaj chybajuce stlpce ===
+    try {
+        $cols = $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('status', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN status VARCHAR(20) DEFAULT 'offline'");
+        if (!in_array('last_seen', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN last_seen DATETIME NULL");
+        if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
     } catch (Exception $e) { /* ignore */ }
 }
 
@@ -536,11 +545,13 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
     $latest = $stmtT->fetch();
     
     send_json([
-        'total_live_power' => $latest ? (float)$latest['power_ac'] : ($device['fve_power_w'] ?? 3840),
-        'avg_live_soc' => $latest ? (float)$latest['battery_soc'] : ($device['battery_soc'] ?? 84),
-        'total_kwh' => (float)($device['total_kwh'] ?? 14.5),
-        'temp' => $latest ? (float)$latest['temp'] : 32.5,
-        'freq' => $latest ? (float)$latest['freq'] : 50.0,
+        // REALNE DATA IBA - ziadne fake fallbacky (3840/84 boli fake)
+        'total_live_power' => $latest ? (float)$latest['power_ac'] : 0,
+        'avg_live_soc' => $latest ? (float)$latest['battery_soc'] : 0,
+        'total_kwh' => (float)($device['total_kwh'] ?? 0),
+        'temp' => $latest ? (float)$latest['temp'] : 0,
+        'freq' => $latest ? (float)$latest['freq'] : 0,
+        'has_real_data' => $latest ? true : false,
         'manual_override' => $device['manual_override'] ?? 'AUTO',
         'name' => $device['name'] ?? '',
         'connection_type' => $device['connection_type'] ?? 'modbus_tcp',
@@ -810,6 +821,18 @@ elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && 
         'max_power_pct' => $row ? floatval($row['max_power_pct'] ?? 100) : 100,
         'min_okte_price' => $row ? floatval($row['min_okte_price_cz_eur'] ?? 0) : 0
     ]);
+}
+
+// --- PUSH SUBSCRIBE (ulozenie subscription) ---
+elseif ($path === '/api/push/subscribe' && $method === 'POST') {
+    // Jednoduche ulozenie - subscription JSON do system tabulky (bez push_subscriptions)
+    $data = get_json_input();
+    $endpoint = substr($data['endpoint'] ?? '', 0, 500);
+    try {
+        $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'push_sub')");
+        $stmt->execute(['PUSH-' . md5($endpoint), json_encode($data)]);
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
 }
 
 // --- DEVICE RENAME ---
