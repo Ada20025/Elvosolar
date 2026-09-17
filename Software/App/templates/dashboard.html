@@ -1945,7 +1945,7 @@
         // Build: v7 - Removed proxy override, added null checks
         // Helper: safe getElementById that returns null instead of crashing
         function safeEl(id) { return document.getElementById(id) || null; }
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
 
         const metaEl = document.getElementById('php-metadata');
         const basePath = metaEl ? metaEl.getAttribute('data-base-path') : '';
@@ -2116,7 +2116,7 @@
             const footerStats = document.getElementById('busFooterStats');
             if (footerStats) footerStats.style.display = isOnline ? 'grid' : 'none';
 
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
         }
 
         // Update chart header with device info
@@ -2202,7 +2202,7 @@
             if (activeSec) activeSec.classList.add('active');
             if (activeBtn) activeBtn.classList.add('active');
 
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
 
             if (tabId === 'dashboard' && elvoChart) {
                 elvoChart.resize();
@@ -2291,7 +2291,7 @@
                     }
                 }
 
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
 
 
 
@@ -2584,7 +2584,7 @@
                 card.onclick = () => selectRelay(r.id);
                 container.appendChild(card);
             });
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
             renderHolidayRelays();
         }
 
@@ -2627,7 +2627,7 @@
                 track.setAttribute('data-min', rt.minTemp);
                 track.setAttribute('data-max', rt.maxTemp);
             }
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
             renderRelayList();
         }
 
@@ -2758,7 +2758,7 @@
             document.querySelector('#addRelayTypeChips .relay-type-chip[data-type="bojler"]').classList.add('selected');
             const modal = document.getElementById('addRelayModal');
             modal.style.display = 'flex';
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
         }
         function selectAddRelayType(el, type) {
             selectedAddRelayType = type;
@@ -3021,7 +3021,7 @@
                 </div>`;
                 container.appendChild(card);
             });
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
         }
 
         function editHolidayRelayTemp(relayId) {
