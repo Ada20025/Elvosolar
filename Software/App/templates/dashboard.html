@@ -3524,38 +3524,25 @@
         function populateMyDevices() {
             const list = document.getElementById('myDevicesList');
             if (!list) return;
+            list.innerHTML = '';
             const devIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids') || '[]') : [];
             const firstId = metaEl ? metaEl.getAttribute('data-device-id') : null;
-            // Build from PHP data in dropdown
-            const dropdownBtns = document.querySelectorAll('.station-dropdown-item');
-            let html = '';
-            dropdownBtns.forEach(btn => {
-                const onclick = btn.getAttribute('onclick') || '';
-                const idMatch = onclick.match(/selectActiveDevice\(this,\s*'([^']+)'/);
-                const nameMatch = btn.querySelector('span:nth-child(1) span');
-                if (idMatch && nameMatch) {
-                    const isActive = idMatch[1] === firstId;
-                    html += `<div onclick="selectActiveDevice(null,'${idMatch[1]}','${nameMatch.textContent}')" style="padding:12px;border-radius:12px;background:${isActive ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)'};border:1px solid ${isActive ? 'rgba(16,185,129,0.3)' : 'var(--border-card)'};cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:32px;height:32px;border-radius:8px;background:${isActive ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)'};display:flex;align-items:center;justify-content:center;">
-                                <i data-lucide="cpu" style="width:16px;height:16px;color:${isActive ? 'var(--accent-battery)' : 'var(--text-muted)'};"></i>
-                            </div>
-                            <div>
-                                <div style="font-size:12px;font-weight:800;color:var(--text-primary);">${nameMatch.textContent}</div>
-                                <div style="font-size:9px;color:var(--text-muted);">${isActive ? 'Aktívne' : 'Kliknite pre aktiváciu'}</div>
-                            </div>
-                        </div>
-                        ${isActive ? '<span style="font-size:8px;font-weight:800;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,0.15);color:var(--accent-battery);">ONLINE</span>' : ''}
-                    </div>`;
-                }
+            devIds.forEach(devId => {
+                const nameEl = document.getElementById('deviceName_' + devId);
+                if (!nameEl) return;
+                const name = nameEl.textContent.trim();
+                const isActive = String(devId) === String(firstId);
+                const div = document.createElement('div');
+                div.style.cssText = 'padding:12px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s;margin-bottom:6px;';
+                div.style.background = isActive ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)';
+                div.style.border = '1px solid ' + (isActive ? 'rgba(16,185,129,0.3)' : 'var(--border-card)');
+                div.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;"><i data-lucide="cpu" style="width:16px;height:16px;color:var(--accent-battery);"></i></div><div><div style="font-size:12px;font-weight:800;color:var(--text-primary);">' + name + '</div><div style="font-size:9px;color:var(--text-muted);">' + (isActive ? 'Aktívne' : 'Kliknite pre aktiváciu') + '</div></div></div>' + (isActive ? '<span style="font-size:8px;font-weight:800;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,0.15);color:var(--accent-battery);">ONLINE</span>' : '');
+                div.onclick = () => selectActiveDevice(null, devId, name);
+                list.appendChild(div);
             });
-            if (html) {
-                list.innerHTML = html;
-                if (typeof lucide !== 'undefined') lucide.createIcons();
-            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
-    // === INTERACTIVE ONBOARDING TOUR ===
-    function startOnboarding() {
+        function startOnboarding() {
         if (localStorage.getItem('elvo_onboarding_done')) return;
         const steps = [
             { el: 'header', title: '🔑 Hlavička', text: 'Tu vidíš meno zariadenia a stav pripojenia (online/offline). Klikni na šípku pre výber zariadenia.' },
