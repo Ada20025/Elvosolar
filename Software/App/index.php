@@ -531,15 +531,27 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'total_kwh' => (float)($device['total_kwh'] ?? 14.5),
         'temp' => $latest ? (float)$latest['temp'] : 32.5,
         'freq' => $latest ? (float)$latest['freq'] : 50.0,
-        'manual_override' => $device['manual_override'] ?? 'AUTO'
+        'manual_override' => $device['manual_override'] ?? 'AUTO',
+        'name' => $device['name'] ?? '',
+        'connection_type' => $device['connection_type'] ?? 'modbus_tcp',
+        'brand_id' => $device['brand_id'] ?? '',
+        'brand' => $device['model_name'] ?? $device['brand_id'] ?? '',
+        'slave_id' => $device['modbus_slave_id'] ?? $device['slave_id'] ?? 0,
+        'smartlogger_ip' => $device['smartlogger_ip'] ?? '',
+        'is_online' => $device['status'] === 'online' || ($latest && (float)$latest['power_ac'] > 0),
     ]);
 }
 
 // --- OKTE CENY API ---
 elseif ($path === '/api/okte/prices' && $method === 'GET') {
-    $from = date('Y-m-d');
+    $from = date('Y-m-d', strtotime('-1 day'));
     $to = date('Y-m-d', strtotime('+1 day'));
     $data = fetch_okte_prices($from, $to);
+    if (!$data || !isset($data['prices']) || count($data['prices']) === 0) {
+        $from = date('Y-m-d');
+        $to = date('Y-m-d', strtotime('+1 day'));
+        $data = fetch_okte_prices($from, $to);
+    }
     send_json(['status' => 'success', 'okte' => $data]);
 }
 
@@ -788,6 +800,114 @@ elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && 
         'max_power_pct' => $row ? floatval($row['max_power_pct'] ?? 100) : 100,
         'min_okte_price' => $row ? floatval($row['min_okte_price_cz_eur'] ?? 0) : 0
     ]);
+}
+
+// --- DEVICE RENAME ---
+elseif (preg_match('#^/api/device/(\d+)/rename$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    $name = trim($data['name'] ?? '');
+    if ($name === '') { send_json(['status' => 'error', 'error' => 'Prázdne meno']); exit; }
+    try {
+        $stmt = $pdo->prepare("UPDATE devices SET name = ? WHERE id = ?");
+        $stmt->execute([$name, $dev_id]);
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
+}
+
+// --- DEVICE CONTROL (ON/OFF/AUTO override) ---
+elseif (preg_match('#^/api/device/(\d+)/control$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    $action = trim($data['action'] ?? '');
+    $value = trim($data['value'] ?? 'AUTO');
+    try {
+        if ($action === 'override') {
+            $stmt = $pdo->prepare("UPDATE devices SET manual_override = ? WHERE id = ?");
+            $stmt->execute([$value, $dev_id]);
+        }
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
+}
+
+// --- DEVICE MODEL SELECTION ---
+elseif (preg_match('#^/api/device/(\d+)/model$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    $model_id = trim($data['model_id'] ?? '1');
+    try {
+        $stmt = $pdo->prepare("UPDATE devices SET active_model_id = ? WHERE id = ?");
+        $stmt->execute([$model_id, $dev_id]);
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
+}
+
+// --- DEVICE METER MODE ---
+elseif (preg_match('#^/api/device/(\d+)/meter$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    $mode = trim($data['control_mode'] ?? 'AUTO');
+    try {
+        $stmt = $pdo->prepare("UPDATE devices SET manual_override = ? WHERE id = ?");
+        $stmt->execute([$mode, $dev_id]);
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
+}
+
+// --- DEVICE RELAY CONTROL ---
+elseif (preg_match('#^/api/device/(\d+)/relay$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    $relay_id = intval($data['relay_id'] ?? 0);
+    $state = trim($data['state'] ?? '');
+    $temp = floatval($data['temp'] ?? 0);
+    $name = trim($data['name'] ?? '');
+    $type = trim($data['type'] ?? '');
+    // Save relay state to ai_state JSON
+    try {
+        $stmt = $pdo->prepare("SELECT ai_state FROM devices WHERE id = ?");
+        $stmt->execute([$dev_id]);
+        $row = $stmt->fetch();
+        $ai = $row ? json_decode($row['ai_state'] ?? '{}', true) : [];
+        if (!isset($ai['relays'])) $ai['relays'] = [];
+        if ($state !== '') $ai['relays'][$relay_id] = $state;
+        if (!isset($ai['relay_config'])) $ai['relay_config'] = [];
+        if ($name !== '') $ai['relay_config'][$relay_id] = ['name' => $name, 'type' => $type, 'temp' => $temp];
+        elseif ($temp > 0) { if (!isset($ai['relay_config'][$relay_id])) $ai['relay_config'][$relay_id] = []; $ai['relay_config'][$relay_id]['temp'] = $temp; }
+        $stmt2 = $pdo->prepare("UPDATE devices SET ai_state = ? WHERE id = ?");
+        $stmt2->execute([json_encode($ai), $dev_id]);
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
+}
+
+// --- DEVICE RELAY DELETE ---
+elseif (preg_match('#^/api/device/(\d+)/relay/delete$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    $relay_id = intval($data['relay_id'] ?? 0);
+    try {
+        $stmt = $pdo->prepare("SELECT ai_state FROM devices WHERE id = ?");
+        $stmt->execute([$dev_id]);
+        $row = $stmt->fetch();
+        $ai = $row ? json_decode($row['ai_state'] ?? '{}', true) : [];
+        if (isset($ai['relays'][$relay_id])) unset($ai['relays'][$relay_id]);
+        if (isset($ai['relay_config'][$relay_id])) unset($ai['relay_config'][$relay_id]);
+        $stmt2 = $pdo->prepare("UPDATE devices SET ai_state = ? WHERE id = ?");
+        $stmt2->execute([json_encode($ai), $dev_id]);
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
+}
+
+// --- DEVICE STATUS UPDATE ---
+elseif (preg_match('#^/api/device/(\d+)/status$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    $status = trim($data['status'] ?? 'offline');
+    try {
+        $stmt = $pdo->prepare("UPDATE devices SET status = ?, last_seen = NOW() WHERE id = ?");
+        $stmt->execute([$status, $dev_id]);
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
 }
 
 // --- 404 HANDLER ---
