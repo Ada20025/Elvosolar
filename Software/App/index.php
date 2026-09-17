@@ -538,7 +538,7 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'brand' => $device['model_name'] ?? $device['brand_id'] ?? '',
         'slave_id' => $device['modbus_slave_id'] ?? $device['slave_id'] ?? 0,
         'smartlogger_ip' => $device['smartlogger_ip'] ?? '',
-        'is_online' => $device['status'] === 'online' || ($latest && (float)$latest['power_ac'] > 0),
+        'is_online' => (($device['status'] ?? '') === 'online') || ($latest && (float)$latest['power_ac'] > 0),
     ]);
 }
 
