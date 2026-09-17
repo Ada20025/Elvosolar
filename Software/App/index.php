@@ -499,7 +499,7 @@ elseif ($path === '/login') {
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
             // Stabilny fingerprint zariadenia (z frontendu localStorage ID alebo UA fallback)
-            $device_hash = hash('sha256', ($_POST['device_id'] ?? '') ?: ('ua:' . ($_SERVER['HTTP_USER_AGENT'] ?? '-')));
+            $device_hash = hash('sha256', (trim($_POST['device_id'] ?? '') ?: ('ua:' . ($_SERVER['HTTP_USER_AGENT'] ?? '-'))));
             
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
@@ -682,6 +682,16 @@ elseif ($path === '/logout') {
 }
 
 elseif ($path === '/setup' || $path === '/setup.html') {
+    // Setup zariadenia moze robit IBA admin (user je presmerovany na dashboard)
+    if (isset($_SESSION['user_id'])) {
+        $stmtRole = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $stmtRole->execute([$_SESSION['user_id']]);
+        $roleRow = $stmtRole->fetch();
+        if (!$roleRow || ($roleRow['role'] ?? '') !== 'admin') {
+            header("Location: " . $base_path . "/dashboard");
+            exit;
+        }
+    }
     render_template('setup.html');
 }
 

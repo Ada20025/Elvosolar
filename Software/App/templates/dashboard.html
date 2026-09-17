@@ -11,9 +11,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#02040a">
     <meta name="vapid-key" content="">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://unpkg.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1919,6 +1923,11 @@
 
         // Pair new device handler
         function pairNewDevice(e) {
+            if (e) e.stopPropagation();
+            <?php if (!(isset($is_admin) && $is_admin)): ?>
+            alert('Zariadenie môže nastaviť iba administrátor. Kontaktujte podporu ElvoControll.');
+            return;
+            <?php endif; ?>
             e.stopPropagation();
             window.location.href = basePath + '/setup';
         }
