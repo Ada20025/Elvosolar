@@ -2067,8 +2067,9 @@
             const soc = data.avg_live_soc || 0;
             // Pouzi realny status z DB (is_online) alebo fallback na power/soc
             const isOnline = data.is_online === true || (data.is_online === undefined && (power > 0 || soc > 0));
-            // Typ zariadenia: SmartLogger alebo Striedač (podla brand_id 11 = HUAWEI SL alebo sub_type)
-            const isLogger = data.connection_type === 'modbus_tcp' && data.smartlogger_ip ? true : (brandId === '11');
+            // Typ zariadenia: SmartLogger alebo Striedač - IBA podla model_name/sub_type z DB
+            // (rovnaka logika ako dropdown hore -> vzdy konzistentne)
+            const isLogger = data.is_smartlogger === true;
             const deviceType = isLogger ? 'SmartLogger' : 'Striedač';
             const deviceIcon = isLogger ? 'server' : 'zap';
             const statusBadge = document.getElementById('deviceStatusBadge');
@@ -2101,7 +2102,6 @@
                     </div>
                     <div id="invD1" class="inverter-details-box">
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono">${Math.round(power)} W</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Teplota:</span><strong class="font-mono">${temp.toFixed(1)} °C</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(soc)}%</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono">${totalKwh.toFixed(1)} kWh</strong></div>
                     </div>

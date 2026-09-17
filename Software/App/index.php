@@ -847,6 +847,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'slave_id' => $device['modbus_slave_id'] ?? $device['slave_id'] ?? 0,
         'smartlogger_ip' => $device['smartlogger_ip'] ?? '',
         'is_online' => (($device['status'] ?? '') === 'online') || ($latest && (float)$latest['power_ac'] > 0),
+        // Typ zariadenia - rovnaka logika ako v dropdowne (model_name/sub_type),aby boli konzistentne
+        'is_smartlogger' => (strpos(strtolower($device['model_name'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($device['sub_type'] ?? ''), 'smartlogger') !== false),
     ]);
 }
 
