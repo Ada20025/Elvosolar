@@ -65,9 +65,13 @@ DEVICE_DB = {
                         'on': 40428,
                         'off': 40428,
                         'baud': 9600,
-                        'reg_soc': 40515,
-                        'reg_p_ac': 40388,
-                        'tcp_port': 205
+                        'reg_soc': 40515,       # SOC U16 gain 10 (podla dokumentacie No.63)
+                        'reg_p_ac': 40525,      # Active power I32 gain 100, 2 registre (No.69)
+                        'reg_p_ac_type': 'I32',
+                        'reg_p_ac_gain': 100,
+                        'reg_status': 9,        # Inverter status U16 (No.7): 0xB000=comm interrupt, 0xC000=uploading
+                        'reg_adjust': 40428,    # Active power adjustment I16 gain 10 (No.44)
+                        'tcp_port': 502
                     },
                 }
             }

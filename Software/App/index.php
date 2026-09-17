@@ -403,6 +403,16 @@ elseif ($path === '/login') {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['last_activity'] = time();
+            // Prihlasovací email (bezpečnostná notifikácia)
+            require_once __DIR__ . '/mail_helper.php';
+            try {
+                send_elvo_email($email, 'Nové prihlásenie | ElvoControll', 'Boli ste prihlásený',
+                    '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Nové prihlásenie</h2>' .
+                    '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Do vášho účtu ElvoControll sa práve prihlásil používateľ <strong>' . htmlspecialchars($user['username']) . '</strong>.</p>' .
+                    '<p style="margin:0;font-size:12px;color:#94a3b8;">Čas: ' . date('d.m.Y H:i') . ' &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . '</p>' .
+                    '<p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Ak ste to neboli vy, okamžite si zmeňte heslo.</p>',
+                    '#3b82f6');
+            } catch (Exception $me) { /* mail nie je kritický */ }
             header("Location: " . $base_path . "/");
             exit;
         } else {
@@ -423,6 +433,15 @@ elseif ($path === '/register') {
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
             $stmt->execute([$username, $email, $hashed]);
             flash('Účet vytvorený. Môžete sa prihlásiť.', 'success');
+            // Vitajte email
+            require_once __DIR__ . '/mail_helper.php';
+            try {
+                send_elvo_email($email, 'Vitajte v ElvoControll!', 'Účet úspešne vytvorený',
+                    '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Dobrý deň, ' . htmlspecialchars($username) . '!</h2>' .
+                    '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Váš účet v systéme ElvoControll bol úspešne vytvorený. Prihláste sa a pripojte svoje prvé zariadenie.</p>' .
+                    '<a href="https://' . ($_SERVER['SERVER_NAME'] ?? 'elvosolar-production.up.railway.app') . '/login" style="display:inline-block;padding:12px 24px;background:#10b981;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Prihlásiť sa</a>',
+                    '#10b981');
+            } catch (Exception $me) { /* mail nie je kritický */ }
             header("Location: " . $base_path . "/login");
             exit;
         } catch (PDOException $e) {
@@ -616,11 +635,54 @@ elseif ($path === '/api/report-ip' && $method === 'POST') {
     $serial = trim($data['serial'] ?? '');
     if ($ip && $serial) {
         try {
-            $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'online') ON DUPLICATE KEY UPDATE updated_at = NOW()");
+            $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'online') ON DUPLICATE KEY UPDATE config_json = VALUES(config_json), status = 'online', updated_at = NOW()");
             $stmt->execute([$serial, json_encode(['ip' => $ip])]);
         } catch (Exception $e) { /* ignore */ }
     }
     send_json(['status' => 'success']);
+}
+
+// --- CLOUD SYNC TELEMETRIA (CM5 posiela realne data) ---
+elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = trim($data['serial'] ?? 'CM5-DEFAULT');
+    
+    // Najdi zariadenie podla serial alebo prve
+    $device_id = 0;
+    try {
+        $stmt = $pdo->prepare("SELECT d.id FROM devices d LEFT JOIN cm5_config c ON c.serial_number = ? WHERE d.serial_number = ? OR c.id IS NOT NULL LIMIT 1");
+        $stmt->execute([$serial, $serial]);
+        $row = $stmt->fetch();
+        if ($row) { $device_id = intval($row['id']); }
+        else { $stmt2 = $pdo->query("SELECT id FROM devices ORDER BY id ASC LIMIT 1"); $r2 = $stmt2->fetch(); if ($r2) $device_id = intval($r2['id']); }
+    } catch (Exception $e) { /* ignore */ }
+    
+    if ($device_id) {
+        try {
+            // Uloz telemetry zaznam
+            $stmt = $pdo->prepare("INSERT INTO telemetry (device_id, power_ac, battery_soc, temp, freq, status_msg, timestamp) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+            $stmt->execute([
+                $device_id,
+                floatval($data['power_ac'] ?? 0),
+                floatval($data['battery_soc'] ?? 0),
+                floatval($data['temp'] ?? 0),
+                floatval($data['freq'] ?? 50),
+                substr($data['status_msg'] ?? 'Online', 0, 255)
+            ]);
+            // Aktualizuj devices - status online + posledne hodnoty
+            $stmt2 = $pdo->prepare("UPDATE devices SET status = 'online', last_seen = NOW(), battery_soc = ?, fve_power_w = ?, temp = ? WHERE id = ?");
+            $stmt2->execute([
+                floatval($data['battery_soc'] ?? 0),
+                floatval($data['power_ac'] ?? 0),
+                floatval($data['temp'] ?? 0),
+                $device_id
+            ]);
+            send_json(['status' => 'success', 'device_id' => $device_id]);
+        } catch (Exception $e) {
+            send_json(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+    send_json(['status' => 'error', 'message' => 'Ziadne zariadenie v DB']);
 }
 
 // --- CM5 REGISTER ---

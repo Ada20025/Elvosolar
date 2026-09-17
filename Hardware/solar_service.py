@@ -426,26 +426,38 @@ class SolarBackgroundService:
         freq_val = 50.0
         status_msg = "SmartLogger TCP aktívne"
         
-        # Registre 40525 (Active Power, I32, gain 1000) a 40515 (SOC, U16, gain 10)
+        # Registre podla dokumentacie:
+        # 40525 = Active Power (I32, gain 100, 2 registre) -> W
+        # 40515 = SOC (U16, gain 10) -> %
+        # 9 = Inverter status (U16): 0xB000 = Communication interrupt, 0xC000 = Uploading
         read_p = self.tcp_read_holding_registers(device_id, slave_id, 40525, 2)
         if not read_p:
             read_p = self.tcp_read_holding_registers(device_id, slave_id, 40525, 1)
         read_soc = self.tcp_read_holding_registers(device_id, slave_id, 40515, 1)
+        read_status = self.tcp_read_holding_registers(device_id, slave_id, 9, 1)
         
         if read_p:
-            # 40525 je I32 (2 registre), gain 1000 -> kW
+            # 40525 je I32 (2 registre), gain 100 -> W
             if len(read_p) >= 2:
                 raw = (read_p[0] << 16) | read_p[1]
                 if raw >= 0x80000000: raw -= 0x100000000  # signed I32
-                power_val = raw / 1000.0  # kW
+                power_val = raw / 100.0  # W (gain 100)
             else:
-                power_val = float(read_p[0]) / 1000.0
+                power_val = float(read_p[0]) / 100.0
             temp_val = 34.0
             status_msg = f"SmartLogger online ({conn['ip']})"
             LedService.blink_start_led(4)
         else:
             status_msg = f"SmartLogger neodpovedá ({conn['ip']}:{conn['port']})"
         
+        # Inverter status - specialne SmartLogger stavove kody
+        if read_status:
+            st = read_status[0]
+            if st == 0xB000:
+                status_msg = "Communication interrupt"
+            elif st == 0xC000:
+                status_msg = "Uploading"
+
         if read_soc:
             # 40515 je U16, gain 10 -> %
             soc_val = float(read_soc[0]) / 10.0
@@ -458,14 +470,18 @@ class SolarBackgroundService:
                 if len(data_val) >= 2:
                     raw = (data_val[0] << 16) | data_val[1]
                     if raw >= 0x80000000: raw -= 0x100000000
-                    pw = raw / 1000.0
+                    pw = raw / 100.0  # W (gain 100)
                 else:
-                    pw = float(data_val[0]) / 1000.0
+                    pw = float(data_val[0]) / 100.0
                 soc_data = self.tcp_read_holding_registers(device_id, sid, 40515, 1)
+                st_data = self.tcp_read_holding_registers(device_id, sid, 9, 1)
+                st_code = st_data[0] if st_data else 0
                 inverters.append({
                     'slave_id': sid,
                     'power_ac': pw,
-                    'battery_soc': float(soc_data[0]) / 10.0 if soc_data else 0.0
+                    'battery_soc': float(soc_data[0]) / 10.0 if soc_data else 0.0,
+                    'status_code': hex(st_code),
+                    'comm_interrupt': st_code == 0xB000
                 })
         
         return {
