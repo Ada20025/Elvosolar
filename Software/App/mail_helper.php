@@ -24,6 +24,31 @@ if (!defined('SMTP_ENCRYPTION')) {
 }
 // ==========================================
 
+if (!function_exists('elvo_mail_relay')) {
+    // Posle mail cez alwaysdata relay (mail() tam funguje). Vrati true/false.
+    // Ak RELAY_URL nie je nastavene, vrati false (ziaden timeout).
+    function elvo_mail_relay($to, $subject, $message_html, $accent_color = '#007aff') {
+        $relay = getenv('MAIL_RELAY_URL');
+        if (!$relay || trim($relay) === '') return false;
+        $payload = json_encode([
+            'to' => $to,
+            'subject' => $subject,
+            'html' => $message_html,
+            'accent' => $accent_color,
+        ]);
+        $relay_key = getenv('MAIL_RELAY_KEY') ?: 'elvo-relay-2026';
+        $ctx = stream_context_create(['http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\nX-Relay-Key: " . $relay_key . "\r\n",
+            'content' => $payload,
+            'timeout' => 8,
+            'ignore_errors' => true,
+        ]]);
+        $resp = @file_get_contents($relay, false, $ctx);
+        return ($resp !== false && strpos($resp, '"success":true') !== false);
+    }
+}
+
 if (!function_exists('send_elvo_email')) {
     function send_elvo_email($to, $subject, $title, $content_html, $accent_color = '#007aff') {
         $domain = $_SERVER['SERVER_NAME'] ?? 'elvosolar.sk';
@@ -88,8 +113,14 @@ if (!function_exists('send_elvo_email')) {
         // Zakódovanie predmetu správy do formátu RFC Base64 pre bezchybnú diakritiku a antispam
         $subject_encoded = "=?UTF-8?B?" . base64_encode($subject) . "?=";
 
-        // 1. REŽIM SMTP (Priame socket spojenie s mailovým serverom)
-        if (defined('USE_SMTP') && USE_SMTP === true) {
+        // 0. REŽIM RELAY (posielanie cez alwaysdata - bez SSL certifikatov a nastavovania)
+        if (elvo_mail_relay($to, $subject, $message_html, $accent_color)) {
+            return true;
+        }
+
+        // 1. REŽIM SMTP (iba ked je heslo nastavene - inac by Gmail spojenie travilo)
+        $has_pass = defined('SMTP_PASS') && trim(SMTP_PASS) !== '';
+        if (defined('USE_SMTP') && USE_SMTP === true && $has_pass) {
             $host = SMTP_HOST;
             $port = SMTP_PORT;
             $user = SMTP_USER;
@@ -106,7 +137,7 @@ if (!function_exists('send_elvo_email')) {
                 ]
             ]);
 
-            $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
+            $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
             
             if (!$socket) {
                 error_log("SMTP Pripojenie zlyhalo: $errstr ($errno)");
@@ -201,6 +232,14 @@ if (!function_exists('send_elvo_email')) {
         $headers .= "X-Mailer: PHP/" . phpversion();
 
         // Mail s timeoutom - na Railway mail() casto hanguje
+        $host_hint = $_SERVER['SERVER_NAME'] ?? '';
+        $is_railway = (strpos($host_hint, 'railway.app') !== false || getenv('RAILWAY_ENVIRONMENT') !== false);
+        if ($is_railway && !$has_pass) {
+            // Na Railway bez SMTP: mail() zvykne hanguj 15 s a aj tak neodide.
+            // Skusime raz s kratym timeoutom cez process, inak vzdame.
+            error_log("[MAIL] Railway bez SMTP_PASS - native mail() preskoceny (hang prevention)");
+            return false;
+        }
         $start = time();
         $result = false;
         try {

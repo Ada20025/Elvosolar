@@ -530,15 +530,21 @@ elseif ($path === '/login') {
                     $mail_sent = false;
                     {
                         require_once __DIR__ . '/mail_helper.php';
-                        try {
-                            $mail_sent = send_elvo_email($email, 'Overenie prihlásenia | ElvoControll', 'Overovací kód: ' . $code,
-                            '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Overenie prihlásenia</h2>' .
-                            '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Niektoré zariadenie sa prihlási do vášho účtu ElvoControll <strong>prvýkrát</strong>. Pre potvrdenie zadajte tento kód v aplikácii:</p>' .
-                            '<div style="margin:0 0 16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
-                            '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . ' &middot; Čas: ' . date('d.m.Y H:i') . '</p>' .
-                            '<p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
-                            '#6366f1');
-                        } catch (Exception $me) { $mail_sent = false; }
+                        // Token na odhlasenie zariadenia z mailu (platny 24 h)
+                        $unsub_token = bin2hex(random_bytes(16));
+                        $_SESSION['pending_login']['unsub_token'] = hash('sha256', $unsub_token);
+                        $unsub_url = $base_path . '/device-logout?token=' . $unsub_token . '&login=1';
+                        $mail_sent = send_elvo_email($email, 'Overenie prihlásenia | ElvoControll', 'Overovací kód: ' . $code,
+                        '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Overenie prihlásenia</h2>' .
+                        '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Niektoré zariadenie sa prihlasuje do vášho účtu ElvoControll. Pre potvrdenie zadajte tento kód v aplikácii:</p>' .
+                        '<div style="margin:0 0 16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
+                        '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . ' &middot; Čas: ' . date('d.m.Y H:i') . '</p>' .
+                        '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:20px 0 8px 0;"><tr><td align="center">' .
+                        '<a href="' . $unsub_url . '" style="display:inline-block;padding:12px 28px;background:#f43f5e;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;border-radius:10px;">Odhásiť toto zariadenie</a>' .
+                        '</td></tr></table>' .
+                        '<p style="margin:10px 0 0 0;font-size:11px;color:#94a3b8;text-align:center;">Kliknutím zablokujete prihlásenie z tohto zariadenia (platí 24 h od zaslaní mailu).</p>' .
+                        '<p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
+                        '#6366f1');
                     }
                     if (!$mail_sent) {
                         // SMTP nie je nastavene alebo zlyhalo -> kod zobraz priamo (dev rezim)
@@ -619,6 +625,9 @@ elseif ($path === '/verify-login/resend' && $method === 'GET') {
         if (getenv('SMTP_PASS') && trim(getenv('SMTP_PASS')) !== '') {
             require_once __DIR__ . '/mail_helper.php';
             try {
+                $unsub_token2 = bin2hex(random_bytes(16));
+                $_SESSION['pending_login']['unsub_token'] = hash('sha256', $unsub_token2);
+                $unsub_url2 = $base_path . '/device-logout?token=' . $unsub_token2 . '&login=1';
                 $mail_sent2 = send_elvo_email($_SESSION['pending_login']['email'], 'Nový overovací kód | ElvoControll', 'Nový kód: ' . $code,
                 '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Nový overovací kód</h2>' .
                 '<div style="margin:0 0 16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
@@ -1355,6 +1364,31 @@ elseif ($path === '/verify-reset-code' && $method === 'POST') {
     $stmt->execute([password_hash($new, PASSWORD_BCRYPT), $rs['user_id']]);
     unset($_SESSION['pw_reset'], $_SESSION['reset_step']);
     flash('Heslo bolo úspešne zmenené. Prihláste sa novým heslom.', 'success');
+    header("Location: " . $base_path . "/login");
+    exit;
+}
+
+elseif ($path === '/device-logout' && $method === 'GET') {
+    $token = preg_replace('/[^a-f0-9]/', '', $_GET['token'] ?? '');
+    $isLogin = !empty($_GET['login']);
+    // 1) Zrusit beziaci pending login (2FA)
+    if ($isLogin && isset($_SESSION['pending_login']) && !empty($_SESSION['pending_login']['unsub_token'])) {
+        if ($token && hash_equals($_SESSION['pending_login']['unsub_token'], $token)) {
+            unset($_SESSION['pending_login']);
+            flash('Prihlásenie z tohto zariadenia bolo zrušené. Ak ste to neboli vy, okamžite si zmeňte heslo.', 'success');
+            header("Location: " . $base_path . "/login");
+            exit;
+        }
+    }
+    // 2) Odhlasit dôveryhodné zariadenie (aj v budúcnu zablokovať rýchle prihlásenie)
+    if ($token && isset($_SESSION['user_id'])) {
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS login_devices (id INTEGER PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, device_hash VARCHAR(64) NOT NULL, device_name VARCHAR(100) DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login DATETIME NULL, UNIQUE KEY uq_userdev (user_id, device_hash))");
+            $stmt = $pdo->prepare("DELETE FROM login_devices WHERE user_id = ? AND device_hash = ?");
+            $stmt->execute([$_SESSION['user_id'], $token]);
+            flash('Zariadenie bolo odhlásené z vášho účtu.', 'success');
+        } catch (Exception $e) { /* ignore */ }
+    }
     header("Location: " . $base_path . "/login");
     exit;
 }
