@@ -1033,14 +1033,21 @@
             font-size: 10px; color: var(--text-secondary); line-height: 1.5;
         }
 
-        /* Mobile gear modal fix */
+        /* Mobile gear modal fix - spravny scroll */
+        #gearModal, #repeatModal {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        #gearModal > div:last-of-type,
+        #repeatModal > div:last-of-type {
+            overscroll-behavior: contain;
+        }
         @media (max-width: 640px) {
-            #gearModal > div,
-            #repeatModal > div {
-                max-height: 85vh !important;
+            #gearModal > div:last-of-type,
+            #repeatModal > div:last-of-type {
+                max-height: calc(100vh - 70px) !important;
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch !important;
-                margin: 8px !important;
                 padding: 16px !important;
             }
             #gearModal input[type=range],
@@ -1048,7 +1055,6 @@
                 touch-action: pan-y;
             }
         }
-        #gearModal, #repeatModal { overscroll-behavior: contain; }
         /* Smooth scroll for all modals */
         .modal-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
@@ -2150,29 +2156,7 @@
 
 
 
-        // Local browser renaming trigger
-        function triggerLocalRename(e) {
-            e.stopPropagation();
-            const labelEl = document.getElementById('singleDeviceLabel');
-            if (!labelEl) return;
-
-            const oldName = labelEl.innerText;
-            const newName = prompt("Zadajte nový lokálny názov pre toto zariadenie:", oldName);
-            if (newName !== null && newName.trim() !== "") {
-                const cleanName = newName.trim();
-                labelEl.innerText = cleanName;
-                localStorage.setItem('local_biok_device_name', cleanName);
-            }
-        }
-
-        // Apply local device name if already saved in browser
-        (function loadLocalDeviceName() {
-            const savedLocalName = localStorage.getItem('local_biok_device_name');
-            const labelEl = document.getElementById('singleDeviceLabel');
-            if (savedLocalName && labelEl) {
-                labelEl.innerText = savedLocalName;
-            }
-        })();
+        // (odstránené: legacy localStorage prepis mena zariadenia - spôsoboval zlé meno "Elvocontrol")
 
 
 
@@ -2453,11 +2437,10 @@
             updateGearScreenArrow('min', minVal);
             updateGearScreenArrow('max', maxVal);
             modal.style.display = 'block';
-            document.body.style.overflow = 'hidden';
+            modal.scrollTop = 0;
         }
         function closeGearModal() {
             document.getElementById('gearModal').style.display = 'none';
-            document.body.style.overflow = '';
         }
         function updateGearScreenArrow(type, value) {
             const v = parseInt(value) || 0;
@@ -2918,13 +2901,13 @@
         let currentRepeatInterval = 1;
 
         function openRepeatModal() {
-            document.getElementById('repeatModal').style.display = 'block';
-            document.body.style.overflow = 'hidden';
+            const m = document.getElementById('repeatModal');
+            m.style.display = 'block';
+            m.scrollTop = 0;
             updateRepeatModalUI();
         }
         function closeRepeatModal() {
             document.getElementById('repeatModal').style.display = 'none';
-            document.body.style.overflow = '';
         }
         function setRepeatType(type) {
             currentHolidayRepeat = type;
@@ -3701,7 +3684,8 @@
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         function startOnboarding() {
-        if (localStorage.getItem('elvo_onboarding_done')) return;
+        // (deaktivované: starý onboarding ukazoval neexistujúce elementy a blokoval obrazovku)
+        if (true) return;
         const steps = [
             { el: 'header', title: '🔑 Hlavička', text: 'Tu vidíš meno zariadenia a stav pripojenia (online/offline). Klikni na šípku pre výber zariadenia.' },
             { el: 'tabBtnOverview', title: '📊 Prehľad', text: 'Tu sa zobrazujú aktuálne dáta: výkon FVE, batéria SOC, OKTE ceny, teplota.' },
@@ -3770,12 +3754,13 @@
     if (localStorage.getItem('elvo_tour_done')) return;
     var STEPS = [
         {sel:null, title:'👋 Vitajte v ElvoControll', text:'Predstavíme vám pár vecí, aby ste sa rýchlo zorientovali. Kliknite ĎALEJ.'},
-        {sel:'#deviceDropdownButton, .station-dropdown > button, header .station-dropdown', title:'🖥️ Vaše zariadenie', text:'Tu je aktívne zariadenie. Kliknutím otvoríte zoznam — zariadenie prepnite alebo premenujte pomocou ceruzky.'},
-        {sel:'.nav-tabs, .tabs, [class*="tab"]', title:'📋 Prehľad a Riadenie', text:'PREHĽAD ukazuje dáta a grafy. RIADENIE slúži na ovládanie relé, režimov a nastavení zariadenia.'},
-        {sel:'.okte-sidebar, .okte-mini-card', title:'⚡ OKTE Spot', text:'Aktuálna spotová cena elektriny z trhu. Aktualizuje sa automaticky — vrátane záporných cien (hlboký disk).'},
-        {sel:'#mainChart, canvas', title:'📈 Graf 48 hodín', text:'Ceny OKTE, výroba FVE a stav batérie v jednom grafe. Kliknite do grafu a uvidíte presné hodnoty pre konkrétny čas.'},
-        {sel:'.inverters-card, #myDevicesList, .okte-mobile-top', title:'🔌 Zariadenia', text:'Zoznam vašich zariadení so stavom online/offline, výkonom a kapacitou batérie.'},
-        {sel:'header button[onclick*="toggleTheme"], #settingsBtn, header .settings-btn, header button:last-of-type', title:'⚙️ Nastavenia', text:'Tu je téma (auto / svetlá / tmavá), notifikácie a ďalšie. Téma sa dá zmeniť aj v profile.'}
+        {sel:'#deviceSelectDropdownBtn', title:'🖥️ Vaše zariadenie', text:'Tu je aktívne zariadenie. Kliknutím otvoríte zoznam — zariadenie prepnite alebo premenujte pomocou ceruzky.'},
+        {sel:'#tabBtnDashboard', title:'📋 Prehľad', text:'PREHĽAD ukazuje aktuálne dáta a grafy 48 hodín.'},
+        {sel:'#tabBtnMeter', title:'⚙️ Riadenie', text:'RIADENIE slúži na nastavenie výkonu (ozubené koliesko), režimov a Smart Metera.'},
+        {sel:'.okte-mini-card', title:'⚡ OKTE Spot', text:'Aktuálna spotová cena elektriny z trhu. Aktualizuje sa automaticky — vrátane záporných cien (hlboký disk).'},
+        {sel:'#elvoChart', title:'📈 Graf 48 hodín', text:'Ceny OKTE, výroba FVE a stav batérie v jednom grafe. Kliknite do grafu a uvidíte presné hodnoty pre konkrétny čas.'},
+        {sel:'.diagnostic-bus-card', title:'🔌 Zariadenia', text:'Zoznam vašich zariadení so stavom online/offline, výkonom a kapacitou batérie.'},
+        {sel:'#userMenuBtn', title:'⚙️ Nastavenia', text:'Tu je téma (auto / svetlá / tmavá), notifikácie a odhlásenie. Téma sa dá zmeniť aj v profile.'}
     ];
     var step = -1, overlay, hi, card;
     function q(sel) {
