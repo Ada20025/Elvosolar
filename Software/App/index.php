@@ -234,6 +234,13 @@ if (strpos($path, '/index.php') === 0) {
 }
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+// Docasna SMTP diagnostika (test.php) - priama obsluha
+if ($path === '/test.php' || $path === '/test') {
+    header('Content-Type: text/plain; charset=utf-8');
+    require __DIR__ . '/test.php';
+    exit;
+}
+
 // --- SESSION TIMEOUT ---
 $stay_logged_in = $_SESSION['stay_logged_in'] ?? false;
 $timeout_seconds = $stay_logged_in ? (90 * 24 * 3600) : (7 * 24 * 3600);
