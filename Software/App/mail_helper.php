@@ -118,6 +118,15 @@ if (!function_exists('send_elvo_email')) {
             return true;
         }
 
+        // RYCHLY LOGIN: na Railway je SMTP blokovane (Free plan) - socket by visel 5 s pri kazdom prihlaseni.
+        // Kym nie je nastaveny MAIL_RELAY_URL, na Railway SMTP vobec neskusame (kod sa zobrazi na obrazovke).
+        $is_railway = (strpos(($_SERVER['SERVER_NAME'] ?? ''), 'railway.app') !== false || getenv('RAILWAY_ENVIRONMENT') !== false);
+        $relay_configured = (getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '');
+        if ($is_railway && !$relay_configured) {
+            error_log("[MAIL] Railway bez relayu - SMTP preskocene (rychly login), kod zobrazeny na obrazovke");
+            return false;
+        }
+
         // 1. REŽIM SMTP (iba ked je heslo nastavene - inac by Gmail spojenie travilo)
         $has_pass = defined('SMTP_PASS') && trim(SMTP_PASS) !== '';
         if (defined('USE_SMTP') && USE_SMTP === true && $has_pass) {
