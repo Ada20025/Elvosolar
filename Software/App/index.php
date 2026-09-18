@@ -4,6 +4,13 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// RYCHLOST: gzip kompresia - dashboard HTML 219 kB -> ~30 kB (menej prenosu = rychlejsie nacitanie)
+if (!empty($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false
+    && !in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['POST', 'PUT', 'DELETE'])) {
+    ini_set('zlib.output_compression', '1');
+    ini_set('zlib.output_compression_level', '6');
+}
+
 header('Content-Type: text/html; charset=utf-8');
 date_default_timezone_set('Europe/Bratislava');
 ini_set('session.gc_maxlifetime', 7776000); // 90 dni
