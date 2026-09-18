@@ -185,10 +185,8 @@ if (!function_exists('send_elvo_email')) {
             fclose($socket);
 
             $success = (strpos($data_res, '250') !== false);
-            if (!$success) {
-                error_log("SMTP Server odmietol odoslať správu: " . $data_res);
-            }
-            return $success;
+            if ($success) return true;
+            error_log("SMTP Server odmietol správu: " . $data_res . " -> skúšam native mail()");
         }
 
         // 2. REŽIM NATIVE MAIL (Klasická funkcia mail() v PHP pre Linux)

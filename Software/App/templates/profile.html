@@ -269,7 +269,20 @@
 
                 <!-- Moje zariadenia (left) -->
                 <div class="glass-card" style="margin-bottom:0;">
-                    <div class="card-header">
+                                    <div class="card" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px;padding:20px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                        <i data-lucide="palette" style="width:20px;height:20px;color:#a78bfa;"></i>
+                        <h3 style="font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:0.5px;">VZHĽAD</h3>
+                    </div>
+                    <p style="font-size:11px;color:var(--text-secondary);margin-bottom:12px;">Automatický režim sa prispôsobí nastaveniu telefónu (svetlý/tmavý systém).</p>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;" id="themeOptions">
+                        <button type="button" onclick="setElvoTheme('auto')" data-t="auto" style="padding:12px 8px;border-radius:12px;border:2px solid var(--border-color);background:transparent;color:var(--text-primary);font-size:11px;font-weight:800;cursor:pointer;transition:all .2s;">🌗<br>Auto</button>
+                        <button type="button" onclick="setElvoTheme('light')" data-t="light" style="padding:12px 8px;border-radius:12px;border:2px solid var(--border-color);background:transparent;color:var(--text-primary);font-size:11px;font-weight:800;cursor:pointer;transition:all .2s;">☀️<br>Svetlý</button>
+                        <button type="button" onclick="setElvoTheme('dark')" data-t="dark" style="padding:12px 8px;border-radius:12px;border:2px solid var(--border-color);background:transparent;color:var(--text-primary);font-size:11px;font-weight:800;cursor:pointer;transition:all .2s;">🌙<br>Tmavý</button>
+                    </div>
+                </div>
+
+                <div class="card <div class="card-header">
                         <span class="card-title"><i data-lucide="cpu" style="width:14px;height:14px;color:var(--accent-solar);"></i> Moje zariadenia</span>
                     </div>
                     <div id="devicesListLeft" style="display:flex;flex-direction:column;gap:10px;">
@@ -516,11 +529,28 @@
             setTimeout(() => t.remove(), 3000);
         }
 
+        // Theme (auto/light/dark) - zjednotene s dashboardom
+        function setElvoTheme(t) {
+            localStorage.setItem('elvoTheme', t);
+            highlightTheme();
+            showToast('Téma uložená: ' + ({auto:'Automatická', light:'Svetlá', dark:'Tmavá'})[t]);
+        }
+        function highlightTheme() {
+            const cur = localStorage.getItem('elvoTheme') || 'auto';
+            document.querySelectorAll('#themeOptions button').forEach(function(b) {
+                const active = b.getAttribute('data-t') === cur;
+                b.style.borderColor = active ? '#10b981' : 'var(--border-color)';
+                b.style.background = active ? 'rgba(16,185,129,0.12)' : 'transparent';
+                b.style.boxShadow = active ? '0 0 0 3px rgba(16,185,129,0.15)' : 'none';
+            });
+        }
+        highlightTheme();
+
         // Init
         loadAvatar();
         loadProfile();
         loadDevices();
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     </script>
 </body>
 </html>

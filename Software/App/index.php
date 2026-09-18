@@ -514,29 +514,8 @@ elseif ($path === '/login') {
             
             if ($user && password_verify($password, $user['password_hash'])) {
                 unset($_SESSION[$attempt_key]);
-                // Trusted device? (uz overene cez email)
-                $trusted = false;
-                try {
-                    $pdo->exec("CREATE TABLE IF NOT EXISTS login_devices (id INTEGER PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, device_hash VARCHAR(64) NOT NULL, device_name VARCHAR(100) DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login DATETIME NULL, UNIQUE KEY uq_userdev (user_id, device_hash))");
-                    $stmtT = $pdo->prepare("SELECT id FROM login_devices WHERE user_id = ? AND device_hash = ?");
-                    $stmtT->execute([$user['id'], $device_hash]);
-                    $trusted = (bool)$stmtT->fetch();
-                } catch (Exception $e) { /* ignore */ }
-                
-                if ($trusted) {
-                    // Rychle prihlasenie - zariadenie je uz overene
-                    session_regenerate_id(true);
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
-                    $_SESSION['last_activity'] = time();
-                    $_SESSION['stay_logged_in'] = isset($_POST['stay_logged_in']);
-                    try {
-                        $pdo->prepare("UPDATE login_devices SET last_login = NOW() WHERE user_id = ? AND device_hash = ?")->execute([$user['id'], $device_hash]);
-                    } catch (Exception $e) { /* ignore */ }
-                    header("Location: " . $base_path . "/");
-                    exit;
-                } else {
-                    // NOVE zariadenie -> overovaci kod na email (bezpecnostne potvrdenie)
+                // 2FA pri KAZDOM prihlaseni - vzdy posleme overovaci kod na email
+                {
                     $code = strval(random_int(100000, 999999));
                     $_SESSION['pending_login'] = [
                         'user_id' => $user['id'],
@@ -549,7 +528,7 @@ elseif ($path === '/login') {
                         'stay' => isset($_POST['stay_logged_in'])
                     ];
                     $mail_sent = false;
-                    if (getenv('SMTP_PASS') && trim(getenv('SMTP_PASS')) !== '') {
+                    {
                         require_once __DIR__ . '/mail_helper.php';
                         try {
                             $mail_sent = send_elvo_email($email, 'Overenie prihlásenia | ElvoControll', 'Overovací kód: ' . $code,
@@ -1010,6 +989,376 @@ elseif ($path === '/api/cm5/register' && $method === 'POST') {
 }
 
 // --- USER CLAIM DEVICE (ulozi meno + parametre zariadenia do cloud DB) ---
+elseif ($path === '/api/user/me' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $stmt = $pdo->prepare("SELECT id, username, email, role, created_at FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $u = $stmt->fetch();
+    if (!$u) send_json(['status' => 'error', 'message' => 'Používateľ neexistuje'], 404);
+    $created = $u['created_at'] ? date('d.m.Y', strtotime($u['created_at'])) : '2026';
+    send_json(['status' => 'success', 'username' => $u['username'], 'email' => $u['email'], 'role' => $u['role'], 'created_at' => $created]);
+}
+
+elseif ($path === '/api/user/devices' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    try {
+        $stmt = $pdo->prepare("SELECT d.*, (SELECT MAX(timestamp) FROM telemetry t WHERE t.device_id = d.id) AS last_telemetry FROM devices d WHERE d.user_id = ? ORDER BY d.id");
+        $stmt->execute([$_SESSION['user_id']]);
+        $devs = $stmt->fetchAll();
+    } catch (Exception $e) {
+        $stmt = $pdo->prepare("SELECT * FROM devices WHERE user_id = ? ORDER BY id");
+        $stmt->execute([$_SESSION['user_id']]);
+        $devs = $stmt->fetchAll();
+        foreach ($devs as &$dv) { $dv['last_telemetry'] = null; }
+        unset($dv);
+    }
+    $out = [];
+    foreach ($devs as $d) {
+        $online = false;
+        if (!empty($d['last_telemetry'])) {
+            $online = (time() - strtotime($d['last_telemetry'])) < 900;
+        }
+        $out[] = [
+            'id' => $d['id'],
+            'name' => $d['name'] ?? ('Zariadenie ' . $d['id']),
+            'serial_number' => $d['serial_number'] ?? '',
+            'brand_id' => $d['brand_id'] ?? '',
+            'model_id' => $d['model_id'] ?? '',
+            'is_online' => $online,
+        ];
+    }
+    send_json(['status' => 'success', 'devices' => $out]);
+}
+
+elseif ($path === '/api/user/notifications' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true];
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+        $stmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $saved = json_decode($row['prefs'], true);
+            if (is_array($saved)) $defaults = array_merge($defaults, $saved);
+        }
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success', 'notifications' => $defaults]);
+}
+
+elseif ($path === '/api/user/notifications' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($data)) send_json(['status' => 'error', 'message' => 'Neplatné dáta'], 400);
+    $clean = [
+        'new_device' => !empty($data['new_device']),
+        'error' => !empty($data['error']),
+        'daily_report' => !empty($data['daily_report']),
+        'negative_price' => !empty($data['negative_price']),
+    ];
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+        $stmt = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
+        $stmt->execute([$_SESSION['user_id'], json_encode($clean)]);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => 'Uloženie zlyhalo'], 500);
+    }
+    send_json(['status' => 'success', 'message' => 'Nastavenia uložené']);
+}
+
+elseif ($path === '/api/user/change-password' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $data = json_decode(file_get_contents('php://input'), true);
+    $cur = $data['current_password'] ?? '';
+    $new = $data['new_password'] ?? '';
+    if (strlen($new) < 6) send_json(['status' => 'error', 'message' => 'Nové heslo musí mať aspoň 6 znakov'], 400);
+    $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $u = $stmt->fetch();
+    if (!$u || !password_verify($cur, $u['password_hash'])) send_json(['status' => 'error', 'message' => 'Súčasné heslo je nesprávne'], 400);
+    $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+    $stmt->execute([password_hash($new, PASSWORD_BCRYPT), $_SESSION['user_id']]);
+    send_json(['status' => 'success', 'message' => 'Heslo úspešne zmenené']);
+}
+
+elseif ($path === '/api/user/test-email' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $stmt = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $u = $stmt->fetch();
+    if (!$u) send_json(['status' => 'error', 'message' => 'Používateľ neexistuje'], 404);
+    require_once __DIR__ . '/mail_helper.php';
+    $ok = false;
+    try {
+        $ok = send_elvo_email($u['email'], 'Test email | ElvoControll', 'Test odosielania emailov',
+            '<p>Ak vidíte tento email, odosielanie funguje správne.</p><p style="color:#94a3b8;font-size:12px;">Čas: ' . date('d.m.Y H:i:s') . '</p>',
+            '#10b981');
+    } catch (Exception $e) { $ok = false; }
+    if ($ok) send_json(['status' => 'success', 'message' => 'Test email bol odoslaný na ' . $u['email']]);
+    if (!getenv('SMTP_PASS')) send_json(['status' => 'error', 'message' => 'SMTP nie je nastavené na serveri (chýba SMTP_PASS). Kontaktujte administrátora.']);
+    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo - skontrolujte SMTP nastavenia']);
+}
+
+elseif ($path === '/forgot-password' && $method === 'GET') {
+    render_template('forgot-password.html', ['flash' => get_flash_messages()]);
+}
+
+elseif ($path === '/forgot-password' && $method === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    $stmt = $pdo->prepare("SELECT id, username FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $u = $stmt->fetch();
+    if (!$u) {
+        flash('Ak tento email existuje, kód bol odoslaný.', 'success');
+        header("Location: " . $base_path . "/forgot-password");
+        exit;
+    }
+    $code = strval(random_int(100000, 999999));
+    $_SESSION['pw_reset'] = [
+        'user_id' => $u['id'],
+        'email' => $email,
+        'code_hash' => password_hash($code, PASSWORD_DEFAULT),
+        'expires' => time() + 600,
+        'attempts' => 0,
+    ];
+    $_SESSION['reset_step'] = 2;
+    $mail_sent = false;
+    require_once __DIR__ . '/mail_helper.php';
+    try {
+        $mail_sent = send_elvo_email($email, 'Obnovenie hesla | ElvoControll', 'Kód na obnovenie hesla',
+            '<p>Zabudli ste heslo? Nie je problém. Zadajte tento kód v aplikácii:</p>' .
+            '<div style="margin:16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
+            '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút. Ak ste o obnovenie nežiadali, ignorujte tento email.</p>',
+            '#f59e0b');
+    } catch (Exception $me) { $mail_sent = false; }
+    if (!$mail_sent) {
+        $_SESSION['pw_reset']['dev_code'] = $code;
+        flash('Emailová služba nie je pripojená. Váš overovací kód: ' . $code, 'success');
+    } else {
+        flash('Kód bol odoslaný na váš email.', 'success');
+    }
+    header("Location: " . $base_path . "/forgot-password");
+    exit;
+}
+
+elseif ($path === '/verify-reset-code' && $method === 'POST') {
+    $rs = $_SESSION['pw_reset'] ?? null;
+    if (!$rs || time() > ($rs['expires'] ?? 0)) {
+        unset($_SESSION['pw_reset'], $_SESSION['reset_step']);
+        flash('Kód vypršal. Začnite znova.', 'error');
+        header("Location: " . $base_path . "/forgot-password");
+        exit;
+    }
+    $code = preg_replace('/\D/', '', $_POST['verification_code'] ?? '');
+    $new = $_POST['new_password'] ?? '';
+    $conf = $_POST['confirm_password'] ?? '';
+    if ($rs['attempts'] >= 5) {
+        unset($_SESSION['pw_reset'], $_SESSION['reset_step']);
+        flash('Priveľa pokusov. Začnite znova.', 'error');
+        header("Location: " . $base_path . "/forgot-password");
+        exit;
+    }
+    if (!$code || !password_verify($code, $rs['code_hash'])) {
+        $_SESSION['pw_reset']['attempts'] = ($rs['attempts'] ?? 0) + 1;
+        flash('Nesprávny kód.', 'error');
+        header("Location: " . $base_path . "/forgot-password");
+        exit;
+    }
+    if (strlen($new) < 6) { flash('Heslo musí mať aspoň 6 znakov.', 'error'); header("Location: " . $base_path . "/forgot-password"); exit; }
+    if ($new !== $conf) { flash('Heslá sa nezhodujú.', 'error'); header("Location: " . $base_path . "/forgot-password"); exit; }
+    $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+    $stmt->execute([password_hash($new, PASSWORD_BCRYPT), $rs['user_id']]);
+    unset($_SESSION['pw_reset'], $_SESSION['reset_step']);
+    flash('Heslo bolo úspešne zmenené. Prihláste sa novým heslom.', 'success');
+    header("Location: " . $base_path . "/login");
+    exit;
+}
+
+elseif ($path === '/api/user/me' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $stmt = $pdo->prepare("SELECT id, username, email, role, created_at FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $u = $stmt->fetch();
+    if (!$u) send_json(['status' => 'error', 'message' => 'Používateľ neexistuje'], 404);
+    $created = $u['created_at'] ? date('d.m.Y', strtotime($u['created_at'])) : '2026';
+    send_json(['status' => 'success', 'username' => $u['username'], 'email' => $u['email'], 'role' => $u['role'], 'created_at' => $created]);
+}
+
+elseif ($path === '/api/user/devices' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    try {
+        $stmt = $pdo->prepare("SELECT d.*, (SELECT MAX(timestamp) FROM telemetry t WHERE t.device_id = d.id) AS last_telemetry FROM devices d WHERE d.user_id = ? ORDER BY d.id");
+        $stmt->execute([$_SESSION['user_id']]);
+        $devs = $stmt->fetchAll();
+    } catch (Exception $e) {
+        $stmt = $pdo->prepare("SELECT * FROM devices WHERE user_id = ? ORDER BY id");
+        $stmt->execute([$_SESSION['user_id']]);
+        $devs = $stmt->fetchAll();
+        foreach ($devs as &$dv) { $dv['last_telemetry'] = null; }
+        unset($dv);
+    }
+    $out = [];
+    foreach ($devs as $d) {
+        $online = false;
+        if (!empty($d['last_telemetry'])) {
+            $online = (time() - strtotime($d['last_telemetry'])) < 900;
+        }
+        $out[] = [
+            'id' => $d['id'],
+            'name' => $d['name'] ?? ('Zariadenie ' . $d['id']),
+            'serial_number' => $d['serial_number'] ?? '',
+            'brand_id' => $d['brand_id'] ?? '',
+            'model_id' => $d['model_id'] ?? '',
+            'is_online' => $online,
+        ];
+    }
+    send_json(['status' => 'success', 'devices' => $out]);
+}
+
+elseif ($path === '/api/user/notifications' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true];
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+        $stmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $saved = json_decode($row['prefs'], true);
+            if (is_array($saved)) $defaults = array_merge($defaults, $saved);
+        }
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success', 'notifications' => $defaults]);
+}
+
+elseif ($path === '/api/user/notifications' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($data)) send_json(['status' => 'error', 'message' => 'Neplatné dáta'], 400);
+    $clean = [
+        'new_device' => !empty($data['new_device']),
+        'error' => !empty($data['error']),
+        'daily_report' => !empty($data['daily_report']),
+        'negative_price' => !empty($data['negative_price']),
+    ];
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+        $stmt = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
+        $stmt->execute([$_SESSION['user_id'], json_encode($clean)]);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => 'Uloženie zlyhalo'], 500);
+    }
+    send_json(['status' => 'success', 'message' => 'Nastavenia uložené']);
+}
+
+elseif ($path === '/api/user/change-password' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $data = json_decode(file_get_contents('php://input'), true);
+    $cur = $data['current_password'] ?? '';
+    $new = $data['new_password'] ?? '';
+    if (strlen($new) < 6) send_json(['status' => 'error', 'message' => 'Nové heslo musí mať aspoň 6 znakov'], 400);
+    $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $u = $stmt->fetch();
+    if (!$u || !password_verify($cur, $u['password_hash'])) send_json(['status' => 'error', 'message' => 'Súčasné heslo je nesprávne'], 400);
+    $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+    $stmt->execute([password_hash($new, PASSWORD_BCRYPT), $_SESSION['user_id']]);
+    send_json(['status' => 'success', 'message' => 'Heslo úspešne zmenené']);
+}
+
+elseif ($path === '/api/user/test-email' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $stmt = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $u = $stmt->fetch();
+    if (!$u) send_json(['status' => 'error', 'message' => 'Používateľ neexistuje'], 404);
+    require_once __DIR__ . '/mail_helper.php';
+    $ok = false;
+    try {
+        $ok = send_elvo_email($u['email'], 'Test email | ElvoControll', 'Test odosielania emailov',
+            '<p>Ak vidíte tento email, odosielanie funguje správne.</p><p style="color:#94a3b8;font-size:12px;">Čas: ' . date('d.m.Y H:i:s') . '</p>',
+            '#10b981');
+    } catch (Exception $e) { $ok = false; }
+    if ($ok) send_json(['status' => 'success', 'message' => 'Test email bol odoslaný na ' . $u['email']]);
+    if (!getenv('SMTP_PASS')) send_json(['status' => 'error', 'message' => 'SMTP nie je nastavené na serveri (chýba SMTP_PASS). Kontaktujte administrátora.']);
+    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo - skontrolujte SMTP nastavenia']);
+}
+
+elseif ($path === '/forgot-password' && $method === 'GET') {
+    render_template('forgot-password.html', ['flash' => get_flash_messages()]);
+}
+
+elseif ($path === '/forgot-password' && $method === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    $stmt = $pdo->prepare("SELECT id, username FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $u = $stmt->fetch();
+    if (!$u) {
+        flash('Ak tento email existuje, kód bol odoslaný.', 'success');
+        header("Location: " . $base_path . "/forgot-password");
+        exit;
+    }
+    $code = strval(random_int(100000, 999999));
+    $_SESSION['pw_reset'] = [
+        'user_id' => $u['id'],
+        'email' => $email,
+        'code_hash' => password_hash($code, PASSWORD_DEFAULT),
+        'expires' => time() + 600,
+        'attempts' => 0,
+    ];
+    $_SESSION['reset_step'] = 2;
+    $mail_sent = false;
+    require_once __DIR__ . '/mail_helper.php';
+    try {
+        $mail_sent = send_elvo_email($email, 'Obnovenie hesla | ElvoControll', 'Kód na obnovenie hesla',
+            '<p>Zabudli ste heslo? Nie je problém. Zadajte tento kód v aplikácii:</p>' .
+            '<div style="margin:16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
+            '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút. Ak ste o obnovenie nežiadali, ignorujte tento email.</p>',
+            '#f59e0b');
+    } catch (Exception $me) { $mail_sent = false; }
+    if (!$mail_sent) {
+        $_SESSION['pw_reset']['dev_code'] = $code;
+        flash('Emailová služba nie je pripojená. Váš overovací kód: ' . $code, 'success');
+    } else {
+        flash('Kód bol odoslaný na váš email.', 'success');
+    }
+    header("Location: " . $base_path . "/forgot-password");
+    exit;
+}
+
+elseif ($path === '/verify-reset-code' && $method === 'POST') {
+    $rs = $_SESSION['pw_reset'] ?? null;
+    if (!$rs || time() > ($rs['expires'] ?? 0)) {
+        unset($_SESSION['pw_reset'], $_SESSION['reset_step']);
+        flash('Kód vypršal. Začnite znova.', 'error');
+        header("Location: " . $base_path . "/forgot-password");
+        exit;
+    }
+    $code = preg_replace('/\D/', '', $_POST['verification_code'] ?? '');
+    $new = $_POST['new_password'] ?? '';
+    $conf = $_POST['confirm_password'] ?? '';
+    if ($rs['attempts'] >= 5) {
+        unset($_SESSION['pw_reset'], $_SESSION['reset_step']);
+        flash('Priveľa pokusov. Začnite znova.', 'error');
+        header("Location: " . $base_path . "/forgot-password");
+        exit;
+    }
+    if (!$code || !password_verify($code, $rs['code_hash'])) {
+        $_SESSION['pw_reset']['attempts'] = ($rs['attempts'] ?? 0) + 1;
+        flash('Nesprávny kód.', 'error');
+        header("Location: " . $base_path . "/forgot-password");
+        exit;
+    }
+    if (strlen($new) < 6) { flash('Heslo musí mať aspoň 6 znakov.', 'error'); header("Location: " . $base_path . "/forgot-password"); exit; }
+    if ($new !== $conf) { flash('Heslá sa nezhodujú.', 'error'); header("Location: " . $base_path . "/forgot-password"); exit; }
+    $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+    $stmt->execute([password_hash($new, PASSWORD_BCRYPT), $rs['user_id']]);
+    unset($_SESSION['pw_reset'], $_SESSION['reset_step']);
+    flash('Heslo bolo úspešne zmenené. Prihláste sa novým heslom.', 'success');
+    header("Location: " . $base_path . "/login");
+    exit;
+}
+
 elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $data = get_json_input();
     $user_id = $_SESSION['user_id'] ?? 0;

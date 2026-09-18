@@ -3103,19 +3103,42 @@
             if (metaTheme) metaTheme.content = isLight ? '#f0f4f8' : '#02040a';
         }
 
-        function toggleTheme() {
-            const isLight = document.body.classList.toggle('light-mode');
-            localStorage.setItem('theme', isLight ? 'light' : 'dark');
-            document.getElementById('themeLabel').innerText = isLight ? 'Tmavý režim' : 'Svetlý režim';
-            applyThemeIcon(isLight);
+        function resolveTheme() {
+            const t = localStorage.getItem('elvoTheme') || 'auto';
+            if (t === 'light') return 'light';
+            if (t === 'dark') return 'dark';
+            return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
         }
-
+        function applyTheme() {
+            const t = localStorage.getItem('elvoTheme') || 'auto';
+            const resolved = resolveTheme();
+            document.body.classList.toggle('light-mode', resolved === 'light');
+            const lbl = document.getElementById('themeLabel');
+            if (lbl) lbl.textContent = t === 'auto' ? 'Automatický režim' : (resolved === 'light' ? 'Tmavý režim' : 'Svetlý režim');
+            applyThemeIcon(resolved === 'light');
+            const metaTheme = document.querySelector('meta[name="theme-color"]');
+            if (metaTheme) metaTheme.content = resolved === 'light' ? '#f0f4f8' : '#02040a';
+        }
+        function toggleTheme() {
+            const order = ['auto', 'light', 'dark'];
+            const cur = localStorage.getItem('elvoTheme') || 'auto';
+            const next = order[(order.indexOf(cur) + 1) % 3];
+            localStorage.setItem('elvoTheme', next);
+            applyTheme();
+            const names = { auto: 'Automatický (podľa systému)', light: 'Stále svetlý', dark: 'Stále tmavý' };
+            if (typeof showToast === 'function') showToast('Téma: ' + names[next]);
+        }
         (function initTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                document.body.classList.add('light-mode');
-                document.getElementById('themeLabel').innerText = 'Tmavý režim';
-                applyThemeIcon(true);
+            const old = localStorage.getItem('theme');
+            if (old && !localStorage.getItem('elvoTheme')) localStorage.setItem('elvoTheme', old === 'light' ? 'light' : 'dark');
+            localStorage.removeItem('theme');
+            applyTheme();
+            if (window.matchMedia) {
+                try {
+                    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function() {
+                        if ((localStorage.getItem('elvoTheme') || 'auto') === 'auto') applyTheme();
+                    });
+                } catch(e) {}
             }
         })();
 
@@ -3379,9 +3402,14 @@
                             callbacks: {
                                 label: function(ctx) {
                                     const v = ctx.parsed.y;
-                                    if (ctx.dataset.label.includes('OKTE')) return 'OKTE: ' + v.toFixed(2) + ' €/MWh' + (v < 0 ? ' ⚡ HLBOKÝ DISK' : '');
-                                    if (ctx.dataset.label.includes('SOC')) return 'SOC: ' + v + '%';
-                                    return ctx.dataset.label + ': ' + v + ' W';
+                                    if (v === null || v === undefined) return '';
+                                    const l = ctx.dataset.label || '';
+                                    if (l.indexOf('OKTE Spot') === 0) return 'Cena OKTE: ' + v.toFixed(2) + ' €/MWh' + (v < 0 ? ' ⚡ HLBOKÝ DISK' : '');
+                                    if (l.indexOf('Priemer OKTE') === 0) return 'Priemer OKTE: ' + v.toFixed(2) + ' €/MWh';
+                                    if (l.indexOf('SOC') === 0) return 'Batéria (SOC): ' + Math.round(v) + ' %';
+                                    if (l.indexOf('FVE Výroba') === 0) return 'Výroba FVE: ' + Math.round(v) + ' W';
+                                    if (l.indexOf('Priemer FVE') === 0) return 'Priemer FVE: ' + Math.round(v) + ' W';
+                                    return l + ': ' + v;
                                 }
                             }
                         },
@@ -3516,12 +3544,8 @@
                 const myList = document.getElementById('myDevicesList');
                 if (myList) myList.classList.remove('hidden');
             }
-            // Load theme
-            if (localStorage.getItem('elvoTheme') === 'light') {
-                document.body.classList.add('light-mode');
-                const lbl = document.getElementById('themeLabel');
-                if (lbl) lbl.textContent = 'Tmavý režim';
-            }
+            // Load theme (auto/light/dark)
+            applyTheme();
             // Load avatar from localStorage
             const savedAvatar = localStorage.getItem('elvo_avatar');
             if (savedAvatar) {
@@ -3724,6 +3748,91 @@
         setTimeout(() => { try { startOnboarding(); } catch(e) {} }, 1500);
     });
     </script>
-</body>
+
+<!-- ============ ONBOARDING TOUR ============ -->
+<div id="tourOverlay" class="hidden" style="position:fixed;inset:0;z-index:9998;background:rgba(2,4,10,0.72);backdrop-filter:blur(3px);">
+    <div id="tourHighlight" style="position:absolute;border:2px solid #10b981;border-radius:16px;box-shadow:0 0 0 4px rgba(16,185,129,0.25),0 0 40px rgba(16,185,129,0.35);transition:all .35s cubic-bezier(.4,0,.2,1);pointer-events:none;"></div>
+    <div id="tourCard" style="position:absolute;width:min(320px,calc(100vw - 32px));background:linear-gradient(145deg,#0d1424,#111a2e);border:1px solid rgba(99,102,241,0.35);border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);transition:all .35s cubic-bezier(.4,0,.2,1);z-index:9999;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span id="tourStepNum" style="font-size:10px;font-weight:800;color:#6366f1;font-family:'JetBrains Mono',monospace;letter-spacing:1px;">KROK 1/7</span>
+            <button onclick="endTour()" style="background:none;border:none;color:#6b7280;font-size:16px;cursor:pointer;padding:4px;">✕</button>
+        </div>
+        <h3 id="tourTitle" style="font-size:16px;font-weight:800;color:#f9fafb;margin:0 0 8px 0;"></h3>
+        <p id="tourText" style="font-size:12px;color:#9ca3af;line-height:1.6;margin:0 0 16px 0;"></p>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <button onclick="nextTourStep()" id="tourNextBtn" style="flex:1;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;font-size:12px;font-weight:800;cursor:pointer;">ĎALEJ →</button>
+            <button onclick="endTour()" style="padding:11px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#9ca3af;font-size:11px;font-weight:700;cursor:pointer;">Preskočiť</button>
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    if (localStorage.getItem('elvo_tour_done')) return;
+    var STEPS = [
+        {sel:null, title:'👋 Vitajte v ElvoControll', text:'Predstavíme vám pár vecí, aby ste sa rýchlo zorientovali. Kliknite ĎALEJ.'},
+        {sel:'#deviceDropdownButton, .station-dropdown > button, header .station-dropdown', title:'🖥️ Vaše zariadenie', text:'Tu je aktívne zariadenie. Kliknutím otvoríte zoznam — zariadenie prepnite alebo premenujte pomocou ceruzky.'},
+        {sel:'.nav-tabs, .tabs, [class*="tab"]', title:'📋 Prehľad a Riadenie', text:'PREHĽAD ukazuje dáta a grafy. RIADENIE slúži na ovládanie relé, režimov a nastavení zariadenia.'},
+        {sel:'.okte-sidebar, .okte-mini-card', title:'⚡ OKTE Spot', text:'Aktuálna spotová cena elektriny z trhu. Aktualizuje sa automaticky — vrátane záporných cien (hlboký disk).'},
+        {sel:'#mainChart, canvas', title:'📈 Graf 48 hodín', text:'Ceny OKTE, výroba FVE a stav batérie v jednom grafe. Kliknite do grafu a uvidíte presné hodnoty pre konkrétny čas.'},
+        {sel:'.inverters-card, #myDevicesList, .okte-mobile-top', title:'🔌 Zariadenia', text:'Zoznam vašich zariadení so stavom online/offline, výkonom a kapacitou batérie.'},
+        {sel:'header button[onclick*="toggleTheme"], #settingsBtn, header .settings-btn, header button:last-of-type', title:'⚙️ Nastavenia', text:'Tu je téma (auto / svetlá / tmavá), notifikácie a ďalšie. Téma sa dá zmeniť aj v profile.'}
+    ];
+    var step = -1, overlay, hi, card;
+    function q(sel) {
+        var parts = sel.split(',').map(function(s){return s.trim();});
+        for (var i = 0; i < parts.length; i++) {
+            var el = document.querySelector(parts[i]);
+            if (el && el.offsetParent !== null) return el;
+        }
+        return null;
+    }
+    function show() {
+        overlay = document.getElementById('tourOverlay');
+        hi = document.getElementById('tourHighlight');
+        card = document.getElementById('tourCard');
+        overlay.classList.remove('hidden');
+        render();
+    }
+    function render() {
+        var s = STEPS[step];
+        document.getElementById('tourStepNum').textContent = 'KROK ' + (step+1) + '/' + STEPS.length;
+        document.getElementById('tourTitle').textContent = s.title;
+        document.getElementById('tourText').textContent = s.text;
+        document.getElementById('tourNextBtn').textContent = step === STEPS.length - 1 ? '✓ HOTOVO' : 'ĎALEJ →';
+        var el = s.sel ? q(s.sel) : null;
+        if (el) {
+            try { el.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e) {}
+            setTimeout(function() {
+                var r = el.getBoundingClientRect();
+                hi.style.top = (r.top - 6) + 'px'; hi.style.left = (r.left - 6) + 'px';
+                hi.style.width = (r.width + 12) + 'px'; hi.style.height = (r.height + 12) + 'px';
+                positionCard(r);
+            }, 350);
+        } else {
+            hi.style.top = '50%'; hi.style.left = '50%'; hi.style.width = '0'; hi.style.height = '0';
+            positionCard(null);
+        }
+    }
+    function positionCard(r) {
+        var cw = Math.min(320, window.innerWidth - 32);
+        var top, left = Math.max(16, (window.innerWidth - cw) / 2);
+        if (!r) { top = (window.innerHeight - 240) / 2; }
+        else if (r.top > window.innerHeight / 2) { top = Math.max(16, r.top - 250); }
+        else { top = Math.min(window.innerHeight - 250, r.bottom + 16); }
+        card.style.top = top + 'px'; card.style.left = left + 'px';
+    }
+    window.nextTourStep = function() {
+        if (step >= STEPS.length - 1) { endTour(); return; }
+        step++; render();
+    };
+    window.endTour = function() {
+        localStorage.setItem('elvo_tour_done', '1');
+        if (overlay) overlay.classList.add('hidden');
+    };
+    if (document.readyState === 'complete') setTimeout(show, 1200);
+    else window.addEventListener('load', function() { setTimeout(show, 1200); });
+})();
+</script>
+</body></body>
 </html>
 
