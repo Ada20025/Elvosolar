@@ -13,6 +13,23 @@ echo "PASS len: " . strlen(SMTP_PASS) . "\n";
 echo "ENCRYPTION: " . SMTP_ENCRYPTION . "\n";
 echo "MAIL_RELAY_URL: " . (getenv('MAIL_RELAY_URL') ?: '(nie)') . "\n\n";
 
+echo "=== DB DIAG (prve) ===\n";
+echo "MYSQLHOST env: " . (getenv('MYSQLHOST') ?: '(nie)') . "\n";
+echo "DB pouzivany: " . (defined('DB_HOST') ? DB_HOST : '(?)') . "\n";
+$t0 = microtime(true);
+try {
+    $pdoT = new PDO("mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS, [PDO::ATTR_TIMEOUT => 5, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $t1 = microtime(true);
+    echo "CONNECT OK za " . round(($t1 - $t0) * 1000) . " ms\n";
+    $t2 = microtime(true);
+    $pdoT->query("SELECT 1")->fetch();
+    echo "SELECT 1 za " . round((microtime(true) - $t2) * 1000) . " ms\n";
+    unset($pdoT);
+} catch (Exception $e) {
+    echo "DB FAIL za " . round((microtime(true) - $t0) * 1000) . " ms: " . $e->getMessage() . "\n";
+}
+echo "\n";
+
 // Rychly socket test
 $host = SMTP_HOST;
 $port = SMTP_PORT;
