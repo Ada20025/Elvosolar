@@ -1,19 +1,19 @@
 <?php
 // ============================================================
-// ELVO MAIL RELAY - umiestni na alwaysdata hosting
-// (napr. do /www/mail-relay.php => https://adamdz.alwaysdata.net/mail-relay.php)
+// ELVO MAIL RELAY v2 - HTTP na porte 443 (funguje VZDY,
+// lebo Railway blokuje SMTP porty na Free/Hobby plane,
+// ale HTTPS/HTTP vystup je povoleny)
 //
-// Railway (elvosolar-production.up.railway.app) posiela maily cez tento
-// skript, lebo na Railway nefunguje mail() ani Gmail SMTP bez hesla.
-// Na alwaysdata mail() funguje priamo.
+// UMIESTNI NA ALWAYSADATA do /www/mail-relay.php
+// URL: https://adamdz.alwaysdata.net/mail-relay.php
 //
-// NA RAILWAY POTOM NASTAV PREMENNU:
+// NA RAILWAY nastav premennu:
 //   MAIL_RELAY_URL = https://adamdz.alwaysdata.net/mail-relay.php
 // ============================================================
 
 header('Content-Type: application/json; charset=utf-8');
 
-// --- Bezpecnostny token (optional): na Railway nastav rovnaky MAIL_RELAY_KEY ---
+// Bezpecnostny token (musi sediet s MAIL_RELAY_KEY na Railway)
 $expected_key = getenv('MAIL_RELAY_KEY') ?: 'elvo-relay-2026';
 $received_key = $_SERVER['HTTP_X_RELAY_KEY'] ?? '';
 
@@ -45,14 +45,15 @@ $subject_encoded = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 
 $headers  = "MIME-Version: 1.0\r\n";
 $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-$headers .= "From: ElvoSolar Control <no-reply@elvosolar.sk>\r\n";
-$headers .= "Reply-To: support@elvosolar.sk\r\n";
-$headers .= "X-Mailer: ElvoRelay/1.0\r\n";
+$headers .= "From: ElvoControll <no-reply@elvosolar.sk>\r\n";
+$headers .= "Reply-To: no-reply@elvosolar.sk\r\n";
+$headers .= "X-Mailer: ElvoRelay/2.0\r\n";
 
+// alwaysdata: mail() funguje nativne (pres ich server)
 $ok = @mail($to, $subject_encoded, $html, $headers, '-f no-reply@elvosolar.sk');
 
 if ($ok) {
-    echo json_encode(['success' => true]);
+    echo json_encode(['success' => true, 'via' => 'alwaysdata-mail()']);
 } else {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'mail() failed on relay host']);
