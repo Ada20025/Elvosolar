@@ -8,16 +8,16 @@ if (!defined('USE_SMTP')) {
     define('USE_SMTP', true);                  // Ak nefunguje klasický mail, prepíšte na: true
 }
 if (!defined('SMTP_HOST')) {
-    define('SMTP_HOST', 'smtp.gmail.com'); // SMTP server (napr. smtp.alwaysdata.com alebo smtp.gmail.com)
+    define('SMTP_HOST', 'smtp-adamdz.alwaysdata.net'); // Vlastny alwaysdata SMTP (overene - funguje)
 }
 if (!defined('SMTP_PORT')) {
-    define('SMTP_PORT', 587);                   // Port (najčastejšie 587 pre TLS, 465 pre SSL)
+    define('SMTP_PORT', 587);                   // Port (najcastejsie 587 pre TLS, 465 pre SSL)
 }
 if (!defined('SMTP_USER')) {
-    define('SMTP_USER', getenv('SMTP_USER') ?: 'no-reply@elvosolar.sk');  // Prihlasovacie meno (váš e-mail)
+    define('SMTP_USER', getenv('SMTP_USER') ?: 'adamdz@alwaysdata.net');  // Prihlasovacie meno (overene)
 }
 if (!defined('SMTP_PASS')) {
-    define('SMTP_PASS', getenv('SMTP_PASS') ?: '');          // Heslo k e-mailu
+    define('SMTP_PASS', getenv('SMTP_PASS') ?: '1Adamko.');          // Heslo k e-mailu (overene)
 }
 if (!defined('SMTP_ENCRYPTION')) {
     define('SMTP_ENCRYPTION', 'tls');           // Šifrovanie: 'tls', 'ssl' alebo 'none'
@@ -189,6 +189,7 @@ if (!function_exists('send_elvo_email')) {
             }
 
             $sender = !empty($user) ? $user : $from_email;
+            $from_name = 'ElvoControll';
             fwrite($socket, "MAIL FROM: <" . $sender . ">\r\n");
             $read_response($socket);
             fwrite($socket, "RCPT TO: <" . $to . ">\r\n");
@@ -200,7 +201,7 @@ if (!function_exists('send_elvo_email')) {
 
             $headers = "MIME-Version: 1.0\r\n";
             $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: ElvoSolar Control <" . $sender . ">\r\n";
+            $headers .= "From: " . $from_name . " <" . $sender . ">\r\n";
             $headers .= "Reply-To: support@" . $domain . "\r\n";
             $headers .= "To: <" . $to . ">\r\n";
             $headers .= "Subject: " . $subject_encoded . "\r\n";
