@@ -2078,6 +2078,29 @@
             const isLogger = data.is_smartlogger === true;
             const deviceType = isLogger ? 'SmartLogger' : 'Striedač';
             const deviceIcon = isLogger ? 'server' : 'zap';
+
+            // === KOMUNIKÁCIA: či zariadenie reálne odpovedá (posledná telemetria do 15 min) ===
+            const commOk = data.comm_ok === true;
+            const lastSec = data.last_comm_sec;
+            let commText, commColor;
+            if (commOk) {
+                if (lastSec !== null && lastSec < 60) { commText = 'Odpovedá (teraz)'; }
+                else { commText = 'Odpovedá (' + Math.floor(lastSec / 60) + ' min dozadu)'; }
+                commColor = 'var(--accent-battery)';
+            } else if (lastSec !== null) {
+                commText = 'Nereaguje (' + Math.floor(lastSec / 60) + ' min)';
+                commColor = '#ef4444';
+            } else {
+                commText = 'Žiadna odpoveď';
+                commColor = '#ef4444';
+            }
+            // === STAV ZARIADENIA ===
+            let stateText, stateColor;
+            if (!commOk && !isOnline) { stateText = 'OFFLINE'; stateColor = '#ef4444'; }
+            else if (power > 50) { stateText = '⚡ Výroba'; stateColor = 'var(--accent-solar)'; }
+            else if (soc >= 95) { stateText = '🔋 Plná batéria'; stateColor = 'var(--accent-battery)'; }
+            else if (soc > 30) { stateText = 'Pohotovostný režim'; stateColor = 'var(--accent-grid)'; }
+            else { stateText = 'Nízky SOC'; stateColor = 'var(--accent-warn)'; }
             const statusBadge = document.getElementById('deviceStatusBadge');
             if (statusBadge) {
                 statusBadge.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
@@ -2110,6 +2133,8 @@
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono">${Math.round(power)} W</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(soc)}%</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono">${totalKwh.toFixed(1)} kWh</strong></div>
+                        <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);margin-top:6px;padding-top:6px;"><span style="color:var(--text-secondary);">Komunikácia:</span><strong class="font-mono" style="color:${commColor};font-size:10px;">${commText}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav:</span><strong class="font-mono" style="color:${stateColor};font-size:10px;">${stateText}</strong></div>
                     </div>
                 </div>
             `;

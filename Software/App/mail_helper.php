@@ -27,6 +27,32 @@ if (!defined('SMTP_ENCRYPTION')) {
 if (!function_exists('elvo_mail_relay')) {
     // Posle mail cez alwaysdata relay (mail() tam funguje). Vrati true/false.
     // Ak RELAY_URL nie je nastavene, vrati false (ziaden timeout).
+    // Posle mail cez Resend HTTPS API - FUNGUJE NA RAILWAY (SMTP blokuju, HTTPS nie).
+    // Nastav na Railway premennu RESEND_API_KEY (resend.com - 3000 mailov/mesiac zdarma).
+    // Volitelne RESEND_FROM (default: onboarding@resend.dev).
+    function elvo_mail_resend($to, $subject, $message_html) {
+        $api_key = getenv('RESEND_API_KEY');
+        if (!$api_key || trim($api_key) === '') return false;
+        $from = getenv('RESEND_FROM') ?: 'ElvoControll <onboarding@resend.dev>';
+        $payload = json_encode([
+            'from' => $from,
+            'to' => [$to],
+            'subject' => $subject,
+            'html' => $message_html,
+        ]);
+        $ctx = stream_context_create(['http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $api_key . "\r\n",
+            'content' => $payload,
+            'timeout' => 8,
+            'ignore_errors' => true,
+        ]]);
+        $resp = @file_get_contents('https://api.resend.com/emails', false, $ctx);
+        if ($resp === false) return false;
+        $ok = (strpos($resp, '"id"') !== false);
+        if (!$ok) error_log('[RESEND] Chyba: ' . substr($resp, 0, 200));
+        return $ok;
+    }
     function elvo_mail_relay($to, $subject, $message_html, $accent_color = '#007aff') {
         $relay = getenv('MAIL_RELAY_URL');
         if (!$relay || trim($relay) === '') return false;
@@ -113,17 +139,22 @@ if (!function_exists('send_elvo_email')) {
         // Zakódovanie predmetu správy do formátu RFC Base64 pre bezchybnú diakritiku a antispam
         $subject_encoded = "=?UTF-8?B?" . base64_encode($subject) . "?=";
 
-        // 0. REŽIM RELAY (posielanie cez alwaysdata - bez SSL certifikatov a nastavovania)
+        // 0a. RESEND (HTTPS API - jedina cesta ako posielat maily z Railway free planu)
+        if (elvo_mail_resend($to, $subject, $message_html)) {
+            return true;
+        }
+
+        // 0b. REŽIM RELAY (posielanie cez alwaysdata - bez SSL certifikatov a nastavovania)
         if (elvo_mail_relay($to, $subject, $message_html, $accent_color)) {
             return true;
         }
 
         // RYCHLY LOGIN: na Railway je SMTP blokovane (Free plan) - socket by visel 5 s pri kazdom prihlaseni.
-        // Kym nie je nastaveny MAIL_RELAY_URL, na Railway SMTP vobec neskusame (kod sa zobrazi na obrazovke).
+        // Bez RESEND_API_KEY / MAIL_RELAY_URL na Railway SMTP vobec neskusame (kod sa zobrazi na obrazovke).
         $is_railway = (strpos(($_SERVER['SERVER_NAME'] ?? ''), 'railway.app') !== false || getenv('RAILWAY_ENVIRONMENT') !== false);
         $relay_configured = (getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '');
         if ($is_railway && !$relay_configured) {
-            error_log("[MAIL] Railway bez relayu - SMTP preskocene (rychly login), kod zobrazeny na obrazovke");
+            error_log("[MAIL] Railway bez resend/relay - SMTP preskocene (rychly login), kod zobrazeny na obrazovke");
             return false;
         }
 
