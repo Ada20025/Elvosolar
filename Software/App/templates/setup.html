@@ -363,16 +363,19 @@
                         </div>
                     </div>
 
-                    <!-- SLIDE 5 -->
+                    <!-- SLIDE 5 — FINÁL: Súhrn + Ako systém funguje -->
                     <div class="slide space-y-4 px-1">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 5 z 5</span>
-                            <h2 class="text-xl font-extrabold text-white tracking-tight">Komunikácia so SmartLoggerom</h2>
-                            <p class="text-sm text-slate-400">Nastavte parametre pripojenia a otestujte spojenie.</p>
+                        <div class="text-center">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 5 z 5 — Finál</span>
+                            <h2 class="text-xl font-extrabold text-white tracking-tight">Overenie a spustenie</h2>
+                            <p class="text-xs text-slate-400">Otestujte spojenie so zariadením a aktivujte systém.</p>
                         </div>
-                        
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Komunikačné rozhranie striedača</span>
+
+                        <!-- SÚHRN NASTAVENIA -->
+                        <div id="setupSummary" class="p-4 bg-gradient-to-br from-slate-900 to-slate-950 rounded-2xl border border-cyan-900/40 space-y-2"></div>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Test komunikácie so zariadením</span>
                             <button onclick="toggleSmartLoggerGuide()" class="text-[10px] text-purple-400 hover:text-purple-300 font-bold cursor-pointer">ℹ️ Návod pre SmartLogger</button>
                         </div>
 
@@ -575,7 +578,59 @@
                                 <strong id="repActiveSlaves" class="text-yellow-400 font-bold">Vyhľadávam...</strong>
                             </div>
                         </div>
-                        <div class="button-group flex gap-2 pt-2">
+                        <!-- AKO BUDE SYSTÉM FUNGOVAŤ -->
+                        <div class="p-4 bg-gradient-to-br from-indigo-950/60 to-slate-950 rounded-2xl border border-indigo-900/40 space-y-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-xs">🔄</span>
+                                <span class="text-[11px] font-extrabold text-white uppercase tracking-wider">Ako bude systém fungovať</span>
+                            </div>
+
+                            <div class="space-y-2.5">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                    <div class="flex-1">
+                                        <div class="text-[11px] font-bold text-white">Meranie dát zo zariadenia</div>
+                                        <div class="text-[10px] text-slate-400 leading-relaxed">CM5 sa každých 15 minút automaticky pýta striedača (alebo SmartLoggera) na výkon, stav batérie a teplotu — cez Modbus TCP (LAN) alebo RS485 kábel.</div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-cyan-600 text-white text-[9px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                    <div class="flex-1">
+                                        <div class="text-[11px] font-bold text-white">Odosielanie do cloudu</div>
+                                        <div class="text-[10px] text-slate-400 leading-relaxed">Zmerané dáta CM5 posiela na server Railway, kde sa ukladajú do databázy. Vidíš ich v aplikácii v reálnom čase — na mobile aj počítači.</div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-purple-600 text-white text-[9px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                                    <div class="flex-1">
+                                        <div class="text-[11px] font-bold text-white">Chytrá optimalizácia OKTE</div>
+                                        <div class="text-[10px] text-slate-400 leading-relaxed">Systém porovnáva aktuálnu cenu elektriny (OKTE spot trh) so stavom batérie. Keď je energia lacná — nabíja. Keď drahá — šetrí a predáva. Nastaviteľné v Riadení.</div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-amber-600 text-white text-[9px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
+                                    <div class="flex-1">
+                                        <div class="text-[11px] font-bold text-white">Ovládanie a notifikácie</div>
+                                        <div class="text-[10px] text-slate-400 leading-relaxed">Z appky môžeš kedykoľvek prepínať režimy, relé a režim dovolenky. Pri poruche alebo odpojení zariadenia ti príde email aj notifikácia do appky.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-1 flex items-center justify-center gap-1.5 flex-wrap">
+                                <span class="px-2 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-[8px] font-mono text-slate-400">Zariadenie</span>
+                                <span class="text-slate-600 text-[9px]">→</span>
+                                <span class="px-2 py-1 rounded-lg bg-cyan-950/60 border border-cyan-900/60 text-[8px] font-mono text-cyan-400">CM5 box</span>
+                                <span class="text-slate-600 text-[9px]">→</span>
+                                <span class="px-2 py-1 rounded-lg bg-indigo-950/60 border border-indigo-900/60 text-[8px] font-mono text-indigo-400">Cloud</span>
+                                <span class="text-slate-600 text-[9px]">→</span>
+                                <span class="px-2 py-1 rounded-lg bg-emerald-950/60 border border-emerald-900/60 text-[8px] font-mono text-emerald-400">Appka</span>
+                            </div>
+                        </div>
+
+                        <div class="button-group flex gap-2 pt-1">
                             <button id="finishBtn" onclick="completeSetup()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wide transition shadow-lg uppercase tracking-wider cursor-pointer">🎉 DOKONČIŤ NASTAVENIE</button>
                         </div>
                     </div>
@@ -659,7 +714,7 @@
             if (txt) txt.innerText = "Pokračujete bez priameho pripojenia (config sa odošle cez cloud).";
             goToSlide(1);
         }
-        function initWizard() {
+        async function initWizard() {
             try {
                 // Pokus stiahnut devices z API, ak 404, ostava BACKUP_DEVICES bez chyby
                 try {
@@ -1043,14 +1098,61 @@
             document.getElementById('finishBtn').classList.remove('hidden');
         }
 
+        function fillSetupSummary() {
+            const el = document.getElementById('setupSummary');
+            if (!el) return;
+            const name = (document.getElementById('deviceName')?.value || '').trim() || 'Moje zariadenie';
+            const brandSel = document.getElementById('brandSelect');
+            const catSel = document.getElementById('categorySelect');
+            const modelSel = document.getElementById('modelSelect');
+            const brand = brandSel && dbDevices[brandSel.value] ? dbDevices[brandSel.value].znacka : '—';
+            const cat = catSel && catSel.selectedOptions[0] ? catSel.selectedOptions[0].text : '—';
+            const model = modelSel && modelSel.selectedOptions[0] ? modelSel.selectedOptions[0].text : '—';
+            const hasBattery = document.getElementById('wizardHasBattery')?.checked;
+            const isSl = (catSel?.value || '').includes('smartlogger') || (cat || '').toLowerCase().includes('smartlogger');
+            const conn = isSl ? 'Modbus TCP (LAN)' : 'RS485 kábel';
+            const mode = selectedMode === 'CLOUD' ? 'Cloud Sync' : 'Local Modbus';
+            const meter = document.getElementById('smartMeterToggle')?.checked;
+
+            const row = (label, value, color) =>
+                '<div class="flex justify-between items-center border-b border-slate-800/70 pb-1.5">' +
+                '<span class="text-[10px] text-slate-500 font-semibold">' + label + '</span>' +
+                '<strong class="text-[10px] font-bold ' + (color || 'text-white') + '">' + value + '</strong></div>';
+
+            el.innerHTML =
+                '<div class="flex items-center gap-2 pb-2 mb-1 border-b border-slate-800">' +
+                '<span class="w-7 h-7 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-sm">📦</span>' +
+                '<div><div class="text-xs font-extrabold text-white leading-tight">' + name + '</div>' +
+                '<div class="text-[9px] text-slate-500 font-mono">Súhrn nastavenia</div></div></div>' +
+                row('Značka', brand) +
+                row('Typ', cat) +
+                row('Model', model) +
+                row('Komunikácia', conn, 'text-cyan-400') +
+                row('Batéria', hasBattery ? 'Áno ✓' : 'Nie', hasBattery ? 'text-emerald-400' : 'text-slate-400') +
+                row('Smart Meter', meter ? 'Zapnutý ✓' : 'Vypnutý', meter ? 'text-emerald-400' : 'text-slate-400') +
+                row('Režim prevádzky', mode, 'text-purple-400');
+        }
+
         async function runLocalDiscoveryOnDevice() {
             const status = document.getElementById("scanStatus");
             const grid = document.getElementById("diagnosticGrid");
             grid.classList.remove("hidden");
             generateDiagnosticGrid();
 
-            status.innerText = "Kliknite na 🎉 DOKONČIŤ NASTAVENIE pre aktiváciu jednotky...";
-            status.className = "p-4 bg-slate-950/50 border border-cyan-800 rounded-xl text-xs text-center font-bold text-cyan-400";
+            // Animovany postup kontroly
+            const steps = [
+                ['🔍 Kontrola pripojenia CM5...', 'text-cyan-400'],
+                ['📡 Test komunikácie so zariadením...', 'text-purple-400'],
+                ['🔋 Overenie batérie a senzorov...', 'text-amber-400'],
+                ['✅ Všetko pripravené!', 'text-emerald-400']
+            ];
+            for (const [txt, cls] of steps) {
+                status.innerText = txt;
+                status.className = 'p-4 bg-slate-950/50 border border-slate-800 rounded-xl text-xs text-center font-bold ' + cls;
+                await new Promise(r => setTimeout(r, 700));
+            }
+            status.innerHTML = '✅ <span class="text-emerald-400">Systém je pripravený.</span> Kliknite na DOKONČIŤ NASTAVENIE.';
+            status.className = 'p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300';
             discoveredSlaveIds = [1];
             document.getElementById("finishBtn").classList.remove("hidden");
         }
@@ -1148,6 +1250,10 @@
                         }
                     }
                 }
+            }
+            // Súhrn nastavenia na finálnom slide-e (index 5)
+            if (slideIndex === 5) {
+                fillSetupSummary();
             }
             // Connection banner - zobraz na kazdom kroku ak je zariadenie pripojene
             const connBar = document.getElementById('connStatusBar');
