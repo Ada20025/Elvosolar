@@ -59,6 +59,8 @@ if (isset($pdo) && !$migrations_done) {
         if (!in_array('smartlogger_port', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN smartlogger_port INTEGER DEFAULT 502");
         if (!in_array('modbus_slave_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN modbus_slave_id INTEGER DEFAULT 205");
         if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
+        // Index pre rychlu telemetry historiu (inak full scan pri kazdom nacitani dashboardu)
+        try { $pdo->exec("CREATE INDEX idx_tel_dev_id ON telemetry (device_id, id)"); } catch (Exception $e2) { /* uz existuje */ }
     } catch (Exception $e) { /* ignore */ }
 
     // Auto-create cm5_config ak chýba a overenie stĺpca admin_command
@@ -386,8 +388,14 @@ function fetch_okte_prices($date_from = null, $date_to = null, $cache_bust = '')
     if (!$date_to) $date_to = date('Y-m-d');
     
     $cache_file = __DIR__ . '/cache_okte_' . $date_from . '_' . $date_to . '.json';
-    if (!$cache_bust && file_exists($cache_file) && (time() - filemtime($cache_file)) < 900) {
-        return json_decode(file_get_contents($cache_file), true);
+    // Cache platna ak: menej ako 15 min stara, ALEBO nova ako posledne zverejnenie OKTE (13:00 / zaciatok dna)
+    if (file_exists($cache_file)) {
+        $publish_boundary = strtotime(date('Y-m-d') . ' 13:00');
+        if (time() < $publish_boundary) $publish_boundary = strtotime(date('Y-m-d') . ' 00:00');
+        if ((time() - filemtime($cache_file)) < 900 || filemtime($cache_file) >= $publish_boundary) {
+            $cached = json_decode(file_get_contents($cache_file), true);
+            if ($cached && isset($cached['prices']) && count($cached['prices']) > 0) return $cached;
+        }
     }
     
     // REALNE OKTE ceny z isot.okte.sk API (zadne fake hardcoded hodnoty)
@@ -823,9 +831,11 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
     // Historia pre graf: poslednych 48 hodin (najstarsie -> najnovsie)
     $history = [];
     try {
-        $stmtH = $pdo->prepare("SELECT power_ac, battery_soc, temp, freq, timestamp FROM telemetry WHERE device_id = ? AND timestamp >= (NOW() - INTERVAL 48 HOUR) ORDER BY id ASC");
+        // Rychle: poslednych max 384 zaznamov (48h x 15min) cez index, potom revers v PHP
+        $stmtH = $pdo->prepare("SELECT power_ac, battery_soc, temp, timestamp FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 384");
         $stmtH->execute([$device_id]);
-        while ($h = $stmtH->fetch()) {
+        $histRaw = $stmtH->fetchAll();
+        foreach (array_reverse($histRaw) as $h) {
             $history[] = [
                 'power_ac' => (float)$h['power_ac'],
                 'battery_soc' => (float)$h['battery_soc'],
