@@ -579,10 +579,13 @@ elseif ($path === '/login') {
                         '<p style="margin:12px 0 0 0;font-size:12px;color:#94a3b8;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
                         '#6366f1');
                     }
-                    if (!$mail_sent) {
-                        // SMTP nie je nastavene alebo zlyhalo -> kod zobraz priamo (dev rezim)
+                    // BEZPECNOST: kod sa NIKDY nezobrazuje na obrazovke - ide len emailom.
+                    // (dočasne ladiť možno cez env premennú DEV_SHOW_CODE=1 na Railway)
+                    if (!$mail_sent && getenv('DEV_SHOW_CODE') === '1') {
                         $_SESSION['pending_login']['dev_code'] = $code;
-                        error_log("[LOGIN] SMTP neposlal mail - kod zobrazeny na obrazovke");
+                    }
+                    if (!$mail_sent) {
+                        error_log("[LOGIN] Mail sa nepodarilo odoslat na " . $email . " - skontroluj RESEND_API_KEY/MAIL_RELAY_URL na Railway");
                     }
                     header("Location: " . $base_path . "/verify-login");
                     exit;
@@ -671,7 +674,8 @@ elseif ($path === '/verify-login/resend' && $method === 'GET') {
                     '#6366f1');
             } catch (Exception $me) { $mail_sent2 = false; }
         }
-        if (!$mail_sent2) $_SESSION['pending_login']['dev_code'] = $code;
+        // kod sa nezobrazuje na obrazovke (bezpecnost) - len mail
+        if (!$mail_sent2 && getenv('DEV_SHOW_CODE') === '1') $_SESSION['pending_login']['dev_code'] = $code;
     }
     header("Location: " . $base_path . "/verify-login");
     exit;

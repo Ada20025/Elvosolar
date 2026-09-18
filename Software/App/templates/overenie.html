@@ -110,9 +110,9 @@ $base_path = $base_path ?? '';
         <div class="flash <?php echo $fcat === 'error' ? 'flash-error' : 'flash-success'; ?>" style="position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:50;width:calc(100% - 32px);max-width:420px;text-align:center;"><?php echo htmlspecialchars($f['message']); ?></div>
     <?php endforeach; endif; ?>
 
-    <?php if (!empty($dev_code)): ?>
+    <?php if (!empty($dev_code) && getenv('DEV_SHOW_CODE') === '1'): ?>
     <div class="flash flash-success" style="position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:50;width:calc(100% - 32px);max-width:420px;text-align:center;">
-        <strong>DEV REŽIM (SMTP nenastavené):</strong> Tvoj kód je
+        <strong>LADÍCÍ REŽIM:</strong> Tvoj kód je
         <span style="font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:6px;font-weight:800;color:#34d399;display:block;margin-top:6px;"><?php echo htmlspecialchars($dev_code); ?></span>
     </div>
     <?php endif; ?>
@@ -125,11 +125,8 @@ $base_path = $base_path ?? '';
                 </svg>
             </div>
             <h1>Overenie zariadenia</h1>
-            <?php if (empty($dev_code)): ?>
             <p class="sub">Toto zariadenie sa prihlasuje <strong>prvýkrát</strong>.<br>Poslali sme 6-miestny overovací kód na<br><span class="mask"><?php echo htmlspecialchars($mask_email ?? 'váš e-mail'); ?></span></p>
-            <?php else: ?>
-            <p class="sub">Toto zariadenie sa prihlasuje <strong>prvýkrát</strong>.<br><strong style="color:#fbbf24;">Emailová služba nie je zatiaľ pripojená.</strong><br>Tvoj overovací kód je zobrazený hore.</p>
-            <?php endif; ?>
+            <p style="font-size:11px;color:#64748b;margin-top:10px;">Nenašiel si mail? Skontroluj aj priečinok <strong>SPAM</strong>.</p>
 
             <form method="POST" action="<?php echo $base_path; ?>/verify-login" id="verifyForm" autocomplete="one-time-code">
                 <div class="code-row" id="codeRow">
