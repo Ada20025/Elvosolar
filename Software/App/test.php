@@ -43,3 +43,24 @@ echo "AUTH: " . trim($auth) . "\n";
 fwrite($socket, "QUIT\r\n");
 fclose($socket);
 echo "\n(cakaj: 235 = auth OK, 535 = zle heslo)\n";
+
+echo "\n=== DB DIAG ===\n";
+echo "MYSQLHOST env: " . (getenv('MYSQLHOST') ?: '(nie)') . "\n";
+echo "DB_HOST env: " . (getenv('DB_HOST') ?: '(nie)') . "\n";
+echo "DB pouzivany: " . (defined('DB_HOST') ? DB_HOST : '(?)') . "\n";
+$t0 = microtime(true);
+try {
+    $pdo = new PDO("mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS, [PDO::ATTR_TIMEOUT => 5, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $t1 = microtime(true);
+    echo "CONNECT OK za " . round(($t1 - $t0) * 1000) . " ms\n";
+    $t2 = microtime(true);
+    $pdo->query("SELECT 1")->fetch();
+    $t3 = microtime(true);
+    echo "SELECT 1 za " . round(($t3 - $t2) * 1000) . " ms\n";
+    $t4 = microtime(true);
+    $pdo->query("SELECT done_date FROM migrations_state WHERE id = 1")->fetch();
+    $t5 = microtime(true);
+    echo "migration check za " . round(($t5 - $t4) * 1000) . " ms\n";
+} catch (Exception $e) {
+    echo "DB FAIL: " . $e->getMessage() . "\n";
+}
