@@ -929,6 +929,52 @@
             background: rgba(245, 158, 11, 0.05);
         }
 
+        /* === Krajšie režimy prevádzky (Riadenie) === */
+        .mode-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 18px 10px 14px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .mode-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.35);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .mode-card .mode-card-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .mode-card .mode-card-sub {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.4;
+        }
+        .mode-card.active {
+            background: linear-gradient(160deg, rgba(16,185,129,0.1), rgba(99,102,241,0.08));
+            border-color: var(--accent-battery);
+            box-shadow: 0 6px 24px rgba(16,185,129,0.15);
+        }
+        .mode-card.active .mode-card-title { color: var(--accent-battery); }
+        body.light-mode .mode-card { background: rgba(0,0,0,0.02); }
+        body.light-mode .mode-card.active {
+            background: linear-gradient(160deg, rgba(16,185,129,0.1), rgba(59,130,246,0.08));
+        }
+        @media (max-width: 640px) {
+            .mode-card { padding: 12px 6px 10px; gap: 4px; }
+            .mode-card .mode-card-title { font-size: 11px; }
+            .mode-card .mode-card-sub { font-size: 8px; }
+        }
+
         /* Device status indicator */
         @keyframes pulse-dot { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(1.3); } }
         .device-status-online { border-color:#10b981 !important; box-shadow:0 0 8px rgba(16,185,129,0.3) !important; }
@@ -1370,26 +1416,32 @@
         <section id="sectionMeter" class="view-section">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
 
-            <!-- LEFT: Zap/Vyp/Smart AI -->
+            <!-- LEFT: Zap/Vyp/Smart AI - 3 velke karty -->
             <div class="glass-card" style="margin-bottom:0;">
                 <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="cpu"></i> Regulačné Algoritmy & Výber Režimu</span>
+                    <span class="card-title-styled"><i data-lucide="cpu"></i> Režim prevádzky</span>
                     <button onclick="openGearModal('min')" style="background:none;border:1px solid var(--border-card);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);transition:all 0.2s;" onmouseenter="this.style.color='var(--accent-solar)';this.style.borderColor='var(--accent-solar)'" onmouseleave="this.style.color='var(--text-secondary)';this.style.borderColor='var(--border-card)'"><i data-lucide="settings" style="width:18px;height:18px;"></i></button>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:10px;" id="meterModeGrid">
-                    <button onclick="setMeterMode('UNLIMITED')" id="btnMeterUnlimited" class="control-btn" style="width:100%;">
-                        <i data-lucide="zap"></i> Zap
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;" id="meterModeGrid">
+                    <button onclick="setMeterMode('UNLIMITED')" id="btnMeterUnlimited" class="mode-card" data-mode="UNLIMITED">
+                        <i data-lucide="zap" style="width:22px;height:22px;color:var(--accent-solar);"></i>
+                        <span class="mode-card-title">Zap</span>
+                        <span class="mode-card-sub">Max výkon bez obmedzenia</span>
                     </button>
-                    <button onclick="setMeterMode('PLUS')" id="btnMeterPlus" class="control-btn" style="width:100%;">
-                        <i data-lucide="power-off"></i> Vyp
+                    <button onclick="setMeterMode('PLUS')" id="btnMeterPlus" class="mode-card" data-mode="PLUS">
+                        <i data-lucide="power-off" style="width:22px;height:22px;color:#ef4444;"></i>
+                        <span class="mode-card-title">Vyp</span>
+                        <span class="mode-card-sub">Zariadenie zastavené</span>
                     </button>
-                    <button onclick="setMeterMode('SMART')" id="btnMeterSmart" class="control-btn active" style="width:100%;">
-                        <i data-lucide="brain"></i> Smart AI
+                    <button onclick="setMeterMode('SMART')" id="btnMeterSmart" class="mode-card" data-mode="SMART">
+                        <i data-lucide="brain" style="width:22px;height:22px;color:var(--accent-battery);"></i>
+                        <span class="mode-card-title">Smart AI</span>
+                        <span class="mode-card-sub">Automatická optimalizácia</span>
                     </button>
                 </div>
 
                 <div id="meterModeDesc" style="padding:14px 18px;border-radius:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:16px;">
-                    Smart AI: Výroba a akumulácia sa riadi autonómne na základe kombinácie predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
+                    <strong style="color:var(--accent-battery);">Smart AI:</strong> Výroba a akumulácia sa riadia autonómne na základe predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
                 </div>
             </div>
 
@@ -2101,21 +2153,25 @@
             else if (soc >= 95) { stateText = '🔋 Plná batéria'; stateColor = 'var(--accent-battery)'; }
             else if (soc > 30) { stateText = 'Pohotovostný režim'; stateColor = 'var(--accent-grid)'; }
             else { stateText = 'Nízky SOC'; stateColor = 'var(--accent-warn)'; }
+            // Cela karta cervena ked zariadenie dlhsie neodpoveda
+            const cardAlert = (!commOk);
             const statusBadge = document.getElementById('deviceStatusBadge');
             if (statusBadge) {
-                statusBadge.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
-                statusBadge.style.background = isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
-                statusBadge.style.color = isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)';
+                statusBadge.textContent = commOk ? 'ONLINE' : 'NO COMM';
+                statusBadge.style.background = commOk ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.18)';
+                statusBadge.style.color = commOk ? 'var(--accent-battery)' : '#ef4444';
             }
+            // Hlavicka karty (ZARIADENIA titulok) tiez cervena ked no-comm
+            const busHdr = busStatus ? busStatus.closest('.bus-header') : null;
             const totalKwh = data.total_kwh || 0;
 
             if (titleEl) titleEl.textContent = 'Zariadenia';
 
             container.innerHTML = `
-                <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;${cardAlert ? 'border:1px solid rgba(239,68,68,0.45);background:rgba(239,68,68,0.06);padding:8px;box-shadow:0 0 24px rgba(239,68,68,0.08);' : ''}">
                     <div class="inverter-status-row" onclick="toggleInverterDetails('invD1', 'invC1')">
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <span class="pulse-dot ${isOnline ? 'online' : 'offline'}"></span>
+                            <span class="pulse-dot ${commOk ? 'online' : 'offline'}"></span>
                             <div style="display:flex;flex-direction:column;">
                                 <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceName}</span>
                                 <span style="font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
@@ -2125,7 +2181,7 @@
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
-                            <span class="font-mono" style="font-size:10px;font-weight:700;color:${isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)'};">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                            <span class="font-mono" style="font-size:10px;font-weight:700;color:${commOk ? 'var(--accent-battery)' : '#ef4444'};">${commOk ? 'ONLINE' : 'NO COMM'}</span>
                             <i data-lucide="chevron-down" id="invC1" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
                         </div>
                     </div>
@@ -2139,8 +2195,11 @@
                 </div>
             `;
 
-            if (busStatus) busStatus.textContent = isOnline ? 'RS485 OK' : 'OFFLINE';
-            if (busStatus) busStatus.style.color = isOnline ? 'var(--accent-battery)' : 'var(--accent-warn)';
+            if (busStatus) {
+                const connTcp = (data.connection_type || '').indexOf('tcp') !== -1;
+                busStatus.textContent = commOk ? (connTcp ? 'MODBUS TCP OK' : 'RS485 OK') : 'NO COMM';
+                busStatus.style.color = commOk ? 'var(--accent-battery)' : '#ef4444';
+            }
             if (busLatency) busLatency.textContent = isOnline ? '12 ms' : '–';
             if (dailyProd) dailyProd.textContent = isOnline ? (totalKwh.toFixed(1) + ' kWh') : '–';
             // Skry citacky (Latencia/Vyroba) ked je zariadenie offline
@@ -2355,17 +2414,17 @@
         }
 
         async function setMeterMode(mode) {
-            document.querySelectorAll('#meterModeGrid .control-btn').forEach(btn => btn.classList.remove('active'));
-            const activeBtnId = {
-                UNLIMITED: 'btnMeterUnlimited',
-                SELF_CONSUMPTION: 'btnMeterSelf',
-                ZERO: 'btnMeterZero',
-                PLUS: 'btnMeterPlus',
-                SMART: 'btnMeterSmart',
-                CUSTOM: 'btnMeterCustom'
-            }[mode];
-            const btn = document.getElementById(activeBtnId);
+            document.querySelectorAll('#meterModeGrid .mode-card').forEach(btn => btn.classList.remove('active'));
+            const btn = document.querySelector('#meterModeGrid .mode-card[data-mode="' + mode + '"]');
             if (btn) btn.classList.add('active');
+            // Popis rezimu
+            const descs = {
+                UNLIMITED: '<strong style="color:var(--accent-solar);">Zap:</strong> Zariadenie beží na maximálny výkon bez obmedzenia. OKTE optimalizácia je vypnutá.',
+                PLUS: '<strong style="color:#ef4444;">Vyp:</strong> Zariadenie je zastavené. Výroba aj akumulácia sú pozastavené.',
+                SMART: '<strong style="color:var(--accent-battery);">Smart AI:</strong> Výroba a akumulácia sa riadia autonómne na základe predpovede počasia, spotreby a cien na spotovom trhu (OKTE).'
+            };
+            const descEl = document.getElementById('meterModeDesc');
+            if (descEl && descs[mode]) descEl.innerHTML = descs[mode];
 
             // Zap/Vyp blokuje OKTE modely
             const modelsSection = document.querySelector('.ai-model-list');
