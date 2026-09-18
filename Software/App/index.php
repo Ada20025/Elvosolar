@@ -22,13 +22,17 @@ if (!preg_match('#\.(png|jpg|svg|ico|css|js|json|woff2?)$#', $request_uri ?? '')
     header('Expires: 0');
 }
 
-// === MIGRATION CACHE: tazke schema migracie len 1x denne (rychlost!) ===
+// === MIGRATION CACHE: suborovy flag (0 DB dotazov pri kazdom requeste - rychlost!) ===
 $migrations_done = false;
-if (isset($pdo)) {
+$mig_flag = sys_get_temp_dir() . '/elvo_migrations_' . date('Y-m-d') . '.flag';
+if (file_exists($mig_flag)) {
+    $migrations_done = true;
+} else if (isset($pdo)) {
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS migrations_state (id INTEGER PRIMARY KEY AUTO_INCREMENT, done_date VARCHAR(10) DEFAULT NULL)");
         $mrow = $pdo->query("SELECT done_date FROM migrations_state WHERE id = 1")->fetch();
         $migrations_done = ($mrow && ($mrow['done_date'] ?? '') === date('Y-m-d'));
+        if ($migrations_done) @file_put_contents($mig_flag, '1');
     } catch (Exception $e) { $migrations_done = false; }
 }
 

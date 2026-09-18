@@ -10,4 +10,4 @@ COPY Software/App/ /app/
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "php -d display_errors=1 -d error_reporting=E_ALL -S 0.0.0.0:${PORT:-8080} index.php"]
+CMD ["sh", "-c", "PHP_CLI_SERVER_WORKERS=8 php -d display_errors=1 -d error_reporting=E_ALL -S 0.0.0.0:${PORT:-8080} index.php"]
