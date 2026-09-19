@@ -2213,10 +2213,10 @@
                             <div style="display:flex;align-items:center;gap:10px;">
                                 <span class="pulse-dot ${cOk ? 'online' : 'offline'}"></span>
                                 <div style="display:flex;flex-direction:column;">
-                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${cName}</span>
+                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${cType}${cBrand ? ' · ' + cBrand : ''}</span>
                                     <span style="font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
                                         <i data-lucide="${cIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
-                                        ${cType}${cBrand ? ' · ' + cBrand : ''} · ID ${cSid}
+                                        ${cName} · ID ${cSid}
                                     </span>
                                 </div>
                             </div>
@@ -2250,10 +2250,10 @@
                         <div style="display:flex;align-items:center;gap:10px;">
                             <span class="pulse-dot ${commOk ? 'online' : 'offline'}"></span>
                             <div style="display:flex;flex-direction:column;">
-                                <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceName}</span>
-                                <span style="font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+                                <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceType}${brandName ? ' · ' + brandName : ''}</span>
+                                <span style="font-size:9px;color:${commOk ? 'var(--text-muted)' : '#f87171'};display:flex;align-items:center;gap:4px;">
                                     <i data-lucide="${deviceIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
-                                    ${deviceType} · ${brandName || 'CM5'}
+                                    ${commOk ? stateText : 'Nereaguje'} · ${deviceName}
                                 </span>
                             </div>
                         </div>
@@ -3528,9 +3528,50 @@
                 datasets.push({ label: 'Žiadne dáta', data: [0], borderColor: '#6b7280', borderWidth: 1 });
             }
 
+            // Plugin: zvisla ciara TERAZ - rozdeluje merane (vlavo) od ceny zajtra (vpravo)
+            const elvoNowLinePlugin = {
+                id: 'elvoNowLine',
+                afterDatasetsDraw(chart) {
+                    const labels = chart.data.labels;
+                    if (!labels || !labels.length) return;
+                    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+                    let idx = -1, best = Infinity;
+                    labels.forEach((l, i) => {
+                        if (typeof l === 'string' && l.indexOf(':') !== -1) {
+                            const p = l.split(':');
+                            const d = Math.abs((parseInt(p[0]) * 60 + parseInt(p[1])) - nowMin);
+                            if (d < best) { best = d; idx = i; }
+                        }
+                    });
+                    if (idx < 0) return;
+                    const x = chart.scales.x.getPixelForValue(idx);
+                    const area = chart.chartArea;
+                    if (!area) return;
+                    const ctx2 = chart.ctx;
+                    ctx2.save();
+                    ctx2.beginPath();
+                    ctx2.moveTo(x, area.top); ctx2.lineTo(x, area.bottom);
+                    ctx2.setLineDash([6, 4]);
+                    ctx2.lineWidth = 1.5;
+                    ctx2.strokeStyle = '#34d399';
+                    ctx2.stroke();
+                    ctx2.setLineDash([]);
+                    const text = 'TERAZ';
+                    ctx2.font = '800 9px "JetBrains Mono"';
+                    const tw = ctx2.measureText(text).width + 10;
+                    ctx2.fillStyle = 'rgba(52,211,153,0.95)';
+                    ctx2.fillRect(x - tw / 2, area.top + 2, tw, 13);
+                    ctx2.fillStyle = '#022c22';
+                    ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
+                    ctx2.fillText(text, x, area.top + 9);
+                    ctx2.restore();
+                }
+            };
+
             elvoChart = new Chart(ctx, {
                 type: 'line',
                 data: { labels: labels, datasets: datasets },
+                plugins: [elvoNowLinePlugin],
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     animation: false,
