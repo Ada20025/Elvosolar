@@ -1317,7 +1317,7 @@
                         </div>
 
                         <div class="metric-card" style="--line-color: var(--accent-grid);">
-                            <span class="metric-label-styled"><i data-lucide="activity" style="width:12px;height:12px;color:var(--accent-grid);"></i> Odber zo Siete <i data-lucide="info" style="width:10px;height:10px;color:var(--text-muted);cursor:help;" title="Bez Smart Meteru sa odber odhaduje z bilancie výroby a spotreby. Pre presný údaj pripoj Smart Meter."></i></span>
+                            <span class="metric-label-styled"><i data-lucide="activity" style="width:12px;height:12px;color:var(--accent-grid);"></i> Odber zo Siete <i data-lucide="info" style="width:10px;height:10px;color:var(--text-muted);cursor:help;" title="Odber zo siete. Pre presný údaj pripoj Smart Meter."></i></span>
                             <span class="metric-value-styled text-grid" id="dashConsumption">–</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashConsumptionBar" class="metric-bar-fill"></div>
@@ -2299,7 +2299,7 @@
                                 <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceType}${brandName ? ' · ' + brandName : ''}</span>
                                 <span style="font-size:9px;color:${commOk ? 'var(--text-muted)' : '#f87171'};display:flex;align-items:center;gap:4px;">
                                     <i data-lucide="${deviceIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
-                                    ${commOk ? stateText : 'Nereaguje'} · ${deviceName}
+                                    ${commOk ? stateText : 'Nereaguje'}
                                 </span>
                             </div>
                         </div>
@@ -2558,13 +2558,12 @@
                 const elSaved = document.getElementById('dashTotalSaved');
                 if (elPower) elPower.innerText = `${Math.round(data.total_live_power || 0)} W`;
                 if (elSoc) elSoc.innerText = `${Math.round(data.avg_live_soc || 0)}%`;
-                // Odber zo siete: 0 a ziaden smart meter = odhad (nie presne meranie) -> ukaz odhad, inak –
+                // Odber zo siete: presne udaje z meteru/bilancie - bez odhadov
                 if (elCons) {
                     const cons = Math.round(data.consumption || 0);
                     const hasMeter = data.has_smart_meter === true;
-                    if (cons > 0) { elCons.innerText = `~${cons} W`; }
-                    else if (hasMeter) { elCons.innerText = '0 W'; }
-                    else { elCons.innerText = '~800 W (odhad)'; }
+                    if (hasMeter || cons > 0) { elCons.innerText = `${cons} W`; }
+                    else { elCons.innerText = '–'; }
                 }
                 if (elSaved) elSaved.innerText = `${(parseFloat(data.total_saved_eur) || 0).toFixed(2)} €`;
 
