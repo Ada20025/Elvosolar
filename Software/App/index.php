@@ -1066,31 +1066,67 @@ elseif ($path === '/api/okte/prices' && $method === 'GET') {
 elseif ($path === '/api/cm5/poll' && $method === 'POST') {
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');
+    if ($serial === '') { send_json(['status' => 'no_pending']); }
     
+    // BEZPECNOST: poll berie IBA prikazy pre KONKRETNY serial - ziadny CM5-DEFAULT fallback.
+    // Nesetupnuty box tak nedostane ziadny stary/zaseknuty prikaz urceny inemu zariadeniu.
+    $serials = [$serial];
     try {
-        $stmt = $pdo->prepare("SELECT id, admin_command, config_json FROM cm5_config WHERE (serial_number = ? OR serial_number = 'CM5-DEFAULT') AND status = 'pending' ORDER BY id DESC LIMIT 1");
+        $sStmt = $pdo->prepare("SELECT serial_number FROM devices WHERE serial_number = ? LIMIT 1");
+        $sStmt->execute([$serial]);
+        if (!$sStmt->fetch()) {
+            // Neznamy serial (nesetupnuty box) - ziadne prikazy
+            send_json(['status' => 'no_pending']);
+        }
+    } catch (Exception $eS) { /* tabulka neexistuje -> pokracuj (cloud sync prvy krat registruje) */ }
+    
+    // 1) Stary kanal: cm5_config PENDING pre tento serial (bakward kompatibilita)
+    try {
+        $stmt = $pdo->prepare("SELECT id, admin_command, config_json FROM cm5_config WHERE serial_number = ? AND status = 'pending' ORDER BY id DESC LIMIT 1");
         $stmt->execute([$serial]);
         $row = $stmt->fetch();
-        
         if ($row) {
             try {
                 $pdo->prepare("UPDATE cm5_config SET status = 'sent' WHERE id = ?")->execute([$row['id']]);
-            } catch (Exception $e) {
-                // Status update failed - ignore (data truncated)
-            }
+            } catch (Exception $e) { /* ignore */ }
             send_json([
                 'status' => 'success',
                 'command' => $row['admin_command'],
                 'config' => json_decode($row['config_json'] ?? '{}', true),
                 'id' => $row['id']
             ]);
-        } else {
-            send_json(['status' => 'no_pending']);
         }
-    } catch (Exception $e) {
-        // cm5_config table might not exist yet or has schema issues
-        send_json(['status' => 'no_pending']);
-    }
+    } catch (Exception $e) { /* tabulka neexistuje - ignore */ }
+    
+    // 2) Novy kanal: admin_command ulozeny priamo v devices podla serial_number
+    try {
+        $dStmt = $pdo->prepare("SELECT id, admin_command FROM devices WHERE serial_number = ? AND admin_command IS NOT NULL AND admin_command != '' ORDER BY id DESC LIMIT 1");
+        $dStmt->execute([$serial]);
+        $dRow = $dStmt->fetch();
+        if ($dRow) {
+            $cmd = trim((string)$dRow['admin_command']);
+            $action = $cmd;
+            $cfg = ['action' => $cmd];
+            // JSON prikaz {"action":"..."} -> parsuj
+            if ($cmd !== '' && ($cmd[0] === '{')) {
+                $parsed = json_decode($cmd, true);
+                if (is_array($parsed) && !empty($parsed['action'])) {
+                    $action = $parsed['action'];
+                    $cfg = $parsed;
+                }
+            }
+            // Vycisti prikaz (jednorazovy)
+            $pdo->prepare("UPDATE devices SET admin_command = NULL WHERE id = ?")->execute([$dRow['id']]);
+            send_json([
+                'status' => 'success',
+                'command' => $action,
+                'config' => $cfg,
+                'id' => intval($dRow['id'])
+            ]);
+        }
+    } catch (Exception $eD) { /* ignore */ }
+    
+    send_json(['status' => 'no_pending']);
 }
 
 // --- CM5 REPORT IP (keepalive) ---
@@ -1116,11 +1152,11 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     // Najdi zariadenie podla serial alebo prve
     $device_id = 0;
     try {
+        // BEZPECNOST: telemetria patri IBA znamemu serialu (ziadny fallback na prve zariadenie)
         $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
         $stmt->execute([$serial]);
         $row = $stmt->fetch();
         if ($row) { $device_id = intval($row['id']); }
-        else { $stmt2 = $pdo->query("SELECT id FROM devices ORDER BY id ASC LIMIT 1"); $r2 = $stmt2->fetch(); if ($r2) $device_id = intval($r2['id']); }
     } catch (Exception $e) { /* ignore */ }
     
     if ($device_id) {
@@ -1755,9 +1791,8 @@ elseif ($path === '/api/system/save-smartlogger' && $method === 'POST') {
     $mode = trim($data['mode'] ?? 'tcp');
 
     try {
-        $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES ('CM5-DEFAULT', ?, 'pending') ON DUPLICATE KEY UPDATE config_json = ?, status = 'pending'");
-        $cfg = json_encode(['smartlogger_ip' => $ip, 'smartlogger_port' => $port, 'smartlogger_slave_id' => $slave_id, 'connection_mode' => $mode]);
-        $stmt->execute([$cfg, $cfg]);
+        // cm5_config zrusena - SmartLogger config sa nastavuje priamo na CM5 (/api/system/save-smartlogger na boxe)
+        // Cloud ulozisko nie je potrebne (setup ide kablom).
     } catch (Exception $e) { /* ignore */ }
 
     send_json(['status' => 'success', 'message' => 'SmartLogger konfigurácia uložená.']);
