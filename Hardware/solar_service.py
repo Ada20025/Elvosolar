@@ -601,6 +601,31 @@ class SolarBackgroundService:
 
     def push_to_cloud(self, payload):
         try:
+            # Zoznam vsetkych pripojenych zariadeni (striedace/SmartLoggery), ktore CM5 realne meria
+            try:
+                if isinstance(payload, dict):
+                    name_rows = db_execute("SELECT slave_id, name FROM devices") or []
+                    name_map = {}
+                    for r in name_rows:
+                        try:
+                            name_map[r['slave_id']] = r['name'] or ''
+                        except Exception:
+                            continue
+                    conn_devs = []
+                    for sid, d in list(self.live_data.items()):
+                        try:
+                            conn_devs.append({
+                                'slave_id': sid,
+                                'name': name_map.get(sid) or f"Striedač {sid}",
+                                'power_ac': float(d.get('power_ac', 0) or 0),
+                                'battery_soc': float(d.get('battery_soc', 0) or 0),
+                                'status_msg': str(d.get('status_msg', ''))[:120],
+                            })
+                        except Exception:
+                            continue
+                    payload['connected_devices'] = conn_devs
+            except Exception:
+                pass
             if self.cloud_queue.full():
                 try:
                     self.cloud_queue.get_nowait()

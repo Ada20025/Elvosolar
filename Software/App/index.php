@@ -883,6 +883,13 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'last_comm_sec' => $latest ? max(0, time() - strtotime($latest['timestamp'])) : null,
         // Typ zariadenia - rovnaka logika ako v dropdowne (model_name/sub_type),aby boli konzistentne
         'is_smartlogger' => (strpos(strtolower($device['model_name'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($device['sub_type'] ?? ''), 'smartlogger') !== false),
+        // Zoznam vsetkych pripojenych zariadeni (striedace/SmartLoggery) nahlásené CM5
+        'connected_devices' => (function() use ($device) {
+            $raw = $device['connected_devices'] ?? null;
+            if (!$raw) return [];
+            $a = json_decode($raw, true);
+            return is_array($a) ? $a : [];
+        })(),
     ]);
 }
 
@@ -1022,6 +1029,14 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             $updVals[] = $device_id;
             $stmt2 = $pdo->prepare("UPDATE devices SET " . implode(', ', $updParts) . " WHERE id = ?");
             $stmt2->execute($updVals);
+            // Zoznam pripojenych zariadeni (striedace/SmartLoggery nahlásené CM5)
+            try {
+                if (!in_array('connected_devices', $dcols ?? [])) $pdo->exec("ALTER TABLE devices ADD COLUMN connected_devices TEXT");
+                if (isset($data['connected_devices']) && is_array($data['connected_devices'])) {
+                    $stmtC = $pdo->prepare("UPDATE devices SET connected_devices = ? WHERE id = ?");
+                    $stmtC->execute([json_encode(array_slice($data['connected_devices'], 0, 64)), $device_id]);
+                }
+            } catch (Exception $eC) { /* ignore */ }
             send_json(['status' => 'success', 'device_id' => $device_id]);
         } catch (Exception $e) {
             send_json(['status' => 'error', 'message' => $e->getMessage()]);

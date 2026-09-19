@@ -2174,9 +2174,76 @@
             const busHdr = busStatus ? busStatus.closest('.bus-header') : null;
             const totalKwh = data.total_kwh || 0;
 
-            if (titleEl) titleEl.textContent = 'Zariadenia';
+            // === ZOZNAM PRIPOJENYCH ZARIADENI (striedace/SmartLoggery nahlásené CM5) ===
+            const connected = Array.isArray(data.connected_devices) ? data.connected_devices : [];
+            const isDevLogger = (cd) => cd && (cd.is_smartlogger === true || String(cd.type || '').toLowerCase().indexOf('logger') !== -1);
+            const perDevOk = (cd) => {
+                if (!cd) return false;
+                const sm = String(cd.status_msg || '').toLowerCase();
+                if (sm.indexOf('neodpoved') !== -1 || sm.indexOf('chyba') !== -1 || sm.indexOf('nedostup') !== -1 || sm.indexOf('interrupt') !== -1) return false;
+                return true;
+            };
+            // Titulok podla typu pripojenych zariadeni: Striedače / SmartLogger / oboje
+            if (titleEl) {
+                if (connected.length === 0) {
+                    titleEl.textContent = 'Zariadenia';
+                } else {
+                    const nL = connected.filter(isDevLogger).length;
+                    const nI = connected.length - nL;
+                    let t = (nL > 0 && nI === 0) ? 'SmartLogger' : (nL === 0 ? 'Striedače' : 'Striedače + SmartLogger');
+                    if (connected.length > 1) t += ' (' + connected.length + ')';
+                    titleEl.textContent = t;
+                }
+            }
 
-            container.innerHTML = `
+            let rowsHtml = '';
+            if (connected.length > 0) {
+                connected.forEach((cd, i) => {
+                    const cOk = perDevOk(cd);
+                    const cName = cd.name || ('Striedač ' + (cd.slave_id !== undefined && cd.slave_id !== null ? cd.slave_id : (i + 1)));
+                    const cIsLogger = isDevLogger(cd);
+                    const cType = cIsLogger ? 'SmartLogger' : 'Striedač';
+                    const cIcon = cIsLogger ? 'server' : 'zap';
+                    const cBrand = cd.brand || '';
+                    const cSid = (cd.slave_id !== undefined && cd.slave_id !== null) ? cd.slave_id : '?';
+                    rowsHtml += `
+                    <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;margin-bottom:8px;${cOk ? '' : 'border:1px solid rgba(239,68,68,0.45);background:rgba(239,68,68,0.06);padding:8px;box-shadow:0 0 20px rgba(239,68,68,0.07);'}">
+                        <div class="inverter-status-row" onclick="toggleInverterDetails('invD${i}', 'invC${i}')">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span class="pulse-dot ${cOk ? 'online' : 'offline'}"></span>
+                                <div style="display:flex;flex-direction:column;">
+                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${cName}</span>
+                                    <span style="font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+                                        <i data-lucide="${cIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
+                                        ${cType}${cBrand ? ' · ' + cBrand : ''} · ID ${cSid}
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span class="font-mono" style="font-size:10px;font-weight:700;color:var(--text-primary);">${Math.round(cd.power_ac || 0)} W</span>
+                                <span class="font-mono" style="font-size:10px;font-weight:700;color:var(--accent-battery);">${Math.round(cd.battery_soc || 0)}%</span>
+                                <span class="font-mono" style="font-size:9px;font-weight:700;color:${cOk ? 'var(--accent-battery)' : '#ef4444'};">${cOk ? 'OK' : 'NO COMM'}</span>
+                                <i data-lucide="chevron-down" id="invC${i}" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
+                            </div>
+                        </div>
+                        <div id="invD${i}" class="inverter-details-box">
+                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono">${Math.round(cd.power_ac || 0)} W</strong></div>
+                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(cd.battery_soc || 0)}%</strong></div>
+                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Slave ID:</span><strong class="font-mono">${cSid}</strong></div>
+                            <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);margin-top:6px;padding-top:6px;"><span style="color:var(--text-secondary);">Komunikácia:</span><strong class="font-mono" style="color:${cOk ? 'var(--accent-battery)' : '#ef4444'};font-size:10px;">${cOk ? 'Odpovedá' : 'Nereaguje'}</strong></div>
+                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav:</span><strong class="font-mono" style="color:var(--text-secondary);font-size:10px;">${cd.status_msg || '–'}</strong></div>
+                        </div>
+                    </div>`;
+                });
+                // Agregovany badge: ONLINE ak odpoveda aspon jedno pripojene zariadenie
+                if (statusBadge) {
+                    const anyOk = connected.some(perDevOk);
+                    statusBadge.textContent = anyOk ? 'ONLINE' : 'NO COMM';
+                    statusBadge.style.background = anyOk ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.18)';
+                    statusBadge.style.color = anyOk ? 'var(--accent-battery)' : '#ef4444';
+                }
+            } else {
+                rowsHtml = `
                 <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;${cardAlert ? 'border:1px solid rgba(239,68,68,0.45);background:rgba(239,68,68,0.06);padding:8px;box-shadow:0 0 24px rgba(239,68,68,0.08);' : ''}">
                     <div class="inverter-status-row" onclick="toggleInverterDetails('invD1', 'invC1')">
                         <div style="display:flex;align-items:center;gap:10px;">
@@ -2202,7 +2269,9 @@
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav:</span><strong class="font-mono" style="color:${stateColor};font-size:10px;">${stateText}</strong></div>
                     </div>
                 </div>
-            `;
+                `;
+            }
+            container.innerHTML = rowsHtml;
 
             if (busStatus) {
                 const connTcp = (data.connection_type || '').indexOf('tcp') !== -1;
