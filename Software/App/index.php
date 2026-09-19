@@ -814,20 +814,18 @@ elseif ($path === '/api/admin/terminal-command' && $method === 'POST') {
         $slave_id = $dev ? intval($dev['modbus_slave_id'] ?? 205) : 205;
         $serial = $dev['serial_number'] ?? 'CM5-DEFAULT';
 
-        // 1. Skúsime aktualizovať existujúci riadok pre dané slave_id
-        $stmtUp = $pdo->prepare("UPDATE cm5_config SET admin_command = ?, status = 'pending' WHERE modbus_slave_id = ?");
-        $stmtUp->execute([$cmd, $slave_id]);
-        
-        // 2. Ak taký riadok neexistuje, vložíme nový záznam
-        if ($stmtUp->rowCount() === 0) {
-            $stmtIns = $pdo->prepare("INSERT INTO cm5_config (serial_number, modbus_slave_id, admin_command, status) VALUES (?, ?, ?, 'pending')");
-            $stmtIns->execute([$serial, $slave_id, $cmd]);
+        // cm5_config zrusena (setup iba kablom) - prikaz sa ulozi do devices.admin_command
+        try {
+            if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
+                $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
+            }
+            $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
+            $stmtU->execute([$cmd, $devId]);
+            send_json(['status' => 'success', 'message' => "Príkaz '$cmd' bol zapísaný do zariadenia."]);
+        } catch (Exception $e2) {
+            send_json(['status' => 'error', 'message' => 'Chyba databázy: ' . $e2->getMessage()], 500);
         }
-        
-        send_json([
-            'status' => 'success', 
-            'message' => "Príkaz '$cmd' bol úspešne zapísaný do tabuľky cm5_config (admin_command)."
-        ]);
+        exit;
     } catch (Exception $e) {
         send_json(['status' => 'error', 'message' => 'Chyba databázy: ' . $e->getMessage()], 500);
     }
@@ -871,7 +869,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'temp' => $latest ? (float)$latest['temp'] : 0,
         'inverter_temp' => $latest ? (float)$latest['temp'] : 0,
         'freq' => $latest ? (float)$latest['freq'] : 0,
-        'consumption' => 0,
+        'consumption' => $latest && isset($latest['grid_import_w']) ? (float)$latest['grid_import_w'] : 0,
+        'grid_export_w' => 0,
         'device_battery_pct' => $latest ? (float)$latest['battery_soc'] : 0,
         'has_real_data' => $latest ? true : false,
         'history' => $history,
@@ -968,9 +967,10 @@ elseif ($path === '/api/report-ip' && $method === 'POST') {
     $ip = trim($data['ip'] ?? '');
     $serial = trim($data['serial'] ?? '');
     if ($ip && $serial) {
+        // cm5_config zrusena (setup iba kablom) - keepalive len potvrdi
         try {
-            $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'online') ON DUPLICATE KEY UPDATE config_json = VALUES(config_json), status = 'online', updated_at = NOW()");
-            $stmt->execute([$serial, json_encode(['ip' => $ip])]);
+            $stmt = $pdo->prepare("UPDATE devices SET last_seen = NOW() WHERE serial_number = ?");
+            $stmt->execute([$serial]);
         } catch (Exception $e) { /* ignore */ }
     }
     send_json(['status' => 'success']);
@@ -984,8 +984,8 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     // Najdi zariadenie podla serial alebo prve
     $device_id = 0;
     try {
-        $stmt = $pdo->prepare("SELECT d.id FROM devices d LEFT JOIN cm5_config c ON c.serial_number = ? WHERE d.serial_number = ? OR c.id IS NOT NULL LIMIT 1");
-        $stmt->execute([$serial, $serial]);
+        $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
+        $stmt->execute([$serial]);
         $row = $stmt->fetch();
         if ($row) { $device_id = intval($row['id']); }
         else { $stmt2 = $pdo->query("SELECT id FROM devices ORDER BY id ASC LIMIT 1"); $r2 = $stmt2->fetch(); if ($r2) $device_id = intval($r2['id']); }
@@ -1016,7 +1016,12 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
         try {
             // Uloz telemetry zaznam - NOW() moze failnut na MySQL strict mode, pouzime date('Y-m-d H:i:s')
             $ts = date('Y-m-d H:i:s');
-            $stmt = $pdo->prepare("INSERT INTO telemetry (device_id, power_ac, battery_soc, temp, freq, status_msg, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            // Self-healing: grid_import_w stlpec (odber zo siete)
+            try {
+                if (!in_array('grid_import_w', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN grid_import_w FLOAT DEFAULT 0");
+                $tcols[] = 'grid_import_w';
+            } catch (Exception $eG) { /* ignore */ }
+            $stmt = $pdo->prepare("INSERT INTO telemetry (device_id, power_ac, battery_soc, temp, freq, status_msg, grid_import_w, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $device_id,
                 floatval($data['power_ac'] ?? 0),
@@ -1024,6 +1029,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                 floatval($data['temp'] ?? 0),
                 floatval($data['freq'] ?? 50),
                 substr($data['status_msg'] ?? 'Online', 0, 255),
+                floatval($data['grid_import_w'] ?? 0),
                 $ts
             ]);
             // Aktualizuj devices - status online + posledne hodnoty (sety podla toho co tabulka ma)
@@ -1056,8 +1062,9 @@ elseif ($path === '/api/cm5/register' && $method === 'POST') {
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');
     if ($serial) {
+        // cm5_config zrusena - registracia len potvrdi serial
         try {
-            $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, status) VALUES (?, 'registered') ON DUPLICATE KEY UPDATE updated_at = NOW()");
+            $stmt = $pdo->prepare("UPDATE devices SET last_seen = NOW() WHERE serial_number = ?");
             $stmt->execute([$serial]);
         } catch (Exception $e) { /* ignore */ }
     }

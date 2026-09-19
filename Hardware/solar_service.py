@@ -905,7 +905,24 @@ class SolarBackgroundService:
                     'freq': freq_val,
                     'status_msg': status_msg
                 }
-                
+
+                # Grid bilancia aj pre TCP (SmartLogger) - bez meteru odhad z FVE
+                if self.smart_meter and self.smart_meter.meter_mode != 'NONE':
+                    try:
+                        meter_data = self.smart_meter.get_live_data()
+                        self.live_data[slave_id].update({
+                            'house_consumption_w': meter_data['house_consumption_w'],
+                            'grid_import_w': meter_data['grid_import_w'],
+                            'grid_export_w': meter_data['grid_export_w'],
+                        })
+                    except Exception:
+                        pass
+                else:
+                    est_consumption = float(getattr(self, 'estimated_house_load_w', 800) or 800)
+                    balance = power_val - est_consumption
+                    self.live_data[slave_id]['grid_import_w'] = round(max(0.0, -balance), 1)
+                    self.live_data[slave_id]['grid_export_w'] = round(max(0.0, balance), 1)
+
                 try:
                     self.ai_service.learn_from_telemetry(power_ac=power_val, battery_soc=soc_val, temp=temp_val)
                 except Exception:
@@ -977,6 +994,15 @@ class SolarBackgroundService:
                             'grid_export_w': meter_data['grid_export_w'],
                             'meter_control_mode': meter_data['control_mode'],
                         })
+                    else:
+                        # Bez meteru: bilancia FVE vs. odhad spotreby domacnosti
+                        # Odber zo siete = kolko treba dokupit (spotreba - vyroba), min 0
+                        # Vyvoz = prebytok (vyroba - spotreba), min 0
+                        est_consumption = float(getattr(self, 'estimated_house_load_w', 800) or 800)
+                        balance = power_val - est_consumption
+                        self.live_data[slave_id]['grid_import_w'] = round(max(0.0, -balance), 1)
+                        self.live_data[slave_id]['grid_export_w'] = round(max(0.0, balance), 1)
+                        self.live_data[slave_id]['house_consumption_w'] = round(est_consumption, 1)
 
                     self.push_to_cloud(self.live_data[slave_id])
                         
