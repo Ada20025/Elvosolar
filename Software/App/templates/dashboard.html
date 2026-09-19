@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#02040a">
     <meta name="vapid-key" content="">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -3710,8 +3711,8 @@
             refreshDashboard();
             fetchTelemetry();
             fetchMeterData();
-            setInterval(fetchTelemetry, 8000);
-            setInterval(fetchMeterData, 10000);
+            setInterval(fetchTelemetry, 5000);
+            setInterval(fetchMeterData, 8000);
             setInterval(refreshDashboard, 600000); // 10 min
             // Retry chart if Chart.js loads late
             if (typeof Chart === 'undefined') {

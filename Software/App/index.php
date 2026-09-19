@@ -561,13 +561,13 @@ elseif ($path === '/login') {
                         $_SESSION['pending_login']['unsub_token'] = hash('sha256', $unsub_token);
                         $unsub_url = $base_path . '/device-logout?token=' . $unsub_token . '&login=1';
                         $mail_sent = send_elvo_email($email, 'Overovací kód: ' . $code . ' | ElvoControll', 'Prihlásenie do vášho účtu',
-                        '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Niektoré zariadenie sa prihlasuje do vášho účtu ElvoControll. Všetko potrebujete je v tomto jednom emaile:</p>' .
-                        '<div style="margin:0 0 20px 0;padding:20px 24px;background:#0f172a;border-radius:14px;text-align:center;">' .
-                        '<div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">Váš overovací kód</div>' .
-                        '<div style="font-size:36px;font-weight:800;letter-spacing:12px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
+                        '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Niektoré zariadenie sa prihlasuje do vášho účtu ElvoControll. Všetko potrebujete je v tomto jednom emaile:</p>' .
+                        '<div style="margin:0 0 20px 0;padding:22px 24px;background:rgba(16,185,129,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:16px;text-align:center;">' .
+                        '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;">Váš overovací kód</div>' .
+                        '<div style="font-size:38px;font-weight:800;letter-spacing:12px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
                         '</div>' .
-                        '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 20px 0;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">' .
-                        '<tr><td style="padding:14px 18px;font-size:13px;color:#334155;">' .
+                        '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 20px 0;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.08);">' .
+                        '<tr><td style="padding:14px 18px;font-size:13px;color:#e2e8f0;">' .
                         '<div style="margin-bottom:6px;">🖥️ <strong>Zariadenie:</strong> ' . htmlspecialchars(substr($_SERVER['HTTP_USER_AGENT'] ?? 'Neznáme zariadenie', 0, 60)) . '</div>' .
                         '<div style="margin-bottom:6px;">🌐 <strong>IP adresa:</strong> ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . '</div>' .
                         '<div>🕐 <strong>Čas prihlásenia:</strong> ' . date('d.m.Y H:i') . '</div>' .
@@ -575,8 +575,8 @@ elseif ($path === '/login') {
                         '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;"><tr><td align="center">' .
                         '<a href="' . $unsub_url . '" style="display:inline-block;padding:12px 28px;background:#f43f5e;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;border-radius:10px;">Odhásiť toto zariadenie</a>' .
                         '</td></tr></table>' .
-                        '<p style="margin:0 0 8px 0;font-size:11px;color:#94a3b8;text-align:center;">Kliknutím zablokujete prihlásenie z tohto zariadenia.</p>' .
-                        '<p style="margin:12px 0 0 0;font-size:12px;color:#94a3b8;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
+                        '<p style="margin:0 0 8px 0;font-size:11px;color:#64748b;text-align:center;">Kliknutím zablokujete prihlásenie z tohto zariadenia.</p>' .
+                        '<p style="margin:12px 0 0 0;font-size:12px;color:#64748b;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
                         '#6366f1');
                     }
                     // BEZPECNOST: kod sa NIKDY nezobrazuje na obrazovke - ide len emailom.
@@ -658,19 +658,19 @@ elseif ($path === '/verify-login/resend' && $method === 'GET') {
         $_SESSION['pending_login']['attempts'] = 0;
         unset($_SESSION['pending_login']['dev_code']);
         $mail_sent2 = false;
-        if (getenv('SMTP_PASS') && trim(getenv('SMTP_PASS')) !== '') {
+        {
             require_once __DIR__ . '/mail_helper.php';
             try {
                 $unsub_token2 = bin2hex(random_bytes(16));
                 $_SESSION['pending_login']['unsub_token'] = hash('sha256', $unsub_token2);
                 $unsub_url2 = $base_path . '/device-logout?token=' . $unsub_token2 . '&login=1';
                 $mail_sent2 = send_elvo_email($_SESSION['pending_login']['email'], 'Nový kód: ' . $code . ' | ElvoControll', 'Nový overovací kód',
-                '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;">Požiadali ste o nový overovací kód. Starý kód prestal platiť.</p>' .
-                '<div style="margin:0 0 20px 0;padding:20px 24px;background:#0f172a;border-radius:14px;text-align:center;">' .
-                '<div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">Váš nový kód</div>' .
-                '<div style="font-size:36px;font-weight:800;letter-spacing:12px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
+                '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Požiadali ste o nový overovací kód. Starý kód prestal platiť.</p>' .
+                '<div style="margin:0 0 20px 0;padding:22px 24px;background:rgba(16,185,129,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:16px;text-align:center;">' .
+                '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;">Váš nový kód</div>' .
+                '<div style="font-size:38px;font-weight:800;letter-spacing:12px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
                 '</div>' .
-                    '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . ' &middot; ' . date('d.m.Y H:i') . '. Ak ste o kód nežiadali, zmeňte si heslo.</p>',
+                    '<p style="margin:0;font-size:12px;color:#64748b;">Platnosť: 10 minút &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . ' &middot; ' . date('d.m.Y H:i') . '. Ak ste o kód nežiadali, zmeňte si heslo.</p>',
                     '#6366f1');
             } catch (Exception $me) { $mail_sent2 = false; }
         }
@@ -1196,9 +1196,12 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
     require_once __DIR__ . '/mail_helper.php';
     try {
         $mail_sent = send_elvo_email($email, 'Obnovenie hesla | ElvoControll', 'Kód na obnovenie hesla',
-            '<p>Zabudli ste heslo? Nie je problém. Zadajte tento kód v aplikácii:</p>' .
-            '<div style="margin:16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
-            '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút. Ak ste o obnovenie nežiadali, ignorujte tento email.</p>',
+            '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Zabudli ste heslo? Nie je problém. Zadajte tento kód v aplikácii:</p>' .
+            '<div style="margin:0 0 20px 0;padding:22px 24px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:16px;text-align:center;">' .
+            '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;">Kód na obnovenie hesla</div>' .
+            '<div style="font-size:38px;font-weight:800;letter-spacing:12px;color:#fbbf24;font-family:monospace;">' . $code . '</div>' .
+            '</div>' .
+            '<p style="margin:0;font-size:12px;color:#64748b;">Platnosť: 10 minút. Ak ste o obnovenie nežiadali, ignorujte tento email.</p>',
             '#f59e0b');
     } catch (Exception $me) { $mail_sent = false; }
     if (!$mail_sent) {
@@ -1381,9 +1384,12 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
     require_once __DIR__ . '/mail_helper.php';
     try {
         $mail_sent = send_elvo_email($email, 'Obnovenie hesla | ElvoControll', 'Kód na obnovenie hesla',
-            '<p>Zabudli ste heslo? Nie je problém. Zadajte tento kód v aplikácii:</p>' .
-            '<div style="margin:16px 0;padding:16px 24px;background:#0f172a;border-radius:12px;text-align:center;font-size:32px;font-weight:800;letter-spacing:10px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
-            '<p style="margin:0;font-size:12px;color:#94a3b8;">Platnosť: 10 minút. Ak ste o obnovenie nežiadali, ignorujte tento email.</p>',
+            '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Zabudli ste heslo? Nie je problém. Zadajte tento kód v aplikácii:</p>' .
+            '<div style="margin:0 0 20px 0;padding:22px 24px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:16px;text-align:center;">' .
+            '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;">Kód na obnovenie hesla</div>' .
+            '<div style="font-size:38px;font-weight:800;letter-spacing:12px;color:#fbbf24;font-family:monospace;">' . $code . '</div>' .
+            '</div>' .
+            '<p style="margin:0;font-size:12px;color:#64748b;">Platnosť: 10 minút. Ak ste o obnovenie nežiadali, ignorujte tento email.</p>',
             '#f59e0b');
     } catch (Exception $me) { $mail_sent = false; }
     if (!$mail_sent) {
