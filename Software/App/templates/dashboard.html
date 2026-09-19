@@ -421,6 +421,20 @@
             align-items: start;
         }
 
+        /* ========= TOAST NOTIFIKACIE (ako Windows) ========= */
+        .toast-wrap { position: fixed; top: 14px; right: 14px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 340px; pointer-events: none; }
+        .toast-item { pointer-events: auto; display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; background: rgba(15,20,35,0.97); border: 1px solid rgba(239,68,68,0.35); box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 24px rgba(239,68,68,0.08); backdrop-filter: blur(12px); transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.2,0.9,0.3,1.2), opacity 0.3s; cursor: pointer; }
+        .toast-item.warn { border-color: rgba(245,158,11,0.35); box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 24px rgba(245,158,11,0.08); }
+        .toast-item.show { transform: translateX(0); }
+        .toast-item.hide { transform: translateX(120%); opacity: 0; }
+        .toast-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 17px; background: rgba(239,68,68,0.14); }
+        .toast-item.warn .toast-icon { background: rgba(245,158,11,0.14); }
+        .toast-title { font-size: 13px; font-weight: 800; color: var(--text-primary, #f9fafb); line-height: 1.3; }
+        .toast-body { font-size: 11.5px; color: #cbd5e1; line-height: 1.5; margin-top: 3px; }
+        .toast-time { font-size: 9px; color: #64748b; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+        .toast-close { background: none; border: none; color: #64748b; cursor: pointer; font-size: 15px; padding: 0 0 0 6px; line-height: 1; }
+        @media (max-width: 480px) { .toast-wrap { left: 14px; right: 14px; max-width: none; top: 10px; } }
+
         @media (max-width: 400px) {
             :root { font-size: 14.5px; }
             .content { padding: 8px !important; }
@@ -2295,9 +2309,9 @@
                         </div>
                     </div>
                     <div id="invD1" class="inverter-details-box">
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono">${Math.round(power)} W</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(soc)}%</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono">${totalKwh.toFixed(1)} kWh</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono" style="${commOk ? '' : 'color:#64748b;'}">${commOk ? Math.round(power) + ' W' : '–'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${commOk ? 'var(--accent-battery)' : '#64748b'};">${commOk ? Math.round(soc) + '%' : '–'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${commOk ? '' : 'color:#64748b;'}">${commOk ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);margin-top:6px;padding-top:6px;"><span style="color:var(--text-secondary);">Komunikácia:</span><strong class="font-mono" style="color:${commColor};font-size:10px;">${commText}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav:</span><strong class="font-mono" style="color:${stateColor};font-size:10px;">${stateText}</strong></div>
                     </div>
@@ -2439,16 +2453,45 @@
                 if (d.status !== 'success') return;
                 const alerts = d.alerts || [];
                 renderAlerts(alerts);
-                // Nativne notifikacie pre NOVE alerty
+                // Toast + nativna notifikacia pre NOVE alerty
                 const active = alerts.filter(a => a.active);
                 active.forEach(a => {
                     if (!lastAlertIds.has(a.id)) {
                         const isCrit = a.severity === 'crit';
+                        showToast({ title: a.title, body: a.body, dev: a.dev_name, crit: isCrit });
                         showNativeAlert((isCrit ? '🚨 ' : '⚠️ ') + a.title, a.body + ' (' + a.dev_name + ')', 'alert-' + a.id);
                     }
                 });
                 lastAlertIds = new Set(active.map(a => a.id));
             }).catch(() => {});
+        }
+
+        // ========= TOAST: vyskoci naozaj na obrazovku (ako Windows) =========
+        function showToast(a) {
+            try {
+                const wrap = document.getElementById('toastWrap');
+                if (!wrap) return;
+                const el = document.createElement('div');
+                el.className = 'toast-item' + (a.crit ? '' : ' warn');
+                el.innerHTML = '<div class="toast-icon">' + (a.crit ? '🚨' : '⚠️') + '</div>'
+                    + '<div style="flex:1;min-width:0;">'
+                    + '<div class="toast-title">' + a.title + '</div>'
+                    + '<div class="toast-body">' + a.body + '</div>'
+                    + '<div class="toast-time"><span>' + (a.dev || '') + '</span><span>·</span><span>' + new Date().toLocaleTimeString('sk-SK', {hour:'2-digit',minute:'2-digit'}) + '</span></div>'
+                    + '</div>'
+                    + '<button class="toast-close" onclick="event.stopPropagation();this.closest(\'.toast-item\').remove()">✕</button>';
+                el.onclick = function() { dismissToast(el); switchTab('tabDashboard'); toggleAlertsPanel(); };
+                wrap.appendChild(el);
+                requestAnimationFrame(() => { requestAnimationFrame(() => el.classList.add('show')); });
+                // Auto-hide po 8 s (kritické 12 s)
+                setTimeout(() => dismissToast(el), a.crit ? 12000 : 8000);
+            } catch (e) {}
+        }
+
+        function dismissToast(el) {
+            if (!el || el.classList.contains('hide')) return;
+            el.classList.add('hide');
+            setTimeout(() => el.remove(), 400);
         }
 
         function switchTab(tabId) {
@@ -4154,6 +4197,7 @@
     else window.addEventListener('load', function() { setTimeout(show, 1200); });
 })();
 </script>
-</body></body>
+</body><div id="toastWrap" class="toast-wrap"></div>
+</body>
 </html>
 
