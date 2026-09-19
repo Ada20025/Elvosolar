@@ -151,7 +151,7 @@
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Krok 1 z 5</span>
                             <h2 class="text-xl font-extrabold text-white tracking-tight">Pripojené zariadenie</h2>
-                            <p class="text-xs text-slate-400">Pomenujte zariadenie a vyberte značku striedača.</p>
+                            <p class="text-xs text-slate-400">Vyberte ľubovoľnú značku a model — CM5 pochopí každý config a sám si nastaví komunikáciu.</p>
                         </div>
                         <div class="space-y-3">
                             <div>
@@ -819,6 +819,8 @@
                 }
             }
 
+            // Univerzalny config - CM5 pochopi hocijake zariadenie
+            const connType = document.querySelector('input[name="smartConnType"]:checked')?.value || 'tcp';
             const configPayload = {
                 admin_key: "",
                 comm_mode: selectedMode,
@@ -835,13 +837,19 @@
                 has_battery: has_battery,
                 active_cable_cores: activeCableType,
                 device_name: device_name,
-                smart_meter: smart_meter_config
+                smart_meter: smart_meter_config,
+                // Komunikacia so zariadenim (SmartLogger/Striedač)
+                connection_type: connType === 'tcp' ? 'modbus_tcp' : (connType === 'rtu' ? 'modbus_rtu' : 'hybrid'),
+                smartlogger_ip: (document.getElementById('smartloggerIpInput')?.value || '').trim(),
+                smartlogger_port: parseInt(document.getElementById('smartloggerPortInput')?.value) || 502,
+                smartlogger_unit_id: parseInt(document.getElementById('smartloggerUnitIdInput')?.value) || 0,
+                modbus_slave_id: parseInt(document.getElementById('smartRtuSlaveIdInput')?.value) || 205
             };
 
             const payloadString = JSON.stringify(configPayload);
             const statusModal = document.getElementById("statusModal");
             document.getElementById("modalTitle").innerText = "Zápis konfigurácie";
-            document.getElementById("modalDesc").innerText = "Odosielam parametre do CM5...";
+            document.getElementById("modalDesc").innerText = "Odosielam univerzálny config do CM5 — zariadenie si ho pochopí a nastaví sa samo...";
             statusModal.classList.remove("hidden");
 
             try {

@@ -95,7 +95,24 @@ def apply_config(config):
         password = str(config.get('password') or '')
         has_battery = 1 if config.get('has_battery', True) else 0
 
-        # 1. Uloz/zmen hlavne zariadenie
+        # 0. Self-healing: dopln chybajuce stlpce (hocijaka stara schema)
+        dev_cols = [r[1] for r in cursor.execute("PRAGMA table_info(devices)").fetchall()]
+        for col, ddl in [
+            ('has_battery', 'INTEGER DEFAULT 1'),
+            ('connection_type', "VARCHAR(20) DEFAULT 'modbus_rtu'"),
+            ('smartlogger_ip', "VARCHAR(50) DEFAULT ''"),
+            ('smartlogger_port', 'INTEGER DEFAULT 502'),
+            ('modbus_slave_id', 'INTEGER DEFAULT 205'),
+            ('min_okte_price_eur', 'FLOAT DEFAULT 0'),
+        ]:
+            if col not in dev_cols:
+                try:
+                    cursor.execute(f"ALTER TABLE devices ADD COLUMN {col} {ddl}")
+                except Exception:
+                    pass
+                dev_cols.append(col)
+
+        # 1. Uloz/zmen hlavne zariadenie (UNIVERZALNE - hocijaka znacka/model)
         cursor.execute("SELECT id FROM devices LIMIT 1")
         row = cursor.fetchone()
         if row:
@@ -110,6 +127,29 @@ def apply_config(config):
                 (serial_number, device_name, brand_id, category_id, model_id, slave_id, has_battery)
             )
 
+        # 1b. Komunikacia: TCP (SmartLogger cez LAN) / RTU (RS485) - podla configu
+        smart_ip = str(config.get('smartlogger_ip') or config.get('smart_ip') or '').strip()
+        smart_port = int(config.get('smartlogger_port') or config.get('smart_port') or 502)
+        smart_unit = int(config.get('smartlogger_unit_id') or config.get('unit_id') or 0)
+        conn_type_val = str(config.get('connection_type') or '').lower()
+        if not conn_type_val:
+            # Odvod z kadial prisli udaje: IP pritomna -> tcp inak rtu
+            conn_type_val = 'modbus_tcp' if smart_ip else 'modbus_rtu'
+        try:
+            set_parts, set_vals = [], []
+            if 'connection_type' in dev_cols:
+                set_parts.append('connection_type=?'); set_vals.append(conn_type_val)
+            if smart_ip and 'smartlogger_ip' in dev_cols:
+                set_parts.append('smartlogger_ip=?'); set_vals.append(smart_ip)
+                set_parts.append('smartlogger_port=?'); set_vals.append(smart_port)
+            if smart_ip and 'modbus_slave_id' in dev_cols:
+                set_parts.append('modbus_slave_id=?'); set_vals.append(smart_unit)
+            if set_parts:
+                set_vals.append(row[0] if row else 1)
+                cursor.execute(f"UPDATE devices SET {', '.join(set_parts)} WHERE id=?", set_vals)
+        except Exception as _econn:
+            log(f"⚠️ connection_type skip: {_econn}")
+
         # 2. WiFi ak prisla
         if ssid:
             try:
@@ -121,6 +161,27 @@ def apply_config(config):
                     "INSERT OR REPLACE INTO system_settings (key, value) VALUES ('wifi_pass', ?)",
                     (password,)
                 )
+            except Exception:
+                pass
+
+        # 2b. Ostatne nastavenia - vsetko co prislo, CM5 pochopi (univerzalny config)
+        extra_settings = {
+            'comm_mode': config.get('comm_mode') or 'LOCAL_MODBUS',
+            'device_name': device_name,
+            'active_cable_cores': str(config.get('active_cable_cores') or ''),
+            'meter_mode': 'NONE',
+        }
+        sm = config.get('smart_meter') or {}
+        if isinstance(sm, dict) and sm.get('enabled'):
+            extra_settings['meter_mode'] = str(sm.get('type', 'standalone')).upper()
+            for k, v in sm.items():
+                if k != 'enabled':
+                    extra_settings[f'meter_{k}'] = str(v)
+        for k, v in extra_settings.items():
+            if v is None or v == '':
+                continue
+            try:
+                cursor.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)", (k, str(v)))
             except Exception:
                 pass
 
@@ -155,6 +216,7 @@ def register_to_cloud(config):
         'slave_id': int(config.get('slave_id', 1) or 1),
         'has_battery': bool(config.get('has_battery', True)),
         'name': str(config.get('device_name') or config.get('name') or 'Moje zariadenie'),
+        'comm_mode': str(config.get('comm_mode') or 'LOCAL_MODBUS'),
         'serial': f"CM5-{int(time.time())}"
     }
 
