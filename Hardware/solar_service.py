@@ -43,6 +43,15 @@ class SolarBackgroundService:
         self.cloud_queue = queue.Queue(maxsize=50)
         threading.Thread(target=self._cloud_sync_worker_loop, daemon=True).start()
 
+        # ========= FAIL-SAFE STATE =========
+        self.failsafe_active = False           # CI vas straz na 100% vykon
+        self.failsafe_reason = ''              # preco sa straz aktivoval
+        self.failsafe_last_write = 0           # posledny zapis 100% (opakovat kazdy 60 s)
+        self.comm_fail_count = 0               # pocet po sebe iducich zlyhani komunikacie
+        self.comm_fail_threshold = 4           # po 4 zlyhaniach (~12 s) -> straz
+        self.snapshot = self._load_snapshot()  # zachrany stav pred poruchou
+        self.last_good_state = self._load_last_good_state()
+
         try:
             from modbus_slave_service import ModbusRtuSlaveServer, ModbusTcpSlaveServer
             # Modbus TCP Slave (LAN port 5020) - SmartLogger sa pripaja cez Ethernet/TCP
@@ -55,6 +64,77 @@ class SolarBackgroundService:
             print("[MODBUS RTU SLAVE] Spusteny - RS485 pre striedace")
         except Exception as e:
             print(f"Modbus Slave server sa nespustil: {e}")
+
+    # ========= SNAPSHOT: ulozit/obnovit stav regulacie =========
+    def _save_snapshot(self):
+        try:
+            snap = {
+                'ts': time.time(),
+                'manual_override': str(self.manual_override or 'AUTO'),
+                'active_model_id': str(self.active_model_id or 'AI'),
+                'meter_control_mode': str(getattr(self.smart_meter, 'control_mode', 'SMART') or 'SMART'),
+                'meter_mode': str(getattr(self.smart_meter, 'meter_mode', 'NONE') or 'NONE'),
+            }
+            rows = db_execute("SELECT key, value FROM system_settings WHERE key IN ('min_power_pct','max_power_pct','meter_control_mode','active_model','night_sleep')")
+            for r in rows:
+                snap['set_' + r['key']] = r['value']
+            import json as _json
+            db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('failsafe_snapshot', ?)", (_json.dumps(snap),))
+            return snap
+        except Exception:
+            return {}
+
+    def _load_snapshot(self):
+        try:
+            import json as _json
+            rows = db_execute("SELECT value FROM system_settings WHERE key = 'failsafe_snapshot'")
+            return _json.loads(rows[0]['value']) if rows else {}
+        except Exception:
+            return {}
+
+    def _save_last_good_state(self):
+        # Ulozime posledny zdravy stav (bez poruchy) - obnovi sa po navrate komunikacie
+        try:
+            import json as _json
+            state = {
+                'ts': time.time(),
+                'manual_override': str(self.manual_override or 'AUTO'),
+                'active_model_id': str(self.active_model_id or 'AI'),
+                'meter_control_mode': str(getattr(self.smart_meter, 'control_mode', 'SMART') or 'SMART'),
+            }
+            db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('last_good_state', ?)", (_json.dumps(state),))
+        except Exception:
+            pass
+
+    def _load_last_good_state(self):
+        try:
+            import json as _json
+            rows = db_execute("SELECT value FROM system_settings WHERE key = 'last_good_state'")
+            return _json.loads(rows[0]['value']) if rows else {}
+        except Exception:
+            return {}
+
+    def _apply_restored_state(self, state):
+        # Obnova stavu po poruche/vypadku - vsetko ako to bolo predtym
+        if not state:
+            return
+        try:
+            mo = state.get('manual_override')
+            if mo and mo in ('AUTO', 'ON', 'OFF'):
+                self.manual_override = mo
+            am = state.get('active_model_id')
+            if am:
+                self.active_model_id = am
+                db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('active_model', ?)", (am,))
+            mcm = state.get('meter_control_mode')
+            if mcm:
+                db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('meter_control_mode', ?)", (mcm,))
+                try:
+                    self.smart_meter.control_mode = mcm
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
     def log_to_terminal(self, message: str):
         try:
@@ -903,7 +983,8 @@ class SolarBackgroundService:
                     'battery_soc': soc_val,
                     'temp': temp_val,
                     'freq': freq_val,
-                    'status_msg': status_msg
+                    'status_msg': status_msg,
+                    '_ts': time.time()
                 }
 
                 # Grid bilancia aj pre TCP (SmartLogger) - bez meteru odhad z FVE
@@ -977,7 +1058,8 @@ class SolarBackgroundService:
                         "battery_soc": soc_val,
                         "temp": temp_val,
                         "freq": freq_val,
-                        "status_msg": status_msg
+                        "status_msg": status_msg,
+                        "_ts": time.time()
                     }
                     
                     try:
@@ -1020,6 +1102,76 @@ class SolarBackgroundService:
                 }
                 self.push_to_cloud(self.live_data[slave_id])
 
+    # ========= FAIL-SAFE WATCHDOG: porucha -> 100% vykon; oprava -> navrat stavu =========
+    def _failsafe_watchdog(self):
+        try:
+            now_ts = time.time()
+            devices_rows = db_execute("SELECT slave_id, brand_id, category_id, model_id FROM devices")
+            any_device = len(devices_rows) > 0
+            comm_ok_any = False
+            # Komunikacia OK = aspon jedno zariadenie ma cerstve live data so spravou o uspechu
+            for sid, item in (self.live_data or {}).items():
+                msg = str(item.get('status_msg', ''))
+                if ('Akt' in msg and 'pripojenie' in msg) or 'Via SmartLogger' in msg:
+                    if now_ts - float(item.get('_ts', 0) or 0) < 300:
+                        comm_ok_any = True
+                        break
+            
+            # --- DETEKCIA PORUCHY ---
+            if any_device and not comm_ok_any:
+                self.comm_fail_count += 1
+            else:
+                if self.comm_fail_count >= self.comm_fail_threshold:
+                    # PORUCHA SKONCILA -> obnovime stav ako bol pred nou
+                    self.log_to_terminal("[FAIL-SAFE] Komunikácia obnovená — obnovujem pôvodný stav regulácie")
+                    restored = self.last_good_state or self.snapshot
+                    self._apply_restored_state(restored)
+                    self.failsafe_active = False
+                    self.failsafe_reason = ''
+                self.comm_fail_count = 0
+                # Pri zdravej komunikacii si periodicky ukladame zdravy stav (max 1x / 5 min)
+                if comm_ok_any and now_ts - float(self.last_good_state.get('ts', 0) or 0) > 300:
+                    self._save_last_good_state()
+                    self.last_good_state = self._load_last_good_state()
+            
+            # --- AKTIVACIA STRAZE (100% VYKON) ---
+            if not self.failsafe_active and any_device and self.comm_fail_count >= self.comm_fail_threshold:
+                self.failsafe_active = True
+                self.failsafe_reason = f'Žiadna komunikácia so zariadeniami ({self.comm_fail_count}x za sebou)'
+                self.snapshot = self._save_snapshot()
+                self.last_good_state = self._load_last_good_state()
+                self.log_to_terminal(f"[FAIL-SAFE] 🚨 AKTIVOVANÝ: {self.failsafe_reason} — nastavujem 100% výkon")
+            
+            # --- V 100% REZIME: kazdych 60 s opakovane zapis 100% na vsetky zariadenia ---
+            if self.failsafe_active and now_ts - self.failsafe_last_write >= 60:
+                self.failsafe_last_write = now_ts
+                self.log_to_terminal("[FAIL-SAFE] Opakovaný zápis 100% výkonu (porucha trvá)")
+                for r in devices_rows:
+                    try:
+                        brand = r['brand_id']; cat = r['category_id']; model = r['model_id']
+                        cfg = DEVICE_DB.get(brand, {}).get('kategorie', {}).get(cat, {}).get('modely', {}).get(model)
+                        slave_id = r['slave_id']
+                        if not cfg: continue
+                        on_reg = cfg.get('on')
+                        on_val = cfg.get('val_on', 100)
+                        if on_reg is not None:
+                            ser = self.get_serial_port(int(cfg.get('baud', 9600) or 9600))
+                            if ser and ser.is_open:
+                                self.raw_write_register(ser, slave_id, on_reg, on_val, function_code=6)
+                        # SmartLogger TCP: 100% = 1000 (gain 10) na register 40428
+                        if self.is_tcp_device(cfg):
+                            tcp_ip = cfg.get('ip', '')
+                            if tcp_ip:
+                                dev_id = r['id'] if 'id' in r.keys() else 1
+                                if not self.tcp_connections.get(str(dev_id)) or not self.tcp_connections[str(dev_id)].get('sock'):
+                                    try: self.tcp_connect(dev_id, tcp_ip, int(cfg.get('port', 502)))
+                                    except Exception: pass
+                                self.tcp_write_register(dev_id, int(cfg.get('unit_id', 0) or 0), 40428, 1000)
+                    except Exception as eD:
+                        self.log_to_terminal(f"[FAIL-SAFE] Zápis 100% zlyhal pre {r['slave_id']}: {eD}")
+        except Exception as eW:
+            self.log_to_terminal(f"[FAIL-SAFE] Watchdog chyba: {eW}")
+
     def start_loop(self):
         last_ctrl_time = 0
         while self.running:
@@ -1029,6 +1181,7 @@ class SolarBackgroundService:
                     continue
                     
                 self.check_self_healing()
+                self._failsafe_watchdog()
                 
                 # Vyčítanie zoznamu zariadení
                 rows = db_execute("SELECT * FROM devices")
