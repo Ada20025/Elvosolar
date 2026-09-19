@@ -528,10 +528,22 @@ if ($path === '/' || $path === '') {
 }
 
 elseif ($path === '/login') {
-    // Rate limit: max 5 neuspesnych pokusov -> 15 min lockout (per email+IP)
+    // Rate limit: max 3 neuspesnych pokusov -> 30 min lockout (per email+IP)
     $attempt_key = 'login_att_' . md5(strtolower(trim($_POST['email'] ?? '')) . '|' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
     $attempts = $_SESSION[$attempt_key] ?? ['count' => 0, 'until' => 0];
     if ($method === 'POST') {
+        // 2FA blokada (3 zle kody -> 30 min): blokuje cele prihlasenie z tohto zariadenia
+        $dev_hash_chk = hash('sha256', (trim($_POST['device_id'] ?? '') ?: ('ua:' . ($_SERVER['HTTP_USER_AGENT'] ?? '-'))));
+        try {
+            $tq = $pdo->prepare("SELECT blocked_until FROM login_throttle WHERE device_hash = ?");
+            $tq->execute([$dev_hash_chk]);
+            $bt = $tq->fetchColumn();
+            if ($bt && strtotime($bt) > time()) {
+                flash('Zariadenie je dočasne blokované (3× zlý overovací kód). Skúste o ' . date('H:i:s', strtotime($bt)) . '.', 'error');
+                render_template('prihlasenie.html', ['flash' => get_flash_messages()]);
+                exit;
+            }
+        } catch (Exception $e) { /* tabulka este neexistuje */ }
         if (time() < $attempts['until']) {
             flash('Priveľa neúspešných pokusov. Skúste znova o ' . date('H:i:s', $attempts['until']) . '.', 'error');
         } else {
@@ -598,7 +610,7 @@ elseif ($path === '/login') {
                 }
             } else {
                 $attempts['count']++;
-                if ($attempts['count'] >= 5) { $attempts['until'] = time() + 900; $attempts['count'] = 0; }
+                if ($attempts['count'] >= 3) { $attempts['until'] = time() + 1800; $attempts['count'] = 0; }
                 $_SESSION[$attempt_key] = $attempts;
                 flash("Nesprávne prihlasovacie údaje.", 'error');
             }
@@ -622,15 +634,20 @@ elseif ($path === '/verify-login') {
             header("Location: " . $base_path . "/login");
             exit;
         }
-        if ($pl['attempts'] >= 5) {
+        if ($pl['attempts'] >= 3) {
+            // 3 zle kody = 30 min blokacia prihlasenia z tohto zariadenia
+            $_SESSION['twofa_block_until'] = time() + 1800;
+            $pdo->prepare("INSERT INTO login_throttle (device_hash, blocked_until) VALUES (?, DATE_ADD(NOW(), INTERVAL 30 MINUTE)) ON DUPLICATE KEY UPDATE blocked_until = VALUES(blocked_until)")
+                ->execute([$pl['device_hash']]);
             unset($_SESSION['pending_login']);
-            flash('Priveľa pokusov. Prihláste sa znova.', 'error');
+            flash('Priveľa neúspešných pokusov. Prihlásenie z tohto zariadenia bude možné o 30 minút.', 'error');
             header("Location: " . $base_path . "/login");
             exit;
         }
         if ($code && password_verify($code, $pl['code_hash'])) {
             // Uspesne overenie -> uloz trusted device + prihlas
             try {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS login_throttle (device_hash VARCHAR(64) PRIMARY KEY, blocked_until DATETIME NOT NULL)");
                 $pdo->exec("CREATE TABLE IF NOT EXISTS login_devices (id INTEGER PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, device_hash VARCHAR(64) NOT NULL, device_name VARCHAR(100) DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login DATETIME NULL, UNIQUE KEY uq_userdev (user_id, device_hash))");
                 $pdo->prepare("INSERT INTO login_devices (user_id, device_hash, device_name, last_login) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE last_login = NOW()")
                     ->execute([$pl['user_id'], $pl['device_hash'], substr($_SERVER['HTTP_USER_AGENT'] ?? 'Zariadenie', 0, 100)]);
@@ -645,7 +662,7 @@ elseif ($path === '/verify-login') {
             exit;
         } else {
             $_SESSION['pending_login']['attempts'] = $pl['attempts'] + 1;
-            $zostava = 5 - ($pl['attempts'] + 1);
+            $zostava = 3 - ($pl['attempts'] + 1);
             flash('Nesprávny kód.' . ($zostava > 0 ? ' Zostáva ' . $zostava . ' pokusov.' : ''), 'error');
         }
     }

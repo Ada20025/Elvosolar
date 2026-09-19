@@ -421,6 +421,22 @@
             align-items: start;
         }
 
+        @media (max-width: 400px) {
+            :root { font-size: 14.5px; }
+            .content { padding: 8px !important; }
+            .card { padding: 12px !important; }
+            .mode-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
+            .mode-card { padding: 10px 8px !important; min-height: auto !important; }
+            .mode-card .mode-icon { font-size: 1.3rem !important; }
+            .chart-container { height: 220px !important; }
+            .gears-row { gap: 8px !important; flex-wrap: wrap !important; }
+            .gear-chip { padding: 6px 10px !important; }
+            .devices-scroll { max-height: 260px !important; }
+            .metric-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+            .tab-btn { padding: 8px 10px !important; font-size: 0.75rem !important; }
+            .brand-title { font-size: 0.9rem !important; }
+        }
+
         @media (max-width: 1100px) {
             .dashboard-grid { grid-template-columns: 1fr; }
         }
@@ -1450,11 +1466,8 @@
                 <div id="meterModeDesc" style="padding:12px 16px;border-radius:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:12px;">
                     <strong style="color:var(--accent-battery);">Smart AI:</strong> Výroba a akumulácia sa riadia autonómne na základe predpovede počasia, spotreby a cien na spotovom trhu (OKTE).
                 </div>
-
-                <!-- Kompaktné ozubené kolieska MIN/MAX - vždy viditeľné, žiadne prázdne miesto -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-card);">
-                    <div onclick="openGearModal('min')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border-card);border-radius:12px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent-battery)'" onmouseout="this.style.borderColor='var(--border-card)'"><svg viewBox="0 0 120 120" style="width:38px;height:38px;flex-shrink:0;"><g transform="translate(60,60)"><circle r="42" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="14"/><g id="riadenieMinArrow" style="transition:transform 0.4s ease;transform:rotate(-90deg);"><line x1="0" y1="0" x2="0" y2="-34" stroke="var(--accent-battery)" stroke-width="6" stroke-linecap="round"/><polygon points="-10,-30 0,-46 10,-30" fill="var(--accent-battery)"/></g><circle r="12" fill="var(--accent-battery)"/></g></svg><div style="display:flex;flex-direction:column;"><span style="font-size:9px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Min výkon</span><span style="font-size:15px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);"><span id="riadenieMinVal">0%</span></span></div></div>
-                    <div onclick="openGearModal('max')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border-card);border-radius:12px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent-solar)'" onmouseout="this.style.borderColor='var(--border-card)'"><svg viewBox="0 0 120 120" style="width:38px;height:38px;flex-shrink:0;"><g transform="translate(60,60)"><circle r="42" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="14"/><g id="riadenieMaxArrow" style="transition:transform 0.4s ease;transform:rotate(40deg);"><line x1="0" y1="0" x2="0" y2="-34" stroke="var(--accent-solar)" stroke-width="6" stroke-linecap="round"/><polygon points="-10,-30 0,-46 10,-30" fill="var(--accent-solar)"/></g><circle r="12" fill="var(--accent-solar)"/></g></svg><div style="display:flex;flex-direction:column;"><span style="font-size:9px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Max výkon</span><span style="font-size:15px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);"><span id="riadenieMaxVal">100%</span></span></div></div>
+                <div style="padding:10px 4px 4px;font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+                    <i data-lucide="settings" style="width:12px;height:12px;"></i> Min/max výkon a min OKTE cena nastavíš cez ozubené koliesko vpravo hore.
                 </div>
             </div>
 

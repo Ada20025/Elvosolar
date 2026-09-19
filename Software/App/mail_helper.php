@@ -100,21 +100,22 @@ if (!function_exists('send_elvo_email')) {
             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #05070f; padding: 36px 14px;">
                 <tr>
                     <td align="center">
-                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; background: linear-gradient(160deg, #0b1226 0%, #070b18 100%); border-radius: 22px; overflow: hidden; border: 1px solid rgba(255,255,255,0.09); box-shadow: 0 20px 60px rgba(0,0,0,0.55);">
+                        <!-- Foto pozadie (Fotovoltika) - viditelne ak klient nepodporuje vml/vmlframme, inak prekryva foto -->
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; border-radius: 22px; overflow: hidden; border: 1px solid rgba(255,255,255,0.09); box-shadow: 0 20px 60px rgba(0,0,0,0.55); background-color: #0b1226; background-image: url('https://adamdz.alwaysdata.net/templates/Fotovoltika1.jpg'); background-size: cover; background-position: center;">
                             <!-- Horný gradient prúžok -->
                             <tr>
                                 <td style="background: linear-gradient(90deg, #10b981 0%, #06b6d4 50%, #6366f1 100%); height: 5px; line-height: 5px; font-size: 5px;">&nbsp;</td>
                             </tr>
                             <!-- Hlavička s logom -->
                             <tr>
-                                <td align="center" style="padding: 30px 38px 20px 38px; background-color: transparent; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                                <td align="center" style="padding: 30px 38px 20px 38px; background-color: rgba(5,7,15,0.72); border-bottom: 1px solid rgba(255,255,255,0.06);">
                                     <img src="https://adamdz.alwaysdata.net/templates/ElvosolarLogo1.png" alt="ElvoControll" style="max-height: 40px; width: auto; display: block;" border="0">
                                     <div style="margin-top: 10px; font-size: 9px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: #34d399; font-family: monospace;">SMART EMS</div>
                                 </td>
                             </tr>
                             <!-- Hlavný obsah -->
                             <tr>
-                                <td style="padding: 34px 38px 30px 38px;">
+                                <td style="padding: 34px 38px 30px 38px; background-color: rgba(5,7,15,0.78);">
                                     <h1 style="margin: 0 0 16px 0; font-size: 21px; font-weight: 800; color: #f9fafb; letter-spacing: -0.02em; line-height: 1.3;">' . $title . '</h1>
                                     <div style="font-size: 14px; line-height: 1.7; color: #cbd5e1;">
                                         ' . $content_html . '
@@ -123,7 +124,7 @@ if (!function_exists('send_elvo_email')) {
                             </tr>
                             <!-- Pätička správy -->
                             <tr>
-                                <td style="padding: 24px 38px; background-color: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
+                                <td style="padding: 24px 38px; background-color: rgba(5,7,15,0.85); border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
                                     <p style="margin: 0 0 6px 0; font-size: 10px; color: #64748b; line-height: 1.6;">
                                         Toto je automaticky generovaná správa z portálu ElvoControll.
                                     </p>
