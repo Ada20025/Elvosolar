@@ -139,8 +139,8 @@
 <button onclick="requestUsbSerialPort()" id="btnRequestSerial" class="flex-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 font-bold text-[11px] py-3 rounded-xl transition border border-cyan-500/20">
                                     🔌 Pripojiť cez USB UART
                                 </button>
-                                <button onclick="skipCableAndGoToSlide1()" class="flex-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 font-bold text-[11px] py-3 rounded-xl transition border border-slate-600/30">
-                                    ⏭️ Pokračovať bez kábla
+                                <button onclick="showCableOnlyHelp()" class="flex-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 font-bold text-[11px] py-3 rounded-xl transition border border-slate-600/30">
+                                ❓ Ako pripojiť kábel
                                 </button>
                             </div>
                         </div>
@@ -704,15 +704,9 @@
         // Gateway detekcia
         let localGatewayIP = window.location.origin;
 
-        async function skipCableAndGoToSlide1() {
-            // Pokracovanie bez kabla - config pojde cez cloud (CM5 ho stiahne ked bude online)
-            selectedTransport = 'HTTP';
-            deviceConnected = false;
-            const pulse = document.getElementById('cablePulse');
-            const txt = document.getElementById('cableText');
-            if (pulse) pulse.className = "h-2 w-2 rounded-full bg-emerald-500";
-            if (txt) txt.innerText = "Pokračujete bez priameho pripojenia (config sa odošle cez cloud).";
-            goToSlide(1);
+        function showCableOnlyHelp() {
+            // Setup je MOZNY IBA cez USB kabel - zobraz navod
+            showValidationError("Setup funguje IBA cez USB kábel. Pripoj CM5 k počítaču USB-C káblom a klikni na 🔌 Pripojiť cez USB UART.");
         }
         async function initWizard() {
             try {
@@ -866,35 +860,15 @@
                     const writer = activeSerialPort.writable.getWriter();
                     await writer.write(encoder.encode(payloadString + "\n"));
                     writer.releaseLock();
-                    
+
                     // Config ide IBA cez kabel do CM5.
                     // CM5 sa SAM zaregistruje do cloudu (Railway) ked dostane internet.
-                } 
+                }
                 else {
-                    const claimPromise = fetch(`${localGatewayIP}/api/admin/claim`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(configPayload),
-                        signal: AbortSignal.timeout(4000)
-                    }).catch(() => null);
-
-                    const devicePayload = {
-                        brand_id: brand_id,
-                        category_id: category_id,
-                        model_id: model_id,
-                        slave_id: 1,
-                        admin_username: "admin",
-                        has_battery: has_battery,
-                        name: device_name
-                    };
-                    const devicePromise = fetch(`${localGatewayIP}/api/user/claim-device`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(devicePayload),
-                        signal: AbortSignal.timeout(4000)
-                    }).catch(() => null);
-
-                    await Promise.all([claimPromise, devicePromise]);
+                    // SETUP IBA KABLOM - cloud cesta zrusena
+                    statusModal.classList.add("hidden");
+                    showValidationError("❌ Setup je možný IBA cez USB kábel. Pripoj CM5 káblom k počítaču a klikni na 🔌 Pripojiť cez USB UART.");
+                    return;
                 }
                 
                 statusModal.classList.add("hidden");
@@ -1228,6 +1202,15 @@
             document.getElementById("statusModal").classList.add("hidden");
         }
 
+        function requireCableConnection() {
+            // Setup je MOZNY IBA cez USB kabel - bez pripojenia sa nepokracuje
+            if (selectedTransport !== 'SERIAL' || !activeSerialPort) {
+                showValidationError("❌ Setup je možný IBA cez USB kábel. Vráť sa späť a pripoj CM5 (🔌 Pripojiť cez USB UART).");
+                return false;
+            }
+            return true;
+        }
+
         function goToSlide(slideIndex) {
             currentStep = slideIndex;
             showValidationError(null);
@@ -1286,6 +1269,7 @@
         }
 
         function handleTransitionToStep3() {
+            if (!requireCableConnection()) return;
             goToSlide(3);
         }
 
@@ -1343,6 +1327,7 @@
         }
 
         function submitStep1() {
+            if (!requireCableConnection()) return;
             const nameInput = document.getElementById('deviceName');
             if (nameInput && nameInput.value.trim()) deviceNameSaved = nameInput.value.trim();
             if (deviceConnected) updateConnStatus(true, selectedTransport === 'SERIAL' ? 'USB UART' : 'Cloud');
@@ -1510,6 +1495,7 @@ const cat = document.getElementById('categorySelect');
         }
 
         function submitStep3() {
+            if (!requireCableConnection()) return;
             goToSlide(4);
         }
 
