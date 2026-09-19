@@ -335,6 +335,109 @@ if (!function_exists('get_flash_messages')) {
 }
 
 if (!function_exists('get_user_devices')) {
+    // ========= ALERT SYSTEM: detekcia chyb + notifikacie + email =========
+    if (!function_exists('eval_device_alerts')) {
+        function eval_device_alerts($pdo, $device_ids, $notify_email = true) {
+            if (!$device_ids) return;
+            try {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS device_alerts (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    device_id INT NOT NULL,
+                    alert_key VARCHAR(40) NOT NULL,
+                    title VARCHAR(120) NOT NULL,
+                    body VARCHAR(255) DEFAULT '',
+                    severity VARCHAR(10) DEFAULT 'warn',
+                    first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    resolved_at DATETIME NULL,
+                    email_sent TINYINT(1) DEFAULT 0,
+                    UNIQUE KEY uq_alert (device_id, alert_key)
+                )");
+            } catch (Exception $e) { return; }
+            $now = time();
+            $ph = implode(',', array_fill(0, count($device_ids), '?'));
+            foreach ($device_ids as $did) {
+                $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ?");
+                $stmt->execute([$did]);
+                $d = $stmt->fetch();
+                if (!$d) continue;
+                $devAlerts = [];
+                // 1. OFFLINE - zariadenie neposiela telemetriu > 15 min
+                $lastSeen = $d['last_seen'] ?? null;
+                $commSec = $lastSeen ? ($now - strtotime($lastSeen)) : null;
+                if ($commSec === null || $commSec >= 900) {
+                    $mins = ($commSec !== null && $commSec > 0) ? floor($commSec / 60) : null;
+                    $devAlerts['offline'] = ['Zariadenie neodpovedá', ($d['name'] ?: 'Zariadenie') . ' neposiela dáta' . ($mins !== null ? ' už ' . $mins . ' min' : ' (žiadna telemetria)'), 'crit'];
+                }
+                // Telemetria status_msg - chyba striedaca
+                $soc = floatval($d['battery_soc'] ?? 0);
+                $temp = floatval($d['temp'] ?? 0);
+                $fresh = ($commSec !== null && $commSec < 900);
+                try {
+                    $t = $pdo->prepare("SELECT status_msg FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 1");
+                    $t->execute([$did]);
+                    $sm = (string)$t->fetchColumn();
+                    foreach (['chyba','neodpoved','fault','error','interrupt','nedostup','offline','fail'] as $kw) {
+                        if ($kw !== '' && function_exists('mb_stripos') ? (mb_stripos($sm, $kw) !== false) : (stripos($sm, $kw) !== false)) {
+                            $devAlerts['inv_error'] = ['Chyba striedača', ($d['name'] ?: 'Zariadenie') . ': ' . mb_substr($sm, 0, 180), 'crit'];
+                            break;
+                        }
+                    }
+                } catch (Exception $e) { /* ignore */ }
+                // 2. Nizky SOC (len ked je fresh telemetria - inak je to stale)
+                if ($fresh && $soc > 0 && $soc < 15) {
+                    $devAlerts['low_soc'] = ['Nízky stav batérie', ($d['name'] ?: 'Zariadenie') . ': SOC ' . round($soc) . '% — batéria je takmer vybitá', 'warn'];
+                }
+                // 3. Vysoka teplota
+                if ($fresh && $temp >= 65) {
+                    $devAlerts['high_temp'] = ['Vysoká teplota', ($d['name'] ?: 'Zariadenie') . ': teplota ' . round($temp) . ' °C', 'warn'];
+                }
+                // Upsert aktivnych alertov
+                foreach ($devAlerts as $key => $a) {
+                    $isNew = false;
+                    $chk = $pdo->prepare("SELECT id, email_sent FROM device_alerts WHERE device_id = ? AND alert_key = ?");
+                    $chk->execute([$did, $key]);
+                    $existing = $chk->fetch();
+                    if (!$existing) { $isNew = true; }
+                    $ins = $pdo->prepare("INSERT INTO device_alerts (device_id, alert_key, title, body, severity, last_seen) VALUES (?,?,?,?,?,NOW())
+                        ON DUPLICATE KEY UPDATE last_seen = NOW(), body = VALUES(body), resolved_at = NULL");
+                    $ins->execute([$did, $key, $a[0], $a[1], $a[2]]);
+                    // Email pri NOVOM alerte (nie pri kazdom opakovani)
+                    if ($isNew && $notify_email) {
+                        try {
+                            $u = $pdo->prepare("SELECT email FROM users WHERE id = (SELECT user_id FROM devices WHERE id = ?)");
+                            $u->execute([$did]);
+                            $email = $u->fetchColumn();
+                            if ($email) {
+                                require_once __DIR__ . '/mail_helper.php';
+                                $sevIcon = ($a[2] === 'crit') ? '🚨' : '⚠️';
+                                $sevColor = ($a[2] === 'crit') ? '#f43f5e' : '#f59e0b';
+                                send_elvo_email($email, $sevIcon . ' ' . $a[0] . ' | ElvoControll',
+                                    $sevIcon . ' ' . $a[0],
+                                    '<div style="margin:0 0 20px 0;padding:20px 22px;background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:14px;">' .
+                                    '<div style="font-size:15px;font-weight:700;color:#f9fafb;margin-bottom:8px;">' . htmlspecialchars($a[1]) . '</div>' .
+                                    '<div style="font-size:12px;color:#94a3b8;">Závažnosť: <strong style="color:' . $sevColor . ';">' . ($a[2] === 'crit' ? 'KRITICKÁ' : 'UPOZORNENIE') . '</strong> · ' . date('d.m.Y H:i') . '</div>' .
+                                    '</div>' .
+                                    '<p style="margin:0;font-size:13px;color:#cbd5e1;">Otvor dashboard pre detaily a stav zariadenia.</p>',
+                                    $sevColor);
+                            }
+                        } catch (Exception $eM) { /* ignore */ }
+                    }
+                    if ($existing && !$existing['email_sent'] && $isNew) { /* handled */ }
+                }
+                // Resolve alertov, ktore uz neplatie
+                if ($devAlerts) {
+                    $keys = array_keys($devAlerts);
+                    $ph2 = implode(',', array_fill(0, count($keys), '?'));
+                    $vals = array_merge([$did], $keys);
+                    $pdo->prepare("UPDATE device_alerts SET resolved_at = NOW() WHERE device_id = ? AND resolved_at IS NULL AND alert_key NOT IN ($ph2)")->execute($vals);
+                } else {
+                    $pdo->prepare("UPDATE device_alerts SET resolved_at = NOW() WHERE device_id = ? AND resolved_at IS NULL")->execute([$did]);
+                }
+            }
+        }
+    }
+
     function get_user_devices($pdo, $user_id) {
         $stmt = $pdo->prepare("SELECT * FROM devices WHERE user_id = ?");
         $stmt->execute([$user_id]);
@@ -1066,6 +1169,8 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                     $stmtC->execute([json_encode(array_slice($data['connected_devices'], 0, 64)), $device_id]);
                 }
             } catch (Exception $eC) { /* ignore */ }
+            // ALERT SYSTEM: vyhodnot alerty aj pri každej telemetrii (email aj keď nikto nepozerá dashboard)
+            try { eval_device_alerts($pdo, [$device_id]); } catch (Exception $eA) { /* ignore */ }
             send_json(['status' => 'success', 'device_id' => $device_id]);
         } catch (Exception $e) {
             send_json(['status' => 'error', 'message' => $e->getMessage()]);
@@ -1678,15 +1783,42 @@ elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && 
     ]);
 }
 
+// --- ALERTS: zoznam alertov pre pouzivatelove zariadenia ---
+elseif ($path === '/api/alerts' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) { send_json(['status' => 'error', 'error' => 'unauthorized']); exit; }
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM devices WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        eval_device_alerts($pdo, array_map('intval', $ids));
+        $a = $pdo->prepare("SELECT da.id, da.device_id, da.alert_key, da.title, da.body, da.severity, da.first_seen, da.last_seen, da.resolved_at, d.name AS dev_name
+            FROM device_alerts da JOIN devices d ON d.id = da.device_id
+            WHERE d.user_id = ? AND da.first_seen > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            ORDER BY da.resolved_at IS NULL DESC, da.severity = 'crit' DESC, da.last_seen DESC LIMIT 30");
+        $a->execute([$_SESSION['user_id']]);
+        $alerts = [];
+        foreach ($a->fetchAll() as $r) {
+            $alerts[] = [
+                'id' => intval($r['id']),
+                'device_id' => intval($r['device_id']),
+                'key' => $r['alert_key'],
+                'title' => $r['title'],
+                'body' => $r['body'],
+                'severity' => $r['severity'],
+                'dev_name' => $r['dev_name'],
+                'first_seen' => $r['first_seen'],
+                'active' => ($r['resolved_at'] === null)
+            ];
+        }
+        send_json(['status' => 'success', 'alerts' => $alerts]);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+}
+
 // --- PUSH SUBSCRIBE (ulozenie subscription) ---
 elseif ($path === '/api/push/subscribe' && $method === 'POST') {
-    // Jednoduche ulozenie - subscription JSON do system tabulky (bez push_subscriptions)
-    $data = get_json_input();
-    $endpoint = substr($data['endpoint'] ?? '', 0, 500);
-    try {
-        $stmt = $pdo->prepare("INSERT INTO cm5_config (serial_number, config_json, status) VALUES (?, ?, 'push_sub')");
-        $stmt->execute(['PUSH-' . md5($endpoint), json_encode($data)]);
-    } catch (Exception $e) { /* ignore */ }
+ // Lokalne notifikacie bezia cez Notification API (zvoncek) - subscription sa neuklada
     send_json(['status' => 'success']);
 }
 

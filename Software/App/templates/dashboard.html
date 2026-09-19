@@ -1211,6 +1211,19 @@
 
                 <!-- Right: Settings gear (profil replaced by gear icon) -->
                 <div class="user-profile-container">
+                    <button id="alertsBtn" onclick="toggleAlertsPanel(event)" aria-label="Notifikácie" style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);cursor:pointer;transition:all 0.2s;">
+                        <i data-lucide="bell" style="width:18px;height:18px;color:var(--text-primary);"></i>
+                        <span id="alertsBadge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#f43f5e;color:#fff;font-size:9px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 4px;">0</span>
+                    </button>
+                    <div id="alertsPanel" class="user-dropdown-card hidden" style="width:320px;max-height:420px;overflow-y:auto;right:0;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border-card);position:sticky;top:0;background:var(--bg-card);z-index:2;">
+                            <span style="font-size:12px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:6px;"><i data-lucide="bell-ring" style="width:14px;height:14px;color:var(--accent-solar);"></i> Notifikácie</span>
+                            <button id="notifPermBtn" onclick="enableNativeNotifications()" style="display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:var(--accent-battery);font-size:9px;font-weight:700;padding:4px 8px;border-radius:6px;cursor:pointer;">ZAPNÚŤ NOTIFIKÁCIE</button>
+                        </div>
+                        <div id="alertsList" style="padding:8px;">
+                            <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:11px;">Načítavam...</div>
+                        </div>
+                    </div>
                     <button id="userMenuBtn" onclick="toggleUserDropdown(event)" aria-label="Nastavenia" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);cursor:pointer;transition:all 0.2s;">
                         <i data-lucide="settings" style="width:18px;height:18px;color:var(--text-primary);"></i>
                     </button>
@@ -2342,6 +2355,101 @@
         // (odstránené: legacy localStorage prepis mena zariadenia - spôsoboval zlé meno "Elvocontrol")
 
 
+
+        // ============ ALERT SYSTEM (zvoncek + nativne notifikacie) ============
+        let lastAlertIds = new Set();
+        let notifPermissionAsked = false;
+
+        function initNotifPermission() {
+            try {
+                if ('Notification' in window) {
+                    const b = document.getElementById('notifPermBtn');
+                    if (b) {
+                        if (Notification.permission === 'default' && !notifPermissionAsked) { b.style.display = 'inline-block'; }
+                        else if (Notification.permission === 'granted') { b.style.display = 'none'; }
+                        else { b.style.display = 'none'; }
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function enableNativeNotifications() {
+            notifPermissionAsked = true;
+            try {
+                if ('Notification' in window) {
+                    Notification.requestPermission().then(p => {
+                        initNotifPermission();
+                        if (p === 'granted') showNativeAlert('ElvoControll', 'Notifikácie sú zapnuté — upozorníme ťa pri chybách zariadenia.');
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function showNativeAlert(title, body, tag) {
+            try {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(title, { body: body, icon: basePath + '/templates/ElvosolarLogo.png', badge: basePath + '/templates/ElvosolarLogo.png', tag: tag || 'elvo-alert', vibrate: [200, 100, 200] });
+                }
+            } catch (e) {}
+        }
+
+        function toggleAlertsPanel(ev) {
+            if (ev) ev.stopPropagation();
+            const p = document.getElementById('alertsPanel');
+            if (!p) return;
+            const u = document.getElementById('userDropdownMenu');
+            if (u && !u.classList.contains('hidden')) u.classList.add('hidden');
+            p.classList.toggle('hidden');
+            if (!p.classList.contains('hidden')) pollAlerts(true);
+        }
+
+        function renderAlerts(alerts) {
+            const list = document.getElementById('alertsList');
+            if (!list) return;
+            const active = alerts.filter(a => a.active);
+            const badge = document.getElementById('alertsBadge');
+            if (badge) {
+                if (active.length > 0) { badge.textContent = active.length; badge.style.display = 'flex'; }
+                else { badge.style.display = 'none'; }
+            }
+            if (alerts.length === 0) {
+                list.innerHTML = '<div style="text-align:center;padding:24px 10px;color:var(--text-muted);font-size:11px;"><i data-lucide="check-circle-2" style="width:26px;height:26px;color:var(--accent-battery);display:block;margin:0 auto 8px;"></i>Žiadne upozornenia.<br>Všetko beží ako má. ✅</div>';
+            } else {
+                list.innerHTML = alerts.map(a => {
+                    const isCrit = a.severity === 'crit';
+                    const color = a.active ? (isCrit ? '#f87171' : '#fbbf24') : 'var(--text-muted)';
+                    const bg = a.active ? (isCrit ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.07)') : 'transparent';
+                    const icon = isCrit ? 'alert-triangle' : 'alert-circle';
+                    const time = (a.last_seen || '').replace('T', ' ').substr(5, 11);
+                    return '<div style="padding:10px 12px;margin-bottom:6px;border-radius:12px;background:' + bg + ';border:1px solid ' + (a.active && isCrit ? 'rgba(239,68,68,0.25)' : a.active ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.05)') + ';opacity:' + (a.active ? '1' : '0.55') + ';">'
+                        + '<div style="display:flex;align-items:flex-start;gap:8px;">'
+                        + '<i data-lucide="' + icon + '" style="width:15px;height:15px;color:' + color + ';flex-shrink:0;margin-top:2px;"></i>'
+                        + '<div style="flex:1;min-width:0;">'
+                        + '<div style="font-size:12px;font-weight:800;color:' + (a.active ? 'var(--text-primary)' : 'var(--text-muted)') + ';">' + a.title + '</div>'
+                        + '<div style="font-size:10.5px;color:var(--text-secondary);line-height:1.5;margin-top:2px;">' + a.body + '</div>'
+                        + '<div style="font-size:9px;color:var(--text-muted);margin-top:5px;display:flex;justify-content:space-between;"><span>' + a.dev_name + '</span><span>' + time + (a.active ? '' : ' · vyriešené') + '</span></div>'
+                        + '</div></div></div>';
+                }).join('');
+            }
+            if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch (e) {} }
+        }
+
+        function pollAlerts(silent) {
+            fetch(basePath + '/api/alerts').then(r => r.json()).then(d => {
+                if (d.status !== 'success') return;
+                const alerts = d.alerts || [];
+                renderAlerts(alerts);
+                // Nativne notifikacie pre NOVE alerty
+                const active = alerts.filter(a => a.active);
+                active.forEach(a => {
+                    if (!lastAlertIds.has(a.id)) {
+                        const isCrit = a.severity === 'crit';
+                        showNativeAlert((isCrit ? '🚨 ' : '⚠️ ') + a.title, a.body + ' (' + a.dev_name + ')', 'alert-' + a.id);
+                    }
+                });
+                lastAlertIds = new Set(active.map(a => a.id));
+            }).catch(() => {});
+        }
 
         function switchTab(tabId) {
             const sections = {
@@ -3788,6 +3896,9 @@
             // === DEVICE STATUS CHECKER ===
             checkDeviceStatus();
             setInterval(checkDeviceStatus, 30000); // every 30s
+            setInterval(pollAlerts, 20000); // alert check kazdych 20s
+            pollAlerts();
+            initNotifPermission();
             // === PUSH NOTIFICATION REGISTRATION ===
             if ('serviceWorker' in navigator && 'Notification' in window) {
                 navigator.serviceWorker.register(basePath + '/sw.js').then(reg => {
