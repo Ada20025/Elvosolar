@@ -44,7 +44,8 @@ try {
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::ATTR_TIMEOUT            => 3
+        PDO::ATTR_TIMEOUT            => 3,
+        PDO::ATTR_PERSISTENT         => true
     ]);
 } catch (Exception $e) {
     error_log("[DB] MySQL pripojenie zlyhalo, prepínam na lokálny SQLite fallback: " . $e->getMessage());

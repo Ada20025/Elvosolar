@@ -362,6 +362,9 @@ if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
             ];
             $ext = strtolower(pathinfo($static_file, PATHINFO_EXTENSION));
             header('Content-Type: ' . ($mime_types[$ext] ?? 'application/octet-stream'));
+            // Cache: staticke subory 30 dni (prehlivac nesťahuje znova = jedno nacitanie menej)
+            header('Cache-Control: public, max-age=2592000, immutable');
+            header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT');
             readfile($static_file);
             exit;
         }
@@ -382,6 +385,7 @@ if (preg_match('#\.(png|jpg|jpeg|gif)$#i', $path)) {
         if (file_exists($img_path)) {
             $ext = strtolower(pathinfo($img_path, PATHINFO_EXTENSION));
             $mime_types = ['png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif'];
+            header('Cache-Control: public, max-age=2592000, immutable');
             header("Content-Type: " . ($mime_types[$ext] ?? 'image/png'));
             readfile($img_path);
             exit;
@@ -414,7 +418,9 @@ function fetch_okte_prices($date_from = null, $date_to = null, $cache_bust = '')
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+        curl_setopt($ch, CURLOPT_TCP_KEEPALIVE, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
