@@ -101,7 +101,7 @@ if (!function_exists('send_elvo_email')) {
                 <tr>
                     <td align="center">
                         <!-- Foto pozadie (Fotovoltika) - viditelne ak klient nepodporuje vml/vmlframme, inak prekryva foto -->
-                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; border-radius: 22px; overflow: hidden; border: 1px solid rgba(255,255,255,0.09); box-shadow: 0 20px 60px rgba(0,0,0,0.55); background-color: #0b1226; background-image: url('https://adamdz.alwaysdata.net/templates/Fotovoltika1.jpg'); background-size: cover; background-position: center;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; border-radius: 22px; overflow: hidden; border: 1px solid rgba(255,255,255,0.09); box-shadow: 0 20px 60px rgba(0,0,0,0.55); background-color: #0b1226; background-image: url(\"https://adamdz.alwaysdata.net/templates/Fotovoltika1.jpg\"); background-size: cover; background-position: center;">
                             <!-- Horný gradient prúžok -->
                             <tr>
                                 <td style="background: linear-gradient(90deg, #10b981 0%, #06b6d4 50%, #6366f1 100%); height: 5px; line-height: 5px; font-size: 5px;">&nbsp;</td>
