@@ -879,8 +879,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'is_online' => (($device['status'] ?? '') === 'online') || ($latest && (float)$latest['power_ac'] > 0),
         // Stav komunikacie: zariadenie odpovedalo v poslednych 15 minutach?
         'last_telemetry_at' => $latest ? $latest['timestamp'] : null,
-        'comm_ok' => $latest && (time() - strtotime($latest['timestamp']) < 900),
-        'last_comm_sec' => $latest ? (time() - strtotime($latest['timestamp'])) : null,
+        'comm_ok' => (function() use ($latest) { if (!$latest) return false; $d = time() - strtotime($latest['timestamp']); return $d >= 0 && $d < 900; })(),
+        'last_comm_sec' => $latest ? max(0, time() - strtotime($latest['timestamp'])) : null,
         // Typ zariadenia - rovnaka logika ako v dropdowne (model_name/sub_type),aby boli konzistentne
         'is_smartlogger' => (strpos(strtolower($device['model_name'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($device['sub_type'] ?? ''), 'smartlogger') !== false),
     ]);

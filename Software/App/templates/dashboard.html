@@ -718,6 +718,12 @@
             .ai-model-card { padding: 12px; }
             .relay-item-card { padding: 12px; }
             .holiday-grid { grid-template-columns: 1fr !important; }
+            #sectionDashboard > .dashboard-grid > div:first-child { gap: 14px !important; }
+            .okte-mobile-top { margin-bottom: 0 !important; }
+        }
+        @media (max-width: 768px) {
+            #elvoChart { height: 250px !important; }
+            #sectionDashboard .glass-card div[style*="height:320px"] { height: 250px !important; }
         }
         @media (max-width: 480px) {
             .metrics-grid-4 { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1414,7 +1420,7 @@
 
         <!-- Tab 2: SMART METER & AI REGULATION -->
         <section id="sectionMeter" class="view-section">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
 
             <!-- LEFT: Zap/Vyp/Smart AI - 3 velke karty -->
             <div class="glass-card" style="margin-bottom:0;">
@@ -2132,8 +2138,11 @@
             const deviceIcon = isLogger ? 'server' : 'zap';
 
             // === KOMUNIKÁCIA: či zariadenie reálne odpovedá (posledná telemetria do 15 min) ===
-            const commOk = data.comm_ok === true;
+            let commOk = data.comm_ok === true;
             const lastSec = data.last_comm_sec;
+            // Klientska konzistencia: odpoved musi byt v rozsahu 0-15 min (ochrana proti timezone bugom servera)
+            if (commOk && (lastSec === null || lastSec < 0 || lastSec >= 900)) commOk = false;
+            if (!commOk && lastSec !== null && lastSec < 0) { /* casove skew -> povazuj za fresh */ commOk = Math.abs(lastSec) < 900; }
             let commText, commColor;
             if (commOk) {
                 if (lastSec !== null && lastSec < 60) { commText = 'Odpovedá (teraz)'; }
@@ -2148,7 +2157,7 @@
             }
             // === STAV ZARIADENIA ===
             let stateText, stateColor;
-            if (!commOk && !isOnline) { stateText = 'OFFLINE'; stateColor = '#ef4444'; }
+            if (!commOk) { stateText = 'OFFLINE'; stateColor = '#ef4444'; }
             else if (power > 50) { stateText = '⚡ Výroba'; stateColor = 'var(--accent-solar)'; }
             else if (soc >= 95) { stateText = '🔋 Plná batéria'; stateColor = 'var(--accent-battery)'; }
             else if (soc > 30) { stateText = 'Pohotovostný režim'; stateColor = 'var(--accent-grid)'; }
@@ -2200,7 +2209,8 @@
                 busStatus.textContent = commOk ? (connTcp ? 'MODBUS TCP OK' : 'RS485 OK') : 'NO COMM';
                 busStatus.style.color = commOk ? 'var(--accent-battery)' : '#ef4444';
             }
-            if (busLatency) busLatency.textContent = isOnline ? '12 ms' : '–';
+            const realLatency = (commOk && data.latency_ms !== undefined && data.latency_ms !== null) ? (data.latency_ms + ' ms') : '–';
+            if (busLatency) busLatency.textContent = realLatency;
             if (dailyProd) dailyProd.textContent = isOnline ? (totalKwh.toFixed(1) + ' kWh') : '–';
             // Skry citacky (Latencia/Vyroba) ked je zariadenie offline
             const footerStats = document.getElementById('busFooterStats');
@@ -3485,7 +3495,7 @@
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 26, autoSkip: true, callback: function(v, idx) { const l = this.getLabelForValue(v); return (l && l.endsWith(':00')) ? l : ''; } } },
                         yPower: {
-                            type: 'linear', position: 'left', display: hasDevice,
+                            type: 'linear', position: 'left', display: hasDevice, beginAtZero: true,
                             grid: { color: 'rgba(255,255,255,0.03)' },
                             ticks: { color: '#f59e0b', font: { family: 'JetBrains Mono', size: 9 }, callback: v => (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) + 'W' }
                         },
@@ -3670,17 +3680,18 @@
             const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
             if (!devId) return;
             try {
-                const r = await fetch(`${basePath}/api/device/${devId}/status`);
+                const r = await fetch(`${basePath}/api/device/${devId}/telemetry`);
+                if (!r.ok) throw new Error('status fail');
                 const d = await r.json();
                 const btn = document.getElementById('deviceSelectDropdownBtn');
                 if (!btn) return;
-                const isOnline = d.status === 'online';
+                const isOnline = d.comm_ok === true;
                 btn.classList.remove('device-status-online', 'device-status-warning', 'device-status-offline');
                 btn.classList.add(isOnline ? 'device-status-online' : 'device-status-offline');
                 const lbl = document.getElementById('deviceStatusLabel');
                 if (lbl) lbl.style.background = isOnline ? '#10b981' : '#ef4444';
                 // Send notification on status change
-                if (lastDeviceOnline !== isOnline && Notification.permission === 'granted') {
+                if (lastDeviceOnline !== isOnline && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                     new Notification(isOnline ? '✅ Zariadenie online' : '❌ Zariadenie offline', {
                         body: isOnline ? 'Vaše zariadenie je opäť dostupné.' : 'Zariadenie prestalo komunikovať!',
                         icon: '/templates/ElvosolarLogo.png',
