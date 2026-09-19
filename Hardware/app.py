@@ -1779,14 +1779,26 @@ smart_meter = get_smart_meter_service(bg_service)
 def _startup_auto_discovery_loop():
     """Automaticky preskenuje a nájde všetky pripojené RS485 porty a sieťové zariadenia po štarte CM5."""
     time.sleep(3)
-    log_message("[STARTUP DISCOVERY] 🚀 Spúšťam automatické vyhľadanie všetkých portov...")
+    # RESPEKT SETUP: ak je connection_type TCP/LAN, RS485 sken je zbytocny (nie je co hladat)
+    _conn_type = ''
+    try:
+        _rows = db_execute("SELECT value FROM system_settings WHERE key = 'connection_type'")
+        if _rows: _conn_type = str(_rows[0]['value'] or '').lower()
+    except Exception: pass
+    if 'tcp' in _conn_type or 'lan' in _conn_type:
+        log_message(f"[STARTUP DISCOVERY] 🔌 Pripojenie: LAN (Modbus TCP) — RS485 sken preskočený")
+    else:
+        log_message("[STARTUP DISCOVERY] 🚀 Spúšťam automatické vyhľadanie všetkých portov...")
     try:
         if 'led' in globals():
             led.anim_scanning()
         
-        # 1. Automatické vyhľadanie a overenie RS485 portu
-        detected_port = _auto_detect_rs485_port()
-        log_message(f"[STARTUP DISCOVERY] ✅ RS485 port detegovaný a pripravený: {detected_port}")
+        # 1. Automatické vyhľadanie a overenie RS485 portu (iba pri RS485 pripojení)
+        if 'tcp' in _conn_type or 'lan' in _conn_type:
+            detected_port = None
+        else:
+            detected_port = _auto_detect_rs485_port()
+            log_message(f"[STARTUP DISCOVERY] ✅ RS485 port detegovaný a pripravený: {detected_port}")
         
         # 2. Rýchly scan siete pre Modbus TCP a SmartLogger
         try:

@@ -452,7 +452,20 @@ class SolarBackgroundService:
             except: pass
 
     def is_tcp_device(self, dev_config):
-        """Zisti ci je zariadenie TCP (SmartLogger) alebo RS485 (striedac)."""
+        """Zisti ci je zariadenie TCP (SmartLogger) alebo RS485 (striedac).
+        PRIORITA: connection_type ulozeny v devices (zo setupu) > DEVICE_DB typ."""
+        # 1) Zo zariadenia v DB (ulozene v setupu) - najsilnejsia priorita
+        try:
+            rows = db_execute("SELECT connection_type FROM devices LIMIT 1")
+            if rows and rows[0]['connection_type']:
+                ct = str(rows[0]['connection_type']).lower()
+                if 'tcp' in ct or 'lan' in ct:
+                    return True
+                if 'rtu' in ct or 'rs485' in ct:
+                    return False
+        except Exception:
+            pass
+        # 2) Z configu modelu (DEVICE_DB)
         if not dev_config:
             return False
         conn = dev_config.get('connection', '')
@@ -479,7 +492,12 @@ class SolarBackgroundService:
         if row:
             tcp_ip = row[0]['value']
         
-        # Fallback: hladaj v device extra settings
+        # Fallback 1: IP ulozena v devices tabulke (z setupu kablom)
+        if not tcp_ip:
+            row_ip = db_execute("SELECT smartlogger_ip FROM devices WHERE smartlogger_ip IS NOT NULL AND smartlogger_ip != '' LIMIT 1")
+            if row_ip:
+                tcp_ip = row_ip[0]['smartlogger_ip']
+        # Fallback 2: hladaj v device extra settings
         if not tcp_ip:
             row2 = db_execute(f"SELECT value FROM system_settings WHERE key = 'smartlogger_ip'")
             if row2:
@@ -913,15 +931,16 @@ class SolarBackgroundService:
                         
                         if tcp_ip:
                             # Nastav vykon: ON=100%, OFF=0%, AUTO=AI rozhodne
+                            # Huawei register 40428 (Active power adjustment %, gain 10, offset -1 => wire adresa 40427)
                             power_pct = 100 if target_on else 0
-                            reg_val = int(power_pct * 10)  # gain 10
-                            if reg_val < 0: reg_val += 0x10000
+                            reg_val = int(power_pct * 10) & 0xFFFF  # gain 10
+                            tcp_addr = int(cfg.get('power_reg_offset', 40428)) - 1
                             
                             # Uisti ze je pripojeny
                             if not self.tcp_connections.get(str(dev_id)) or not self.tcp_connections[str(dev_id)].get('sock'):
                                 self.tcp_connect(dev_id, tcp_ip, tcp_port)
                             
-                            ok = self.tcp_write_register(dev_id, tcp_unit, 40428, reg_val)
+                            ok = self.tcp_write_register(dev_id, tcp_unit, tcp_addr, reg_val)
                             if ok:
                                 self.log_to_terminal(f"[TCP WRITE] SmartLogger {tcp_ip}: vykon nastaveny na {power_pct}%")
                             else:
@@ -1158,15 +1177,19 @@ class SolarBackgroundService:
                             ser = self.get_serial_port(int(cfg.get('baud', 9600) or 9600))
                             if ser and ser.is_open:
                                 self.raw_write_register(ser, slave_id, on_reg, on_val, function_code=6)
-                        # SmartLogger TCP: 100% = 1000 (gain 10) na register 40428
+                        # SmartLogger TCP: 100% = 1000 (gain 10), register 40428 s offsetom -1
                         if self.is_tcp_device(cfg):
                             tcp_ip = cfg.get('ip', '')
+                            if not tcp_ip:
+                                ip_rows = db_execute("SELECT value FROM system_settings WHERE key = 'smartlogger_ip'")
+                                if ip_rows: tcp_ip = ip_rows[0]['value']
                             if tcp_ip:
                                 dev_id = r['id'] if 'id' in r.keys() else 1
                                 if not self.tcp_connections.get(str(dev_id)) or not self.tcp_connections[str(dev_id)].get('sock'):
                                     try: self.tcp_connect(dev_id, tcp_ip, int(cfg.get('port', 502)))
                                     except Exception: pass
-                                self.tcp_write_register(dev_id, int(cfg.get('unit_id', 0) or 0), 40428, 1000)
+                                tcp_addr = int(cfg.get('power_reg_offset', 40428)) - 1
+                                self.tcp_write_register(dev_id, int(cfg.get('unit_id', 0) or 0), tcp_addr, 1000)
                     except Exception as eD:
                         self.log_to_terminal(f"[FAIL-SAFE] Zápis 100% zlyhal pre {r['slave_id']}: {eD}")
         except Exception as eW:
