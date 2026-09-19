@@ -231,18 +231,22 @@ def register_to_cloud(config):
             log(f"⏳ Cloud nedostupny (skusam dalej): {e}")
         return False
 
-    # Prvy pokus hned (mozno uz ma internet cez LAN)
-    if _try_register():
-        return
-
-    # Retry loop v backgrounde - kazdych 30s max 20 krat (~10 minut)
+    # Vsetko v backgrounde - setup potvrdi OKAMZITE aj ked cloud nie je dostupny.
+    # CM5 funguje lokalne (Local Modbus) uplne bez cloudu - registracia je len pre dashboard.
     def _retry():
+        # Prvy pokus hned (mozno uz ma internet cez LAN)
+        if _try_register():
+            return
+        # Retry loop - kazdych 30s max 20 krat (~10 minut), bezpecne bez WiFi aj bez internetu
         for _ in range(20):
             time.sleep(30)
             if _try_register():
                 return
     threading.Thread(target=_retry, daemon=True).start()
-    """Pokus sa pripojit na WiFi ak prisla v configu (nmcli)."""
+
+
+def connect_wifi_if_needed(ssid, password):
+    """Pokus sa pripojit na WiFi ak prisla v configu (nmcli). Funguje aj bez WiFi - vsetko islo kablom."""
     if not ssid:
         return
     try:
