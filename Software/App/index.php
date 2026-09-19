@@ -711,13 +711,12 @@ elseif ($path === '/login') {
                         '<p style="margin:12px 0 0 0;font-size:12px;color:#64748b;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
                         '#6366f1');
                     }
-                    // BEZPECNOST: kod sa NIKDY nezobrazuje na obrazovke - ide len emailom.
-                    // (dočasne ladiť možno cez env premennú DEV_SHOW_CODE=1 na Railway)
-                    if (!$mail_sent && getenv('DEV_SHOW_CODE') === '1') {
-                        $_SESSION['pending_login']['dev_code'] = $code;
-                    }
+                    // FALLBACK bez mailu: ak sa mail NEPODAL odoslat (ziadny RESEND_API_KEY/SMTP),
+                    // kod sa zobrazi hore na obrazovke - inak by sa user nemohol nikdy prihlasit.
+                    // Ak mail odchadza, kod sa NIKDY nezobrazi (plna 2FA bezpecnost).
                     if (!$mail_sent) {
-                        error_log("[LOGIN] Mail sa nepodarilo odoslat na " . $email . " - skontroluj RESEND_API_KEY/MAIL_RELAY_URL na Railway");
+                        $_SESSION['pending_login']['dev_code'] = $code;
+                        error_log("[LOGIN] Mail sa nepodarilo odoslat na " . $email . " - kod zobrazeny na obrazovke (fallback)");
                     }
                     header("Location: " . $base_path . "/verify-login");
                     exit;
@@ -812,7 +811,7 @@ elseif ($path === '/verify-login/resend' && $method === 'GET') {
             } catch (Exception $me) { $mail_sent2 = false; }
         }
         // kod sa nezobrazuje na obrazovke (bezpecnost) - len mail
-        if (!$mail_sent2 && getenv('DEV_SHOW_CODE') === '1') $_SESSION['pending_login']['dev_code'] = $code;
+        if (!$mail_sent2) $_SESSION['pending_login']['dev_code'] = $code;
     }
     header("Location: " . $base_path . "/verify-login");
     exit;
