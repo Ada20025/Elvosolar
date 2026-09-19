@@ -409,9 +409,7 @@ document.querySelectorAll('.tele-card').forEach(c=>c.classList.add('shimmer'));
 (function(){const h=new Date().getHours();const name='<?php echo htmlspecialchars($device["name"] ?? "Stanica"); ?>';let e,s;
 if(h>=5&&h<9){e='🌅';s='Ráno OUTPUT je na maximum';}else if(h>=9&&h<14){e='☀️';s='Solárny špičkový režim — maximum výkonu';}else if(h>=14&&h<18){e='🌤️';s='Popoludňajší režim — optimálny výkon FVE';}else if(h>=18&&h<22){e='🌇';s='Večerný režim — prechod na batérie';}else{e='🌙';s='Nočný režim — úsporný spánok';}
 document.getElementById('device-greeting').innerText=`${e} ${name} — ${e==='🌙'?'Dobrá noc':'Pekný deň'}!`;
-document.getElementById('device-greeting-sub').innerText=s+'
-
-⚠️ Zatiaľ v bete — aktívne modely: 1, 2, 3, 4, 5. Aktualizácie kódov prebiehajú.';})();
+document.getElementById('device-greeting-sub').innerText=s+'\n\n⚠️ Zatiaľ v bete — aktívne modely: 1, 2, 3, 4, 5. Aktualizácie kódov prebiehajú.';})();
 let appBoilerOn=true,appPoolOn=true;let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();deferredPrompt=e;document.getElementById('pwaInstallBanner').classList.remove('hidden');});
 function triggerPwaInstall(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>dismissPwaPrompt());}else{alert("Inštalačný balíček pripravený.");dismissPwaPrompt();}}
