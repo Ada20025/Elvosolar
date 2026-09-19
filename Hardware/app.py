@@ -1782,9 +1782,14 @@ def _startup_auto_discovery_loop():
     # RESPEKT SETUP: ak je connection_type TCP/LAN, RS485 sken je zbytocny (nie je co hladat)
     _conn_type = ''
     try:
-        _rows = db_execute("SELECT value FROM system_settings WHERE key = 'connection_type'")
-        if _rows: _conn_type = str(_rows[0]['value'] or '').lower()
-    except Exception: pass
+        # connection_type uklada SETUP do tabulky devices (nie system_settings)
+        _rows = db_execute("SELECT connection_type FROM devices WHERE connection_type IS NOT NULL AND connection_type != '' LIMIT 1")
+        if _rows: _conn_type = str(_rows[0]['connection_type'] or '').lower()
+    except Exception:
+        try:
+            _rows = db_execute("SELECT value FROM system_settings WHERE key = 'connection_type'")
+            if _rows: _conn_type = str(_rows[0]['value'] or '').lower()
+        except Exception: pass
     if 'tcp' in _conn_type or 'lan' in _conn_type:
         log_message(f"[STARTUP DISCOVERY] 🔌 Pripojenie: LAN (Modbus TCP) — RS485 sken preskočený")
     else:
