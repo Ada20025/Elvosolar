@@ -33,7 +33,9 @@ WorkingDirectory=/home/pi/Hardware
 ExecStart=/bin/bash /home/pi/Hardware/start.sh
 Restart=always
 RestartSec=5s
-KillMode=process
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=15
 StandardOutput=journal
 StandardError=journal
 Environment=PYTHONUNBUFFERED=1
