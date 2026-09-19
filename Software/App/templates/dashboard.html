@@ -1317,8 +1317,8 @@
                         </div>
 
                         <div class="metric-card" style="--line-color: var(--accent-grid);">
-                            <span class="metric-label-styled"><i data-lucide="activity" style="width:12px;height:12px;color:var(--accent-grid);"></i> Odber zo Siete</span>
-                            <span class="metric-value-styled text-grid" id="dashConsumption">0 W</span>
+                            <span class="metric-label-styled"><i data-lucide="activity" style="width:12px;height:12px;color:var(--accent-grid);"></i> Odber zo Siete <i data-lucide="info" style="width:10px;height:10px;color:var(--text-muted);cursor:help;" title="Bez Smart Meteru sa odber odhaduje z bilancie výroby a spotreby. Pre presný údaj pripoj Smart Meter."></i></span>
+                            <span class="metric-value-styled text-grid" id="dashConsumption">–</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashConsumptionBar" class="metric-bar-fill"></div>
                             </div>
@@ -2558,7 +2558,14 @@
                 const elSaved = document.getElementById('dashTotalSaved');
                 if (elPower) elPower.innerText = `${Math.round(data.total_live_power || 0)} W`;
                 if (elSoc) elSoc.innerText = `${Math.round(data.avg_live_soc || 0)}%`;
-                if (elCons) elCons.innerText = `${Math.round(data.consumption || 0)} W`;
+                // Odber zo siete: 0 a ziaden smart meter = odhad (nie presne meranie) -> ukaz odhad, inak –
+                if (elCons) {
+                    const cons = Math.round(data.consumption || 0);
+                    const hasMeter = data.has_smart_meter === true;
+                    if (cons > 0) { elCons.innerText = `~${cons} W`; }
+                    else if (hasMeter) { elCons.innerText = '0 W'; }
+                    else { elCons.innerText = '~800 W (odhad)'; }
+                }
                 if (elSaved) elSaved.innerText = `${(parseFloat(data.total_saved_eur) || 0).toFixed(2)} €`;
 
                 const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : (Math.round(data.avg_live_soc) || 0);
@@ -3942,14 +3949,28 @@
             setInterval(pollAlerts, 20000); // alert check kazdych 20s
             pollAlerts();
             initNotifPermission();
-            // === PUSH NOTIFICATION REGISTRATION ===
+            // === PUSH NOTIFICATION REGISTRATION (Web Push VAPID - chodia aj ked je appka zatvorena) ===
             if ('serviceWorker' in navigator && 'Notification' in window) {
                 navigator.serviceWorker.register(basePath + '/sw.js').then(reg => {
                     console.log('[PUSH] SW registered');
-                    return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(document.querySelector('meta[name="vapid-key"]')?.content || '') });
+                    return Promise.all([reg, fetch(basePath + '/api/push/vapid').then(r => r.json())]);
+                }).then(([reg, vk]) => {
+                    if (!vk.pub) throw new Error('no vapid key');
+                    const existing = localStorage.getItem('elvo_push_endpoint');
+                    // Ak uz mame subscription, obnov ju (endpoint moze byt stary)
+                    return reg.pushManager.getSubscription().then(sub => {
+                        if (sub) {
+                            fetch(basePath + '/api/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(sub.toJSON()) });
+                            localStorage.setItem('elvo_push_endpoint', sub.endpoint);
+                            return null;
+                        }
+                        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vk.pub) });
+                    });
                 }).then(sub => {
+                    if (!sub) return;
                     console.log('[PUSH] Subscribed:', sub.endpoint.substring(0, 40));
-                    fetch(basePath + '/api/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(sub) });
+                    localStorage.setItem('elvo_push_endpoint', sub.endpoint);
+                    fetch(basePath + '/api/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(sub.toJSON()) });
                 }).catch(e => console.log('[PUSH] Error:', e.message));
             }
             // === ONBOARDING ===

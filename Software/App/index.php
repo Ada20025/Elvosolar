@@ -409,6 +409,17 @@ if (!function_exists('get_user_devices')) {
                             $u->execute([$did]);
                             $email = $u->fetchColumn();
                             if ($email) {
+                                // WEB PUSH na vsetky zariadenia usera (aj ked je appka zatvorena)
+                                try {
+                                    $uidStmt = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
+                                    $uidStmt->execute([$did]);
+                                    $alertUid = intval($uidStmt->fetchColumn());
+                                    if ($alertUid) {
+                                        elvo_push_user($pdo, $alertUid,
+                                            ($a[2] === 'crit' ? '\u{1F6A8} ' : '\u{26A0}\u{FE0F} ') . $a[0],
+                                            $a[1], 'alert-' . $key, '/dashboard');
+                                    }
+                                } catch (Exception $eP) { /* ignore */ }
                                 require_once __DIR__ . '/mail_helper.php';
                                 $sevIcon = ($a[2] === 'crit') ? '🚨' : '⚠️';
                                 $sevColor = ($a[2] === 'crit') ? '#f43f5e' : '#f59e0b';
@@ -1002,6 +1013,7 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'slave_id' => $device['modbus_slave_id'] ?? $device['slave_id'] ?? 0,
         'smartlogger_ip' => $device['smartlogger_ip'] ?? '',
         'is_online' => (($device['status'] ?? '') === 'online') || ($latest && (float)$latest['power_ac'] > 0),
+        'has_smart_meter' => (bool)($device['has_smart_meter'] ?? false),
         // Stav komunikacie: zariadenie odpovedalo v poslednych 15 minutach?
         'last_telemetry_at' => $latest ? $latest['timestamp'] : null,
         'comm_ok' => (function() use ($latest) { if (!$latest) return false; $d = time() - strtotime($latest['timestamp']); return $d >= 0 && $d < 900; })(),
@@ -1813,6 +1825,66 @@ elseif ($path === '/api/alerts' && $method === 'GET') {
         send_json(['status' => 'success', 'alerts' => $alerts]);
     } catch (Exception $e) {
         send_json(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+}
+
+// --- VAPID PUBLIC KEY pre frontend ---
+elseif ($path === '/api/push/vapid' && $method === 'GET') {
+    require_once __DIR__ . '/push_helper.php';
+    $keys = elvo_push_keys($pdo);
+    send_json(['status' => 'success', 'pub' => $keys ? $keys['pub'] : '']);
+}
+
+// --- PUSH SUBSCRIBE (ulozenie subscription do push_subs) ---
+elseif ($path === '/api/push/subscribe' && $method === 'POST') {
+    $data = get_json_input();
+    $endpoint = substr($data['endpoint'] ?? '', 0, 500);
+    if ($endpoint === '') { send_json(['status' => 'error', 'error' => 'missing endpoint']); exit; }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS push_subs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            endpoint VARCHAR(500) NOT NULL,
+            sub_json TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_endpoint (endpoint)
+        )");
+        $uid = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0;
+        $pdo->prepare("INSERT INTO push_subs (user_id, endpoint, sub_json) VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), sub_json = VALUES(sub_json)")
+            ->execute([$uid, $endpoint, json_encode($data)]);
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
+}
+
+// --- PUSH UNSUBSCRIBE (zariadenie sa odhlasilo) ---
+elseif ($path === '/api/push/unsubscribe' && $method === 'POST') {
+    $data = get_json_input();
+    $endpoint = substr($data['endpoint'] ?? '', 0, 500);
+    try { $pdo->prepare("DELETE FROM push_subs WHERE endpoint = ?")->execute([$endpoint]); } catch (Exception $e) {}
+    send_json(['status' => 'success']);
+}
+
+// --- INTERNY: posli push vsetkym zariadeniam usera (pouziva aj eval_device_alerts) ---
+if (!function_exists('elvo_push_user')) {
+    function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url) {
+        try {
+            require_once __DIR__ . '/push_helper.php';
+            $stmt = $pdo->prepare("SELECT sub_json FROM push_subs WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+            $sent = 0;
+            foreach ($stmt->fetchAll() as $row) {
+                $sub = json_decode($row['sub_json'], true);
+                if (!is_array($sub)) continue;
+                $r = elvo_push_send($pdo, $sub, $title, $body, $tag, $url);
+                if ($r === 'expired') {
+                    $pdo->prepare("DELETE FROM push_subs WHERE endpoint = ?")->execute([$sub['endpoint'] ?? '']);
+                } elseif ($r === true) {
+                    $sent++;
+                }
+            }
+            return $sent > 0;
+        } catch (Exception $e) { return false; }
     }
 }
 
