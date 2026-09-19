@@ -1862,6 +1862,47 @@ elseif ($path === '/api/alerts' && $method === 'GET') {
     }
 }
 
+// --- ADMIN RECOVERY: reset admin hesla cez tajny kluc (nucdezovy pristup k setupu) ---
+elseif ($path === '/admin-recovery' && $method === 'POST') {
+    $data = get_json_input();
+    $key = trim($data['key'] ?? '');
+    $newpass = (string)($data['new_password'] ?? '');
+    $email = trim($data['email'] ?? '');
+    // TAJNY KLUC - zmenitelny cez env ADMIN_RECOVERY_KEY (default pre prvotne nastavenie)
+    $expected = getenv('ADMIN_RECOVERY_KEY') ?: 'ELVO-RESCUE-2026';
+    if ($key !== $expected) {
+        error_log('[RECOVERY] Zly pokus o recovery (zlý kľúč) z IP ' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
+        send_json(['status' => 'error', 'message' => 'Neplatný kľúč.'], 403);
+    }
+    if (strlen($newpass) < 8) {
+        send_json(['status' => 'error', 'message' => 'Heslo musí mať aspoň 8 znakov.'], 400);
+    }
+    try {
+        // Najdi admina (podla emailu alebo prvého admina v DB)
+        if ($email !== '') {
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'admin' AND email = ? LIMIT 1");
+            $stmt->execute([$email]);
+        } else {
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
+            $stmt->execute();
+        }
+        $admin = $stmt->fetch();
+        $hash = password_hash($newpass, PASSWORD_DEFAULT);
+        if ($admin) {
+            $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$hash, $admin['id']]);
+            send_json(['status' => 'success', 'message' => 'Heslo admina bolo resetované. Prihlás sa novým heslom.']);
+        } else {
+            // Žiadny admin neexistuje -> vytvor
+            if ($email === '') $email = 'admin@elvosolar.sk';
+            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES ('Admin', ?, ?, 'admin', 1)")
+                ->execute([$email, $hash]);
+            send_json(['status' => 'success', 'message' => 'Admin účet vytvorený (' . $email . '). Prihlás sa novým heslom.']);
+        }
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => 'DB chyba: ' . $e->getMessage()], 500);
+    }
+}
+
 // --- VAPID PUBLIC KEY pre frontend ---
 elseif ($path === '/api/push/vapid' && $method === 'GET') {
     require_once __DIR__ . '/push_helper.php';
