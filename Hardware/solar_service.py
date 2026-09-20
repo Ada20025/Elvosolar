@@ -1037,6 +1037,7 @@ class SolarBackgroundService:
                 
                 self.live_data[slave_id] = {
                     'serial_number': dev['serial_number'],
+                    'serial': dev['serial_number'],
                     'slave_id': slave_id,
                     'power_ac': power_val,
                     'battery_soc': soc_val,
@@ -1113,6 +1114,7 @@ class SolarBackgroundService:
                                 LedService.blink_start_led(4)
 
                     self.live_data[slave_id] = {
+                    'serial': dev['serial_number'],
                         "serial_number": dev['serial_number'],
                         "slave_id": slave_id,
                         "power_ac": power_val,
@@ -1154,6 +1156,7 @@ class SolarBackgroundService:
                 slave_id = dev['slave_id']
                 self.live_data[slave_id] = {
                     "serial_number": dev['serial_number'],
+                    "serial": dev['serial_number'],
                     "slave_id": slave_id,
                     "power_ac": 0.0,
                     "battery_soc": 0.0,

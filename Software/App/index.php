@@ -1123,7 +1123,8 @@ elseif ($path === '/api/report-ip' && $method === 'POST') {
 // --- CLOUD SYNC TELEMETRIA (CM5 posiela realne data) ---
 elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     $data = get_json_input();
-    $serial = trim($data['serial'] ?? 'CM5-DEFAULT');
+    // CM5 posiela 'serial_number' v telemetry payload - akceptuj OBA kluce (ziadny CM5-DEFAULT fallback!)
+    $serial = trim($data['serial'] ?? $data['serial_number'] ?? '');
     
     // Najdi zariadenie podla serial alebo prve
     $device_id = 0;
