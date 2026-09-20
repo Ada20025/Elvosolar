@@ -484,7 +484,9 @@ def serial_reader_loop():
                     time.sleep(0.2)
 
         except Exception as e:
+            import traceback
             log(f"Port {port} chyba: {e}")
+            log(f"   traceback: {traceback.format_exc().strip().splitlines()[-2:]}" if traceback.format_exc().strip() else "   (bez detailov)")
             time.sleep(5)
         finally:
             if ser:
