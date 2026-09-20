@@ -474,7 +474,7 @@
                                 <div class="flex gap-2 items-end">
                                     <div class="flex-1">
                                         <label class="text-[9px] font-bold text-slate-400">Testovací výkon (%) — <span id="testAttemptLabel" class="text-cyan-400">SKÚŠKA 1/2</span></label>
-                                        <input id="testPowerInput" type="number" value="30" min="0" max="100" step="1" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2.5 outline-none font-mono focus:border-cyan-500 transition">
+                                        <input id="testPowerInput" type="number" value="30" min="-100" max="100" step="1" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2.5 outline-none font-mono focus:border-cyan-500 transition">
                                         <div class="text-[8px] text-slate-500 mt-1">Test ide káblom do CM5 a CM5 ho vykoná na SmartLogger (Register 40428). Druhá skúška musí mať INÚ hodnotu.</div>
                                     </div>
                                     <button type="button" onclick="runPowerTest()" id="btnTestSmartlogger" class="px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white font-extrabold text-xs py-3 rounded-xl tracking-wide transition shadow-lg whitespace-nowrap cursor-pointer">📡 ODOŠLI</button>
@@ -1082,10 +1082,10 @@
                 return;
             }
             const pct = parseFloat(document.getElementById('testPowerInput').value);
-            if (isNaN(pct) || pct < 0 || pct > 100) {
+            if (isNaN(pct) || pct < -100 || pct > 100) {
                 resultBox.classList.remove('hidden');
                 resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
-                resultBox.innerHTML = 'Zadaj hodnotu od 0 do 100 (%). Záporné hodnoty SmartLogger prijíma len so zapnutým Remote communication scheduling (P) v Enspire.';
+                resultBox.innerHTML = 'Zadaj hodnotu od −100 do 100 (%) — oficiálny rozsah registra 40428.';
                 return;
             }
             if (testAttempt === 2 && pct === firstTestVal) {
@@ -1211,6 +1211,7 @@
 
             if (!ok) {
                 confirmRow.classList.add('hidden');
+                const wasNegative = pct < 0;
                 resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300 space-y-1';
                 resultBox.innerHTML = '✗ Skúška ' + testAttempt + '/2 NEPREŠLA — prečo a čo skontrolovať:' +
                     '<div class="text-[10px] mt-1 space-y-0.5">' +
@@ -1218,7 +1219,10 @@
                     '<div>2. V Enspire: Link setting = Enable (Unlimited)</div>' +
                     '<div>3. V Enspire: Client IP = 0.0.0.0 (povolené všetky)</div>' +
                     '<div>4. LAN kábel CM5 ↔ SmartLogger zapojený a link LED svieti</div>' +
-                    '<div>5. Hodnota sa v Enspire reálne nezmenila? — oprav a skús znova</div></div>';
+                    (wasNegative
+                        ? '<div>5. ⚠️ Záporná hodnota ("' + pct + ' %") = nabíjanie ESS zo siete. SmartLogger ju prijíma IBA ak sú ESS (batérie) zaregistrované a zapojené v SmartLoggere — skús najprv kladnú hodnotu</div>'
+                        : '<div>5. Hodnota sa v Enspire reálne nezmenila? — oprav a skús znova</div>') +
+                    '</div>';
                 scanStatus.className = 'p-4 bg-rose-950/30 border border-rose-500/40 rounded-xl text-xs text-center font-bold text-rose-300';
                 scanStatus.innerHTML = '✗ Skúška ' + testAttempt + '/2 neprešla — oprav a skúš znova';
                 return;
