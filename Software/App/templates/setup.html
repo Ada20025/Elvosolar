@@ -1125,11 +1125,15 @@
                 return;
             }
             const rb = resp.readback_pct;
+            const orig = resp.original_pct;
+            if (testAttempt === 1) {
+                window._origPct = (orig !== null && orig !== undefined) ? orig : null;
+            }
             resultBox.className = 'text-xs rounded-xl p-3 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
             resultBox.innerHTML = '✓ Zápis ' + pct + ' % prešiel' + (rb !== null && rb !== undefined ? ' — spätné čítanie: ' + rb + ' %' : '') +
-                '<div class="text-[10px] text-slate-400 mt-1">Automaticky pokračujem — žiadne potvrdzovanie netreba...</div>';
-            // PLNE AUTOMATICKY: spätné čítanie z registra je dôkaz — žiadne ručné ANO/NIE
-            setTimeout(() => confirmPowerTest(true), 900);
+                '<div class="text-[10px] text-slate-400 mt-1">Over hodnotu v Enspire webe SmartLoggera a potvrď:</div>';
+            // SKÚŠKA 1: POUŽÍVATEĽ POTVRDÍ ANO/NIE (podľa Enspire)
+            confirmRow.classList.remove('hidden');
         }
 
         function confirmPowerTest(ok) {
@@ -1140,29 +1144,50 @@
 
             if (!ok) {
                 confirmRow.classList.add('hidden');
-                resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
-                resultBox.innerHTML = '✗ Test zamietnutý. Skontroluj v SmartLoggere: Logger address = 0, Link setting = Enable (Unlimited), Client IP = 0.0.0.0 — a skús znova.';
+                resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300 space-y-1';
+                resultBox.innerHTML = '✗ Skúška ' + testAttempt + '/2 NEPREŠLA — prečo a čo skontrolovať:' +
+                    '<div class="text-[10px] mt-1 space-y-0.5">' +
+                    '<div>1. V Enspire: Logger address = 0</div>' +
+                    '<div>2. V Enspire: Link setting = Enable (Unlimited)</div>' +
+                    '<div>3. V Enspire: Client IP = 0.0.0.0 (povolené všetky)</div>' +
+                    '<div>4. LAN kábel CM5 ↔ SmartLogger zapojený a link LED svieti</div>' +
+                    '<div>5. Hodnota sa v Enspire reálne nezmenila? — oprav a skús znova</div></div>';
                 scanStatus.className = 'p-4 bg-rose-950/30 border border-rose-500/40 rounded-xl text-xs text-center font-bold text-rose-300';
-                scanStatus.innerHTML = '✗ Test neprešiel — oprav a skús znova';
+                scanStatus.innerHTML = '✗ Skúška ' + testAttempt + '/2 neprešla — oprav a skúš znova';
                 return;
             }
 
             confirmRow.classList.add('hidden');
             if (testAttempt === 1) {
+                // SKÚŠKA 1 OK → SKÚŠKA 2 (web, bez kábla)
                 firstTestVal = pct;
                 testAttempt = 2;
                 const nextVal = (pct === 50 ? 30 : 50);
-                document.getElementById('testAttemptLabel').innerText = 'SKÚŠKA 2/2 (automaticky...)';
+                document.getElementById('testAttemptLabel').innerText = 'SKÚŠKA 2/2 (cez web — odpoj kábel)';
                 document.getElementById('testPowerInput').value = nextVal;
-                resultBox.className = 'text-xs rounded-xl p-3 bg-cyan-950/40 border border-cyan-500/40 text-cyan-300';
-                resultBox.innerHTML = '✓ Skúška 1/2 prešla (' + pct + ' %). Automaticky posielam SKÚŠKU 2/2 s inou hodnotou (' + nextVal + ' %)...';
-                // Auto-send druhej skúšky - používateľ nemusí nič klikať
-                setTimeout(() => runPowerTest(), 1200);
+                const origTxt = window._origPct !== null && window._origPct !== undefined
+                    ? 'Pôvodná hodnota pred testom: ' + window._origPct + ' % (tú vráť späť na konci).'
+                    : 'Zapamätaj si, aká hodnota bola v Enspire pred testom.';
+                resultBox.className = 'text-xs rounded-xl p-3 bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 space-y-1';
+                resultBox.innerHTML = '✓ SKÚŠKA 1/2 potvrdená (' + pct + ' %).' +
+                    '<div class="text-[10px] mt-1">Teraz SKÚŠKA 2/2 — cez WEB APP (bez kábla):</div>' +
+                    '<div class="text-[10px] text-slate-300 mt-1 space-y-0.5">' +
+                    '<div>1. Odpoj USB kábel od PC</div>' +
+                    '<div>2. CM5 musí mať WiFi (zadanú v kroku 3) — ide cez ňu</div>' +
+                    '<div>3. V Enspire si pozri aktuálnu hodnotu</div></div>' +
+                    '<div class="text-[10px] text-amber-300 mt-1">' + origTxt + '</div>';
+                // Zobraz indikáciu že hodnota má ísť cez web po dokončení setupu
+                window._webTestPending = nextVal;
             } else {
-                resultBox.className = 'text-xs rounded-xl p-3.5 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300';
-                resultBox.innerHTML = '<div class="font-bold text-emerald-400 text-sm">🎉 SMARTLOGGER OVERENÝ (2/2 skúšky)</div><div class="text-[10px] text-slate-400 mt-1">Výkon sa reálne mení podľa zápisu. Hotovo!</div>';
+                // SKÚŠKA 2 OK → HOTOVO + návrat pôvodnej hodnoty
+                resultBox.className = 'text-xs rounded-xl p-3.5 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
+                resultBox.innerHTML = '<div class="font-bold text-emerald-400 text-sm">🎉 SMARTLOGGER OVERENÝ (2/2 skúšky)</div>' +
+                    '<div class="text-[10px] text-slate-400 mt-1">Vráť výkon späť na pôvodnú hodnotu' +
+                    (window._origPct !== null && window._origPct !== undefined ? ' (' + window._origPct + ' %)' : '') +
+                    ' — v dashboarde po dokončení setupu, alebo v Enspire.</div>' +
+                    '<div class="text-[10px] text-cyan-400 mt-1">💡 Po dokončení nastav v dashboarde tvoj bežný režim — CM5 bude riadiť výkon sám.</div>';
                 scanStatus.className = 'p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300';
-                scanStatus.innerHTML = '🎉 SmartLogger komunikuje a riadi výkon! Môžete dokončiť nastavenie.';
+                scanStatus.innerHTML = '🎉 SmartLogger komunikuje káblom AJ webom! Môžete dokončiť nastavenie.';
                 const fb = document.getElementById('finishBtn');
                 if (fb) fb.classList.remove('hidden');
             }

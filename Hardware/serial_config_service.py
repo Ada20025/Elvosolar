@@ -340,6 +340,16 @@ def execute_test_power(ip, port, unit_id, pct):
                         continue
                 return fn()  # posledna moznost - bez parametra
             # FC16 (multi-register) - presne co SmartLogger prijima (FC06 odmietal exception_code=4)
+            # Precitaj POVODNU hodnotu pred zapisom (UI ju zobrazi - co vratit spat po teste)
+            original = None
+            try:
+                r0 = _call(lambda **kw: client.read_holding_registers(address=reg_addr, count=1, **kw))
+                if not r0.isError():
+                    v0 = r0.registers[0]
+                    if v0 > 32767: v0 -= 65536
+                    original = round(v0 / 10.0, 1)
+            except Exception:
+                pass
             w = _call(lambda **kw: client.write_registers(address=reg_addr, values=[raw], **kw))
             if w.isError():
                 # Fallback: skus FC06 (single) - niektore firmware to chapu
@@ -349,10 +359,10 @@ def execute_test_power(ip, port, unit_id, pct):
             time.sleep(0.5)
             r = _call(lambda **kw: client.read_holding_registers(address=reg_addr, count=1, **kw))
             if r.isError():
-                return {'ok': True, 'readback_pct': None, 'note': 'Zápis prešiel, spätné čítanie zlyhalo'}
+                return {'ok': True, 'original_pct': original, 'readback_pct': None, 'note': 'Zápis prešiel, spätné čítanie zlyhalo'}
             v = r.registers[0]
             if v > 32767: v -= 65536
-            return {'ok': True, 'readback_pct': round(v / 10.0, 1)}
+            return {'ok': True, 'original_pct': original, 'readback_pct': round(v / 10.0, 1)}
         finally:
             client.close()
     except Exception as e:
