@@ -551,11 +551,52 @@ def serial_reader_loop():
         time.sleep(3)
 
 
+def ensure_cloud_registration():
+    """Pri každom štarte: ak zariadenie má serial ale nie je v cloude, zaregistruje ho.
+    Rieši prípad keď setup prešiel ale registrácia stihla vzdal skôr než nabehla WiFi."""
+    def _bg():
+        time.sleep(15)  # daj cas appke nabehnut
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT serial_number, smartlogger_ip FROM devices LIMIT 1")
+            row = cur.fetchone()
+            conn.close()
+            if not row or not row[0] or not str(row[0]).startswith('CM5-'):
+                return  # nenastavené - nič
+            _serial = str(row[0])
+        except Exception:
+            return
+
+        # Skús registráciu (retry nekonečne kým nie je online)
+        attempt = 0
+        import requests as _rq
+        CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
+        while True:
+            attempt += 1
+            try:
+                r = _rq.post(f"{CLOUD}/api/user/claim-device",
+                    json={'serial': _serial, 'name': 'Moje zariadenie', 'brand_id': 'huawei',
+                          'category_id': 'smartlogger', 'model_id': 'sl3000', 'slave_id': 1, 'has_battery': True},
+                    timeout=8)
+                if r.status_code == 200:
+                    log(f"✅ Štartová registrácia do cloudu OK ({_serial})")
+                    return
+                log(f"⚠️ Štartová registrácia: HTTP {r.status_code} (pokus {attempt})")
+            except Exception:
+                if attempt % 10 == 1:
+                    log(f"⏳ Štartová registrácia: čakám na internet (pokus {attempt})...")
+            time.sleep(60)
+
+    threading.Thread(target=_bg, daemon=True).start()
+
+
 def start_serial_config_service():
     """Spusti serial config service ako background thread."""
     t = threading.Thread(target=serial_reader_loop, daemon=True)
     t.start()
     log("✅ Serial Config Service spusteny (background)")
+    ensure_cloud_registration()
     return t
 
 
