@@ -6,6 +6,7 @@ Faza 2: Na najdenom porte cita detaily (model, znacka, seriove cislo)
 """
 
 import time
+from modbus_compat import pm_call
 import sys
 
 try:
@@ -50,28 +51,28 @@ def phase1_quick_scan(ports, baudrates=[9600], parities=['N']):
                 for sid in range(1, 33):
                     try:
                         # Test 1: Holding registers adresa 0
-                        result = client.read_holding_registers(address=0, count=1, slave=sid)
+                        result = pm_call(client.read_holding_registers, unit=sid, address=0, count=1, )
                         if not result.isError():
                             found.append((port, baud, par, sid, 'HOLDING_REG_0'))
                             print(f"    ✅ ID={sid} HOLDING odpovedala!")
                             continue
                         
                         # Test 2: Input registers adresa 0
-                        result2 = client.read_input_registers(address=0, count=1, slave=sid)
+                        result2 = pm_call(client.read_input_registers, unit=sid, address=0, count=1, )
                         if not result2.isError():
                             found.append((port, baud, par, sid, 'INPUT_REG_0'))
                             print(f"    ✅ ID={sid} INPUT odpovedala!")
                             continue
                         
                         # Test 3: Holding registers adresa 40525 (Huawei P_AC)
-                        result3 = client.read_holding_registers(address=40525, count=1, slave=sid)
+                        result3 = pm_call(client.read_holding_registers, unit=sid, address=40525, count=1, )
                         if not result3.isError():
                             found.append((port, baud, par, sid, 'HOLDING_40525'))
                             print(f"    ✅ ID={sid} HOLDING 40525 odpovedala!")
                             continue
                         
                         # Test 4: Holding registers adresa 40515 (SoC)
-                        result4 = client.read_holding_registers(address=40515, count=1, slave=sid)
+                        result4 = pm_call(client.read_holding_registers, unit=sid, address=40515, count=1, )
                         if not result4.isError():
                             found.append((port, baud, par, sid, 'HOLDING_40515'))
                             print(f"    ✅ ID={sid} HOLDING 40515 odpovedala!")
@@ -121,7 +122,7 @@ def phase2_deep_scan(port, baud, parity, slave_id):
     # --- Model name (Huawei: registre 30000-30015) ---
     print("\n[Model Name] Registre 30000-30015 (Holding)...")
     try:
-        result = client.read_holding_registers(address=30000, count=16, slave=slave_id)
+        result = pm_call(client.read_holding_registers, unit=slave_id, address=30000, count=16, )
         if not result.isError() and result.registers:
             text = ""
             for reg in result.registers:
@@ -143,7 +144,7 @@ def phase2_deep_scan(port, baud, parity, slave_id):
     # --- Serial number (Huawei: registre 30004-30011) ---
     print("\n[Serial Number] Registre 30004-30012 (Holding)...")
     try:
-        result = client.read_holding_registers(address=30004, count=8, slave=slave_id)
+        result = pm_call(client.read_holding_registers, unit=slave_id, address=30004, count=8, )
         if not result.isError() and result.registers:
             text = ""
             for reg in result.registers:
@@ -161,7 +162,7 @@ def phase2_deep_scan(port, baud, parity, slave_id):
     # --- AC Power (Huawei: register 40525, I32, gain 1000, 2 registre) ---
     print("\n[AC Power] Register 40525 (I32, gain 1000)...")
     try:
-        result = client.read_holding_registers(address=40525, count=2, slave=slave_id)
+        result = pm_call(client.read_holding_registers, unit=slave_id, address=40525, count=2, )
         if not result.isError() and result.registers and len(result.registers) >= 2:
             raw = (result.registers[0] << 16) | result.registers[1]
             if raw >= 0x80000000: raw -= 0x100000000  # signed I32
@@ -176,7 +177,7 @@ def phase2_deep_scan(port, baud, parity, slave_id):
     # --- SoC Battery (Huawei: register 40515, U16, gain 10) ---
     print("\n[SoC Battery] Register 40515 (U16, gain 10)...")
     try:
-        result = client.read_holding_registers(address=40515, count=1, slave=slave_id)
+        result = pm_call(client.read_holding_registers, unit=slave_id, address=40515, count=1, )
         if not result.isError() and result.registers:
             val = result.registers[0] / 10.0
             info['soc'] = val
@@ -189,7 +190,7 @@ def phase2_deep_scan(port, baud, parity, slave_id):
     # --- Daily Energy (Huawei: register 32086, FC3) ---
     print("\n[Daily Energy] Register 32086 (Holding FC3)...")
     try:
-        result = client.read_holding_registers(address=32086, count=1, slave=slave_id)
+        result = pm_call(client.read_holding_registers, unit=slave_id, address=32086, count=1, )
         if not result.isError() and result.registers:
             val = result.registers[0] / 10  # kWh
             info['daily_energy'] = val
@@ -200,7 +201,7 @@ def phase2_deep_scan(port, baud, parity, slave_id):
     # --- Device type (Huawei: register 30000, FC4 Input) ---
     print("\n[Device Type] Register 30000 (Input FC4)...")
     try:
-        result = client.read_input_registers(address=30000, count=1, slave=slave_id)
+        result = pm_call(client.read_input_registers, unit=slave_id, address=30000, count=1, )
         if not result.isError() and result.registers:
             info['device_type'] = result.registers[0]
             print(f"  ✅ Device Type = {result.registers[0]}")

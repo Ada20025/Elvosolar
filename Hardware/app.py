@@ -1,4 +1,5 @@
 import logging
+from modbus_compat import pm_call
 # =============================================================================
 # app.py
 # Industrial IoT Core Web Server & Gateway (Waveshare CM5 / Raspberry Pi 5)
@@ -1949,7 +1950,7 @@ def api_smart_meter_auto_detect():
                 for profile in meter_profiles:
                     try:
                         # Test import Wh register
-                        result = client.read_holding_registers(address=profile['regs']['import_wh'], count=2, slave=profile['slave_id'])
+                        result = pm_call(client.read_holding_registers, unit=profile['slave_id'], address=profile['regs']['import_wh'], count=2, )
                         if not result.isError() and result.registers:
                             wh_val = (result.registers[0] << 16) | result.registers[1] if len(result.registers) >= 2 else result.registers[0]
                             if wh_val > 0:
