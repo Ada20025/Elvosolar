@@ -137,11 +137,23 @@ def apply_config(config):
                 "UPDATE devices SET serial_number=?, name=?, brand_id=?, category_id=?, model_id=?, sub_type=?, modbus_slave_id=? WHERE id=?",
                 (box_serial, device_name, brand_id, category_id, model_id, category_id, slave_id, row[0])
             )
+            keep_id = row[0]
         else:
             cursor.execute(
                 "INSERT INTO devices (serial_number, name, brand_id, category_id, model_id, sub_type, modbus_slave_id) VALUES (?,?,?,?,?,?,?)",
                 (box_serial, device_name, brand_id, category_id, model_id, category_id, slave_id)
             )
+            keep_id = cursor.lastrowid
+
+        # 1a. PURGE: CM5 riadi JEDNO zariadenie (seba) - vsetky stare/smene riadky
+        # (Mdatabase, testy, stary serial) su nepotrebne a robia bordel v telemetrii
+        try:
+            cursor.execute("DELETE FROM devices WHERE id != ?", (keep_id,))
+            removed = cursor.rowcount
+            if removed and removed > 0:
+                log(f"🧹 Purge: zmazanych {removed} starych zariadeni z lokalnej DB")
+        except Exception:
+            pass
 
         # 1b. Komunikacia: TCP (SmartLogger cez LAN) / RTU (RS485) - podla configu
         smart_ip = str(config.get('smartlogger_ip') or config.get('smart_ip') or '').strip()

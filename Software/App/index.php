@@ -1729,10 +1729,20 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             if ($upd) {
                 $pdo->prepare("UPDATE devices SET serial_number = ?, name = ?, brand_id = ?, model_id = ?, sub_type = ?, status = 'offline' WHERE id = ?")
                     ->execute([$serial, $name, $brand_id, $model_id, $category_id, $upd['id']]);
+                $keep_id = $upd['id'];
             } else {
                 $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline')")
                     ->execute([$user_id, $name, $serial, $brand_id, $category_id, $model_id, $category_id]);
+                $keep_id = intval($pdo->lastInsertId());
             }
+            // PURGE: 1 CM5 = 1 zariadenie. Stare smety (Mdatabase, testy, stary serial)
+            // tohto usera mazu - inak sa kopia a telemetria/nastavenia idu na zly riadok.
+            try {
+                $pdo->prepare("DELETE FROM telemetry WHERE device_id IN (SELECT id FROM devices WHERE user_id = ? AND id != ?)")
+                    ->execute([$user_id, $keep_id]);
+                $pdo->prepare("DELETE FROM devices WHERE user_id = ? AND id != ?")
+                    ->execute([$user_id, $keep_id]);
+            } catch (Exception $eP) { /* tabulky mozu neexistovat */ }
         }
         send_json(['status' => 'success', 'name' => $name, 'user_id' => $user_id, 'serial' => $serial]);
     } catch (Exception $e) {
