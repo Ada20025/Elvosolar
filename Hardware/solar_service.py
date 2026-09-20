@@ -24,6 +24,10 @@ class SolarBackgroundService:
         self.manual_override = "AUTO"
         self.active_model_id = "AI"
         self.night_sleep = 1
+        # Limity z cloudovej DB (dashboard ich meni) - aktualizuju sa z 'control' bloku
+        self.cloud_min_power_pct = 0.0
+        self.cloud_max_power_pct = 100.0
+        self.cloud_min_okte_price = 0.0
         self.active_errors = {}
         self.last_internet_check = 0
         self.lock = threading.RLock()   
@@ -793,6 +797,23 @@ class SolarBackgroundService:
                             if mcm != self.smart_meter.control_mode:
                                 self.smart_meter.control_mode = mcm
                                 self.log_to_terminal(f"☁️ Cloud príkaz: Meter režim -> {mcm}")
+
+                        # LIMITY z DB (min/max % + min OKTE cena) — dashboard ich mení,
+                        # CM5 ich musi citat pri KAZDEJ telemetrii aby riadenie sedelo
+                        try:
+                            _minp = ctrl.get("min_power_pct")
+                            _maxp = ctrl.get("max_power_pct")
+                            _okte = ctrl.get("min_okte_price")
+                            if _minp is not None and float(_minp) != float(getattr(self, 'cloud_min_power_pct', -999)):
+                                self.cloud_min_power_pct = float(_minp)
+                                self.log_to_terminal(f"☁️ Cloud: Min výkon -> {float(_minp):.0f}%")
+                            if _maxp is not None and float(_maxp) != float(getattr(self, 'cloud_max_power_pct', -999)):
+                                self.cloud_max_power_pct = float(_maxp)
+                                self.log_to_terminal(f"☁️ Cloud: Max výkon -> {float(_maxp):.0f}%")
+                            if _okte is not None:
+                                self.cloud_min_okte_price = float(_okte)
+                        except Exception:
+                            pass
                 except ValueError:
                     pass
         except Exception:
@@ -967,14 +988,20 @@ class SolarBackgroundService:
                         if tcp_ip:
                             # Nastav vykon: ON=100%, OFF=0%, AUTO=AI rozhodne
                             # Huawei register 40428 (Active power adjustment %, gain 10, offset -1 => wire adresa 40427)
-                            power_pct = 100 if target_on else 0
+                            # LIMITY z cloudu (DB): min/max % sa aplikuju na cielovy vykon
+                            _min_pct = float(getattr(self, 'cloud_min_power_pct', 0) or 0)
+                            _max_pct = float(getattr(self, 'cloud_max_power_pct', 100) or 100)
+                            if target_on:
+                                power_pct = _max_pct if _max_pct > 0 else 100.0
+                            else:
+                                power_pct = max(_min_pct, 0.0)  # vypnute = min (0 = skutocne vypnute)
                             # === INTERLOCK: vypnutie (0%) len po overenom citani ===
                             if not target_on:
                                 allowed, reason = self._write_allowed(dev.get('slave_id', 1), 0)
                                 if not allowed:
                                     self.log_to_terminal(f"[SAFETY] 🛑 Vypnutie SmartLogger odmietnute: {reason}")
                                     return
-                            reg_val = max(0, min(1000, int(power_pct * 10))) & 0xFFFF  # gain 10, klemovane 0..100%
+                            reg_val = max(-1000, min(1000, int(power_pct * 10))) & 0xFFFF  # gain 10, -100..100%
                             tcp_addr = int(cfg.get('power_reg_offset', 40428)) - 1
                             
                             # Uisti ze je pripojeny

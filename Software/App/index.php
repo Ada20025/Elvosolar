@@ -1227,7 +1227,25 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             } catch (Exception $eC) { /* ignore */ }
             // ALERT SYSTEM: vyhodnot alerty aj pri každej telemetrii (email aj keď nikto nepozerá dashboard)
             try { eval_device_alerts($pdo, [$device_id]); } catch (Exception $eA) { /* ignore */ }
-            send_json(['status' => 'success', 'device_id' => $device_id]);
+            
+            // CONTROL: aktualne nastavenia z DB — CM5 si ich precita a OKAMZITE aplikuje.
+            // Dashboard meni devices tabulku, CM5 ju cita odtialto (DB = jedina pravda).
+            $ctrl = [];
+            try {
+                $stC = $pdo->prepare("SELECT manual_override, active_model_id, min_power_pct, max_power_pct, min_okte_price_cz_eur FROM devices WHERE id = ?");
+                $stC->execute([$device_id]);
+                $rC = $stC->fetch();
+                if ($rC) {
+                    $ctrl = [
+                        'manual_override' => strtoupper(trim($rC['manual_override'] ?? 'AUTO')) ?: 'AUTO',
+                        'active_model_id' => ($rC['active_model_id'] ?? 'AI') ?: 'AI',
+                        'min_power_pct' => floatval($rC['min_power_pct'] ?? 0),
+                        'max_power_pct' => floatval($rC['max_power_pct'] ?? 100),
+                        'min_okte_price' => floatval($rC['min_okte_price_cz_eur'] ?? 0),
+                    ];
+                }
+            } catch (Exception $eCtrl) { /* stara schema bez tychto stlpcov */ }
+            send_json(['status' => 'success', 'device_id' => $device_id, 'control' => $ctrl]);
         } catch (Exception $e) {
             send_json(['status' => 'error', 'message' => $e->getMessage()]);
         }
