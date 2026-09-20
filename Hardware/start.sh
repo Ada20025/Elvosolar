@@ -47,6 +47,16 @@ if command -v sqlite3 >/dev/null 2>&1; then
         SMARTLOGGER_IP=$(sqlite3 /home/pi/Hardware/database.db "SELECT value FROM system_settings WHERE key='smartlogger_ip'" 2>/dev/null)
     fi
     if [ -n "$SMARTLOGGER_IP" ]; then
+        # 1) eth0 MUSI mat adresu v sieti SmartLoggera (napr. 192.168.8.20/24) - inak TCP komunikacia nefunguje
+        SL_NET=$(echo "$SMARTLOGGER_IP" | cut -d. -f1-3)
+        if ! ip -4 addr show eth0 2>/dev/null | grep -q "$SL_NET"; then
+            ip link set eth0 up 2>/dev/null || true
+            # Pridaj adresu v sieti SmartLoggera (druha adresa - WiFi internet zostáva)
+            ip addr add "$SL_NET.20/24" dev eth0 2>/dev/null \
+                && echo "[NETWORK] eth0 adresa: $SL_NET.20/24 (siet SmartLoggera)" \
+                || echo "[NETWORK] ⚠️ Nepodarilo sa pridat adresu na eth0"
+        fi
+        # 2) Host route na SmartLogger cez eth0 (internet ide dalsim rozhranim - WiFi)
         if ! ip route show | grep -q "$SMARTLOGGER_IP"; then
             ip route add $SMARTLOGGER_IP dev eth0 2>/dev/null && echo "[NETWORK] Host route: $SMARTLOGGER_IP dev eth0"
         fi
