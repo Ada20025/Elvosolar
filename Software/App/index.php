@@ -1672,8 +1672,19 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $has_battery = $data['has_battery'] ?? true;
     $serial = trim($data['serial'] ?? '');
     
+    // CM5 posiela e-mail admina, ktory setupoval (ides cez kabel v cloud_username) -
+    // zariadenie musi patriť PRESNE TOMUTO uctu, nie nahodnemu prvemu adminovi
+    if (!$user_id && !empty($data['owner_email'])) {
+        try {
+            $stO = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+            $stO->execute([trim($data['owner_email'])]);
+            $rowO = $stO->fetch();
+            if ($rowO) { $user_id = intval($rowO['id']); }
+        } catch (Exception $e) { /* fallback nizsie */ }
+    }
+    
     try {
-        // Najdi existujuce zariadenie pre tohoto usera alebo vytvor nove
+        // Najdi existujuce zariadenie podla serialu AJ podla usera (stary zaznam bez spravneho serialu)
         $existing = null;
         if ($serial) {
             $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
@@ -1681,13 +1692,26 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             $existing = $stmt->fetch();
         }
         if ($existing) {
-            $pdo->prepare("UPDATE devices SET name = ?, brand_id = ?, model_id = ?, sub_type = ?, user_id = ? WHERE id = ?")
+            $pdo->prepare("UPDATE devices SET name = ?, brand_id = ?, model_id = ?, sub_type = ?, user_id = ?, status = COALESCE(status, 'offline') WHERE id = ?")
                 ->execute([$name, $brand_id, $model_id, $category_id, $user_id, $existing['id']]);
         } else {
-            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline')")
-                ->execute([$user_id, $name, $serial, $brand_id, $category_id, $model_id, $category_id]);
+            // Zariadenie so serialom neexistuje - ale mozno user uz nejake ma (stary zaznam z inej registracie):
+            // aktualizuj HO (nieto noveho riadku) aby v dashboarde nevznikal duplikat
+            $upd = null;
+            try {
+                $stU = $pdo->prepare("SELECT id FROM devices WHERE user_id = ? ORDER BY id ASC LIMIT 1");
+                $stU->execute([$user_id]);
+                $upd = $stU->fetch();
+            } catch (Exception $e) { /* ignore */ }
+            if ($upd) {
+                $pdo->prepare("UPDATE devices SET serial_number = ?, name = ?, brand_id = ?, model_id = ?, sub_type = ?, status = 'offline' WHERE id = ?")
+                    ->execute([$serial, $name, $brand_id, $model_id, $category_id, $upd['id']]);
+            } else {
+                $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline')")
+                    ->execute([$user_id, $name, $serial, $brand_id, $category_id, $model_id, $category_id]);
+            }
         }
-        send_json(['status' => 'success', 'name' => $name]);
+        send_json(['status' => 'success', 'name' => $name, 'user_id' => $user_id, 'serial' => $serial]);
     } catch (Exception $e) {
         send_json(['status' => 'error', 'message' => $e->getMessage()]);
     }

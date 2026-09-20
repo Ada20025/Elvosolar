@@ -1290,7 +1290,23 @@ def _get_local_ip():
         return "unknown"
 
 def _get_serial_number():
-    return "CM5-DEFAULT"
+    """Stabilna identita boxu - MAC odvodeny serial, rovnaky ako pri registracii do cloudu.
+    (Predtym hardcodovane 'CM5-DEFAULT' - cloud potom nevedel sparovat poll/report/telemetriu!)"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT serial_number FROM devices WHERE serial_number IS NOT NULL AND serial_number != '' LIMIT 1")
+        row = cursor.fetchone()
+        conn.close()
+        if row and row[0]:
+            return str(row[0])
+    except Exception:
+        pass
+    try:
+        from serial_config_service import get_box_serial
+        return get_box_serial()
+    except Exception:
+        return "CM5-DEFAULT"
 
 def _auto_detect_rs485_port():
     """Automaticky najde RS485 port - NAJPRV rychly test, potom full scan."""

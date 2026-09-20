@@ -80,6 +80,19 @@ def find_console_port():
     return None
 
 
+def get_box_serial():
+    """Stabilny serial boxu odvodeny z MAC adresy - rovnaky cely zivot zariadenia.
+    Jedna identita pre: registraciu do cloudu, poll prikazov, telemetriu aj report-ip."""
+    try:
+        from system_service import SystemService
+        mac = SystemService.get_mac_suffix()
+        if mac and mac != 'UNKNOWN':
+            return f"CM5-{mac}"
+    except Exception:
+        pass
+    return f"CM5-{int(time.time())}"
+
+
 def apply_config(config):
     """
     Aplikuje JSON config do database.db - rovnako ako /api/admin/claim na CM5.
@@ -114,19 +127,20 @@ def apply_config(config):
                     pass
                 dev_cols.append(col)
 
-        # 1. Uloz/zmen hlavne zariadenie (UNIVERZALNE - hocijaka znacka/model)
+        # 1. Uloz/zmen hlavne zariadenie + NORMALIZUJ serial na MAC identitu boxu
+        # (stary serial moze byt CM5-{timestamp} alebo SN-CM5-... - cloud by ho nespároval)
+        box_serial = get_box_serial()
         cursor.execute("SELECT id FROM devices LIMIT 1")
         row = cursor.fetchone()
         if row:
             cursor.execute(
-                "UPDATE devices SET name=?, brand_id=?, category_id=?, model_id=?, sub_type=?, modbus_slave_id=? WHERE id=?",
-                (device_name, brand_id, category_id, model_id, category_id, slave_id, row[0])
+                "UPDATE devices SET serial_number=?, name=?, brand_id=?, category_id=?, model_id=?, sub_type=?, modbus_slave_id=? WHERE id=?",
+                (box_serial, device_name, brand_id, category_id, model_id, category_id, slave_id, row[0])
             )
         else:
-            serial_number = f"CM5-{int(time.time())}"
             cursor.execute(
                 "INSERT INTO devices (serial_number, name, brand_id, category_id, model_id, sub_type, modbus_slave_id) VALUES (?,?,?,?,?,?,?)",
-                (serial_number, device_name, brand_id, category_id, model_id, category_id, slave_id)
+                (box_serial, device_name, brand_id, category_id, model_id, category_id, slave_id)
             )
 
         # 1b. Komunikacia: TCP (SmartLogger cez LAN) / RTU (RS485) - podla configu
@@ -173,6 +187,10 @@ def apply_config(config):
             'active_cable_cores': str(config.get('active_cable_cores') or ''),
             'meter_mode': 'NONE',
         }
+        # cloud_username = e-mail admina, ktory setupoval - cloud podla neho priradi zariadenie SPRVNEMU uctu
+        cu = str(config.get('cloud_username') or '').strip()
+        if cu:
+            extra_settings['cloud_username'] = cu
         sm = config.get('smart_meter') or {}
         if isinstance(sm, dict) and sm.get('enabled'):
             extra_settings['meter_mode'] = str(sm.get('type', 'standalone')).upper()
@@ -212,7 +230,7 @@ def register_to_cloud(config):
     CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
 
     # Serial z lokalnej DB - INAK by sa kazdou registraciou vytvorilo nove zariadenie v cloude
-    _serial = f"CM5-{int(time.time())}"
+    _serial = get_box_serial()
     try:
         conn2 = get_db_connection()
         cur2 = conn2.cursor()
@@ -232,14 +250,24 @@ def register_to_cloud(config):
         'has_battery': bool(config.get('has_battery', True)),
         'name': str(config.get('device_name') or config.get('name') or 'Moje zariadenie'),
         'comm_mode': str(config.get('comm_mode') or 'LOCAL_MODBUS'),
-        'serial': _serial
+        'serial': _serial,
+        # E-mail admina, ktory setupoval - cloud priradi zariadenie presne TOMUTO uctu
+        'owner_email': str(config.get('cloud_username') or '').strip()
     }
 
     def _try_register():
         try:
             r = requests.post(f"{CLOUD}/api/user/claim-device", json=payload, timeout=8)
             if r.status_code == 200:
-                log("✅ CM5 sa sam zaregistroval do cloudovej DB (Railway)")
+                # Over aj TELo odpovede - HTTP 200 s {"status":"error"} nie je uspech!
+                try:
+                    body = r.json()
+                except Exception:
+                    body = {}
+                if str(body.get('status', 'success')).lower() == 'error':
+                    log(f"⚠️ Cloud odmietol registraciu: {body.get('message', '?')}")
+                    return False
+                log(f"✅ CM5 sa sam zaregistroval do cloudovej DB (Railway) ako {_serial}")
                 return True
             log(f"⚠️ Cloud registration: HTTP {r.status_code}")
         except Exception as e:
@@ -562,7 +590,7 @@ def ensure_cloud_registration():
             cur.execute("SELECT serial_number, smartlogger_ip FROM devices LIMIT 1")
             row = cur.fetchone()
             conn.close()
-            if not row or not row[0] or not str(row[0]).startswith('CM5-'):
+            if not row or not row[0] or not (str(row[0]).startswith('CM5-') or str(row[0]).startswith('SN-CM5')):
                 return  # nenastavené - nič
             _serial = str(row[0])
         except Exception:
@@ -580,6 +608,15 @@ def ensure_cloud_registration():
                           'category_id': 'smartlogger', 'model_id': 'sl3000', 'slave_id': 1, 'has_battery': True},
                     timeout=8)
                 if r.status_code == 200:
+                    # Over aj TELo - {"status":"error"} s HTTP 200 nie je uspech
+                    try:
+                        _body = r.json()
+                    except Exception:
+                        _body = {}
+                    if str(_body.get('status', 'success')).lower() == 'error':
+                        log(f"⚠️ Štartová registrácia odmietnutá: {_body.get('message', '?')} (pokus {attempt})")
+                        time.sleep(60)
+                        continue
                     log(f"✅ Štartová registrácia do cloudu OK ({_serial})")
                     return
                 log(f"⚠️ Štartová registrácia: HTTP {r.status_code} (pokus {attempt})")
