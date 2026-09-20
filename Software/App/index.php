@@ -1655,8 +1655,14 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $data = get_json_input();
     $user_id = $_SESSION['user_id'] ?? 0;
     if (!$user_id) {
-        // CM5 moze poslat bez session - ulozime pre user_id=1 (prvy user)
-        $user_id = 1;
+        // CM5 posiela bez session - prirad zariadenie PRVEMU ADMINovi (nie user_id=1 ktory moze byt obycajny user)
+        try {
+            $stA = $pdo->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
+            $rowA = $stA->fetch();
+            $user_id = $rowA ? intval($rowA['id']) : 1;
+        } catch (Exception $e) {
+            $user_id = 1;
+        }
     }
     $name = trim($data['name'] ?? 'Moje zariadenie');
     $brand_id = trim($data['brand_id'] ?? '');
