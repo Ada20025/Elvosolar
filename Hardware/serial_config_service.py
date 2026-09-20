@@ -326,8 +326,10 @@ def execute_test_power(ip, port, unit_id, pct):
         if not client.connect():
             return {'ok': False, 'error': f'Nepodarilo sa pripojiť k {ip}:{port}'}
         try:
-            wire_addr = 40428 - 1  # offset -1 pre Huawei
-            raw = int(round(float(pct) * 10)) & 0xFFFF  # gain 10, signed
+            # Presne podla overeneho PC skriptu: FC16 write_registers na adrese 40428 (BEZ offsetu)
+            # Priklad z PC co fungoval: write_registers(address=40428, values=[490], device_id=0) pre 49%
+            reg_addr = 40428
+            raw = int(round(float(pct) * 10)) & 0xFFFF  # gain 10, signed (490 pre 49%, 780 pre 78%)
             unit = int(unit_id or 0)
             # Kompatibilita pymodbus: nova verzia = device_id, starsia = slave (pripadne unit)
             def _call(fn, **kw):
@@ -337,11 +339,15 @@ def execute_test_power(ip, port, unit_id, pct):
                     except TypeError:
                         continue
                 return fn()  # posledna moznost - bez parametra
-            w = _call(lambda **kw: client.write_register(address=wire_addr, value=raw, **kw))
+            # FC16 (multi-register) - presne co SmartLogger prijima (FC06 odmietal exception_code=4)
+            w = _call(lambda **kw: client.write_registers(address=reg_addr, values=[raw], **kw))
             if w.isError():
-                return {'ok': False, 'error': f'SmartLogger odmietol zápis: {w}'}
-            time.sleep(0.4)
-            r = _call(lambda **kw: client.read_holding_registers(address=wire_addr, count=1, **kw))
+                # Fallback: skus FC06 (single) - niektore firmware to chapu
+                w2 = _call(lambda **kw: client.write_register(address=reg_addr, value=raw, **kw))
+                if w2.isError():
+                    return {'ok': False, 'error': f'SmartLogger odmietol zápis (FC16: {w} / FC06: {w2})'}
+            time.sleep(0.5)
+            r = _call(lambda **kw: client.read_holding_registers(address=reg_addr, count=1, **kw))
             if r.isError():
                 return {'ok': True, 'readback_pct': None, 'note': 'Zápis prešiel, spätné čítanie zlyhalo'}
             v = r.registers[0]

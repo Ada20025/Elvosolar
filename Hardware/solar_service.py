@@ -394,24 +394,27 @@ class SolarBackgroundService:
             return False
         try:
             transaction_id = int(time.time() * 1000) & 0xFFFF
-            # FC06 Write Single Register: 6 bytes PDU
-            packet = struct.pack('>HHBBHHH',
+            # FC16 Write Multiple Registers - SmartLogger prijima FC16 (FC06 odmieta exception_code=4)
+            # MBAP(7B): tid(2) pid(2) len(2) uid(1) | PDU(8B): fc(1) addr(2) qty(2) bc(1) val(2)
+            packet = struct.pack('>HHHBBHHBH',
                 transaction_id,
                 0,               # Protocol ID
-                6,               # Length
+                8,               # Length (bajty za uid): fc(1)+addr(2)+qty(2)+bc(1)+val(2)
                 slave_id,        # Unit ID
-                6,               # FC06: Write Single Register
+                0x10,            # FC16: Write Multiple Registers
                 address,         # Register address
+                1,               # Quantity (1 register)
+                2,               # Byte count
                 value & 0xFFFF   # Value (16-bit)
             )
             conn['sock'].sendall(packet)
             resp = conn['sock'].recv(256)
-            if len(resp) >= 8 and resp[7] == 0x06:
+            if len(resp) >= 8 and resp[7] == 0x10:
                 conn['last_ok'] = time.time()
-                self.log_to_terminal(f"[TCP WRITE] Zapis OK: slave={slave_id} reg={address} val={value}")
+                self.log_to_terminal(f"[TCP WRITE] Zapis OK (FC16): slave={slave_id} reg={address} val={value}")
                 return True
             elif len(resp) >= 8 and (resp[7] & 0x80):
-                self.log_to_terminal(f"[TCP WRITE] Exception: slave={slave_id} reg={address} fc={resp[7]:#04x}")
+                self.log_to_terminal(f"[TCP WRITE] Exception: slave={slave_id} reg={address} fc={resp[7]:#04x} exc={resp[8] if len(resp)>8 else '?'}")
                 return False
             return False
         except Exception as e:
