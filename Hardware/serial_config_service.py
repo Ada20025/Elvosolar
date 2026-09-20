@@ -266,6 +266,14 @@ def connect_wifi_if_needed(ssid, password):
         return
     try:
         import subprocess
+        # Ak uz je pripojene na tuto siet, preskoc (nenut reconnect)
+        chk = subprocess.run(['nmcli', '-t', '-f', 'ACTIVE,SSID', 'dev', 'wifi'],
+                             timeout=10, capture_output=True, text=True)
+        for line in chk.stdout.splitlines():
+            if line.startswith('ano:') or line.startswith('yes:'):
+                active_ssid = line.split(':', 1)[1] if ':' in line else ''
+                if active_ssid == ssid:
+                    log(f"✅ WiFi {ssid} už je pripojené — preskakujem"); return
         log(f"📡 Pripajam WiFi: {ssid}")
         r = subprocess.run(
             ['nmcli', 'dev', 'wifi', 'connect', ssid, 'password', password],
@@ -283,7 +291,25 @@ def connect_wifi_if_needed(ssid, password):
             except Exception:
                 pass
         else:
-            log(f"⚠️ WiFi {ssid} sa nepripojilo (pokracujem bez WiFi): {r.stderr.strip()[:120]}")
+            # RETRY: druhý pokus po krátkom čakaní (rádio sa niekdy preberá pomaly)
+            log(f"⚠️ Prvý pokus neprešiel — skúšam znova o 3s...")
+            time.sleep(3)
+            r2 = subprocess.run(
+                ['nmcli', 'dev', 'wifi', 'connect', ssid, 'password', password],
+                timeout=45, capture_output=True, text=True
+            )
+            if r2.returncode == 0:
+                log(f"✅ WiFi {ssid} pripojene (2. pokus)")
+                try:
+                    subprocess.run(['nmcli', 'connection', 'modify', ssid, 'connection.autoconnect', 'yes'],
+                                   timeout=10, capture_output=True)
+                    subprocess.run(['nmcli', 'connection', 'modify', ssid, 'connection.autoconnect-priority', '10'],
+                                   timeout=10, capture_output=True)
+                    log(f"💾 WiFi {ssid} uložené s autoconnect (prežije reštart)")
+                except Exception:
+                    pass
+            else:
+                log(f"⚠️ WiFi {ssid} sa nepripojilo ani na 2. pokus (pokracujem bez WiFi): {r2.stderr.strip()[:120]}")
     except Exception as e:
         log(f"⚠️ WiFi pripojenie zlyhalo (pokracujem bez WiFi): {e}")
 
