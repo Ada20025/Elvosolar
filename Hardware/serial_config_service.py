@@ -375,7 +375,7 @@ def handle_box_command(obj, ser):
         unit = int(obj.get('unit_id') or 0)
         pct = float(obj.get('pct') or 0)
         if not (-100 <= pct <= 100):
-            resp = {'cmd': 'test_power_result', 'ok': False, 'error': 'Hodnota mimo rozsahu -100 až 100 %'}
+            resp = {'cmd': 'test_power_result', 'ok': False, 'error': 'Hodnota mimo rozsahu 0 až 100 % (záporné len so zapnutým Remote scheduling v Enspire)'}
         elif not ip:
             resp = {'cmd': 'test_power_result', 'ok': False, 'error': 'Chýba IP adresa SmartLoggera'}
         else:
