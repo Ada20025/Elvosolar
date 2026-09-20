@@ -39,8 +39,8 @@ CANDIDATE_PORTS = [
     '/dev/serial0',   # GPIO UART fallback
 ]
 
-# Znacenie zaciatku a konca JSON v raw streame
-JSON_START = '{'
+# Znacenie zaciatku a konca JSON v raw streame (BYTES - buffer je bytes!)
+JSON_START = b'{'
 MIN_JSON_LEN = 30
 
 
