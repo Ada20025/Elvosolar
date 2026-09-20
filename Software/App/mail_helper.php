@@ -44,7 +44,7 @@ if (!function_exists('elvo_mail_relay')) {
             'method' => 'POST',
             'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $api_key . "\r\n",
             'content' => $payload,
-            'timeout' => 8,
+            'timeout' => 4,
             'ignore_errors' => true,
         ]]);
         $resp = @file_get_contents('https://api.resend.com/emails', false, $ctx);
@@ -67,7 +67,7 @@ if (!function_exists('elvo_mail_relay')) {
             'method' => 'POST',
             'header' => "Content-Type: application/json\r\nX-Relay-Key: " . $relay_key . "\r\n",
             'content' => $payload,
-            'timeout' => 8,
+            'timeout' => 4,
             'ignore_errors' => true,
         ]]);
         $resp = @file_get_contents($relay, false, $ctx);
@@ -183,7 +183,7 @@ if (!function_exists('send_elvo_email')) {
                 ]
             ]);
 
-            $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
+            $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 3, STREAM_CLIENT_CONNECT, $context);
             
             if (!$socket) {
                 error_log("SMTP Pripojenie zlyhalo: $errstr ($errno)");

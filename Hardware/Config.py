@@ -220,18 +220,39 @@ DEVICE_DB = {
     '9': {
         'brand_id': 9,
         'znacka': 'VIESSMANN',
-        'zapojenie': 'KROK-ZA-KROKOM RS485 PRE VIESSMANN:\n'
-                     '1. Zapojte svorku RS485 A na A+ na krabici CM5.\n'
-                     '2. Zapojte svorku RS485 B na B- na krabici CM5.',
+        'zapojenie': 'KROK-ZA-KROKOM MODBUS RTU PRE VIESSMANN:\n'
+                     '1. Pripojte komunikačný kábel na modul Vitotronic (RS485).\n'
+                     '2. Svorka A (A+) na A+ a svorka B (B-) na B- na krabici CM5.\n'
+                     '3. Baud 9600, 8-N-1, Slave ID 1 (alebo podľa zariadenia).',
         'kategorie': {
             '1': {
                 'cat_id': 1,
                 'typ': 'striedac',
                 'skupina_id': 1,
                 'skip_model_selection': True,
-                'meno': 'Séria Vitovolt 300',
+                'meno': 'Séria Vitovolt 300 (striedač)',
                 'modely': {
                     '1': {'meno': 'Vitovolt 300 M300', 'on': 40232, 'off': 40232, 'val_on': 100, 'val_off': 0, 'baud': 9600, 'reg_soc': 40313, 'reg_p_ac': 40091},
+                }
+            },
+            '2': {
+                'cat_id': 2,
+                'typ': 'striedac',
+                'skupina_id': 1,
+                'skip_model_selection': True,
+                'meno': 'Vitocal — tepelné čerpadlo / klimatizácia (Modbus RTU)',
+                'modely': {
+                    '1': {'meno': 'Vitocal 200-A / 222-A / 252-A', 'on': 40602, 'off': 40602, 'type_on': 'E16', 'type_off': 'E16', 'val_on': 1, 'val_off': 0, 'baud': 9600, 'reg_soc': 0, 'reg_p_ac': 40603},
+                }
+            },
+            '3': {
+                'cat_id': 3,
+                'typ': 'striedac',
+                'skupina_id': 1,
+                'skip_model_selection': True,
+                'meno': 'Vitodens — bojler / kotol (Modbus RTU)',
+                'modely': {
+                    '1': {'meno': 'Vitodens 100-W / 200-W', 'on': 40602, 'off': 40602, 'type_on': 'E16', 'type_off': 'E16', 'val_on': 1, 'val_off': 0, 'baud': 9600, 'reg_soc': 0, 'reg_p_ac': 40603},
                 }
             }
         }
