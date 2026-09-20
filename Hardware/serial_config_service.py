@@ -252,11 +252,16 @@ def register_to_cloud(config):
         # Prvy pokus hned (mozno uz ma internet cez LAN)
         if _try_register():
             return
-        # Retry loop - kazdych 30s max 20 krat (~10 minut), bezpecne bez WiFi aj bez internetu
-        for _ in range(20):
-            time.sleep(30)
+        # RETRY NEKONECNE kazdych 60s - WiFi/internet moze prist kedykolvek neskorsie
+        # (predtym len 20x30s = 10 minut a potom zariadenie nikdy v dashboarde nevzniklo)
+        attempt = 0
+        while True:
+            attempt += 1
+            time.sleep(60)
             if _try_register():
                 return
+            if attempt % 10 == 0:
+                log(f"⏳ Cloud registracia: {attempt}. pokus (cakam na internet/WiFi)...")
     threading.Thread(target=_retry, daemon=True).start()
 
 
