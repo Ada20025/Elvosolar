@@ -31,6 +31,8 @@ LOG_PREFIX = "[SERIAL-CONFIG]"
 # Mozne porty kde moze byt USB konzola (PC -> CM5 kabel)
 CANDIDATE_PORTS = [
     '/dev/ttyACM0',   # USB CDC (najcastejsie pre CM5 console)
+    '/dev/ttyGS0',    # USB gadget serial (CM5 gadget mode)
+    '/dev/ttyAMA0',   # GPIO UART (CM5)
     '/dev/ttyUSB0',   # USB-UART prevodnik
     '/dev/ttyUSB1',
     '/dev/ttyACM1',
@@ -69,6 +71,7 @@ def find_console_port():
     found = sorted(
         glob.glob('/dev/ttyACM*') +
         glob.glob('/dev/ttyUSB*') +
+        glob.glob('/dev/ttyGS*') +
         ['/dev/serial0']
     )
     for p in CANDIDATE_PORTS:
@@ -273,6 +276,71 @@ def connect_wifi_if_needed(ssid, password):
         log(f"⚠️ WiFi pripojenie zlyhalo (pokracujem bez WiFi): {e}")
 
 
+def execute_test_power(ip, port, unit_id, pct):
+    """
+    Testovací zápis výkonu priamo na SmartLogger (Modbus TCP) z CM5.
+    Register 40428 (dokumentácia) -> wire adresa 40427, gain 10, signed 16-bit.
+    Vracia dict s výsledkom (ok, readback, chybová správa).
+    """
+    try:
+        from pymodbus.client import ModbusTcpClient
+        client = ModbusTcpClient(host=ip, port=int(port or 502), timeout=3)
+        if not client.connect():
+            return {'ok': False, 'error': f'Nepodarilo sa pripojiť k {ip}:{port}'}
+        try:
+            wire_addr = 40428 - 1  # offset -1 pre Huawei
+            raw = int(round(float(pct) * 10)) & 0xFFFF  # gain 10, signed
+            w = client.write_register(address=wire_addr, value=raw, slave=int(unit_id or 0))
+            if w.isError():
+                return {'ok': False, 'error': f'SmartLogger odmietol zápis: {w}'}
+            time.sleep(0.4)
+            r = client.read_holding_registers(address=wire_addr, count=1, slave=int(unit_id or 0))
+            if r.isError():
+                return {'ok': True, 'readback_pct': None, 'note': 'Zápis prešiel, spätné čítanie zlyhalo'}
+            v = r.registers[0]
+            if v > 32767: v -= 65536
+            return {'ok': True, 'readback_pct': round(v / 10.0, 1)}
+        finally:
+            client.close()
+    except Exception as e:
+        return {'ok': False, 'error': str(e)[:200]}
+
+
+def handle_box_command(obj, ser):
+    """
+    Spracuje príkaz z PC cez USB kábel (JSON s kľúčom 'cmd').
+    Podporované: test_power. Odpovedá JSON-om späť do kábla.
+    Vracia True ak bol príkaz rozpoznaný a spracovaný.
+    """
+    cmd = str(obj.get('cmd', '')).strip().lower()
+    if not cmd:
+        return False
+
+    if cmd == 'test_power':
+        ip = str(obj.get('ip') or '')
+        port = int(obj.get('port') or 502)
+        unit = int(obj.get('unit_id') or 0)
+        pct = float(obj.get('pct') or 0)
+        if not (-100 <= pct <= 100):
+            resp = {'cmd': 'test_power_result', 'ok': False, 'error': 'Hodnota mimo rozsahu -100 až 100 %'}
+        elif not ip:
+            resp = {'cmd': 'test_power_result', 'ok': False, 'error': 'Chýba IP adresa SmartLoggera'}
+        else:
+            log(f"🧪 TEST POWER cez kábel: {pct}% -> {ip}:{port} (unit {unit})")
+            res = execute_test_power(ip, port, unit, pct)
+            log(f"🧪 TEST POWER výsledok: {res}")
+            resp = {'cmd': 'test_power_result'}
+            resp.update(res)
+        try:
+            import json as _json
+            ser.write((_json.dumps(resp) + '\n').encode('utf-8'))
+        except Exception as e:
+            log(f"⚠️ Nemožno poslať test odpoveď: {e}")
+        return True
+
+    return False
+
+
 def extract_json_from_buffer(buf):
     """
     Najde prvy validny JSON objekt v bufferi.
@@ -315,15 +383,11 @@ def extract_json_from_buffer(buf):
 
 
 def serial_reader_loop():
-    """Hlavna slucka - cita z USB konzoly a caka na JSON config."""
-    log("Slucka spustena - cakam na config cez USB kabel...")
+    """Hlavná slučka - číta z USB konzoly: JSON config aj príkazy (test_power atď.).
+    Beží VŽDY - aj keď je zariadenie už nastavené (re-setup + príkazy kedykoľvek)."""
+    log("Slučka spustená - čakám na config/príkazy cez USB kábel...")
 
     while True:
-        # Ak uz je zariadenie nastavene, len obcas skontroluj
-        if is_already_configured():
-            time.sleep(30)
-            continue
-
         port = find_console_port()
         if not port:
             time.sleep(10)
@@ -332,16 +396,12 @@ def serial_reader_loop():
         ser = None
         try:
             ser = serial.Serial(port=port, baudrate=115200, timeout=1.0)
-            log(f"Citam z portu {port} (115200 8N1)...")
+            log(f"Čítam z portu {port} (115200 8N1)...")
 
             buf = b''
             last_data = time.time()
 
             while True:
-                if is_already_configured():
-                    log("Zariadenie uz je nastavene - koncim citanie.")
-                    break
-
                 try:
                     chunk = ser.read(256)
                 except Exception:
@@ -350,29 +410,31 @@ def serial_reader_loop():
                 if chunk:
                     buf += chunk
                     last_data = time.time()
-                    # Spracuj buffer ak su v nom kompletné JSON objekty
+                    # Spracuj buffer ak sú v ňom kompletné JSON objekty
                     while True:
                         obj, buf = extract_json_from_buffer(buf)
                         if obj is None:
                             break
-                        # Je to config? (ma brand_id alebo device_name alebo comm_mode)
+                        # === PRÍKAZY (test_power a pod.) - spracuj a odpovedz ===
+                        if 'cmd' in obj:
+                            handle_box_command(obj, ser)
+                            continue
+                        # Je to config? (má brand_id alebo device_name alebo comm_mode)
                         if any(k in obj for k in ('brand_id', 'device_name', 'comm_mode', 'model_id')):
-                            log("📥 Prijaty JSON config z USB!")
+                            log("📥 Prijatý JSON config z USB!")
                             if apply_config(obj):
                                 connect_wifi_if_needed(obj.get('ssid'), obj.get('password'))
-                                # CM5 sa SAM zaregistruje do cloudu (ked dostane internet)
+                                # CM5 sa SÁM zaregistruje do cloudu (keď dostane internet)
                                 register_to_cloud(obj)
-                                # Confirm spat do PC
+                                # Confirm späť do PC
                                 try:
                                     ser.write(b'{"status":"config_applied"}\n')
                                 except Exception:
                                     pass
-                                buf = b''
-                                break
                         else:
-                            log("📥 JSON bez config klucov - ignorujem")
+                            log("📥 JSON bez config kľúčov - ignorujem")
                 else:
-                    # Ziadne data - cisti stary buffer
+                    # Žiadne dáta - čistí starý buffer
                     if time.time() - last_data > 5 and buf:
                         buf = b''
                     time.sleep(0.2)

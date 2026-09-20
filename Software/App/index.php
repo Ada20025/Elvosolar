@@ -1079,25 +1079,8 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
         }
     } catch (Exception $eS) { /* tabulka neexistuje -> pokracuj (cloud sync prvy krat registruje) */ }
     
-    // 1) Stary kanal: cm5_config PENDING pre tento serial (bakward kompatibilita)
-    try {
-        $stmt = $pdo->prepare("SELECT id, admin_command, config_json FROM cm5_config WHERE serial_number = ? AND status = 'pending' ORDER BY id DESC LIMIT 1");
-        $stmt->execute([$serial]);
-        $row = $stmt->fetch();
-        if ($row) {
-            try {
-                $pdo->prepare("UPDATE cm5_config SET status = 'sent' WHERE id = ?")->execute([$row['id']]);
-            } catch (Exception $e) { /* ignore */ }
-            send_json([
-                'status' => 'success',
-                'command' => $row['admin_command'],
-                'config' => json_decode($row['config_json'] ?? '{}', true),
-                'id' => $row['id']
-            ]);
-        }
-    } catch (Exception $e) { /* tabulka neexistuje - ignore */ }
-    
-    // 2) Novy kanal: admin_command ulozeny priamo v devices podla serial_number
+    // 1) NOVÝ KANÁL: admin_command uložený priamo v devices podla serial_number
+    //    (cm5_config zrušená — setup ide výhradne káblom, nič sa neukladá do cloud DB)
     try {
         $dStmt = $pdo->prepare("SELECT id, admin_command FROM devices WHERE serial_number = ? AND admin_command IS NOT NULL AND admin_command != '' ORDER BY id DESC LIMIT 1");
         $dStmt->execute([$serial]);

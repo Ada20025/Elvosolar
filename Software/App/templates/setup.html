@@ -469,12 +469,21 @@
                                 </div>
                             </div>
 
-                            <!-- LIVE TEST BUTTON & RESULT -->
+                            <!-- LIVE TEST (2 skúšky cez kábel do CM5) -->
                             <div class="pt-2 space-y-2">
-                                <button type="button" onclick="testSmartLoggerConnection()" id="btnTestSmartlogger" class="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white font-extrabold text-xs py-3.5 rounded-xl tracking-wide transition shadow-lg flex items-center justify-center gap-2 cursor-pointer">
-                                    <span>📡 ODOSLAŤ MODBUS REQUEST & OVERIŤ SPOJENIE</span>
-                                </button>
+                                <div class="flex gap-2 items-end">
+                                    <div class="flex-1">
+                                        <label class="text-[9px] font-bold text-slate-400">Testovací výkon (%) — <span id="testAttemptLabel" class="text-cyan-400">SKÚŠKA 1/2</span></label>
+                                        <input id="testPowerInput" type="number" value="30" min="-100" max="100" step="1" class="w-full bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2.5 outline-none font-mono focus:border-cyan-500 transition">
+                                        <div class="text-[8px] text-slate-500 mt-1">Test ide káblom do CM5 a CM5 ho vykoná na SmartLogger (Register 40428). Druhá skúška musí mať INÚ hodnotu.</div>
+                                    </div>
+                                    <button type="button" onclick="runPowerTest()" id="btnTestSmartlogger" class="px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white font-extrabold text-xs py-3 rounded-xl tracking-wide transition shadow-lg whitespace-nowrap cursor-pointer">📡 ODOŠLI</button>
+                                </div>
                                 <div id="verifyResult" class="hidden text-xs rounded-xl p-3 border transition-all"></div>
+                                <div id="testConfirmRow" class="hidden grid grid-cols-2 gap-2">
+                                    <button type="button" onclick="confirmPowerTest(true)" class="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition">✅ ANO, FUNGUJE</button>
+                                    <button type="button" onclick="confirmPowerTest(false)" class="py-3 rounded-xl bg-rose-700 hover:bg-rose-600 text-white font-extrabold text-xs cursor-pointer transition">✖ NIE</button>
+                                </div>
                             </div>
                         </div>
 
@@ -1006,108 +1015,142 @@
             }
         }
 
-        async function testSmartLoggerConnection() {
+        // ====== TEST VÝKONU cez USB kábel (2 skúšky — CM5 vykoná zápis lokálne na SmartLogger) ======
+        let testAttempt = 1;
+        let firstTestVal = null;
+
+        async function readBoxResponse(timeoutMs) {
+            if (!activeSerialPort) return null;
+            const reader = activeSerialPort.readable.getReader();
+            const decoder = new TextDecoder();
+            let buf = '';
+            const deadline = Date.now() + (timeoutMs || 8000);
+            try {
+                while (Date.now() < deadline) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    if (value) {
+                        buf += decoder.decode(value, { stream: true });
+                        let idx;
+                        while ((idx = buf.indexOf('{')) !== -1) {
+                            const end = buf.indexOf('}', idx);
+                            if (end === -1) break;
+                            const cand = buf.slice(idx, end + 1);
+                            try {
+                                const obj = JSON.parse(cand);
+                                if (obj.cmd === 'test_power_result') return obj;
+                                buf = buf.slice(end + 1);
+                            } catch (e) { buf = buf.slice(idx + 1); }
+                        }
+                    }
+                }
+            } catch (e) {}
+            finally {
+                try { await reader.cancel(); } catch (e2) {}
+                try { reader.releaseLock(); } catch (e3) {}
+            }
+            return null;
+        }
+
+        async function runPowerTest() {
             const btn = document.getElementById('btnTestSmartlogger');
             const resultBox = document.getElementById('verifyResult');
             const scanStatus = document.getElementById('scanStatus');
-            const origHtml = btn.innerHTML;
-            btn.disabled = true;
-            
+            const confirmRow = document.getElementById('testConfirmRow');
+
+            if (selectedTransport !== 'SERIAL' || !activeSerialPort) {
+                resultBox.classList.remove('hidden');
+                resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
+                resultBox.innerHTML = '🔌 Pripoj CM5 cez USB UART kábel — test ide káblom do boxu a box ho vykoná na SmartLogger.';
+                return;
+            }
+            const pct = parseFloat(document.getElementById('testPowerInput').value);
+            if (isNaN(pct) || pct < -100 || pct > 100) {
+                resultBox.classList.remove('hidden');
+                resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
+                resultBox.innerHTML = 'Zadaj hodnotu od -100 do 100 (%).';
+                return;
+            }
+            if (testAttempt === 2 && pct === firstTestVal) {
+                resultBox.classList.remove('hidden');
+                resultBox.className = 'text-xs rounded-xl p-3 bg-amber-950/40 border border-amber-500/40 text-amber-300';
+                resultBox.innerHTML = '⚠️ Druhá skúška musí mať INÚ hodnotu ako prvá (' + firstTestVal + ' %) — inak sa neoverí, že sa výkon reálne mení.';
+                return;
+            }
+
             const ip = document.getElementById('smartloggerIpInput')?.value?.trim() || '192.168.8.10';
             const port = parseInt(document.getElementById('smartloggerPortInput')?.value || 502);
             const unitId = parseInt(document.getElementById('smartloggerUnitIdInput')?.value || 0);
 
+            confirmRow.classList.add('hidden');
+            btn.disabled = true;
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '⏳ POSIELAM CEZ KÁBEL...';
             resultBox.classList.remove('hidden');
+            resultBox.className = 'text-xs rounded-xl p-3 bg-slate-950/80 border border-purple-500/30 text-purple-300';
+            resultBox.innerHTML = 'Skúška ' + testAttempt + '/2: posielam ' + pct + ' % cez kábel do CM5 → CM5 zapisuje na ' + ip + ':' + port + '...';
 
-            // === KROK 1: CITANIE (register 40515 = SOC) ===
-            btn.innerHTML = '<div class="border-2 border-white/30 border-t-white rounded-full w-4 h-4 animate-spin"></div> <span>1/2 Čítam register 40515 (SOC)...</span>';
-            resultBox.className = 'text-xs rounded-xl p-3 bg-slate-950/80 border border-purple-500/30 text-purple-300 flex items-center gap-2';
-            resultBox.innerHTML = '<div class="border-2 border-purple-500/30 border-t-purple-400 rounded-full w-3.5 h-3.5 animate-spin"></div> Krok 1/2: Čítam dáta zo SmartLoggera...';
-
-            let step1Ok = false;
+            let resp = null;
             try {
-                const res1 = await fetch('/api/smartlogger/test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'tcp', ip, port, unit_id: unitId }),
-                    signal: AbortSignal.timeout(5000)
-                });
-                const d1 = await res1.json();
-                if (d1.status === 'success' || d1.tcp_ok) {
-                    step1Ok = true;
-                    const soc = d1.data?.tcp?.battery_soc ?? '?';
-                    const power = d1.data?.tcp?.active_power_w ?? '?';
-                    const latency = d1.data?.tcp?.latency_ms ?? '?';
-                    resultBox.innerHTML = '<div class="flex items-center gap-1.5 text-emerald-400 font-bold"><span class="text-lg">\u2713</span> Krok 1/2: Čítanie OK</div>' +
-                        '<div class="grid grid-cols-3 gap-1.5 text-[10px] font-mono mt-1">' +
-                        '<div class="bg-slate-900/60 rounded-lg p-1.5"><span class="text-slate-500 block">SOC</span><strong class="text-white">' + soc + '%</strong></div>' +
-                        '<div class="bg-slate-900/60 rounded-lg p-1.5"><span class="text-slate-500 block">Výkon</span><strong class="text-white">' + power + ' W</strong></div>' +
-                        '<div class="bg-slate-900/60 rounded-lg p-1.5"><span class="text-slate-500 block">Latencia</span><strong class="text-cyan-400">' + latency + ' ms</strong></div></div>';
-                } else {
-                    const errMsg = d1.message || d1.data?.tcp?.error || 'SmartLogger neodpovedá na čítanie registra 40515';
-                    resultBox.className = 'text-xs rounded-xl p-3.5 bg-rose-950/40 border border-rose-500/40 text-rose-300';
-                    resultBox.innerHTML = '<div class="font-bold text-rose-400">\u2717 Krok 1/2: Čítanie zlyhalo</div>' +
-                        '<div class="text-[11px] mt-1">' + errMsg + '</div>' +
-                        '<div class="text-[9px] text-slate-500 mt-1">Skontrolujte: IP ' + ip + ', Port ' + port + ', Unit ID ' + unitId + ', či je Modbus TCP povolený</div>';
-                    btn.disabled = false; btn.innerHTML = origHtml;
-                    scanStatus.className = 'p-4 bg-rose-950/30 border border-rose-500/40 rounded-xl text-xs text-center font-bold text-rose-300';
-                    scanStatus.innerHTML = '\u2717 Čítanie zlyhalo - skontrolujte nastavenia';
-                    return;
-                }
-            } catch(e) {
-                resultBox.className = 'text-xs rounded-xl p-3.5 bg-rose-950/40 border border-rose-500/40 text-rose-300';
-                resultBox.innerHTML = '<div class="font-bold text-rose-400">\u2717 Krok 1/2: Chyba pripojenia</div><div class="text-[11px] mt-1">' + e.message + '</div>';
-                btn.disabled = false; btn.innerHTML = origHtml;
+                const encoder = new TextEncoder();
+                const writer = activeSerialPort.writable.getWriter();
+                await writer.write(encoder.encode(JSON.stringify({ cmd: 'test_power', ip: ip, port: port, unit_id: unitId, pct: pct }) + "\n"));
+                writer.releaseLock();
+                resp = await readBoxResponse(9000);
+            } catch (e) {
+                resp = { ok: false, error: e.message };
+            }
+            btn.disabled = false; btn.innerHTML = origHtml;
+
+            if (!resp) {
+                resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
+                resultBox.innerHTML = '✗ Box neodpovedal (timeout). Skontroluj, či CM5 beží a je pripojený káblom, a skús znova.';
+                return;
+            }
+            if (!resp.ok) {
+                resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
+                resultBox.innerHTML = '✗ Zápis zlyhal: ' + (resp.error || 'neznáma chyba');
+                return;
+            }
+            const rb = resp.readback_pct;
+            resultBox.className = 'text-xs rounded-xl p-3 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
+            resultBox.innerHTML = '✓ Zápis ' + pct + ' % prešiel' + (rb !== null && rb !== undefined ? ' — spätné čítanie: ' + rb + ' %' : '') +
+                '<div class="text-[10px] text-slate-400 mt-1">Over hodnotu aj v Enspire webe SmartLoggera a potvrď:</div>';
+            confirmRow.classList.remove('hidden');
+        }
+
+        function confirmPowerTest(ok) {
+            const resultBox = document.getElementById('verifyResult');
+            const scanStatus = document.getElementById('scanStatus');
+            const confirmRow = document.getElementById('testConfirmRow');
+            const pct = parseFloat(document.getElementById('testPowerInput').value);
+
+            if (!ok) {
+                confirmRow.classList.add('hidden');
+                resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
+                resultBox.innerHTML = '✗ Test zamietnutý. Skontroluj v SmartLoggere: Logger address = 0, Link setting = Enable (Unlimited), Client IP = 0.0.0.0 — a skús znova.';
+                scanStatus.className = 'p-4 bg-rose-950/30 border border-rose-500/40 rounded-xl text-xs text-center font-bold text-rose-300';
+                scanStatus.innerHTML = '✗ Test neprešiel — oprav a skús znova';
                 return;
             }
 
-            // === KROK 2: ZAPIS (register 40428 = vykon, test 0%) ===
-            btn.innerHTML = '<div class="border-2 border-white/30 border-t-white rounded-full w-4 h-4 animate-spin"></div> <span>2/2 Zapisujem register 40428 (test 0%)...</span>';
-            resultBox.innerHTML += '<div class="border-t border-emerald-900/30 mt-2 pt-2 text-purple-300 flex items-center gap-2"><div class="border-2 border-purple-500/30 border-t-purple-400 rounded-full w-3 h-3 animate-spin"></div> Krok 2/2: Testujem zápis na register 40428...</div>';
-
-            let step2Ok = false;
-            let step2Msg = '';
-            try {
-                const res2 = await fetch('/api/system/smartlogger/power', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ip, port, unit_id: unitId, power_percent: 0 }),
-                    signal: AbortSignal.timeout(5000)
-                });
-                const d2 = await res2.json();
-                if (d2.status === 'success') { step2Ok = true; }
-                else { step2Msg = d2.message || 'Neznáma chyba'; }
-            } catch(e) { step2Msg = e.message; }
-
-            btn.disabled = false; btn.innerHTML = origHtml;
-
-            // === VÝSLEDOK ===
-            if (step1Ok && step2Ok) {
-                resultBox.className = 'text-xs rounded-xl p-3.5 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-2';
-                resultBox.innerHTML = '<div class="flex items-center gap-1.5 text-emerald-400 font-bold text-sm"><span class="text-xl">\u2713</span> SMARTLOGGER PLNE OVERENÝ</div>' +
-                    '<div class="grid grid-cols-2 gap-2 text-[10px] font-mono">' +
-                    '<div class="bg-emerald-900/30 rounded-lg p-2"><span class="text-slate-500 block">Čítanie</span><strong class="text-emerald-300">\u2713 Register 40515 (SOC)</strong></div>' +
-                    '<div class="bg-emerald-900/30 rounded-lg p-2"><span class="text-slate-500 block">Zápis</span><strong class="text-emerald-300">\u2713 Register 40428 (Výkon)</strong></div></div>' +
-                    '<div class="text-[10px] text-slate-400">IP: ' + ip + ':' + port + ' \xb7 Unit ID: ' + unitId + ' \xb7 Zápis 0% potvrdený</div>';
-                scanStatus.className = 'p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300';
-                scanStatus.innerHTML = '\ud83c\udf89 <span class="text-emerald-400">SmartLogger komunikuje!</span> Môžete dokončiť nastavenie.';
-                try { await fetch('/api/system/save-smartlogger', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ip, port, slave_id: unitId, mode: 'tcp'}) }); } catch(e2) {}
-            } else if (step1Ok && !step2Ok) {
-                resultBox.className = 'text-xs rounded-xl p-3.5 bg-amber-950/40 border border-amber-500/50 text-amber-300 space-y-2';
-                resultBox.innerHTML = '<div class="flex items-center gap-1.5 text-amber-400 font-bold"><span class="text-lg">\u26a0</span> Čítanie OK, zápis zlyhal</div>' +
-                    '<div class="text-[11px]">' + step2Msg + '</div>' +
-                    '<ul class="text-[10px] list-disc ml-4 space-y-0.5"><li>Logger address v SmartLoggeri nie je na <strong>0</strong></li>' +
-                    '<li>Link setting nie je <strong>Enable (Unlimited)</strong></li>' +
-                    '<li>Client IP addresses nie sú na <strong>0.0.0.0</strong></li></ul>';
-                scanStatus.className = 'p-4 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs text-center font-bold text-amber-300';
-                scanStatus.innerHTML = '\u26a0\ufe0f Čítanie funguje, zápis nie - skontrolujte SmartLogger';
+            confirmRow.classList.add('hidden');
+            if (testAttempt === 1) {
+                firstTestVal = pct;
+                testAttempt = 2;
+                const nextVal = (pct === 30 ? 50 : 30);
+                document.getElementById('testAttemptLabel').innerText = 'SKÚŠKA 2/2 (iná hodnota!)';
+                document.getElementById('testPowerInput').value = nextVal;
+                resultBox.className = 'text-xs rounded-xl p-3 bg-cyan-950/40 border border-cyan-500/40 text-cyan-300';
+                resultBox.innerHTML = '✓ Skúška 1/2 potvrdená (' + pct + ' %). Teraz SKÚŠKA 2/2 s INOU hodnotou — predvyplnené ' + nextVal + ' %. Odošli a znovu over v Enspire webe.';
             } else {
-                resultBox.className = 'text-xs rounded-xl p-3.5 bg-rose-950/40 border border-rose-500/40 text-rose-300';
-                resultBox.innerHTML = '<div class="font-bold text-rose-400">\u2717 SmartLogger nedostupný</div>';
-                scanStatus.className = 'p-4 bg-rose-950/30 border border-rose-500/40 rounded-xl text-xs text-center font-bold text-rose-300';
-                scanStatus.innerHTML = '\u2717 SmartLogger neodpovedá';
+                resultBox.className = 'text-xs rounded-xl p-3.5 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300';
+                resultBox.innerHTML = '<div class="font-bold text-emerald-400 text-sm">🎉 SMARTLOGGER OVERENÝ (2/2 skúšky)</div><div class="text-[10px] text-slate-400 mt-1">Výkon sa reálne mení podľa zápisu. Hotovo!</div>';
+                scanStatus.className = 'p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300';
+                scanStatus.innerHTML = '🎉 SmartLogger komunikuje a riadi výkon! Môžete dokončiť nastavenie.';
+                const fb = document.getElementById('finishBtn');
+                if (fb) fb.classList.remove('hidden');
             }
-            document.getElementById('finishBtn').classList.remove('hidden');
         }
 
         function fillSetupSummary() {
