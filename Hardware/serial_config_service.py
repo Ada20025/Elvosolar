@@ -460,6 +460,12 @@ def serial_reader_loop():
                         # Je to config? (má brand_id alebo device_name alebo comm_mode)
                         if any(k in obj for k in ('brand_id', 'device_name', 'comm_mode', 'model_id')):
                             log("📥 Prijatý JSON config z USB!")
+                            log("📋 Obsah JSON:")
+                            for _k, _v in obj.items():
+                                _show = _v
+                                if _k in ('password', 'cloud_password', 'admin_password') and _v:
+                                    _show = '***'
+                                log(f"   • {_k} = {_show}")
                             if apply_config(obj):
                                 connect_wifi_if_needed(obj.get('ssid'), obj.get('password'))
                                 # CM5 sa SÁM zaregistruje do cloudu (keď dostane internet)
