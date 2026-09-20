@@ -14,15 +14,16 @@ echo "=================================================="
 echo "   ELVOCONTROLL CM5 — RUČNÝ UPDATE Z GITHUBU"
 echo "=================================================="
 
-# --- 0) Ak zip už existuje na CM5 (prenesený z PC), preskoč sťahovanie ---
-if [ ! -f "$TMP_ZIP" ]; then
-    echo "[1/7] Sťahujem zip z GitHubu..."
-    wget -q --no-check-certificate -O "$TMP_ZIP" "$REPO_URL" \
-        || curl -k -L -o "$TMP_ZIP" "$REPO_URL" \
-        || { echo "❌ Sťahovanie zlyhalo. Skontroluj internet."; exit 1; }
-else
-    echo "[1/7] Zip už existuje ($TMP_ZIP) — preskakujem sťahovanie."
-fi
+# --- 0) Vždy stiahni ČERSTVÝ zip (starý rozbitý/neprefixovaný zip by rozbil update) ---
+rm -f "$TMP_ZIP"
+echo "[1/7] Sťahujem zip z GitHubu..."
+wget -q --no-check-certificate -O "$TMP_ZIP" "$REPO_URL" \
+    || curl -k -L -o "$TMP_ZIP" "$REPO_URL" \
+    || { echo "❌ Sťahovanie zlyhalo. Skontroluj internet."; exit 1; }
+
+# Over že je to reálne zip (GitHub niekedy vráti HTML chybovú stránku)
+unzip -tq "$TMP_ZIP" > /dev/null 2>&1 \
+    || { echo "❌ Stiahnutý súbor nie je platný zip (skús o chvíľu znova)."; rm -f "$TMP_ZIP"; exit 1; }
 
 echo "[2/7] Rozbaľujem zip..."
 rm -rf "$TMP_DIR"
