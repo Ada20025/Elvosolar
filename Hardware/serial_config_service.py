@@ -587,12 +587,18 @@ def ensure_cloud_registration():
         try:
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute("SELECT serial_number, smartlogger_ip FROM devices LIMIT 1")
+            cur.execute("SELECT serial_number, name FROM devices LIMIT 1")
             row = cur.fetchone()
+            try:
+                row_owner = cur.execute("SELECT value FROM system_settings WHERE key = 'cloud_username'").fetchone()
+            except Exception:
+                row_owner = None
             conn.close()
             if not row or not row[0] or not (str(row[0]).startswith('CM5-') or str(row[0]).startswith('SN-CM5')):
                 return  # nenastavené - nič
             _serial = str(row[0])
+            _name = str(row[1] or 'Moje zariadenie')
+            _owner = str(row_owner[0]) if (row_owner and row_owner[0]) else ''
         except Exception:
             return
 
@@ -604,8 +610,9 @@ def ensure_cloud_registration():
             attempt += 1
             try:
                 r = _rq.post(f"{CLOUD}/api/user/claim-device",
-                    json={'serial': _serial, 'name': 'Moje zariadenie', 'brand_id': 'huawei',
-                          'category_id': 'smartlogger', 'model_id': 'sl3000', 'slave_id': 1, 'has_battery': True},
+                    json={'serial': _serial, 'name': _name, 'brand_id': 'huawei',
+                          'category_id': 'smartlogger', 'model_id': 'sl3000', 'slave_id': 1, 'has_battery': True,
+                          'owner_email': _owner},
                     timeout=8)
                 if r.status_code == 200:
                     # Over aj TELo - {"status":"error"} s HTTP 200 nie je uspech
