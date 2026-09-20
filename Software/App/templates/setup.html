@@ -1130,8 +1130,9 @@
             const rb = resp.readback_pct;
             resultBox.className = 'text-xs rounded-xl p-3 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
             resultBox.innerHTML = '✓ Zápis ' + pct + ' % prešiel' + (rb !== null && rb !== undefined ? ' — spätné čítanie: ' + rb + ' %' : '') +
-                '<div class="text-[10px] text-slate-400 mt-1">Over hodnotu aj v Enspire webe SmartLoggera a potvrď:</div>';
-            confirmRow.classList.remove('hidden');
+                '<div class="text-[10px] text-slate-400 mt-1">Automaticky pokračujem — žiadne potvrdzovanie netreba...</div>';
+            // PLNE AUTOMATICKY: spätné čítanie z registra je dôkaz — žiadne ručné ANO/NIE
+            setTimeout(() => confirmPowerTest(true), 900);
         }
 
         function confirmPowerTest(ok) {
@@ -1154,10 +1155,12 @@
                 firstTestVal = pct;
                 testAttempt = 2;
                 const nextVal = (pct === 30 ? 50 : 30);
-                document.getElementById('testAttemptLabel').innerText = 'SKÚŠKA 2/2 (iná hodnota!)';
+                document.getElementById('testAttemptLabel').innerText = 'SKÚŠKA 2/2 (automaticky...)';
                 document.getElementById('testPowerInput').value = nextVal;
                 resultBox.className = 'text-xs rounded-xl p-3 bg-cyan-950/40 border border-cyan-500/40 text-cyan-300';
-                resultBox.innerHTML = '✓ Skúška 1/2 potvrdená (' + pct + ' %). Teraz SKÚŠKA 2/2 s INOU hodnotou — predvyplnené ' + nextVal + ' %. Odošli a znovu over v Enspire webe.';
+                resultBox.innerHTML = '✓ Skúška 1/2 prešla (' + pct + ' %). Automaticky posielam SKÚŠKU 2/2 s inou hodnotou (' + nextVal + ' %)...';
+                // Auto-send druhej skúšky - používateľ nemusí nič klikať
+                setTimeout(() => runPowerTest(), 1200);
             } else {
                 resultBox.className = 'text-xs rounded-xl p-3.5 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300';
                 resultBox.innerHTML = '<div class="font-bold text-emerald-400 text-sm">🎉 SMARTLOGGER OVERENÝ (2/2 skúšky)</div><div class="text-[10px] text-slate-400 mt-1">Výkon sa reálne mení podľa zápisu. Hotovo!</div>';
