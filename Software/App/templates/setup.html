@@ -1555,15 +1555,8 @@ const cat = document.getElementById('categorySelect');
                 if (lblHybrid) lblHybrid.style.display = '';
                 if (connNote) connNote.classList.add('hidden');
             }
-            // Auto-otvor SmartLogger navod ked je vybrata SmartLogger kategoria
-            try {
-                const catSel = document.getElementById('categorySelect');
-                const catText = catSel && catSel.selectedOptions[0] ? catSel.selectedOptions[0].textContent.toLowerCase() : '';
-                const guide = document.getElementById('smartloggerGuide');
-                if (guide && (catText.includes('smartlogger') || catText.includes('enspire') || catText.includes('ezlogger'))) {
-                    guide.classList.remove('hidden');
-                }
-            } catch(e) {}
+            // NÁVOD sa už NEOTVÁRA automaticky — len manuálne cez tlačidlo "ℹ️ Návod pre SmartLogger"
+            // (auto-open plnoobrazovkového modalu zatemnil celú stránku a blokoval setup)
             const brand_id = document.getElementById('brandSelect').value;
             const cat_id = document.getElementById('categorySelect').value;
             const modelContainer = document.getElementById('modelContainer');
