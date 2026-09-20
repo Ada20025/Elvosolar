@@ -328,11 +328,20 @@ def execute_test_power(ip, port, unit_id, pct):
         try:
             wire_addr = 40428 - 1  # offset -1 pre Huawei
             raw = int(round(float(pct) * 10)) & 0xFFFF  # gain 10, signed
-            w = client.write_register(address=wire_addr, value=raw, slave=int(unit_id or 0))
+            unit = int(unit_id or 0)
+            # Kompatibilita pymodbus: nova verzia = device_id, starsia = slave (pripadne unit)
+            def _call(fn, **kw):
+                for param in ('device_id', 'slave', 'unit'):
+                    try:
+                        return fn(**{param: unit})
+                    except TypeError:
+                        continue
+                return fn()  # posledna moznost - bez parametra
+            w = _call(lambda **kw: client.write_register(address=wire_addr, value=raw, **kw))
             if w.isError():
                 return {'ok': False, 'error': f'SmartLogger odmietol zápis: {w}'}
             time.sleep(0.4)
-            r = client.read_holding_registers(address=wire_addr, count=1, slave=int(unit_id or 0))
+            r = _call(lambda **kw: client.read_holding_registers(address=wire_addr, count=1, **kw))
             if r.isError():
                 return {'ok': True, 'readback_pct': None, 'note': 'Zápis prešiel, spätné čítanie zlyhalo'}
             v = r.registers[0]
