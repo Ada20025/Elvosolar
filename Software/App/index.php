@@ -252,7 +252,7 @@ if ($path === '/test.php' || $path === '/test') {
 $stay_logged_in = $_SESSION['stay_logged_in'] ?? false;
 $timeout_seconds = $stay_logged_in ? (90 * 24 * 3600) : (7 * 24 * 3600);
 
-$no_timeout_paths = ['/login', '/register', '/forgot-password', '/verify-reset-code', '/setup', '/setup.html', '/api/cm5/poll', '/api/cm5/result', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/cm5/register', '/healthcheck'];
+$no_timeout_paths = ['/login', '/register', '/forgot-password', '/verify-reset-code', '/setup', '/setup.html', '/api/user/me', '/api/user/devices', '/api/cm5/poll', '/api/cm5/result', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/cm5/register', '/healthcheck'];
 $apply_timeout = true;
 foreach ($no_timeout_paths as $ntp) {
     if (strpos($path, $ntp) === 0) { $apply_timeout = false; break; }
@@ -1257,7 +1257,7 @@ elseif ($path === '/api/user/me' && $method === 'GET') {
     $u = $stmt->fetch();
     if (!$u) send_json(['status' => 'error', 'message' => 'Používateľ neexistuje'], 404);
     $created = $u['created_at'] ? date('d.m.Y', strtotime($u['created_at'])) : '2026';
-    send_json(['status' => 'success', 'username' => $u['username'], 'email' => $u['email'], 'role' => $u['role'], 'created_at' => $created]);
+    send_json(['status' => 'success', 'user_id' => intval($u['id']), 'username' => $u['username'], 'email' => $u['email'], 'role' => $u['role'], 'created_at' => $created]);
 }
 
 elseif ($path === '/api/user/devices' && $method === 'GET') {
@@ -1445,7 +1445,7 @@ elseif ($path === '/api/user/me' && $method === 'GET') {
     $u = $stmt->fetch();
     if (!$u) send_json(['status' => 'error', 'message' => 'Používateľ neexistuje'], 404);
     $created = $u['created_at'] ? date('d.m.Y', strtotime($u['created_at'])) : '2026';
-    send_json(['status' => 'success', 'username' => $u['username'], 'email' => $u['email'], 'role' => $u['role'], 'created_at' => $created]);
+    send_json(['status' => 'success', 'user_id' => intval($u['id']), 'username' => $u['username'], 'email' => $u['email'], 'role' => $u['role'], 'created_at' => $created]);
 }
 
 elseif ($path === '/api/user/devices' && $method === 'GET') {

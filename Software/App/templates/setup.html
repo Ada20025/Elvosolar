@@ -865,6 +865,7 @@
                         if (meData.status === 'success' && meData.email) {
                             cloudUser = meData.email;
                             cloudPass = "session_auth";
+                            console.log('Setup: zariadenie bude registrovane pod user_id=' + meData.user_id + ' (' + meData.email + ')');
                         }
                     } catch(e) {}
                 } else {
@@ -903,7 +904,7 @@
             const payloadString = JSON.stringify(configPayload);
             const statusModal = document.getElementById("statusModal");
             document.getElementById("modalTitle").innerText = "Zápis konfigurácie";
-            document.getElementById("modalDesc").innerText = "Odosielam univerzálny config do CM5 — zariadenie si ho pochopí a nastaví sa samo...";
+            document.getElementById("modalDesc").innerText = (cloudUser ? ("Zariadenie sa zaregistruje pod účet: " + cloudUser + " — ") : "") + "Odosielam univerzálny config do CM5...";
             statusModal.classList.remove("hidden");
 
             try {
