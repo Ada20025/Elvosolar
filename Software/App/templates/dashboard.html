@@ -435,6 +435,13 @@
         .toast-close { background: none; border: none; color: #64748b; cursor: pointer; font-size: 15px; padding: 0 0 0 6px; line-height: 1; }
         @media (max-width: 480px) { .toast-wrap { left: 14px; right: 14px; max-width: none; top: 10px; } }
 
+        /* Dotykove zariadenia: zvacsit male tlacidla na 44px tap target (Apple/Google guideline) */
+        @media (pointer: coarse) {
+            #alertsBtn, #deviceSelectDropdownBtn { min-width: 44px; min-height: 44px; }
+            .user-dropdown-btn { padding: 10px 14px; }
+            button, [role="button"], a[href] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        }
+
         @media (max-width: 400px) {
             :root { font-size: 14.5px; }
             .content { padding: 8px !important; }
