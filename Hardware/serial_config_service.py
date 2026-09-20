@@ -379,6 +379,29 @@ def handle_box_command(obj, ser):
     if not cmd:
         return False
 
+    if cmd == 'get_info':
+        # Setup si vyzdvihne serial + konfiguraciu CM5 (pre web skusku 2 po odpojeni kabla)
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT serial_number, smartlogger_ip, smartlogger_port, modbus_slave_id FROM devices LIMIT 1")
+            row = cur.fetchone(); conn.close()
+            info = {
+                'cmd': 'info',
+                'serial': str(row[0]) if row else '',
+                'ip': str(row[1]) if row else '',
+                'port': int(row[2]) if row else 502,
+                'unit_id': int(row[3]) if row else 0,
+            }
+        except Exception:
+            info = {'cmd': 'info', 'serial': '', 'ip': '', 'port': 502, 'unit_id': 0}
+        try:
+            import json as _json
+            ser.write((_json.dumps(info) + '\n').encode('utf-8'))
+        except Exception as e:
+            log(f"⚠️ Nemožno poslať info: {e}")
+        return True
+
     if cmd == 'test_power':
         ip = str(obj.get('ip') or '')
         port = int(obj.get('port') or 502)

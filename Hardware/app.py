@@ -1750,6 +1750,35 @@ def cloud_sync_loop():
                 log_message(f"[CLOUD] Nastavenia aktualizovane: {list(config.keys())}")
                 result = {"status": "success", "message": "Nastavenia ulozene"}
 
+            elif action == "set_power":
+                # MANUÁLNY ZÁPIS VÝKONU cez web (skúška 2 bez kábla / ovládanie z dashboardu)
+                # Prijme pct (0-100), zapíše na SmartLogger (40428, FC16, gain 10) cez LAN
+                try:
+                    from serial_config_service import execute_test_power
+                    pct = float(config.get('pct', 0))
+                    sl_ip = str(config.get('ip', '') or '')
+                    sl_port = int(config.get('port', 502) or 502)
+                    sl_unit = int(config.get('unit_id', 0) or 0)
+                    # IP/port/unit z DB ak neprišli v príkaze
+                    if not sl_ip:
+                        rows = db_execute("SELECT smartlogger_ip, smartlogger_port, modbus_slave_id FROM devices LIMIT 1")
+                        if rows:
+                            sl_ip = str(rows[0].get('smartlogger_ip') or '')
+                            sl_port = int(rows[0].get('smartlogger_port') or 502)
+                            sl_unit = int(rows[0].get('modbus_slave_id') or 0)
+                    if not sl_ip:
+                        result = {"status": "error", "message": "SmartLogger IP nie je nastavená (urob setup)"}
+                    else:
+                        res = execute_test_power(sl_ip, sl_port, sl_unit, pct)
+                        log_message(f"[WEB POWER] Zapis {pct}% -> {sl_ip}:{sl_port}: {res}")
+                        if res.get('ok'):
+                            result = {"status": "success", "message": f"Výkon nastavený na {pct}%",
+                                      "readback_pct": res.get('readback_pct'), "original_pct": res.get('original_pct')}
+                        else:
+                            result = {"status": "error", "message": res.get('error', 'Zápis zlyhal')}
+                except Exception as e_sp:
+                    result = {"status": "error", "message": str(e_sp)[:200]}
+
             try:
                 for _retry in range(3):
                     try:

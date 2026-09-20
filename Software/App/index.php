@@ -955,6 +955,37 @@ elseif ($path === '/api/admin/terminal-command' && $method === 'POST') {
     }
 }
 
+// MANUÁLNY ZÁPIS VÝKONU cez web (skúška 2 / ovládanie) — ide cez cloud do CM5
+elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) {
+        send_json(['status' => 'error', 'message' => 'Neprihlásený používateľ'], 401);
+    }
+    $data = get_json_input();
+    $pct = floatval($data['pct'] ?? -1);
+    $devId = intval($matches[1]);
+    if ($pct < 0 || $pct > 100) {
+        send_json(['status' => 'error', 'message' => 'Hodnota musí byť 0–100 %'], 400);
+    }
+    try {
+        $stmt = $pdo->prepare("SELECT id, serial_number FROM devices WHERE id = ?");
+        $stmt->execute([$devId]);
+        $dev = $stmt->fetch();
+        if (!$dev) {
+            send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
+        }
+        // Zapíš príkaz do devices.admin_command (CM5 si ho vyzdvihne pri poll-e)
+        if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
+            $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
+        }
+        $cmd = json_encode(['action' => 'set_power', 'pct' => $pct]);
+        $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
+        $stmtU->execute([$cmd, $devId]);
+        send_json(['status' => 'success', 'message' => "Príkaz na {$pct} % odoslaný do CM5 (cez WiFi). Over výsledok v Enspire o pár sekúnd."]);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => 'Chyba: ' . $e->getMessage()], 500);
+    }
+}
+
 // --- TELEMETRIA API PRE ZARIADENIE ---
 elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $method === 'GET') {
     $device_id = intval($matches[1]);
