@@ -2600,6 +2600,20 @@
                 }
                 setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
 
+                // Zvyrazni aktivny rezim prevadzky (Zap/Vyp/SmartAI) podla DB
+                // - inak tlacidla ukazuju posledne kliknute, nie realny stav zariadenia
+                const mcm = (data.meter_control_mode || 'SMART').toUpperCase();
+                document.querySelectorAll('#meterModeGrid .mode-card').forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-mode') === mcm);
+                });
+                const descMap = {
+                    UNLIMITED: '<strong style="color:var(--accent-solar);">Zap:</strong> Zariadenie beží na maximálny výkon bez obmedzenia. OKTE optimalizácia je vypnutá.',
+                    PLUS: '<strong style="color:#ef4444;">Vyp:</strong> Zariadenie je zastavené. Výroba aj akumulácia sú pozastavené.',
+                    SMART: '<strong style="color:var(--accent-battery);">Smart AI:</strong> Výroba a akumulácia sa riadia autonómne na základe predpovede počasia, spotreby a cien na spotovom trhu (OKTE).'
+                };
+                const descEl2 = document.getElementById('meterModeDesc');
+                if (descEl2 && descMap[mcm]) descEl2.innerHTML = descMap[mcm];
+
                 const connectionTypeIcon = document.getElementById('connectionTypeIcon');
                 const connectionTypeText = document.getElementById('connectionTypeText');
                 const wifiBarsEl = document.getElementById('wifiBars');

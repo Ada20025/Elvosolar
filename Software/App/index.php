@@ -64,6 +64,8 @@ if (isset($pdo) && !$migrations_done) {
         if (!in_array('smartlogger_port', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN smartlogger_port INTEGER DEFAULT 502");
         if (!in_array('modbus_slave_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN modbus_slave_id INTEGER DEFAULT 205");
         if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
+        // Režim prevádzky (Zap/Vyp/SmartAI) - dedikovany stlpec (predtym sa miesal do manual_override)
+        if (!in_array('meter_control_mode', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN meter_control_mode VARCHAR(20) DEFAULT 'SMART'");
         // Index pre rychlu telemetry historiu (inak full scan pri kazdom nacitani dashboardu)
         try { $pdo->exec("CREATE INDEX idx_tel_dev_id ON telemetry (device_id, id)"); } catch (Exception $e2) { /* uz existuje */ }
     } catch (Exception $e) { /* ignore */ }
@@ -1030,6 +1032,7 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'has_real_data' => $latest ? true : false,
         'history' => $history,
         'manual_override' => $device['manual_override'] ?? 'AUTO',
+        'meter_control_mode' => $device['meter_control_mode'] ?? 'SMART',
         'name' => $device['name'] ?? '',
         'connection_type' => $device['connection_type'] ?? 'modbus_tcp',
         'brand_id' => $device['brand_id'] ?? '',
@@ -1242,6 +1245,8 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                         'min_power_pct' => floatval($rC['min_power_pct'] ?? 0),
                         'max_power_pct' => floatval($rC['max_power_pct'] ?? 100),
                         'min_okte_price' => floatval($rC['min_okte_price_cz_eur'] ?? 0),
+                        // Zap/Vyp/SmartAI - CM5 si to prehodi do smart_meter.control_mode
+                        'meter_control_mode' => strtoupper(trim($rC['meter_control_mode'] ?? 'SMART')) ?: 'SMART',
                     ];
                 }
             } catch (Exception $eCtrl) { /* stara schema bez tychto stlpcov */ }
@@ -2066,16 +2071,21 @@ elseif (preg_match('#^/api/device/(\d+)/model$#', $path, $matches) && $method ==
     send_json(['status' => 'success']);
 }
 
-// --- DEVICE METER MODE ---
+// --- DEVICE METER MODE (Zap/Vyp/SmartAI - dedikovany stlpec, CM5 ho cita v control bloku) ---
 elseif (preg_match('#^/api/device/(\d+)/meter$#', $path, $matches) && $method === 'POST') {
     $dev_id = intval($matches[1]);
     $data = get_json_input();
-    $mode = trim($data['control_mode'] ?? 'AUTO');
+    $mode = trim($data['control_mode'] ?? 'SMART');
+    if (!in_array($mode, ['UNLIMITED', 'PLUS', 'SMART'])) $mode = 'SMART';
     try {
-        $stmt = $pdo->prepare("UPDATE devices SET manual_override = ? WHERE id = ?");
+        // Self-healing: stlpec moze neexistovat v starej scheme
+        if (!in_array('meter_control_mode', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
+            $pdo->exec("ALTER TABLE devices ADD COLUMN meter_control_mode VARCHAR(20) DEFAULT 'SMART'");
+        }
+        $stmt = $pdo->prepare("UPDATE devices SET meter_control_mode = ? WHERE id = ?");
         $stmt->execute([$mode, $dev_id]);
     } catch (Exception $e) { /* ignore */ }
-    send_json(['status' => 'success']);
+    send_json(['status' => 'success', 'meter_control_mode' => $mode]);
 }
 
 // --- DEVICE RELAY CONTROL ---

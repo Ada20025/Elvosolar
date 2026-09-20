@@ -783,6 +783,16 @@ class SolarBackgroundService:
                             self.manual_override = mo
                             self.log_to_terminal(f"☁️ Cloud príkaz: Prevádzkový stav -> {mo}")
 
+                        # Zap/Vyp/SmartAI z dashboardu (meter_control_mode) -> smart_meter.control_mode
+                        mcm_cloud = str(ctrl.get("meter_control_mode") or "").strip().upper()
+                        if mcm_cloud in ["UNLIMITED", "PLUS", "SMART"] and mcm_cloud != str(getattr(self.smart_meter, 'control_mode', '')).strip().upper():
+                            self.smart_meter.control_mode = mcm_cloud
+                            try:
+                                db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('meter_control_mode', ?)", (mcm_cloud,))
+                            except Exception:
+                                pass
+                            self.log_to_terminal(f"☁️ Cloud príkaz: Režim prevádzky -> {mcm_cloud}")
+
                         am = ctrl.get("active_model_id")
                         if am is not None and str(am) != str(getattr(self, 'active_model_id', '')):
                             self.active_model_id = str(am)
@@ -931,9 +941,13 @@ class SolarBackgroundService:
                         battery_soc=avg_soc
                     )
                     
-                    if self.smart_meter.control_mode in ['SELF_CONSUMPTION', 'UNLIMITED']:
+                    if self.smart_meter.control_mode in ['SELF_CONSUMPTION', 'UNLIMITED', 'PLUS']:
                         target_on = meter_decision['target_on']
                         self.log_to_terminal(f"⚡ Smart Meter [{meter_decision['mode']}]: {meter_decision['reason']}")
+                    elif self.smart_meter.control_mode == 'SMART':
+                        # SmartAI režim: AI engine rozhoduje (cenová optimalizácia OKTE + predpoveď)
+                        target_on = (ai_decision["inverter_target"] == "ON")
+                        self.log_to_terminal(f"🤖 SmartAI [{ai_decision['mode_label']}]: {ai_decision['reason']}")
                     # Ak je zapnutá AUTO AI automatika, vyhodnocujeme action z ai_service
                     elif self.active_model_id in ["AI", ""]:
                         target_on = (ai_decision["inverter_target"] == "ON")
