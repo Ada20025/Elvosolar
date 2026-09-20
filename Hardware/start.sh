@@ -61,6 +61,25 @@ if command -v sqlite3 >/dev/null 2>&1; then
 fi
 
 # ============================================================
+# WIFI AUTO-RECONNECT (config z DB - prežije reštart aj update)
+# ============================================================
+if command -v nmcli >/dev/null 2>&1 && command -v sqlite3 >/dev/null 2>&1; then
+    WIFI_OK=$(nmcli -t -f GENERAL.STATE device show wlan0 2>/dev/null | grep -c "connected" || true)
+    if [ "$WIFI_OK" -eq 0 ]; then
+        WIFI_SSID=$(sqlite3 /home/pi/Hardware/database.db "SELECT value FROM system_settings WHERE key='wifi_ssid'" 2>/dev/null)
+        WIFI_PASS=$(sqlite3 /home/pi/Hardware/database.db "SELECT value FROM system_settings WHERE key='wifi_pass'" 2>/dev/null)
+        if [ -n "$WIFI_SSID" ]; then
+            echo "[NETWORK] WiFi nie je pripojené - pokúšam sa o $WIFI_SSID (uložený config)..."
+            nmcli dev wifi connect "$WIFI_SSID" password "$WIFI_PASS" >/dev/null 2>&1 \
+                && echo "[NETWORK] ✅ WiFi $WIFI_SSID pripojené (z uloženého configu)" \
+                || echo "[NETWORK] ⚠️ WiFi sa nepripojilo (pokračujem - LAN/host route funguje)"
+        fi
+    else
+        echo "[NETWORK] ✅ WiFi už pripojené (autoconnect z NetworkManager)"
+    fi
+fi
+
+# ============================================================
 # UPDATER (jedna inštancia, hodinový cyklus)
 # ============================================================
 pgrep -f "update_service.py" >/dev/null || \

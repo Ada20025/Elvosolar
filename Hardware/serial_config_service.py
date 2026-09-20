@@ -252,11 +252,23 @@ def connect_wifi_if_needed(ssid, password):
     try:
         import subprocess
         log(f"📡 Pripajam WiFi: {ssid}")
-        subprocess.run(
+        r = subprocess.run(
             ['nmcli', 'dev', 'wifi', 'connect', ssid, 'password', password],
-            timeout=30, capture_output=True
+            timeout=45, capture_output=True, text=True
         )
-        log("✅ WiFi pripojenie spustene")
+        if r.returncode == 0:
+            log(f"✅ WiFi {ssid} pripojene")
+            # === PERSISTENCIA: WiFi sa musí sama pripojiť aj po reštarte (update, výpadok prúdu) ===
+            try:
+                subprocess.run(['nmcli', 'connection', 'modify', ssid, 'connection.autoconnect', 'yes'],
+                               timeout=10, capture_output=True)
+                subprocess.run(['nmcli', 'connection', 'modify', ssid, 'connection.autoconnect-priority', '10'],
+                               timeout=10, capture_output=True)
+                log(f"💾 WiFi {ssid} uložené s autoconnect (prežije reštart)")
+            except Exception:
+                pass
+        else:
+            log(f"⚠️ WiFi {ssid} sa nepripojilo (pokracujem bez WiFi): {r.stderr.strip()[:120]}")
     except Exception as e:
         log(f"⚠️ WiFi pripojenie zlyhalo (pokracujem bez WiFi): {e}")
 

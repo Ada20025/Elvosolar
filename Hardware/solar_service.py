@@ -51,6 +51,11 @@ class SolarBackgroundService:
         self.comm_fail_threshold = 4           # po 4 zlyhaniach (~12 s) -> straz
         self.snapshot = self._load_snapshot()  # zachrany stav pred poruchou
         self.last_good_state = self._load_last_good_state()
+        # ========= BEZPECNOSTNY INTERLOCK (ochrana elektrarne) =========
+        # OFF/0% zapis je povoleny IBA ak z daneho zariadenia nedavno prislo uspesne CITANIE.
+        # ON/100% zapis je vzdy povoleny (bezpecny smer - zvecsuje vyrobu).
+        self.read_verified = {}                # slave_id(str) -> ts posledneho uspesneho citania
+        self.read_verified_window = 900        # citanie max 15 min stare
 
         try:
             from modbus_slave_service import ModbusRtuSlaveServer, ModbusTcpSlaveServer
@@ -790,6 +795,20 @@ class SolarBackgroundService:
         except Exception:
             pass
 
+    def _write_allowed(self, slave_id, power_pct):
+        """BEZPECNOSTNY INTERLOCK: vrat (bool, dovod).
+        ON/100% = vzdy povoleny (bezpecny smer). OFF/0% = len ak nedavno prislo uspesne citanie
+        z tohto zariadenia (chyba v konfigu/linka sa nesmie slepo vypnut elektraren!)."""
+        try:
+            if power_pct and power_pct > 0:
+                return True, "ON - bezpecny smer"
+            ts = self.read_verified.get(str(slave_id), 0)
+            if time.time() - ts < self.read_verified_window:
+                return True, "citanie overene"
+            return False, f"OFF blokovany - ziadne uspesne citanie z ID {slave_id} za poslednych {self.read_verified_window // 60} min"
+        except Exception:
+            return False, "interlock chyba"
+
     def write_command(self, slave_id: int, command: str) -> bool:
         with self.lock:
             rows = db_execute("SELECT * FROM devices WHERE slave_id = ?", (slave_id,))
@@ -817,6 +836,14 @@ class SolarBackgroundService:
                 return False
 
             if reg is None:
+                return False
+
+            # === INTERLOCK: OFF zapis len po overenom citani ===
+            write_val = int(val) if val is not None else 0
+            power_pct = write_val if write_val > 10 else (0 if cmd_upper == "OFF" else 100)
+            allowed, reason = self._write_allowed(slave_id, power_pct)
+            if not allowed:
+                self.log_to_terminal(f"[SAFETY] 🛑 Zamietnuty zapis {cmd_upper} pre ID {slave_id}: {reason}")
                 return False
 
             ser = self.get_serial_port(cfg.get('baud', 9600))
@@ -914,6 +941,11 @@ class SolarBackgroundService:
                         val = cfg.get('val_off', 0) if not target_on else cfg.get('val_on', 100)
 
                         if reg is not None:
+                            # === INTERLOCK: OFF/0% len po overenom citani z tohto zariadenia ===
+                            allowed, reason = self._write_allowed(slave_id, 100 if target_on else 0)
+                            if not allowed:
+                                self.log_to_terminal(f"[SAFETY] 🛑 Vypnutie ID {slave_id} odmietnute: {reason}")
+                                continue
                             success = self.raw_write_register(local_ser, slave_id, reg, val, function_code=6)
                             if not success:
                                 success = self.raw_write_register(local_ser, slave_id, reg, val, function_code=16)
@@ -933,7 +965,13 @@ class SolarBackgroundService:
                             # Nastav vykon: ON=100%, OFF=0%, AUTO=AI rozhodne
                             # Huawei register 40428 (Active power adjustment %, gain 10, offset -1 => wire adresa 40427)
                             power_pct = 100 if target_on else 0
-                            reg_val = int(power_pct * 10) & 0xFFFF  # gain 10
+                            # === INTERLOCK: vypnutie (0%) len po overenom citani ===
+                            if not target_on:
+                                allowed, reason = self._write_allowed(dev.get('slave_id', 1), 0)
+                                if not allowed:
+                                    self.log_to_terminal(f"[SAFETY] 🛑 Vypnutie SmartLogger odmietnute: {reason}")
+                                    return
+                            reg_val = max(0, min(1000, int(power_pct * 10))) & 0xFFFF  # gain 10, klemovane 0..100%
                             tcp_addr = int(cfg.get('power_reg_offset', 40428)) - 1
                             
                             # Uisti ze je pripojeny
@@ -969,6 +1007,8 @@ class SolarBackgroundService:
                     temp_val = tcp_result['temp']
                     freq_val = tcp_result['freq']
                     status_msg = tcp_result['status_msg']
+                    # === INTERLOCK: uspesne citanie = odistenie zapisu pre toto zariadenie ===
+                    self.read_verified[str(slave_id)] = time.time()
                     
                     # SmartLogger moze mat pripojene striedace
                     inverters = tcp_result.get('inverters_via_tcp', [])
@@ -1064,6 +1104,8 @@ class SolarBackgroundService:
                             freq_val = 50.01
                             status_msg = "Aktívne pripojenie"
                             LedService.blink_start_led(4)
+                            # === INTERLOCK: uspesne citanie = odistenie zapisu ===
+                            self.read_verified[str(slave_id)] = time.time()
                             
                         if read_soc:
                             soc_val = float(read_soc[0])
