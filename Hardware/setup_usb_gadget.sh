@@ -7,10 +7,11 @@
 # SPUŠŤ NA CM5 (SSH) — jeden blok:
 
 # 1. Zapni USB gadget mód v boot configu (podpora pre /boot/firmware aj /boot)
+#    POZOR: dr_mode=host blokuje gadget! Vzdy vymen na peripheral a nechaj len JEDEN dwc2 riadok.
 BOOT_CFG="/boot/firmware/config.txt"
 [ -f "$BOOT_CFG" ] || BOOT_CFG="/boot/config.txt"
-sudo sed -i '/^dtoverlay=dwc2$/d' "$BOOT_CFG"
-echo "dtoverlay=dwc2" | sudo tee -a "$BOOT_CFG"
+sudo sed -i '/^dtoverlay=dwc2/d' "$BOOT_CFG"
+echo "dtoverlay=dwc2,dr_mode=peripheral" | sudo tee -a "$BOOT_CFG"
 echo "    (config: $BOOT_CFG)"
 
 # 2. Načítaj libcomposite modul natrvalo
