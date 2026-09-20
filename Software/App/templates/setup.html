@@ -787,14 +787,20 @@
                 return;
             }
             try {
-                activeSerialPort = await navigator.serial.requestPort();
+                // 1) Ak port už bol povolený v minulosti, Chrome ho v dialógu NEZOBRAZÍ — použijeme ho rovno
+                const granted = await navigator.serial.getPorts();
+                if (granted.length > 0) {
+                    activeSerialPort = granted[0];
+                } else {
+                    activeSerialPort = await navigator.serial.requestPort();
+                }
                 await activeSerialPort.open({ baudRate: 115200 });
                 selectedTransport = 'SERIAL';
                 
                 const pulse = document.getElementById('cablePulse');
                 const txt = document.getElementById('cableText');
                 pulse.className = "h-2 w-2 rounded-full bg-cyan-500 animate-pulse";
-                txt.innerText = "Pripojené k Waveshare USB TO UART.";
+                txt.innerText = "Pripojené cez USB UART.";
                 updateConnStatus(true, 'USB UART');
                 goToSlide(1);
             } catch (err) {
