@@ -1153,7 +1153,7 @@
          data-device-id="<?php echo htmlspecialchars($devices[0]['id'] ?? 1); ?>"
          data-base-path="<?php echo htmlspecialchars($base_path); ?>"
          data-device-ids="<?php echo htmlspecialchars(json_encode(array_column($devices, 'id'))); ?>"
-         data-device-types="<?php echo htmlspecialchars(json_encode(array_map(function($d) { return (strpos(strtolower($d['model_name'] ?? ''), 'smartlogger') !== false || strpos(strtolower($d['sub_type'] ?? ''), 'smartlogger') !== false) ? 'smartlogger' : 'inverter'; }, $devices))); ?>"
+         data-device-types="<?php echo htmlspecialchars(json_encode(array_map(function($d) { return (strpos(strtolower($d['sub_type'] ?? ''), 'smartlogger') !== false || strpos(strtolower($d['category_id'] ?? ''), 'smartlogger') !== false) ? 'smartlogger' : 'inverter'; }, $devices))); ?>"
          class="hidden"></div>
 
     <!-- Header -->
@@ -1183,7 +1183,7 @@
                             <?php foreach ($devices as $dev): ?>
                                 <?php
                                     $devConn = $dev['connection_type'] ?? 'modbus_rtu';
-                                    $isLogger = (strpos(strtolower($dev['model_name'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($dev['sub_type'] ?? ''), 'smartlogger') !== false);
+                                    $isLogger = (strpos(strtolower($dev['sub_type'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($dev['category_id'] ?? ''), 'smartlogger') !== false);
                                     $devTypeName = $isLogger ? 'SmartLogger' : 'Striedač';
                                     $devId = $dev['modbus_slave_id'] ?? $dev['slave_id'] ?? null;
                                     $devOnline = (strtolower($dev['status'] ?? 'offline') === 'online');
@@ -3188,22 +3188,29 @@
         }
 
         async function saveSettings() {
-            const settings = {
-                min_power_w: parseInt(document.getElementById('settingsMinPower').value),
-                max_power_w: parseInt(document.getElementById('settingsMaxPower').value),
-                min_soc_pct: parseInt(document.getElementById('settingsMinSoc').value),
-                max_soc_pct: parseInt(document.getElementById('settingsMaxSoc').value),
-                night_sleep: false,
-            };
+            const devId = metaEl.getAttribute('data-device-id');
             try {
-                const devId = metaEl.getAttribute('data-device-id');
-                await fetch(`${basePath}/api/user/device-settings`, {
+                // Limity -> devices (power-limits); min_okte cena sa zachova z DB
+                const cur = await fetch(`${basePath}/api/device/${devId}/power-limits`).then(r => r.json());
+                await fetch(`${basePath}/api/device/${devId}/power-limits`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({device_ids: [parseInt(devId)], settings: settings})
+                    body: JSON.stringify({
+                        min_power_pct: Math.max(-100, Math.min(100, parseInt(document.getElementById('settingsMinPower').value) || (cur.min_power_pct ?? 0))),
+                        max_power_pct: Math.max(0, Math.min(100, parseInt(document.getElementById('settingsMaxPower').value) || (cur.max_power_pct ?? 100))),
+                        min_okte_price: cur.min_okte_price ?? 0
+                    })
                 });
-                closeSettingsModal();
+            } catch(e) { console.warn('saveSettings limits:', e); }
+            try {
+                // SOC limity + mod -> localStorage (per zariadenie, nie DB)
+                localStorage.setItem('elvoSocLimits', JSON.stringify({
+                    min_soc_pct: parseInt(document.getElementById('settingsMinSoc').value) || 20,
+                    max_soc_pct: parseInt(document.getElementById('settingsMaxSoc').value) || 100,
+                    night_sleep: false
+                }));
             } catch(e) {}
+            closeSettingsModal();
         }
 
 
@@ -3823,8 +3830,8 @@
                 const r = await fetch(`${basePath}/api/device/${devId}/power-limits`);
                 const d = await r.json();
                 if (d.status === 'success') {
-                    const minPct = Math.round(d.min_power_pct ?? d.min_power_w ?? 0);
-                    const maxPct = Math.round(d.max_power_pct ?? d.max_power_w ?? 100);
+                    const minPct = Math.round(d.min_power_pct ?? 0);
+                    const maxPct = Math.round(d.max_power_pct ?? 100);
                     const minEl = document.getElementById('riadenieMinVal');
                     const maxEl = document.getElementById('riadenieMaxVal');
                     if (minEl) { minEl.textContent = minPct + '%'; updateGearArrow('min', minPct); }

@@ -56,11 +56,25 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             serial_number TEXT UNIQUE,
             name TEXT,
-            password TEXT,
+            slave_id INTEGER,
             brand_id TEXT,
             category_id TEXT,
             model_id TEXT,
-            slave_id INTEGER
+            manual_override TEXT DEFAULT 'AUTO',
+            active_model_id TEXT DEFAULT 'AI',
+            night_sleep INTEGER DEFAULT 1,
+            min_power_pct REAL DEFAULT 0,
+            max_power_pct REAL DEFAULT 100,
+            connection_type TEXT DEFAULT 'modbus_tcp',
+            smartlogger_ip TEXT DEFAULT '192.168.0.10',
+            smartlogger_port INTEGER DEFAULT 502,
+            modbus_slave_id INTEGER DEFAULT 205,
+            min_okte_price_eur REAL DEFAULT 0,
+            admin_command TEXT DEFAULT '',
+            sub_type TEXT DEFAULT '',
+            status TEXT DEFAULT 'offline',
+            battery_soc REAL DEFAULT 0,
+            fve_power_w REAL DEFAULT 0
         )
         """)
         

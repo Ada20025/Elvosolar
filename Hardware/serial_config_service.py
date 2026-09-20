@@ -101,8 +101,7 @@ def apply_config(config):
         # 0. Self-healing: dopln chybajuce stlpce (hocijaka stara schema)
         dev_cols = [r[1] for r in cursor.execute("PRAGMA table_info(devices)").fetchall()]
         for col, ddl in [
-            ('has_battery', 'INTEGER DEFAULT 1'),
-            ('connection_type', "VARCHAR(20) DEFAULT 'modbus_rtu'"),
+            ('connection_type', "VARCHAR(20) DEFAULT 'modbus_tcp'"),
             ('smartlogger_ip', "VARCHAR(50) DEFAULT ''"),
             ('smartlogger_port', 'INTEGER DEFAULT 502'),
             ('modbus_slave_id', 'INTEGER DEFAULT 205'),
@@ -120,14 +119,14 @@ def apply_config(config):
         row = cursor.fetchone()
         if row:
             cursor.execute(
-                "UPDATE devices SET name=?, brand_id=?, category_id=?, model_id=?, slave_id=?, has_battery=? WHERE id=?",
-                (device_name, brand_id, category_id, model_id, slave_id, has_battery, row[0])
+                "UPDATE devices SET name=?, brand_id=?, category_id=?, model_id=?, sub_type=?, modbus_slave_id=? WHERE id=?",
+                (device_name, brand_id, category_id, model_id, category_id, slave_id, row[0])
             )
         else:
             serial_number = f"CM5-{int(time.time())}"
             cursor.execute(
-                "INSERT INTO devices (serial_number, name, password, brand_id, category_id, model_id, slave_id, has_battery) VALUES (?,?, 'pass', ?,?,?,?,?)",
-                (serial_number, device_name, brand_id, category_id, model_id, slave_id, has_battery)
+                "INSERT INTO devices (serial_number, name, brand_id, category_id, model_id, sub_type, modbus_slave_id) VALUES (?,?,?,?,?,?,?)",
+                (serial_number, device_name, brand_id, category_id, model_id, category_id, slave_id)
             )
 
         # 1b. Komunikacia: TCP (SmartLogger cez LAN) / RTU (RS485) - podla configu
@@ -212,6 +211,19 @@ def register_to_cloud(config):
 
     CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
 
+    # Serial z lokalnej DB - INAK by sa kazdou registraciou vytvorilo nove zariadenie v cloude
+    _serial = f"CM5-{int(time.time())}"
+    try:
+        conn2 = get_db_connection()
+        cur2 = conn2.cursor()
+        cur2.execute("SELECT serial_number FROM devices WHERE serial_number IS NOT NULL LIMIT 1")
+        r2 = cur2.fetchone()
+        if r2 and r2[0]:
+            _serial = str(r2[0])
+        conn2.close()
+    except Exception:
+        pass
+
     payload = {
         'brand_id': str(config.get('brand_id', 'huawei')),
         'category_id': str(config.get('category_id', '')),
@@ -220,7 +232,7 @@ def register_to_cloud(config):
         'has_battery': bool(config.get('has_battery', True)),
         'name': str(config.get('device_name') or config.get('name') or 'Moje zariadenie'),
         'comm_mode': str(config.get('comm_mode') or 'LOCAL_MODBUS'),
-        'serial': f"CM5-{int(time.time())}"
+        'serial': _serial
     }
 
     def _try_register():

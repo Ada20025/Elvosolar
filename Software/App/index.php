@@ -55,8 +55,6 @@ if (isset($pdo) && !$migrations_done) {
             $r = $pdo->query("SHOW COLUMNS FROM devices");
             while ($row = $r->fetch()) $cols[] = $row['Field'];
         }
-        if (!in_array('min_power_w', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_power_w FLOAT DEFAULT 0");
-        if (!in_array('max_power_w', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN max_power_w FLOAT DEFAULT 10000");
         if (!in_array('min_power_pct', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_power_pct FLOAT DEFAULT 0");
         if (!in_array('max_power_pct', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN max_power_pct FLOAT DEFAULT 100");
         if (!in_array('active_model_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN active_model_id VARCHAR(10) DEFAULT '1'");
@@ -164,35 +162,31 @@ CREATE TABLE IF NOT EXISTS users (
         $pdo->exec("CREATE TABLE IF NOT EXISTS devices (
             id INTEGER PRIMARY KEY AUTO_INCREMENT,
             user_id INT NOT NULL,
-            name VARCHAR(150) DEFAULT 'Moje zariadenie',
+            name VARCHAR(200) DEFAULT 'ElvoSolar CM5',
             serial_number VARCHAR(100) DEFAULT '',
-            brand VARCHAR(50) DEFAULT 'HUAWEI',
-            brand_id VARCHAR(20) DEFAULT 'huawei',
-            model_name VARCHAR(150) DEFAULT '',
-            model_id VARCHAR(20) DEFAULT '',
-            sub_type VARCHAR(50) DEFAULT '',
-            status VARCHAR(20) DEFAULT 'offline',
+            slave_id INTEGER DEFAULT 1,
+            brand_id VARCHAR(50) DEFAULT '',
+            category_id VARCHAR(50) DEFAULT '',
+            model_id VARCHAR(50) DEFAULT '',
+            total_saved_eur DECIMAL(10,2) DEFAULT 0,
+            total_kwh DECIMAL(10,2) DEFAULT 0,
             last_seen DATETIME NULL,
-            battery_soc FLOAT DEFAULT 0,
-            fve_power_w FLOAT DEFAULT 0,
-            grid_power_w FLOAT DEFAULT 0,
-            temp FLOAT DEFAULT 25.0,
-            min_power_w FLOAT DEFAULT 0,
-            max_power_w FLOAT DEFAULT 10000,
+            manual_override VARCHAR(10) DEFAULT 'AUTO',
+            active_model_id VARCHAR(20) DEFAULT 'AI',
+            night_sleep INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             min_power_pct FLOAT DEFAULT 0,
             max_power_pct FLOAT DEFAULT 100,
-            active_model_id VARCHAR(10) DEFAULT '1',
-            night_sleep TINYINT DEFAULT 0,
-            connection_type VARCHAR(20) DEFAULT 'modbus_rtu',
-            smartlogger_ip VARCHAR(50) DEFAULT '',
+            connection_type VARCHAR(20) DEFAULT 'modbus_tcp',
+            smartlogger_ip VARCHAR(50) DEFAULT '192.168.0.10',
             smartlogger_port INTEGER DEFAULT 502,
             modbus_slave_id INTEGER DEFAULT 205,
-            baud_rate INTEGER DEFAULT 9600,
-            parity VARCHAR(10) DEFAULT 'none',
-            stop_bits INTEGER DEFAULT 1,
-            serial_port VARCHAR(50) DEFAULT '',
-            total_saved_eur FLOAT DEFAULT 0,
-            total_kwh FLOAT DEFAULT 0
+            min_okte_price_cz_eur FLOAT DEFAULT 0,
+            admin_command VARCHAR(255) DEFAULT '',
+            sub_type VARCHAR(50) DEFAULT '',
+            status VARCHAR(20) DEFAULT 'offline',
+            battery_soc FLOAT DEFAULT 0,
+            fve_power_w FLOAT DEFAULT 0
         )");
     } catch (Exception $e) { /* ignore */ }
 }
@@ -207,8 +201,8 @@ if (isset($pdo) && !$migrations_done) {
                  ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $demoHash]);
             $demoUserId = $pdo->lastInsertId();
             // Demo zariadenie - OFFLINE s nulovymi datami (ziadne fake hodnoty)
-            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, model_name, status, battery_soc, fve_power_w, grid_power_w, min_power_w, max_power_w, min_power_pct, max_power_pct, active_model_id, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, ?, ?, ?, ?, 'offline', 0, 0, 0, 0, 10000, 0, 100, '1', 'modbus_tcp', '192.168.0.10', 502, 205)")
-                 ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'HUAWEI', 'SmartLogger 3000 / SUN2000']);
+            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status, min_power_pct, max_power_pct, active_model_id, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline', 0, 100, 'AI', 'modbus_tcp', '192.168.0.10', 502, 205)")
+                 ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'huawei', 'smartlogger', 'smartlogger3000a', 'smartlogger']);
         }
     } catch (Exception $e) { /* ignore */ }
 
@@ -1008,7 +1002,7 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'name' => $device['name'] ?? '',
         'connection_type' => $device['connection_type'] ?? 'modbus_tcp',
         'brand_id' => $device['brand_id'] ?? '',
-        'brand' => $device['model_name'] ?? $device['brand_id'] ?? '',
+        'brand' => strtoupper($device['brand_id'] ?? ''),
         'slave_id' => $device['modbus_slave_id'] ?? $device['slave_id'] ?? 0,
         'smartlogger_ip' => $device['smartlogger_ip'] ?? '',
         'is_online' => (($device['status'] ?? '') === 'online') || ($latest && (float)$latest['power_ac'] > 0),
@@ -1017,8 +1011,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'last_telemetry_at' => $latest ? $latest['timestamp'] : null,
         'comm_ok' => (function() use ($latest) { if (!$latest) return false; $d = time() - strtotime($latest['timestamp']); return $d >= 0 && $d < 900; })(),
         'last_comm_sec' => $latest ? max(0, time() - strtotime($latest['timestamp'])) : null,
-        // Typ zariadenia - rovnaka logika ako v dropdowne (model_name/sub_type),aby boli konzistentne
-        'is_smartlogger' => (strpos(strtolower($device['model_name'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($device['sub_type'] ?? ''), 'smartlogger') !== false),
+        // Typ zariadenia - podla sub_type/category_id (jedina pravda v DB)
+        'is_smartlogger' => (strpos(strtolower($device['sub_type'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($device['category_id'] ?? ''), 'smartlogger') !== false),
         // Zoznam vsetkych pripojenych zariadeni (striedace/SmartLoggery) nahlásené CM5
         'connected_devices' => (function() use ($device) {
             $raw = $device['connected_devices'] ?? null;
@@ -1652,8 +1646,8 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             $pdo->prepare("UPDATE devices SET name = ?, brand_id = ?, model_id = ?, sub_type = ?, user_id = ? WHERE id = ?")
                 ->execute([$name, $brand_id, $model_id, $category_id, $user_id, $existing['id']]);
         } else {
-            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, brand_id, model_name, model_id, sub_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'offline')")
-                ->execute([$user_id, $name, $serial, strtoupper($brand_id), $brand_id, $model_id, $model_id, $category_id]);
+            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline')")
+                ->execute([$user_id, $name, $serial, $brand_id, $category_id, $model_id, $category_id]);
         }
         send_json(['status' => 'success', 'name' => $name]);
     } catch (Exception $e) {
@@ -2013,19 +2007,28 @@ elseif (preg_match('#^/api/device/(\d+)/relay$#', $path, $matches) && $method ==
     $temp = floatval($data['temp'] ?? 0);
     $name = trim($data['name'] ?? '');
     $type = trim($data['type'] ?? '');
-    // Save relay state to ai_state JSON
+    // Persist do user_prefs JSON (devices.ai_state bol vymazany z DB; relé neskôr do 3_device)
     try {
-        $stmt = $pdo->prepare("SELECT ai_state FROM devices WHERE id = ?");
-        $stmt->execute([$dev_id]);
-        $row = $stmt->fetch();
-        $ai = $row ? json_decode($row['ai_state'] ?? '{}', true) : [];
-        if (!isset($ai['relays'])) $ai['relays'] = [];
-        if ($state !== '') $ai['relays'][$relay_id] = $state;
-        if (!isset($ai['relay_config'])) $ai['relay_config'] = [];
-        if ($name !== '') $ai['relay_config'][$relay_id] = ['name' => $name, 'type' => $type, 'temp' => $temp];
-        elseif ($temp > 0) { if (!isset($ai['relay_config'][$relay_id])) $ai['relay_config'][$relay_id] = []; $ai['relay_config'][$relay_id]['temp'] = $temp; }
-        $stmt2 = $pdo->prepare("UPDATE devices SET ai_state = ? WHERE id = ?");
-        $stmt2->execute([json_encode($ai), $dev_id]);
+        $st = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
+        $st->execute([$dev_id]);
+        $u = $st->fetch();
+        if ($u) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+            $sp = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+            $sp->execute([$u['user_id']]);
+            $pr = $sp->fetch();
+            $prefs = $pr ? (json_decode($pr['prefs'] ?: '{}', true) ?: []) : [];
+            if (!isset($prefs['relays']) || !is_array($prefs['relays'])) $prefs['relays'] = [];
+            $rel = (isset($prefs['relays'][$dev_id]) && is_array($prefs['relays'][$dev_id])) ? $prefs['relays'][$dev_id] : ['states' => [], 'config' => []];
+            if (!isset($rel['states']) || !is_array($rel['states'])) $rel['states'] = [];
+            if (!isset($rel['config']) || !is_array($rel['config'])) $rel['config'] = [];
+            if ($state !== '') $rel['states'][$relay_id] = $state;
+            if ($name !== '') $rel['config'][$relay_id] = ['name' => $name, 'type' => $type, 'temp' => $temp];
+            elseif ($temp > 0) { $rel['config'][$relay_id] = isset($rel['config'][$relay_id]) ? array_merge($rel['config'][$relay_id], ['temp' => $temp]) : ['temp' => $temp]; }
+            $prefs['relays'][$dev_id] = $rel;
+            $up = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
+            $up->execute([$u['user_id'], json_encode($prefs)]);
+        }
     } catch (Exception $e) { /* ignore */ }
     send_json(['status' => 'success']);
 }
@@ -2036,14 +2039,22 @@ elseif (preg_match('#^/api/device/(\d+)/relay/delete$#', $path, $matches) && $me
     $data = get_json_input();
     $relay_id = intval($data['relay_id'] ?? 0);
     try {
-        $stmt = $pdo->prepare("SELECT ai_state FROM devices WHERE id = ?");
-        $stmt->execute([$dev_id]);
-        $row = $stmt->fetch();
-        $ai = $row ? json_decode($row['ai_state'] ?? '{}', true) : [];
-        if (isset($ai['relays'][$relay_id])) unset($ai['relays'][$relay_id]);
-        if (isset($ai['relay_config'][$relay_id])) unset($ai['relay_config'][$relay_id]);
-        $stmt2 = $pdo->prepare("UPDATE devices SET ai_state = ? WHERE id = ?");
-        $stmt2->execute([json_encode($ai), $dev_id]);
+        $st = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
+        $st->execute([$dev_id]);
+        $u = $st->fetch();
+        if ($u) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+            $sp = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+            $sp->execute([$u['user_id']]);
+            $pr = $sp->fetch();
+            $prefs = $pr ? (json_decode($pr['prefs'] ?: '{}', true) ?: []) : [];
+            if (isset($prefs['relays'][$dev_id])) {
+                unset($prefs['relays'][$dev_id]['states'][$relay_id]);
+                unset($prefs['relays'][$dev_id]['config'][$relay_id]);
+                $up = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
+                $up->execute([$u['user_id'], json_encode($prefs)]);
+            }
+        }
     } catch (Exception $e) { /* ignore */ }
     send_json(['status' => 'success']);
 }
