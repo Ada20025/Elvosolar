@@ -841,7 +841,7 @@
             const category_id = document.getElementById('categorySelect').value;
             const model_id = document.getElementById('modelSelect').value;
             const has_battery = document.getElementById('wizardHasBattery').checked;
-            const device_name = document.getElementById('deviceName')?.value?.trim() || 'Moje zariadenie';
+            const device_name = (document.getElementById('ownerEmail')?.value || '').trim().split('@')[0] || 'Moje zariadenie';
 
             const smart_meter_enabled = document.getElementById('smartMeterToggle').checked;
             const smart_meter_config = {};
@@ -1183,7 +1183,7 @@
                 const brand_id = document.getElementById('brandSelect').value;
                 const cat_id = document.getElementById('categorySelect').value;
                 const model_id = document.getElementById('modelSelect').value;
-                const name = document.getElementById('deviceName').value.trim() || 'Moje zariadenie';
+                const name = (document.getElementById('ownerEmail')?.value || '').trim().split('@')[0] || 'Moje zariadenie';
                 const r = await fetch('/api/user/claim-device', {
                     method: 'POST', credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
@@ -1464,7 +1464,7 @@
         function fillSetupSummary() {
             const el = document.getElementById('setupSummary');
             if (!el) return;
-            const name = (document.getElementById('deviceName')?.value || '').trim() || 'Moje zariadenie';
+            const name = (document.getElementById('ownerEmail')?.value || '').trim().split('@')[0] || 'Moje zariadenie';
             const brandSel = document.getElementById('brandSelect');
             const catSel = document.getElementById('categorySelect');
             const modelSel = document.getElementById('modelSelect');
@@ -1760,8 +1760,8 @@
 
         function submitStep1() {
             if (!requireCableConnection()) return;
-            const nameInput = document.getElementById('deviceName');
-            if (nameInput && nameInput.value.trim()) deviceNameSaved = nameInput.value.trim();
+            const nameInput = document.getElementById('ownerEmail');
+            if (nameInput && nameInput.value.trim()) deviceNameSaved = nameInput.value.trim().split('@')[0];
             if (deviceConnected) updateConnStatus(true, selectedTransport === 'SERIAL' ? 'USB UART' : 'Cloud');
             const brand_id = document.getElementById('brandSelect').value;
             const brand = dbDevices[brand_id];
@@ -1934,7 +1934,7 @@ const cat = document.getElementById('categorySelect');
             const brand_id = document.getElementById('brandSelect').value;
             const cat_id = document.getElementById('categorySelect').value;
             const model_id = document.getElementById('modelSelect').value;
-            const name = document.getElementById('deviceName').value.trim() || 'Moje zariadenie';
+            const name = (document.getElementById('ownerEmail')?.value || '').trim().split('@')[0] || 'Moje zariadenie';
             const ssid = (document.getElementById('wifiSsidManual')?.value || '').trim();
             const pass = document.getElementById('wifiPass')?.value || '';
 
@@ -1946,7 +1946,7 @@ const cat = document.getElementById('categorySelect');
                 // Vlastník = čo admin NAPÍŠE (zákazník). Prázdne = prihlásený admin.
                 const ownerInput = (document.getElementById('ownerEmail')?.value || '').trim();
                 const owner_email = ownerInput || (meData.status === 'success' ? (meData.email || '') : '');
-                const claimName = document.getElementById('deviceName').value.trim() || 'Moje zariadenie';
+                const claimName = (document.getElementById('ownerEmail')?.value || '').trim().split('@')[0] || 'Moje zariadenie';
 
                 const claimRes = await fetch('/api/user/claim-device', {
                     method: 'POST', credentials: 'same-origin',
