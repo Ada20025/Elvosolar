@@ -958,6 +958,34 @@ elseif ($path === '/api/admin/terminal-command' && $method === 'POST') {
 }
 
 // MANUÁLNY ZÁPIS VÝKONU cez web (skúška 2 / ovládanie) — ide cez cloud do CM5
+// --- ZMAZANIE ZARIADENIA Z CLOUDU (setup test 2 NEPREŠIEL alebo admin) ---
+elseif (preg_match('#^/api/device/(\d+)/remove$#', $path, $mRem) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $dev_id = intval($mRem[1]);
+    $data = get_json_input();
+    $reason = trim($data['reason'] ?? '') ?: 'Zmazané cez setup (test neprešiel)';
+    try {
+        $stmtO = $pdo->prepare("SELECT id, user_id, name FROM devices WHERE id = ? LIMIT 1");
+        $stmtO->execute([$dev_id]);
+        $dev = $stmtO->fetch();
+        if (!$dev) send_json(['status' => 'error', 'message' => 'Zariadenie neexistuje'], 404);
+        // Iba vlastník alebo admin môže mazať
+        $canDelete = (intval($dev['user_id']) === intval($_SESSION['user_id']));
+        if (!$canDelete) {
+            $stR = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+            $stR->execute([$_SESSION['user_id']]);
+            $rR = $stR->fetch();
+            $canDelete = $rR && in_array($rR['role'] ?? '', ['admin']);
+        }
+        if (!$canDelete) send_json(['status' => 'error', 'message' => 'Nemáte oprávnenie'], 403);
+        $pdo->prepare("DELETE FROM telemetry WHERE device_id = ?")->execute([$dev_id]);
+        $pdo->prepare("DELETE FROM devices WHERE id = ?")->execute([$dev_id]);
+        send_json(['status' => 'success', 'removed' => $dev_id, 'reason' => $reason, 'name' => $dev['name']]);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+}
+
 elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) {
         send_json(['status' => 'error', 'message' => 'Neprihlásený používateľ'], 401);
@@ -1744,7 +1772,7 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
                     ->execute([$user_id, $keep_id]);
             } catch (Exception $eP) { /* tabulky mozu neexistovat */ }
         }
-        send_json(['status' => 'success', 'name' => $name, 'user_id' => $user_id, 'serial' => $serial]);
+        send_json(['status' => 'success', 'name' => $name, 'user_id' => $user_id, 'serial' => $serial, 'device_id' => isset($keep_id) ? intval($keep_id) : null]);
     } catch (Exception $e) {
         send_json(['status' => 'error', 'message' => $e->getMessage()]);
     }

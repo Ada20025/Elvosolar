@@ -57,7 +57,7 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-3 sm:p-6 relative overflow-y-auto" onload="initWizard()">
 
-    <div class="fixed inset-0 solar-bg pointer-events-none opacity-25"></div>
+    <div class="fixed inset-0 solar-bg pointer-events-none opacity-45"></div>
     <div class="fixed inset-0 bg-[#05070f]/95 pointer-events-none"></div>
 
     <!-- STATUS MODAL -->
@@ -157,6 +157,11 @@
                             <div>
 <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Meno zariadenia</label>
                                 <input id="deviceName" type="text" value="" placeholder="Napr. Adam, Domáce FVE..." class="w-full bg-[#05070f] border border-slate-500 text-white text-sm font-bold rounded-xl px-4 py-3.5 outline-none focus:border-cyan-400 transition placeholder-slate-500">
+                            </div>
+
+                            <!-- ID POUŽÍVATEĽA: zariadenie sa zaregistruje pod prihlásený účet -->
+                            <div id="setupUserIdBadge" class="hidden p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-[11px] text-cyan-300">
+                                <span id="setupUserIdText"></span>
                             </div>
 
                             <div>
@@ -757,6 +762,22 @@
             showValidationError("Setup funguje IBA cez USB kábel. Pripoj CM5 k počítaču USB-C káblom a klikni na 🔌 Pripojiť cez USB UART.");
         }
         async function initWizard() {
+            // Zobraz ID PRIHLÁSENÉHO používateľa — zariadenie sa vždy registruje pod tento účet
+            try {
+                const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
+                const meData = await meRes.json();
+                if (meData.status === 'success') {
+                    const badge = document.getElementById('setupUserIdBadge');
+                    const txt = document.getElementById('setupUserIdText');
+                    if (badge && txt) {
+                        txt.innerHTML = '👤 Zariadenie bude patriť: <strong>' + (meData.username || meData.email) + '</strong>' +
+                            ' &nbsp;·&nbsp; ID: <strong>#' + meData.user_id + '</strong>' +
+                            ' &nbsp;·&nbsp; ' + (meData.role === 'admin' ? '🛡️ Admin' : 'User') +
+                            (meData.email ? '<div class="text-[10px] text-cyan-500 mt-0.5">' + meData.email + '</div>' : '');
+                        badge.classList.remove('hidden');
+                    }
+                }
+            } catch (e) { /* neprihlásený — badge ostane skrytý */ }
             try {
                 // Pokus stiahnut devices z API, ak 404, ostava BACKUP_DEVICES bez chyby
                 try {
@@ -1151,14 +1172,64 @@
             confirmRow.classList.remove('hidden');
         }
 
+        // ===== ZÁPIS ZARIADENIA DO CLOUD DB (pred skúškou 2 — musí existovať, aby vedel prijať príkaz) =====
+        async function ensureCloudDevice() {
+            if ((typeof currentDeviceId !== 'undefined' && currentDeviceId) || window._setupDeviceId) {
+                return (typeof currentDeviceId !== 'undefined' && currentDeviceId) ? currentDeviceId : window._setupDeviceId;
+            }
+            try {
+                const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
+                const meData = await meRes.json();
+                const owner_email = meData.status === 'success' ? (meData.email || '') : '';
+                const brand_id = document.getElementById('brandSelect').value;
+                const cat_id = document.getElementById('categorySelect').value;
+                const model_id = document.getElementById('modelSelect').value;
+                const name = document.getElementById('deviceName').value.trim() || 'Moje zariadenie';
+                const r = await fetch('/api/user/claim-device', {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name, brand_id: brand_id, category_id: cat_id, model_id: model_id,
+                        slave_id: 1, has_battery: document.getElementById('wizardHasBattery')?.checked ?? true,
+                        serial: window._cm5Serial || '', owner_email: owner_email
+                    })
+                });
+                const d = await r.json();
+                if (d.status === 'success') {
+                    window._setupDeviceId = d.device_id || d.id || null;
+                    window._cloudDeviceEnsured = true;
+                    console.log('Setup: zariadenie zapisane do cloud DB, id=' + window._setupDeviceId + ', user_id=' + d.user_id);
+                    return window._setupDeviceId;
+                }
+                console.warn('Setup: claim zlyhal:', d.message);
+                return null;
+            } catch (e) { console.warn('Setup: claim chyba:', e); return null; }
+        }
+
+        async function removeCloudDevice(reason) {
+            const devId = (typeof currentDeviceId !== 'undefined' && currentDeviceId) ? currentDeviceId : (window._setupDeviceId || null);
+            if (!devId) return;
+            try {
+                await fetch('/api/device/' + devId + '/remove', {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
+                window._setupDeviceId = null;
+                window._cloudDeviceEnsured = false;
+                console.log('Setup: zariadenie odstranene z cloud DB — ' + reason);
+            } catch (e) { /* best-effort */ }
+        }
+
         async function runWebPowerTest() {
             const btn = document.getElementById('btnTestSmartlogger');
             const resultBox = document.getElementById('verifyResult');
             const scanStatus = document.getElementById('scanStatus');
             const confirmRow = document.getElementById('testConfirmRow');
             const pct = parseFloat(document.getElementById('testPowerInput').value);
-            const devId = (typeof currentDeviceId !== 'undefined' && currentDeviceId) ? currentDeviceId : (window._setupDeviceId || null);
             const serial = window._cm5Serial || '';
+            // Zariadenie sa ZAPÍŠE do cloud DB TERAZ (pred skúškou 2) — musí existovať, aby vedelo prijať príkaz cez WiFi
+            const devId = await ensureCloudDevice();
 
             if (isNaN(pct) || pct < 0 || pct > 100) {
                 resultBox.classList.remove('hidden');
@@ -1168,9 +1239,9 @@
             }
             if (!devId) {
                 resultBox.classList.remove('hidden');
-                resultBox.className = 'text-xs rounded-xl p-3 bg-amber-950/40 border border-amber-500/40 text-amber-300 space-y-1';
-                resultBox.innerHTML = '⚠️ Skúška 2 sa pošle PO dokončení setupu (zariadenie musí byť uložené v cloude).<div class="text-[10px] mt-1">Klikni teraz 🎉 DOKONČIŤ NASTAVENIE — potom v dashboarde zmeň výkon (riadenie) a over v Enspire.</div>';
-                confirmRow.classList.remove('hidden');
+                resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300 space-y-1';
+                resultBox.innerHTML = '✗ Nepodarilo sa zapísať zariadenie do databázy — skúška 2 nemôže bežať.' +
+                    '<div class="text-[10px] mt-1">Skontroluj internet a prihlásenie, potom skús znova. (Detaily v konzole F12)</div>';
                 return;
             }
             btn.disabled = true;
@@ -1226,6 +1297,11 @@
                     '</div>';
                 scanStatus.className = 'p-4 bg-rose-950/30 border border-rose-500/40 rounded-xl text-xs text-center font-bold text-rose-300';
                 scanStatus.innerHTML = '✗ Skúška ' + testAttempt + '/2 neprešla — oprav a skúš znova';
+                // SKÚŠKA 2 (web) NEPREŠLA → zariadenie sa ZMAŽE z cloud DB (nefunkná inštalácia nezostane visieť)
+                if (testAttempt === 2) {
+                    removeCloudDevice('Skúška 2 (web/cloud ovládanie) neprešla — hodnota ' + pct + ' % sa neprejavila v Enspire');
+                    resultBox.innerHTML += '<div class="text-[10px] text-amber-300 mt-1">🗑️ Zariadenie bolo odstránené z cloudu. Po oprave prejdi setup znova — zapisuje sa až po úspešnom overení oboch skúšok.</div>';
+                }
                 return;
             }
 
@@ -1731,54 +1807,62 @@ const cat = document.getElementById('categorySelect');
             const pass = document.getElementById('wifiPass')?.value || '';
 
             try {
-                // Odoslanie claim požiadavky
-                const brand_id = document.getElementById('brandSelect').value;
-                const cat_id = document.getElementById('categorySelect').value;
-                const model_id = document.getElementById('modelSelect').value;
-                const brand = dbDevices[brand_id] ? dbDevices[brand_id].znacka : 'Huawei';
-                const name = document.getElementById('deviceName').value.trim() || brand;
+                // Zariadenie sa zaregistruje/aktualizuje v cloud DB (REÁLNY endpoint — /api/admin/claim neexistoval!)
+                // Pri úspešných 2 skúškach je už zapísané (ensureCloudDevice) — tu sa doplnia finálne informácie.
+                const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
+                const meData = await meRes.json();
+                const owner_email = meData.status === 'success' ? (meData.email || '') : '';
+                const claimName = document.getElementById('deviceName').value.trim() || 'Moje zariadenie';
 
-                try {
-                    await fetch('/api/admin/claim', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            admin_username: 'admin',
-                            comm_mode: selectedMode,
-                            brand_id: brand_id,
-                            category_id: cat_id,
-                            model_id: model_id,
-                            slave_id: discoveredSlaveIds.length > 0 ? discoveredSlaveIds[0] : 1,
-                            name: name,
-                            has_battery: document.getElementById('wizardHasBattery').checked
-                        }),
-                        signal: AbortSignal.timeout(3000)
-                    });
-                } catch(e) {}
+                const claimRes = await fetch('/api/user/claim-device', {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: claimName,
+                        brand_id: brand_id,
+                        category_id: cat_id,
+                        model_id: model_id,
+                        slave_id: 1,
+                        name_from_user: claimName,
+                        has_battery: document.getElementById('wizardHasBattery').checked,
+                        serial: window._cm5Serial || '',
+                        owner_email: owner_email
+                    }),
+                    signal: AbortSignal.timeout(8000)
+                });
+                const claimData = await claimRes.json();
+                if (claimData.status !== 'success') {
+                    throw new Error(claimData.message || 'Registrácia zariadenia zlyhala');
+                }
+                const finalDevId = claimData.device_id || window._setupDeviceId;
+                window._setupDeviceId = finalDevId;
+                console.log('Setup DOKONČENÝ: device_id=' + finalDevId + ', user_id=' + claimData.user_id + ', serial=' + (window._cm5Serial || '(bez kábla)'));
 
                 finishBtn.disabled = false;
-                finishBtn.innerText = "🚀 DOKONČENÉ - PREJSŤ NA PREHĽAD";
+                finishBtn.innerText = "✅ HOTOVO — ÍSŤ NA DASHBOARD";
                 finishBtn.className = "w-full bg-gradient-to-r from-emerald-500 to-green-400 text-white font-extrabold text-sm py-5 rounded-xl tracking-wide transition-all shadow-lg cursor-pointer";
-                finishBtn.onclick = () => { window.location.href = '/'; };
+                finishBtn.onclick = () => { window.location.href = '/dashboard'; };
 
                 // Zobraz POD AKÝM UČTOM sa zariadenie zaregistrovalo (prehladnost)
                 let ownerInfo = '';
                 try {
-                    const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
-                    const meData = await meRes.json();
-                    if (meData.status === 'success') {
+                    const meRes2 = await fetch('/api/user/me', {credentials: 'same-origin'});
+                    const meData2 = await meRes2.json();
+                    if (meData2.status === 'success') {
                         ownerInfo = '<div class="mt-3 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-300">' +
-                            '👤 Zariadenie patrí: <strong>' + (meData.username || meData.email) + '</strong>' +
-                            ' &nbsp;·&nbsp; ID: <strong>#' + meData.user_id + '</strong>' +
-                            (meData.email ? ' &nbsp;·&nbsp; ' + meData.email : '') + '</div>';
+                            '👤 Zariadenie patrí: <strong>' + (meData2.username || meData2.email) + '</strong>' +
+                            ' &nbsp;·&nbsp; ID: <strong>#' + meData2.user_id + '</strong>' +
+                            (meData2.email ? ' &nbsp;·&nbsp; ' + meData2.email : '') + '</div>';
                     }
                 } catch(e) {}
 
                 const statusEl = document.getElementById('scanStatus');
                 if (statusEl) {
-                    statusEl.innerHTML = '🎉 <span class="text-emerald-400">Nastavenie dokončené!</span> Kliknite na tlačidlo pre prechod na prehľad.' + ownerInfo;
+                    statusEl.innerHTML = '🎉 <span class="text-emerald-400">Nastavenie dokončené!</span> Presmerujem na dashboard…' + ownerInfo;
                     statusEl.className = 'p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300';
                 }
+                // Automatické presmerovanie na dashboard po 2 s
+                setTimeout(() => { window.location.href = '/dashboard'; }, 2000);
             } catch(err) {
                 finishBtn.disabled = false;
                 finishBtn.innerText = "OPAKOVAŤ";
