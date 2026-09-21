@@ -125,7 +125,8 @@ if (!$elvo_gate_ok && !$elvo_open) {
         if ($elvo_ok) {
             @unlink($lockF); @unlink($lockT);
             elvo_gate_set_cookie($elvo_creds);
-            header('Location: ' . $elvo_next); exit;
+            // Vždy na appku: neprihlásený → login, prihlásený → dashboard ('/' to vyrieši)
+            header('Location: ' . ($base_path ?? '') . '/'); exit;
         }
         // Rate limit: 6 zlých pokusov → 60 s blokácia
         $n = is_file($lockF) ? (int)@file_get_contents($lockF) : 0;
@@ -366,9 +367,7 @@ if ($path === '/access' && $method === 'POST') {
     if ($elvo_ok) {
         @unlink($lockF); @unlink($lockT);
         elvo_gate_set_cookie($elvo_creds);
-        $elvo_next = (string)($_POST['next'] ?? '/');
-        if ($elvo_next === '' || $elvo_next[0] !== '/' || strpos($elvo_next, '//') === 0 || preg_match('#^[a-z]+:#i', $elvo_next)) $elvo_next = '/';
-        header('Location: ' . $elvo_next); exit;
+        header('Location: ' . ($base_path ?? '') . '/'); exit;
     }
     $n = is_file($lockF) ? (int)@file_get_contents($lockF) : 0;
     $n = (time() - (int)@filemtime($lockF) > 300) ? 1 : $n + 1;
