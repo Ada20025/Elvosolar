@@ -29,6 +29,115 @@ if (!preg_match('#\.(png|jpg|svg|ico|css|js|json|woff2?)$#', $request_uri ?? '')
     header('Expires: 0');
 }
 
+// ============================================================
+// === PRÍSTUPOVÁ BRÁNA — bez špeciálneho prístupu sa nikto nedostane ani na login ===
+// Prístupové údaje: Railway premenné ACCESS_GATE_USER / ACCESS_GATE_PASS (prevažujú),
+// inak tabuľka access_gate (predvolené: admin / ELVO-ACCESS-2026).
+// Kto raz správne zadal → cookie na 1 ROK → už sa nikdy nepýta.
+// Už prihlásení používatelia (nainštalovaná PWA) prechádzajú automaticky.
+// CM5 strojové endpointy bežia vždy (nemajú prehliadač).
+// ============================================================
+if (!function_exists('elvo_gate_creds')) {
+    function elvo_gate_creds($pdo) {
+        $u = getenv('ACCESS_GATE_USER'); $p = getenv('ACCESS_GATE_PASS');
+        if ($u && $p) return ['user' => (string)$u, 'pass' => (string)$p, 'env' => true];
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS access_gate (id TINYINT PRIMARY KEY, gate_user VARCHAR(64) NOT NULL, gate_pass_hash VARCHAR(255) NOT NULL)");
+            $row = $pdo->query("SELECT gate_user, gate_pass_hash FROM access_gate WHERE id = 1")->fetch();
+            if (!$row) {
+                $pdo->prepare("REPLACE INTO access_gate (id, gate_user, gate_pass_hash) VALUES (1, ?, ?)")
+                    ->execute(['admin', password_hash('ELVO-ACCESS-2026', PASSWORD_DEFAULT)]);
+                $row = $pdo->query("SELECT gate_user, gate_pass_hash FROM access_gate WHERE id = 1")->fetch();
+            }
+            return ['user' => (string)$row['gate_user'], 'hash' => (string)$row['gate_pass_hash'], 'env' => false];
+        } catch (Exception $e) {
+            return ['user' => 'admin', 'hash' => password_hash('ELVO-ACCESS-2026', PASSWORD_DEFAULT), 'env' => false];
+        }
+    }
+    function elvo_gate_token($creds) {
+        $secret = $creds['pass'] ?? $creds['hash'];
+        return hash_hmac('sha256', 'elvo-access-v1|' . $creds['user'], $secret);
+    }
+    function elvo_gate_set_cookie($creds) {
+        setcookie('elvo_access', elvo_gate_token($creds), [
+            'expires' => time() + 31536000, 'path' => '/',
+            'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax'
+        ]);
+    }
+    function elvo_gate_page($msg, $next) {
+        $bp = $GLOBALS['base_path'] ?? '';
+        $msgHtml = $msg ? '<div style="margin:0 0 14px 0;padding:10px 14px;border-radius:12px;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.3);color:#fda4af;font-size:12px;font-weight:700;text-align:center;">' . htmlspecialchars($msg) . '</div>' : '';
+        echo '<!DOCTYPE html><html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<meta name="theme-color" content="#020617"><title>Prístup — ElvoControll</title>'
+            . '<link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">'
+            . '<style>*{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 800px at 50% -10%,#0e1a35 0%,#020617 55%);font-family:"Plus Jakarta Sans",system-ui,sans-serif;padding:16px;color:#e2e8f0}'
+            . '.card{width:100%;max-width:380px;background:rgba(2,6,23,0.85);border:1px solid rgba(6,182,212,0.25);border-radius:22px;padding:30px 26px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}'
+            . '.logo{display:block;margin:0 auto 14px;width:56px;height:56px;object-fit:contain}'
+            . 'h1{font-size:19px;font-weight:900;text-align:center;letter-spacing:-0.02em;color:#f8fafc}'
+            . '.sub{font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;color:#06b6d4;margin:4px 0 18px}'
+            . 'label{display:block;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#67e8f9;margin:12px 0 5px}'
+            . 'input{width:100%;background:#05070f;border:1px solid #334155;color:#fff;font-size:14px;font-weight:700;border-radius:12px;padding:12px 14px;outline:none;transition:border-color .2s}'
+            . 'input:focus{border-color:#06b6d4}'
+            . 'button{width:100%;margin-top:18px;background:linear-gradient(90deg,#0891b2,#2563eb);border:0;color:#fff;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;border-radius:12px;padding:14px;cursor:pointer;transition:opacity .2s}'
+            . 'button:hover{opacity:.9}'
+            . '.note{margin-top:16px;font-size:10px;color:#64748b;text-align:center;line-height:1.6}</style></head><body>'
+            . '<div class="card"><img class="logo" src="/templates/ElvosolarLogo.png" alt="ElvoSolar" onerror="this.style.display=\'none\'">'
+            . '<h1>ElvoControll</h1><div class="sub">Ochránený prístup</div>' . $msgHtml
+            . '<form method="post" action="' . htmlspecialchars($bp . '/access') . '">'
+            . '<input type="hidden" name="next" value="' . htmlspecialchars($next) . '">'
+            . '<label for="guser">Prístupové meno</label><input id="guser" name="user" autocomplete="username" required>'
+            . '<label for="gpass">Prístupový kód</label><input id="gpass" name="pass" type="password" autocomplete="current-password" required>'
+            . '<button type="submit">Odomknúť prístup</button></form>'
+            . '<div class="note">Tento systém je určený len pre oprávnené inštalácie ElvoSolar.<br>Prístupové údaje vám poskytne správca.</div></div></body></html>';
+    }
+}
+$elvo_uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$elvo_open = (bool)(preg_match('#^/(sw\.js|manifest\.json|favicon\.ico|healthcheck|health)$#', $elvo_uri)
+    || preg_match('#^/(templates|css|js|img)(/|$)#', $elvo_uri)
+    || in_array($elvo_uri, ['/api/cm5/poll', '/api/cm5/result', '/api/cm5/register', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/user/claim-device'], true));
+$elvo_gate_ok = false;
+if (!empty($_SESSION['user_id'])) {
+    // Prihlásený (nainštalovaná appka) — auto priechod + ticho obnov cookie
+    $elvo_creds = elvo_gate_creds($pdo);
+    if (!isset($_COOKIE['elvo_access']) || !hash_equals(elvo_gate_token($elvo_creds), (string)$_COOKIE['elvo_access'])) {
+        elvo_gate_set_cookie($elvo_creds);
+    }
+    $elvo_gate_ok = true;
+} elseif (isset($_COOKIE['elvo_access'])) {
+    $elvo_creds = elvo_gate_creds($pdo);
+    if (hash_equals(elvo_gate_token($elvo_creds), (string)$_COOKIE['elvo_access'])) $elvo_gate_ok = true;
+}
+if (!$elvo_gate_ok && !$elvo_open) {
+    $bp = $base_path ?? '';
+    // Validácia "next" — iba lokálna cesta
+    $elvo_next = (string)($_REQUEST['next'] ?? $elvo_uri);
+    if ($elvo_next === '' || $elvo_next[0] !== '/' || strpos($elvo_next, '//') === 0 || preg_match('#^[a-z]+:#i', $elvo_next)) $elvo_next = '/';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && $elvo_uri === rtrim($bp, '/') . '/access') {
+        $lockF = sys_get_temp_dir() . '/elvo_gate_' . md5($_SERVER['REMOTE_ADDR'] ?? 'x');
+        $lockT = sys_get_temp_dir() . '/elvo_gate_lock_' . md5($_SERVER['REMOTE_ADDR'] ?? 'x');
+        if (is_file($lockT) && time() - (int)@file_get_contents($lockT) < 60) {
+            sleep(2); elvo_gate_page('Priveľa pokusov — skúste o minútu.', $elvo_next); exit;
+        }
+        $elvo_creds = elvo_gate_creds($pdo);
+        $gu = trim((string)($_POST['user'] ?? '')); $gp = (string)($_POST['pass'] ?? '');
+        $elvo_ok = !empty($gu) && hash_equals($elvo_creds['user'], $gu)
+            && (($elvo_creds['env'] ?? false) ? hash_equals($elvo_creds['pass'], $gp) : password_verify($gp, $elvo_creds['hash']));
+        if ($elvo_ok) {
+            @unlink($lockF); @unlink($lockT);
+            elvo_gate_set_cookie($elvo_creds);
+            header('Location: ' . $elvo_next); exit;
+        }
+        // Rate limit: 6 zlých pokusov → 60 s blokácia
+        $n = is_file($lockF) ? (int)@file_get_contents($lockF) : 0;
+        $n = (time() - (int)@filemtime($lockF) > 300) ? 1 : $n + 1;
+        @file_put_contents($lockF, $n);
+        if ($n >= 6) @file_put_contents($lockT, time());
+        sleep(1);
+        elvo_gate_page('Nesprávne prístupové údaje.', $elvo_next); exit;
+    }
+    elvo_gate_page('', $elvo_next); exit;
+}
+
 // === MIGRATION CACHE: suborovy flag (0 DB dotazov pri kazdom requeste - rychlost!) ===
 $migrations_done = false;
 $mig_flag = sys_get_temp_dir() . '/elvo_migrations_' . date('Y-m-d') . '.flag';
@@ -242,6 +351,36 @@ if (strpos($path, '/index.php') === 0) {
     $path = '/' . ltrim(rtrim($path, '/'), '/');
 }
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+// === PRÍSTUPOVÁ BRÁNA: POST obsluha (funguje aj keď webserver nesmeruje /access na index.php) ===
+if ($path === '/access' && $method === 'POST') {
+    $elvo_creds = elvo_gate_creds($pdo);
+    $lockF = sys_get_temp_dir() . '/elvo_gate_' . md5($_SERVER['REMOTE_ADDR'] ?? 'x');
+    $lockT = sys_get_temp_dir() . '/elvo_gate_lock_' . md5($_SERVER['REMOTE_ADDR'] ?? 'x');
+    if (is_file($lockT) && time() - (int)@file_get_contents($lockT) < 60) {
+        sleep(2); elvo_gate_page('Priveľa pokusov — skúste o minútu.', '/'); exit;
+    }
+    $gu = trim((string)($_POST['user'] ?? '')); $gp = (string)($_POST['pass'] ?? '');
+    $elvo_ok = !empty($gu) && hash_equals($elvo_creds['user'], $gu)
+        && (($elvo_creds['env'] ?? false) ? hash_equals($elvo_creds['pass'], $gp) : password_verify($gp, $elvo_creds['hash']));
+    if ($elvo_ok) {
+        @unlink($lockF); @unlink($lockT);
+        elvo_gate_set_cookie($elvo_creds);
+        $elvo_next = (string)($_POST['next'] ?? '/');
+        if ($elvo_next === '' || $elvo_next[0] !== '/' || strpos($elvo_next, '//') === 0 || preg_match('#^[a-z]+:#i', $elvo_next)) $elvo_next = '/';
+        header('Location: ' . $elvo_next); exit;
+    }
+    $n = is_file($lockF) ? (int)@file_get_contents($lockF) : 0;
+    $n = (time() - (int)@filemtime($lockF) > 300) ? 1 : $n + 1;
+    @file_put_contents($lockF, $n);
+    if ($n >= 6) @file_put_contents($lockT, time());
+    sleep(1);
+    elvo_gate_page('Nesprávne prístupové údaje.', '/'); exit;
+}
+if ($path === '/access' && $method === 'GET') {
+    // S platnou cookie už brána nepýta sa — len presmeruj na appku
+    header('Location: ' . $base_path . '/'); exit;
+}
 
 // Docasna SMTP diagnostika (test.php) - priama obsluha
 if ($path === '/test.php' || $path === '/test') {
