@@ -52,6 +52,11 @@ cp /tmp/elvo_reset_x/Elvosolar-main/Hardware/*.sh ~/Hardware/ 2>/dev/null
 mkdir -p ~/Hardware/templates
 cp /tmp/elvo_reset_x/Elvosolar-main/Hardware/templates/* ~/Hardware/templates/ 2>/dev/null
 chmod +x ~/Hardware/*.sh 2>/dev/null
+# Inštalácia skrátenia elvo-log (aby fungoval ako príkaz)
+if [ -f ~/Hardware/elvo-log.sh ]; then
+    sudo cp ~/Hardware/elvo-log.sh /usr/local/bin/elvo-log 2>/dev/null && sudo chmod +x /usr/local/bin/elvo-log 2>/dev/null \
+        && echo "    ✅ elvo-log príkaz nainštalovaný (funguje všade)"
+fi
 echo "    ✅ Nový kód nainštalovaný (čistá DB sa vytvorí sama)"
 
 echo "[6/6] Spúšťam aplikáciu..."
