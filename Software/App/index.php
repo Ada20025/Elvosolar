@@ -64,6 +64,26 @@ if (!function_exists('elvo_gate_creds')) {
             'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax'
         ]);
     }
+    // Over prístup: buď prístupové údaje správcu, ALEBO prihlasovacie údaje skutočného účtu (e-mail + heslo)
+    function elvo_gate_verify($pdo, $creds, $gu, $gp) {
+        if ($gu === '' || $gp === '') return false;
+        // 1) Prístupové údaje správcu
+        if (hash_equals($creds['user'], $gu)
+            && (($creds['env'] ?? false) ? hash_equals($creds['pass'], $gp) : password_verify($gp, $creds['hash']))) {
+            return true;
+        }
+        // 2) Reálny účet (e-mail + heslo k účtu) — pre nainštalovanú appku / owners
+        $emailNorm = strtolower(trim($gu));
+        if (strpos($emailNorm, '@') !== false) {
+            try {
+                $st = $pdo->prepare("SELECT password_hash FROM users WHERE LOWER(email) = ? LIMIT 1");
+                $st->execute([$emailNorm]);
+                $row = $st->fetch();
+                if ($row && password_verify($gp, $row['password_hash'])) return true;
+            } catch (Exception $e) { /* ignore */ }
+        }
+        return false;
+    }
     function elvo_gate_page($msg, $next) {
         $bp = $GLOBALS['base_path'] ?? '';
         $msgHtml = $msg ? '<div style="margin:0 0 14px 0;padding:10px 14px;border-radius:12px;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.3);color:#fda4af;font-size:12px;font-weight:700;text-align:center;">' . htmlspecialchars($msg) . '</div>' : '';
@@ -88,7 +108,7 @@ if (!function_exists('elvo_gate_creds')) {
             . '<label for="guser">Prístupové meno</label><input id="guser" name="user" autocomplete="username" required>'
             . '<label for="gpass">Prístupový kód</label><input id="gpass" name="pass" type="password" autocomplete="current-password" required>'
             . '<button type="submit">Odomknúť prístup</button></form>'
-            . '<div class="note">Tento systém je určený len pre oprávnené inštalácie ElvoSolar.<br>Prístupové údaje vám poskytne správca.</div></div></body></html>';
+            . '<div class="note">Prístupový kód vám poskytne správca — alebo použite prihlasovacie údaje svojho účtu.<br>Po zadaní vás už systém viac nepýta.</div></div></body></html>';
     }
 }
 $elvo_uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -120,8 +140,7 @@ if (!$elvo_gate_ok && !$elvo_open) {
         }
         $elvo_creds = elvo_gate_creds($pdo);
         $gu = trim((string)($_POST['user'] ?? '')); $gp = (string)($_POST['pass'] ?? '');
-        $elvo_ok = !empty($gu) && hash_equals($elvo_creds['user'], $gu)
-            && (($elvo_creds['env'] ?? false) ? hash_equals($elvo_creds['pass'], $gp) : password_verify($gp, $elvo_creds['hash']));
+        $elvo_ok = elvo_gate_verify($pdo, $elvo_creds, $gu, $gp);
         if ($elvo_ok) {
             @unlink($lockF); @unlink($lockT);
             elvo_gate_set_cookie($elvo_creds);
@@ -362,8 +381,7 @@ if ($path === '/access' && $method === 'POST') {
         sleep(2); elvo_gate_page('Priveľa pokusov — skúste o minútu.', '/'); exit;
     }
     $gu = trim((string)($_POST['user'] ?? '')); $gp = (string)($_POST['pass'] ?? '');
-    $elvo_ok = !empty($gu) && hash_equals($elvo_creds['user'], $gu)
-        && (($elvo_creds['env'] ?? false) ? hash_equals($elvo_creds['pass'], $gp) : password_verify($gp, $elvo_creds['hash']));
+    $elvo_ok = elvo_gate_verify($pdo, $elvo_creds, $gu, $gp);
     if ($elvo_ok) {
         @unlink($lockF); @unlink($lockT);
         elvo_gate_set_cookie($elvo_creds);
