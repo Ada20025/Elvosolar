@@ -225,6 +225,9 @@
 </head>
 <body>
 
+    <!-- Fotografia FVE v pozadí -->
+    <div style="position:fixed;inset:0;background-image:url('/templates/Fotovoltika1.jpg');background-size:cover;background-position:center;opacity:.12;pointer-events:none;z-index:-1;"></div>
+
     <div id="php-metadata" 
          data-device-id="<?php echo htmlspecialchars($device['id'] ?? $device_id ?? 1); ?>" 
          data-slave-id="<?php echo htmlspecialchars($device['modbus_slave_id'] ?? 205); ?>"
