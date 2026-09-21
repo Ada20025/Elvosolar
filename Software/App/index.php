@@ -1705,8 +1705,18 @@ elseif ($path === '/device-logout' && $method === 'GET') {
 elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $data = get_json_input();
     $user_id = $_SESSION['user_id'] ?? 0;
+    // CM5 posiela e-mail admina, ktory setupoval (ides cez kabel v cloud_username) -
+    // zariadenie musi patriť PRESNE TOMUTO uctu (owner_email ma prednost pred fallbackom)
+    if (!$user_id && !empty($data['owner_email'])) {
+        try {
+            $stO = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+            $stO->execute([trim($data['owner_email'])]);
+            $rowO = $stO->fetch();
+            if ($rowO) { $user_id = intval($rowO['id']); }
+        } catch (Exception $e) { /* fallback nizsie */ }
+    }
     if (!$user_id) {
-        // CM5 posiela bez session - prirad zariadenie PRVEMU ADMINovi (nie user_id=1 ktory moze byt obycajny user)
+        // Bez session aj bez owner_email: prirad PRVEMU ADMINovi (nie user_id=1 ktory moze byt obycajny user)
         try {
             $stA = $pdo->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
             $rowA = $stA->fetch();
@@ -1723,18 +1733,12 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $has_battery = $data['has_battery'] ?? true;
     $serial = trim($data['serial'] ?? '');
     
-    // CM5 posiela e-mail admina, ktory setupoval (ides cez kabel v cloud_username) -
-    // zariadenie musi patriť PRESNE TOMUTO uctu, nie nahodnemu prvemu adminovi
-    if (!$user_id && !empty($data['owner_email'])) {
-        try {
-            $stO = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
-            $stO->execute([trim($data['owner_email'])]);
-            $rowO = $stO->fetch();
-            if ($rowO) { $user_id = intval($rowO['id']); }
-        } catch (Exception $e) { /* fallback nizsie */ }
-    }
-    
     try {
+        // BEZPECNOST: anonymny claim BEZ serialu BEZ session BEZ owner_email = odmietnut
+        // (inak by kazdy nezavany POST prepisal prve zariadenie admina!)
+        if (!$serial && !isset($_SESSION['user_id']) && empty($data['owner_email'])) {
+            send_json(['status' => 'error', 'message' => 'Odmietnuté: chýba serial aj autentifikácia'], 401);
+        }
         // Najdi existujuce zariadenie podla serialu AJ podla usera (stary zaznam bez spravneho serialu)
         $existing = null;
         if ($serial) {
@@ -1743,8 +1747,9 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             $existing = $stmt->fetch();
         }
         if ($existing) {
-            $pdo->prepare("UPDATE devices SET name = ?, brand_id = ?, model_id = ?, sub_type = ?, user_id = ?, status = COALESCE(status, 'offline') WHERE id = ?")
-                ->execute([$name, $brand_id, $model_id, $category_id, $user_id, $existing['id']]);
+            // POZOR: prazdny serial v poziadavke NIKDY nevymaze existujuci serial v DB!
+            $pdo->prepare("UPDATE devices SET name = ?, brand_id = ?, model_id = ?, sub_type = ?, user_id = ?, serial_number = CASE WHEN ? = '' THEN serial_number ELSE ? END, status = COALESCE(status, 'offline') WHERE id = ?")
+                ->execute([$name, $brand_id, $model_id, $category_id, $user_id, $serial, $serial, $existing['id']]);
         } else {
             // Zariadenie so serialom neexistuje - ale mozno user uz nejake ma (stary zaznam z inej registracie):
             // aktualizuj HO (nieto noveho riadku) aby v dashboarde nevznikal duplikat
@@ -1755,8 +1760,9 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
                 $upd = $stU->fetch();
             } catch (Exception $e) { /* ignore */ }
             if ($upd) {
-                $pdo->prepare("UPDATE devices SET serial_number = ?, name = ?, brand_id = ?, model_id = ?, sub_type = ?, status = 'offline' WHERE id = ?")
-                    ->execute([$serial, $name, $brand_id, $model_id, $category_id, $upd['id']]);
+                // Prazdny serial nezapisujeme - zachovaj povodny (samooprava: CM5 posle svoj serial pri dalsej registracii)
+                $pdo->prepare("UPDATE devices SET serial_number = CASE WHEN ? = '' THEN serial_number ELSE ? END, name = ?, brand_id = ?, model_id = ?, sub_type = ?, status = 'offline' WHERE id = ?")
+                    ->execute([$serial, $serial, $name, $brand_id, $model_id, $category_id, $upd['id']]);
                 $keep_id = $upd['id'];
             } else {
                 $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline')")
