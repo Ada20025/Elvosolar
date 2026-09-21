@@ -1253,7 +1253,7 @@
                 const r = await fetch('/api/device/' + devId + '/set-power', {
                     method: 'POST', credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pct: pct })
+                    body: JSON.stringify({ pct: pct, serial: window._cm5Serial || '' })
                 });
                 const d = await r.json();
                 btn.disabled = false; btn.innerHTML = origHtml;
@@ -1265,7 +1265,7 @@
                     for (let i = 0; i < 15; i++) {
                         await new Promise(r => setTimeout(r, 2000));
                         try {
-                            const rr = await fetch('/api/device/' + devId + '/last-cmd-result', {credentials: 'same-origin'});
+                            const rr = await fetch('/api/device/' + devId + '/last-cmd-result?serial=' + encodeURIComponent(window._cm5Serial || ''), {credentials: 'same-origin'});
                             const rd = await rr.json();
                             if (rd.status === 'success' && rd.result && rd.result.at) {
                                 const at = new Date(rd.result.at).getTime();
@@ -1350,7 +1350,7 @@
                     const r = await fetch('/api/device/' + devId + '/set-power', {
                         method: 'POST', credentials: 'same-origin',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pct: orig, restore: true })
+                        body: JSON.stringify({ pct: orig, restore: true, serial: window._cm5Serial || '' })
                     });
                     const d = await r.json();
                     btn.disabled = false; btn.innerHTML = '↩ VRAŤ PÔVODNÚ HODNOTU';
@@ -1360,7 +1360,7 @@
                         for (let i = 0; i < 15; i++) {
                             await new Promise(res => setTimeout(res, 2000));
                             try {
-                                const rr2 = await fetch('/api/device/' + devId + '/last-cmd-result', {credentials: 'same-origin'});
+                                const rr2 = await fetch('/api/device/' + devId + '/last-cmd-result?serial=' + encodeURIComponent(window._cm5Serial || ''), {credentials: 'same-origin'});
                                 const rd2 = await rr2.json();
                                 if (rd2.status === 'success' && rd2.result && rd2.result.at) {
                                     const at2 = new Date(rd2.result.at).getTime();

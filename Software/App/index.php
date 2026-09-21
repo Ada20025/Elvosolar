@@ -1176,12 +1176,25 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
     }
     // Voliteľný režim návratu pôvodnej hodnoty (restore) — IBA na výslovné potvrdenie používateľa
     $restore = !empty($data['restore']);
+    // Serial CM5 (setup ho pozná zo skúšky 1) — príkaz MUSÍ ísť na riadok, ktorý CM5 reálne polluje!
+    $cmd_serial = trim($data['serial'] ?? '');
     try {
         $stmt = $pdo->prepare("SELECT id, serial_number FROM devices WHERE id = ?");
         $stmt->execute([$devId]);
         $dev = $stmt->fetch();
         if (!$dev) {
             send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
+        }
+        // Rozhodni CIERY riadok: ak prišiel serial, prioritne riadok s TÝM serialom
+        // (devId riadok môže byť bez serialu — potom by CM5 príkaz nikdy nevzal!)
+        $target_id = intval($dev['id']);
+        if ($cmd_serial !== '') {
+            try {
+                $stS = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? ORDER BY id DESC LIMIT 1");
+                $stS->execute([$cmd_serial]);
+                $rowS = $stS->fetch();
+                if ($rowS) { $target_id = intval($rowS['id']); }
+            } catch (Exception $eS2) { /* fallback na devId */ }
         }
         // Zapíš príkaz do devices.admin_command (CM5 si ho vyzdvihne pri poll-e)
         if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
@@ -1191,8 +1204,8 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
             ? ['action' => 'restore_power', 'pct' => $pct]
             : ['action' => 'set_power', 'pct' => $pct]);
         $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
-        $stmtU->execute([$cmd, $devId]);
-        send_json(['status' => 'success', 'message' => $restore
+        $stmtU->execute([$cmd, $target_id]);
+        send_json(['status' => 'success', 'target_device_id' => $target_id, 'message' => $restore
             ? "Návrat na {$pct} % odoslaný do CM5 (cez WiFi)."
             : "Príkaz na {$pct} % odoslaný do CM5 (cez WiFi). Over výsledok v Enspire o pár sekúnd."]);
     } catch (Exception $e) {
@@ -1201,11 +1214,23 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
 }
 
 // --- POSLEDNY VYSLEDOK PRIKAZU (setup polling — ci CM5 realne zapisal na SmartLogger) ---
+// Klúčom je SERIAL CM5 (rovnaký, pod ktorým CM5 aj ukladá výsledok) — imúnne voči devId nezhodám
 elseif (preg_match('#^/api/device/(\d+)/last-cmd-result$#', $path, $matches) && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) { send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401); }
+    // ?serial=CM5-... má prednosť (rovnaký serial, ako posiela CM5)
+    $lookup_serial = trim($_GET['serial'] ?? '');
+    $lookup_id = intval($matches[1]);
+    if ($lookup_serial !== '') {
+        try {
+            $stL = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? ORDER BY id DESC LIMIT 1");
+            $stL->execute([$lookup_serial]);
+            $rowL = $stL->fetch();
+            if ($rowL) { $lookup_id = intval($rowL['id']); }
+        } catch (Exception $eL) { /* fallback na devId */ }
+    }
     try {
         $stmt = $pdo->prepare("SELECT `value` FROM system_settings WHERE `key` = ? LIMIT 1");
-        $stmt->execute(['last_cmd_result_dev_' . intval($matches[1])]);
+        $stmt->execute(['last_cmd_result_dev_' . $lookup_id]);
         $row = $stmt->fetch();
         if ($row) {
             $d = json_decode($row['value'], true);
