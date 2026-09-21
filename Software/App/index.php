@@ -13,8 +13,8 @@ if (!empty($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENC
 
 header('Content-Type: text/html; charset=utf-8');
 date_default_timezone_set('Europe/Bratislava');
-ini_set('session.gc_maxlifetime', 7776000); // 90 dni
-session_set_cookie_params(['lifetime' => 7776000, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax']);
+ini_set('session.gc_maxlifetime', 31536000); // 1 rok — appka sa nikdy neodhlási
+session_set_cookie_params(['lifetime' => 31536000, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax']);
 session_start();
 require_once 'config.php';
 
