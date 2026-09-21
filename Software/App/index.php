@@ -567,6 +567,28 @@ if (!function_exists('get_user_devices')) {
                                     $uidStmt->execute([$did]);
                                     $alertUid = intval($uidStmt->fetchColumn());
                                     if ($alertUid) {
+// --- INTERNY: posli push vsetkym zariadeniam usera (pouziva aj eval_device_alerts) ---
+if (!function_exists('elvo_push_user')) {
+    function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url) {
+        try {
+            require_once __DIR__ . '/push_helper.php';
+            $stmt = $pdo->prepare("SELECT sub_json FROM push_subs WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+            $sent = 0;
+            foreach ($stmt->fetchAll() as $row) {
+                $sub = json_decode($row['sub_json'], true);
+                if (!is_array($sub)) continue;
+                $r = elvo_push_send($pdo, $sub, $title, $body, $tag, $url);
+                if ($r === 'expired') {
+                    $pdo->prepare("DELETE FROM push_subs WHERE endpoint = ?")->execute([$sub['endpoint'] ?? '']);
+                } elseif ($r === true) {
+                    $sent++;
+                }
+            }
+            return $sent > 0;
+        } catch (Exception $e) { return false; }
+    }
+}
                                         elvo_push_user($pdo, $alertUid,
                                             ($a[2] === 'crit' ? '\u{1F6A8} ' : '\u{26A0}\u{FE0F} ') . $a[0],
                                             $a[1], 'alert-' . $key, '/dashboard');
@@ -2294,29 +2316,6 @@ elseif ($path === '/api/push/unsubscribe' && $method === 'POST') {
     $endpoint = substr($data['endpoint'] ?? '', 0, 500);
     try { $pdo->prepare("DELETE FROM push_subs WHERE endpoint = ?")->execute([$endpoint]); } catch (Exception $e) {}
     send_json(['status' => 'success']);
-}
-
-// --- INTERNY: posli push vsetkym zariadeniam usera (pouziva aj eval_device_alerts) ---
-if (!function_exists('elvo_push_user')) {
-    function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url) {
-        try {
-            require_once __DIR__ . '/push_helper.php';
-            $stmt = $pdo->prepare("SELECT sub_json FROM push_subs WHERE user_id = ?");
-            $stmt->execute([$user_id]);
-            $sent = 0;
-            foreach ($stmt->fetchAll() as $row) {
-                $sub = json_decode($row['sub_json'], true);
-                if (!is_array($sub)) continue;
-                $r = elvo_push_send($pdo, $sub, $title, $body, $tag, $url);
-                if ($r === 'expired') {
-                    $pdo->prepare("DELETE FROM push_subs WHERE endpoint = ?")->execute([$sub['endpoint'] ?? '']);
-                } elseif ($r === true) {
-                    $sent++;
-                }
-            }
-            return $sent > 0;
-        } catch (Exception $e) { return false; }
-    }
 }
 
 // --- PUSH SUBSCRIBE (ulozenie subscription) ---
