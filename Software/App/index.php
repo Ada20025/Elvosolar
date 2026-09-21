@@ -1390,14 +1390,15 @@ elseif ($path === '/api/cm5/result' && $method === 'POST') {
             'readback_pct' => isset($res['readback_pct']) ? $res['readback_pct'] : null,
             'original_pct' => isset($res['original_pct']) ? $res['original_pct'] : null,
         ]);
-        $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?)")
+        // UPSERT: prepíš posledný výsledok (INSERT zlyhá na duplicate key pri druhom pupusu)
+        $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
             ->execute(['last_cmd_result_dev_' . intval($dev['id']), $payload]);
         send_json(['status' => 'success']);
     } catch (Exception $e) {
         try {
-            // fallback: tabulka môže ešte neexistovať — vytvor ju
+            // fallback: tabuľka môže ešte neexistovať — vytvor ju
             $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)");
-            $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?)")
+            $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
                 ->execute(['last_cmd_result_dev_' . intval($dev['id']), $payload ?? '{}']);
             send_json(['status' => 'success']);
         } catch (Exception $e2) {
