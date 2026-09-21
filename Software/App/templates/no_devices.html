@@ -43,11 +43,11 @@
 
         <!-- Akčné voľby -->
         <div class="space-y-3 pt-2">
-            <!-- Pridať zariadenie (Presmerovanie priamo na setup.html) -->
-            <button onclick="navigateToAddDevice()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs py-4 rounded-xl tracking-wider transition shadow-lg hover:opacity-95 uppercase">
-                ➕ Pridať nové zariadenie (Setup)
-            </button>
-
+            <!-- Setup je IBA káblom ako admin — žiadne pridávanie z webu -->
+            <div class="p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-500/25 text-[11px] text-cyan-300 leading-relaxed">
+                <span class="font-bold">➕ Pridanie zariadenia:</span> pripoj CM5 <span class="font-bold">USB-C káblom</span> k počítaču a prejdi setup na adrese
+                <a href="/setup" class="underline font-bold text-cyan-400">/setup</a> — riaď sa pokynmi.
+            </div>
 
             <!-- Odhlásiť sa -->
             <a href="/logout" class="block w-full bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs py-3.5 rounded-xl transition border border-slate-700 uppercase tracking-wider">
@@ -62,11 +62,5 @@
 
     </div>
 
-    <script>
-        function navigateToAddDevice() {
-            // Presmerovanie priamo na váš konfiguračný súbor setup.html
-            location.href = '/setup'; 
-        }
-    </script>
 </body>
 </html>

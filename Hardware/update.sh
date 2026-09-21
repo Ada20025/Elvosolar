@@ -59,6 +59,13 @@ find ~/Hardware -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null
 find ~/Hardware -name "*.pyc" -delete 2>/dev/null
 echo "    ✅ Cache vyčistená"
 
+# 5c. Inštalácia skrátenia elvo-log (aby fungoval ako príkaz, nie len bash ~/elvo-log)
+if [ -f ~/Hardware/elvo-log.sh ]; then
+    sudo cp ~/Hardware/elvo-log.sh /usr/local/bin/elvo-log 2>/dev/null && sudo chmod +x /usr/local/bin/elvo-log 2>/dev/null \
+        && echo "    ✅ elvo-log príkaz nainštalovaný (funguje všade)" \
+        || echo "    ⚠️  elvo-log: spúšťaj ako 'bash ~/Hardware/elvo-log.sh'"
+fi
+
 # 6. Spusti aplikáciu
 echo "[6/6] Spúšťam aplikáciu..."
 sudo systemctl start elvosolar
