@@ -10,7 +10,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#02040a">
-    <meta name="vapid-key" content="">
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1234,7 +1233,6 @@
                 <div class="user-profile-container">
                     <button id="alertsBtn" onclick="toggleAlertsPanel(event)" aria-label="Notifikácie" style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);cursor:pointer;transition:all 0.2s;">
                         <i data-lucide="bell" style="width:18px;height:18px;color:var(--text-primary);"></i>
-                        <span id="alertsBadge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#f43f5e;color:#fff;font-size:9px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 4px;">0</span>
                     </button>
                     <div id="alertsPanel" class="user-dropdown-card hidden" style="width:320px;max-height:420px;overflow-y:auto;right:0;">
                         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border-card);position:sticky;top:0;background:var(--bg-card);z-index:2;">
@@ -2428,11 +2426,6 @@
             const list = document.getElementById('alertsList');
             if (!list) return;
             const active = alerts.filter(a => a.active);
-            const badge = document.getElementById('alertsBadge');
-            if (badge) {
-                if (active.length > 0) { badge.textContent = active.length; badge.style.display = 'flex'; }
-                else { badge.style.display = 'none'; }
-            }
             if (alerts.length === 0) {
                 list.innerHTML = '<div style="text-align:center;padding:24px 10px;color:var(--text-muted);font-size:11px;"><i data-lucide="check-circle-2" style="width:26px;height:26px;color:var(--accent-battery);display:block;margin:0 auto 8px;"></i>Žiadne upozornenia.<br>Všetko beží ako má. ✅</div>';
             } else {
