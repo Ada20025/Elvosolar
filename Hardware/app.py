@@ -1421,8 +1421,24 @@ def cloud_sync_loop():
         else:
             log_message(f"[WIFI] AP hotspot zlyhal: {ap_result.get('message')}")
     
+    # NET-HEAL: ak default route ide cez eth0 (SmartLogger LAN bez internetu),
+    # presmeruj internet cez WiFi (SmartLogger host route na eth0 ostáva)
+    try:
+        from serial_config_service import heal_default_route
+        heal_default_route()
+    except Exception:
+        pass
+
+    _net_heal_counter = 0
     while True:
         time.sleep(5)  # kazdych 5 sekund poll
+        _net_heal_counter += 1
+        if _net_heal_counter % 36 == 0:  # raz za ~3 minúty: skontroluj route konflikt
+            try:
+                from serial_config_service import heal_default_route
+                heal_default_route()
+            except Exception:
+                pass
         try:
             local_ip = _get_local_ip()
             try:

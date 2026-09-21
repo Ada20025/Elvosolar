@@ -591,11 +591,43 @@ def serial_reader_loop():
         time.sleep(3)
 
 
+def heal_default_route():
+    """Sieťová samooprava: ak default route ide cez eth0 (LAN ku SmartLoggerovi, ktorý
+    nemá internet), presmeruj internet cez WiFi. SmartLogger host route na eth0 ostáva.
+    Rieši 'Cloud nedostupny (connect timeout)' pri pripojenom LAN kábli + WiFi."""
+    import subprocess
+    try:
+        r = subprocess.run(['ip', 'route', 'show', 'default'], capture_output=True, text=True, timeout=5)
+        routes = [l for l in (r.stdout or '').strip().splitlines() if l.strip()]
+        # Nájdi default route cez eth0 (device route, nie cez gateway)
+        eth_default = None
+        wifi_default = None
+        for l in routes:
+            if ' dev eth0 ' in (' ' + l + ' ') or l.strip().endswith('dev eth0'):
+                eth_default = l
+            elif 'wlan0' in l:
+                wifi_default = l
+        if eth_default and wifi_default:
+            # eth0 default + WiFi default = konflikt. Zmaž eth0 default (internet má ísť cez WiFi).
+            subprocess.run(['ip', 'route', 'del', 'default', 'dev', 'eth0'], capture_output=True, timeout=5)
+            log("[NET-HEAL] Default route cez eth0 zruseny (internet ide cez WiFi; SmartLogger host route ostáva)")
+        elif eth_default and not wifi_default:
+            # Len eth0 default a žiadna WiFi — skús ping na internet; ak nemá, nic (uživatel nemá WiFi)
+            log("[NET-HEAL] Default route je len cez eth0 a WiFi nie je pripojená — internet nemusí fungovať")
+        # WiFi default bez eth0 default = OK (normálny stav)
+    except Exception as _e:
+        try:
+            log(f"[NET-HEAL] Preskočené: {_e}")
+        except Exception:
+            pass
+
+
 def ensure_cloud_registration():
     """Pri každom štarte: ak zariadenie má serial ale nie je v cloude, zaregistruje ho.
     Rieši prípad keď setup prešiel ale registrácia stihla vzdal skôr než nabehla WiFi."""
     def _bg():
         time.sleep(15)  # daj cas appke nabehnut
+        heal_default_route()  # sieťová samooprava pred prvým pokusom
         try:
             conn = get_db_connection()
             cur = conn.cursor()
@@ -620,6 +652,8 @@ def ensure_cloud_registration():
         CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
         while True:
             attempt += 1
+            if attempt % 3 == 1:  # každé 3 minúty: skontroluj default route konflikt
+                heal_default_route()
             try:
                 r = _rq.post(f"{CLOUD}/api/user/claim-device",
                     json={'serial': _serial, 'name': _name, 'brand_id': 'huawei',
