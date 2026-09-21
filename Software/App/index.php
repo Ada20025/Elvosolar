@@ -1172,6 +1172,24 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
     }
 }
 
+// --- POSLEDNY VYSLEDOK PRIKAZU (setup polling — ci CM5 realne zapisal na SmartLogger) ---
+elseif (preg_match('#^/api/device/(\d+)/last-cmd-result$#', $path, $matches) && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) { send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401); }
+    try {
+        $stmt = $pdo->prepare("SELECT `value` FROM system_settings WHERE `key` = ? LIMIT 1");
+        $stmt->execute(['last_cmd_result_dev_' . intval($matches[1])]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $d = json_decode($row['value'], true);
+            send_json(['status' => 'success', 'result' => $d]);
+        } else {
+            send_json(['status' => 'no_result']);
+        }
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+}
+
 // --- TELEMETRIA API PRE ZARIADENIE ---
 elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $method === 'GET') {
     $device_id = intval($matches[1]);
@@ -1315,12 +1333,49 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
                 'status' => 'success',
                 'command' => $action,
                 'config' => $cfg,
+                'command_id' => intval($dRow['id']),
                 'id' => intval($dRow['id'])
             ]);
         }
     } catch (Exception $eD) { /* ignore */ }
     
     send_json(['status' => 'no_pending']);
+}
+
+// --- CM5 RESULT (CM5 ohlási výsledok vykonaného príkazu — ok/chyba + readback) ---
+elseif ($path === '/api/cm5/result' && $method === 'POST') {
+    $data = get_json_input();
+    $serial = trim($data['serial'] ?? '');
+    if ($serial === '') { send_json(['status' => 'no_serial']); }
+    try {
+        $dStmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
+        $dStmt->execute([$serial]);
+        $dev = $dStmt->fetch();
+        if (!$dev) { send_json(['status' => 'unknown_device']); }
+        // Uloz posledny vysledok prikazu (setup si ho precita cez /api/device/{id}/last-cmd-result)
+        $res = $data['result'] ?? [];
+        $payload = json_encode([
+            'at' => date('c'),
+            'command_id' => intval($data['command_id'] ?? 0),
+            'status' => ($res['status'] ?? 'unknown'),
+            'message' => ($res['message'] ?? ''),
+            'readback_pct' => isset($res['readback_pct']) ? $res['readback_pct'] : null,
+            'original_pct' => isset($res['original_pct']) ? $res['original_pct'] : null,
+        ]);
+        $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?)")
+            ->execute(['last_cmd_result_dev_' . intval($dev['id']), $payload]);
+        send_json(['status' => 'success']);
+    } catch (Exception $e) {
+        try {
+            // fallback: tabulka môže ešte neexistovať — vytvor ju
+            $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)");
+            $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?)")
+                ->execute(['last_cmd_result_dev_' . intval($dev['id']), $payload ?? '{}']);
+            send_json(['status' => 'success']);
+        } catch (Exception $e2) {
+            send_json(['status' => 'error', 'message' => $e2->getMessage()]);
+        }
+    }
 }
 
 // --- CM5 REPORT IP (keepalive) ---
@@ -1443,6 +1498,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
 }
 
 // --- CM5 REGISTER ---
+// --- CM5 REGISTER (startova registracia z lokalnej DB) ---
 elseif ($path === '/api/cm5/register' && $method === 'POST') {
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');

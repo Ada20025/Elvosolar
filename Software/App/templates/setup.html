@@ -1249,8 +1249,39 @@
                 btn.disabled = false; btn.innerHTML = origHtml;
                 if (d.status === 'success') {
                     resultBox.className = 'text-xs rounded-xl p-3 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
-                    resultBox.innerHTML = '✓ Príkaz ' + pct + ' % odoslaný do CM5 cez WiFi.' +
-                        '<div class="text-[10px] text-slate-400 mt-1">CM5 ho vykoná do ~10 s (cloud poll každých 5 s). Over hodnotu v Enspire a potvrď:</div>';
+                    resultBox.innerHTML = '⏳ Príkaz ' + pct + ' % odoslaný. Čakám na potvrdenie od CM5 (vykoná zápis na SmartLogger)...';
+                    // POLLING: CM5 po zápise pošle výsledok do cloudu → my ho vyzdvihneme (max 30 s)
+                    let confirmed = null;
+                    for (let i = 0; i < 15; i++) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        try {
+                            const rr = await fetch('/api/device/' + devId + '/last-cmd-result', {credentials: 'same-origin'});
+                            const rd = await rr.json();
+                            if (rd.status === 'success' && rd.result && rd.result.at) {
+                                const at = new Date(rd.result.at).getTime();
+                                // berieme len čerstvý výsledok (posledných 60 s)
+                                if (Date.now() - at < 60000) { confirmed = rd.result; break; }
+                            }
+                        } catch (e) { /* retry */ }
+                    }
+                    if (confirmed && confirmed.status === 'success') {
+                        const rb = confirmed.readback_pct !== null && confirmed.readback_pct !== undefined ? confirmed.readback_pct : '?';
+                        const og = confirmed.original_pct !== null && confirmed.original_pct !== undefined ? confirmed.original_pct : null;
+                        resultBox.className = 'text-xs rounded-xl p-3 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
+                        resultBox.innerHTML = '✓ CM5 POTVRDIL zápis: ' + pct + ' % → SmartLogger vrátil ' + rb + ' %.' +
+                            (og !== null ? '<div class="text-[10px] text-slate-400 mt-1">Pôvodná hodnota: ' + og + ' % (tú vráť späť na konci).</div>' : '') +
+                            '<div class="text-[10px] text-slate-400 mt-1">Over aj v Enspire a potvrď:</div>';
+                    } else if (confirmed) {
+                        resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300 space-y-1';
+                        resultBox.innerHTML = '✗ CM5 NEDOKÁZAL zapísať: ' + (confirmed.message || 'neznáma chyba') +
+                            '<div class="text-[10px] mt-1">Skontroluj LAN kábel CM5 ↔ SmartLogger a IP v kroku 4.</div>';
+                        confirmRow.classList.add('hidden');
+                        return;
+                    } else {
+                        resultBox.className = 'text-xs rounded-xl p-3 bg-amber-950/40 border border-amber-500/40 text-amber-300 space-y-1';
+                        resultBox.innerHTML = '⚠ Potvrdenie od CM5 nedorazilo do 30 s.' +
+                            '<div class="text-[10px] mt-1">Buď CM5 nemá WiFi, alebo poll nemal internet. Ak sa hodnota v Enspire ZMENILA, klikni ANO.</div>';
+                    }
                     confirmRow.classList.remove('hidden');
                 } else {
                     resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
