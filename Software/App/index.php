@@ -2009,6 +2009,25 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
                     ->execute([$user_id, $keep_id]);
             } catch (Exception $eP) { /* tabulky mozu neexistovat */ }
         }
+        // NOTIFIKÁCIA vlastníkovi (len pri NOVEJ registrácii — nie pri každom self-heal update)
+        if (isset($keep_id) && !empty($data['owner_email'])) {
+            try {
+                $stmtN = $pdo->prepare("SELECT email, username FROM users WHERE id = ? LIMIT 1");
+                $stmtN->execute([$user_id]);
+                $owner = $stmtN->fetch();
+                if ($owner) {
+                    require_once __DIR__ . '/mail_helper.php';
+                    $emailBody = '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Bolo pridané nové zariadenie do vášho účtu:</p>' .
+                        '<div style="margin:0 0 20px 0;padding:20px 24px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.3);border-radius:16px;">' .
+                        '<div style="font-size:10px;color:#67e8f9;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:8px;">Nové zariadenie</div>' .
+                        '<div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">' . htmlspecialchars($name) . '</div>' .
+                        '<div style="font-size:12px;color:#94a3b8;">Sériové číslo: ' . htmlspecialchars($serial ?: '—') . '</div>' .
+                        '</div>' .
+                        '<p style="margin:0;font-size:12px;color:#64748b;">Zariadenie spravujete v aplikácii ElvoControll na dashboarde.</p>';
+                    send_elvo_email($owner['email'], 'Nové zariadenie: ' . $name . ' | ElvoControll', 'Zariadenie pridané', $emailBody, '#06b6d4');
+                }
+            } catch (Exception $eM) { /* mail je best-effort */ }
+        }
         send_json(['status' => 'success', 'name' => $name, 'user_id' => $user_id, 'serial' => $serial, 'device_id' => isset($keep_id) ? intval($keep_id) : null]);
     } catch (Exception $e) {
         send_json(['status' => 'error', 'message' => $e->getMessage()]);
