@@ -1869,6 +1869,10 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             $stO->execute([trim($data['owner_email'])]);
             $rowO = $stO->fetch();
             if ($rowO) { $user_id = intval($rowO['id']); }
+            else {
+                // Admin zadal vlastníka, ktorý nemá účet — jasné chybové hlásenie (žiadne tiché priradenie adminovi)
+                send_json(['status' => 'error', 'message' => 'Účet s e-mailom ' . trim($data['owner_email']) . ' neexistuje — zákazník sa musí najprv zaregistrovať.'], 404);
+            }
         } catch (Exception $e) { /* fallback nizsie */ }
     }
     if (!$user_id) {

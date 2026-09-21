@@ -156,12 +156,14 @@
                         <div class="space-y-3">
                             <div>
 <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Meno zariadenia</label>
-                                <input id="deviceName" type="text" value="" placeholder="Napr. Adam, Domáce FVE..." class="w-full bg-[#05070f] border border-slate-500 text-white text-sm font-bold rounded-xl px-4 py-3.5 outline-none focus:border-cyan-400 transition placeholder-slate-500">
+                                <input id="deviceName" type="text" value="" autocomplete="off" name="elvo_dev_nm" placeholder="Napr. Adam, Domáce FVE..." class="w-full bg-[#05070f] border border-slate-500 text-white text-sm font-bold rounded-xl px-4 py-3.5 outline-none focus:border-cyan-400 transition placeholder-slate-500">
                             </div>
 
-                            <!-- ID POUŽÍVATEĽA: zariadenie sa zaregistruje pod prihlásený účet -->
-                            <div id="setupUserIdBadge" class="hidden p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-[11px] text-cyan-300">
-                                <span id="setupUserIdText"></span>
+                            <!-- VLASTNÍK ZARIADENIA: admin napíše e-mail zákazníka — zariadenie patrí JEMU -->
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">E-mail vlastníka zariadenia</label>
+                                <input id="ownerEmail" type="email" value="" autocomplete="off" name="elvo_dev_owner" placeholder="E-mail zákazníka (komu zariadenie patrí)" class="w-full bg-[#05070f] border border-slate-500 text-white text-sm font-bold rounded-xl px-4 py-3.5 outline-none focus:border-cyan-400 transition placeholder-slate-500">
+                                <p class="text-[10px] text-slate-500 mt-1">Zariadenie sa zaregistruje pod tento účet — nie pod teba (admina). Musí to byť existujúci účet.</p>
                             </div>
 
                             <div>
@@ -762,22 +764,7 @@
             showValidationError("Setup funguje IBA cez USB kábel. Pripoj CM5 k počítaču USB-C káblom a klikni na 🔌 Pripojiť cez USB UART.");
         }
         async function initWizard() {
-            // Zobraz ID PRIHLÁSENÉHO používateľa — zariadenie sa vždy registruje pod tento účet
-            try {
-                const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
-                const meData = await meRes.json();
-                if (meData.status === 'success') {
-                    const badge = document.getElementById('setupUserIdBadge');
-                    const txt = document.getElementById('setupUserIdText');
-                    if (badge && txt) {
-                        txt.innerHTML = '👤 Zariadenie bude patriť: <strong>' + (meData.username || meData.email) + '</strong>' +
-                            ' &nbsp;·&nbsp; ID: <strong>#' + meData.user_id + '</strong>' +
-                            ' &nbsp;·&nbsp; ' + (meData.role === 'admin' ? '🛡️ Admin' : 'User') +
-                            (meData.email ? '<div class="text-[10px] text-cyan-500 mt-0.5">' + meData.email + '</div>' : '');
-                        badge.classList.remove('hidden');
-                    }
-                }
-            } catch (e) { /* neprihlásený — badge ostane skrytý */ }
+            // Badge s prihláseným adminom sa NEZOBRAZUJE — vlastníka si admin zadá sám v kroku 1 (pole E-mail vlastníka)
             try {
                 // Pokus stiahnut devices z API, ak 404, ostava BACKUP_DEVICES bez chyby
                 try {
@@ -1180,7 +1167,9 @@
             try {
                 const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
                 const meData = await meRes.json();
-                const owner_email = meData.status === 'success' ? (meData.email || '') : '';
+                // Vlastník = čo admin NAPÍŠE do poľa (zákazník). Prázdne = prihlásený admin (self-setup).
+                const ownerInput = (document.getElementById('ownerEmail')?.value || '').trim();
+                const owner_email = ownerInput || (meData.status === 'success' ? (meData.email || '') : '');
                 const brand_id = document.getElementById('brandSelect').value;
                 const cat_id = document.getElementById('categorySelect').value;
                 const model_id = document.getElementById('modelSelect').value;
@@ -1811,7 +1800,9 @@ const cat = document.getElementById('categorySelect');
                 // Pri úspešných 2 skúškach je už zapísané (ensureCloudDevice) — tu sa doplnia finálne informácie.
                 const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
                 const meData = await meRes.json();
-                const owner_email = meData.status === 'success' ? (meData.email || '') : '';
+                // Vlastník = čo admin NAPÍŠE (zákazník). Prázdne = prihlásený admin.
+                const ownerInput = (document.getElementById('ownerEmail')?.value || '').trim();
+                const owner_email = ownerInput || (meData.status === 'success' ? (meData.email || '') : '');
                 const claimName = document.getElementById('deviceName').value.trim() || 'Moje zariadenie';
 
                 const claimRes = await fetch('/api/user/claim-device', {
