@@ -1566,6 +1566,40 @@ elseif ($path === '/api/cm5/register' && $method === 'POST') {
     send_json(['status' => 'success', 'serial' => $serial]);
 }
 
+// --- Overenie údajov zákazníka pri setup-e (admin inštaluje, zariadenie patrí zákazníkovi) ---
+elseif ($path === '/api/setup/verify-customer' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    // Iba admin môže setupovať pre zákazníkov
+    try {
+        $stA = $pdo->prepare("SELECT role FROM users WHERE id = ? LIMIT 1");
+        $stA->execute([intval($_SESSION['user_id'])]);
+        $me = $stA->fetch();
+        if (!$me || ($me['role'] ?? '') !== 'admin') {
+            send_json(['status' => 'error', 'message' => 'Setup zariadení môže vykonávať iba admin.'], 403);
+        }
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => 'DB chyba pri overení role.'], 500);
+    }
+    $data = get_json_input();
+    $vcEmail = trim($data['email'] ?? '');
+    $vcPass = strval($data['password'] ?? '');
+    if (!$vcEmail || !$vcPass) send_json(['status' => 'error', 'message' => 'Zadaj e-mail a heslo zákazníka.'], 400);
+    try {
+        $stU = $pdo->prepare("SELECT id, role, username, password_hash FROM users WHERE email = ? LIMIT 1");
+        $stU->execute([$vcEmail]);
+        $u = $stU->fetch();
+        if (!$u || !password_verify($vcPass, $u['password_hash'] ?? '')) {
+            send_json(['status' => 'error', 'message' => 'Nesprávny e-mail alebo heslo zákazníka — účet neexistuje alebo heslo nesedí.'], 401);
+        }
+        if (($u['role'] ?? '') === 'admin') {
+            send_json(['status' => 'error', 'role' => 'admin', 'message' => 'Zariadenie nesmie patriť adminovi — admin len inštaluje, nevlastní ho. Zadaj údaje bežného používateľa.'], 422);
+        }
+        send_json(['status' => 'success', 'user_id' => intval($u['id']), 'username' => $u['username'], 'role' => $u['role']]);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => 'DB chyba pri overení zákazníka.'], 500);
+    }
+}
+
 // --- USER CLAIM DEVICE (ulozi meno + parametre zariadenia do cloud DB) ---
 elseif ($path === '/api/user/me' && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);

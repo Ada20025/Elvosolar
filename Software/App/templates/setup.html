@@ -159,7 +159,7 @@
                                  ide to priamo pod jeho účet bez ďalších údajov. -->
                             <div>
                                 <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">E-mail vlastníka zariadenia</label>
-                                <input id="ownerEmail" type="email" value="" autocomplete="off" name="elvo_dev_owner" placeholder="E-mail zákazníka (komu zariadenie patrí)" class="w-full bg-[#05070f] border border-slate-500 text-white text-sm font-bold rounded-xl px-4 py-3.5 outline-none focus:border-cyan-400 transition placeholder-slate-500">
+                                <input id="ownerEmail" type="email" value="" autocomplete="off" name="elvo_dev_owner" oninput="const cu=document.getElementById('cloudUser'); if(cu && !cu.dataset.touched){cu.value=this.value;}" placeholder="E-mail zákazníka (komu zariadenie patrí)" class="w-full bg-[#05070f] border border-slate-500 text-white text-sm font-bold rounded-xl px-4 py-3.5 outline-none focus:border-cyan-400 transition placeholder-slate-500">
                                 <p class="text-[10px] text-slate-500 mt-1">Zariadenie patrí tomuto účtu. Prázdne = prihlásený admin (self-setup). Musí to byť existujúci účet.</p>
                             </div>
 
@@ -325,15 +325,23 @@
                         </div>
                         
                         <div id="cloudFields" class="hidden space-y-3 bg-slate-950/20 p-3 rounded-xl border border-slate-850">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="useSessionAccount" checked onchange="toggleCloudAccountFields()" class="accent-cyan-500">
-                                <span class="text-xs text-slate-300 font-semibold font-mono">Použiť môj aktívne prihlásený účet</span>
-                            </label>
-                            <div id="customCloudAccountInputs" class="hidden">
-                                <label class="flex items-start gap-2 cursor-pointer p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                                    <input type="checkbox" id="cloudAsAdmin" checked class="accent-cyan-500 mt-0.5">
-                                    <span class="text-[11px] text-slate-300 font-semibold leading-snug">🛡️ Prepojiť s cloudom ako <span class="text-cyan-400">admin</span> — heslo nie je potrebné, overí ťa prihlásená relácia</span>
-                                </label>
+                            <p class="text-[11px] text-slate-400 leading-snug">Zariadenie sa prepojí s účtom <strong class="text-cyan-400">vlastníka</strong> (zákazníka) — nie admina. Admin len inštaluje, zariadenie nevlastní.</p>
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">E-mail vlastníka (zákazníka)</label>
+                                    <input type="email" id="cloudUser" oninput="this.dataset.touched='1'" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 outline-none font-mono text-sm text-white" placeholder="zakaznik@email.sk" autocomplete="off">
+                                </div>
+                                <div class="relative">
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Heslo zákazníka</label>
+                                    <input type="password" id="cloudPass" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-10 py-3 outline-none text-sm text-white" placeholder="Heslo k účtu zákazníka">
+                                    <button type="button" onclick="togglePasswordVisibility('cloudPass', 'eyeIconCloud')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition cursor-pointer">
+                                        <svg id="eyeIconCloud" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="text-[10px] text-slate-500">Údaje sa overia proti databáze — zariadenie patrí tomuto účtu.</p>
                             </div>
                         </div>
 
@@ -860,26 +868,36 @@
             let cloudUser = "";
             let cloudPass = "";
             if (selectedMode === 'CLOUD') {
-                if (document.getElementById("useSessionAccount").checked) {
-                    try {
-                        const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
-                        const meData = await meRes.json();
-                        if (meData.status === 'success' && meData.email) {
-                            cloudUser = meData.email;
-                            cloudPass = "session_auth";
-                            console.log('Setup: zariadenie bude registrovane pod user_id=' + meData.user_id + ' (' + meData.email + ')');
-                        }
-                    } catch(e) {}
-                } else {
-                    // Zjednodušený režim: žiadne ručné heslá — overuje sa prihlásená relácia
-                    try {
-                        const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
-                        const meData = await meRes.json();
-                        if (meData.status === 'success' && meData.email) {
-                            cloudUser = meData.email;
-                            cloudPass = "session_auth";
-                        }
-                    } catch(e) {}
+                // Zariadenie patrí ZÁKAZNÍKOVI (vlastníkovi) — admin ho len inštaluje.
+                // Údaje zákazníka sa reálne overia proti databáze (hash hesla) na serveri.
+                cloudUser = (document.getElementById("cloudUser")?.value || "").trim();
+                cloudPass = document.getElementById("cloudPass")?.value || "";
+                if (!cloudUser || !cloudPass) {
+                    showValidationError("Zadaj e-mail a heslo vlastníka zariadenia (zákazníka) — zariadenie patrí jemu, nie adminovi.");
+                    document.getElementById("cloudUser")?.focus();
+                    return;
+                }
+                showValidationError("Overujem údaje zákazníka...");
+                try {
+                    const vRes = await fetch('/api/setup/verify-customer', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ email: cloudUser, password: cloudPass })
+                    });
+                    const vData = await vRes.json();
+                    if (vData.status !== 'success') {
+                        showValidationError(vData.message || "Nesprávny e-mail alebo heslo zákazníka — zariadenie nebolo odoslané.");
+                        return;
+                    }
+                    if (vData.role === 'admin') {
+                        showValidationError("Zariadenie NESMIE patriť adminovi — admin len inštaluje. Zadaj údaje bežného používateľa (zákazníka).");
+                        return;
+                    }
+                    showValidationError(null);
+                } catch(e) {
+                    showValidationError("Overenie zákazníka zlyhalo: " + e.message);
+                    return;
                 }
             }
 
@@ -889,9 +907,8 @@
                 admin_key: "",
                 comm_mode: selectedMode,
                 cloud_username: cloudUser,
-                cloud_password: cloudPass,
                 admin_username: "admin",
-                admin_password: cloudPass || "admin_fallback_pass",
+                admin_password: "",
                 ssid: ssid,
                 password: pass,
                 brand_id: brand_id,
@@ -1802,10 +1819,6 @@
             document.getElementById('cloudFields').classList.toggle('hidden', mode !== 'CLOUD');
         }
 
-        function toggleCloudAccountFields() {
-            const checkbox = document.getElementById("useSessionAccount");
-            document.getElementById("customCloudAccountInputs").classList.toggle("hidden", checkbox.checked);
-        }
 
         function loadBrands() {
             const select = document.getElementById('brandSelect');
