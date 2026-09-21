@@ -491,6 +491,10 @@
                                     <button type="button" onclick="confirmPowerTest(true)" class="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition">✅ ANO, FUNGUJE</button>
                                     <button type="button" onclick="confirmPowerTest(false)" class="py-3 rounded-xl bg-rose-700 hover:bg-rose-600 text-white font-extrabold text-xs cursor-pointer transition">✖ NIE</button>
                                 </div>
+                                <div id="restoreRow" class="hidden">
+                                    <button type="button" onclick="restoreOriginalPower()" id="btnRestorePower" class="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-extrabold text-xs cursor-pointer transition border border-slate-500">↩ VRAŤ PÔVODNÚ HODNOTU</button>
+                                    <p class="text-[9px] text-slate-500 mt-1 text-center">Vráti výkon na hodnotu, ktorá bola na SmartLoggere pred testom — klikni až keď overíš v Enspire.</p>
+                                </div>
                             </div>
                         </div>
 
@@ -1142,6 +1146,10 @@
             const orig = resp.original_pct;
             if (testAttempt === 1) {
                 window._origPct = (orig !== null && orig !== undefined) ? orig : null;
+                // Uloz parametre pre prípadný restore káblom
+                window._testIp = document.getElementById('smartloggerIpInput')?.value || '';
+                window._testPort = 502;
+                window._testUnit = 0;
                 // Uloz serial CM5 pre WEB skusku 2 (posle sa cez cloud)
                 try {
                     const enc2 = new TextEncoder();
@@ -1157,6 +1165,11 @@
                 '<div class="text-[10px] text-slate-400 mt-1">Over hodnotu v Enspire webe SmartLoggera a potvrď:</div>';
             // SKÚŠKA 1: POUŽÍVATEĽ POTVRDÍ ANO/NIE (podľa Enspire)
             confirmRow.classList.remove('hidden');
+            // Restore tlačidlo — len ak poznáme pôvodnú hodnotu
+            if (window._origPct !== null) {
+                const rr = document.getElementById('restoreRow');
+                if (rr) rr.classList.remove('hidden');
+            }
         }
 
         // ===== ZÁPIS ZARIADENIA DO CLOUD DB (pred skúškou 2 — musí existovať, aby vedel prijať príkaz) =====
@@ -1267,6 +1280,7 @@
                     if (confirmed && confirmed.status === 'success') {
                         const rb = confirmed.readback_pct !== null && confirmed.readback_pct !== undefined ? confirmed.readback_pct : '?';
                         const og = confirmed.original_pct !== null && confirmed.original_pct !== undefined ? confirmed.original_pct : null;
+                        if (og !== null && (window._origPct === null || window._origPct === undefined)) window._origPct = og;
                         resultBox.className = 'text-xs rounded-xl p-3 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
                         resultBox.innerHTML = '✓ CM5 POTVRDIL zápis: ' + pct + ' % → SmartLogger vrátil ' + rb + ' %.' +
                             (og !== null ? '<div class="text-[10px] text-slate-400 mt-1">Pôvodná hodnota: ' + og + ' % (tú vráť späť na konci).</div>' : '') +
@@ -1283,6 +1297,11 @@
                             '<div class="text-[10px] mt-1">Buď CM5 nemá WiFi, alebo poll nemal internet. Ak sa hodnota v Enspire ZMENILA, klikni ANO.</div>';
                     }
                     confirmRow.classList.remove('hidden');
+                    // Restore tlačidlo aj po skúške 2 (ak poznáme pôvodnú hodnotu)
+                    if (window._origPct !== null && window._origPct !== undefined) {
+                        const rr = document.getElementById('restoreRow');
+                        if (rr) rr.classList.remove('hidden');
+                    }
                 } else {
                     resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
                     resultBox.innerHTML = '✗ Web príkaz zlyhal: ' + (d.message || 'neznáma chyba') +
@@ -1292,6 +1311,83 @@
                 btn.disabled = false; btn.innerHTML = origHtml;
                 resultBox.className = 'text-xs rounded-xl p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300';
                 resultBox.innerHTML = '✗ Chyba siete: ' + e.message;
+            }
+        }
+
+        async function restoreOriginalPower() {
+            const orig = window._origPct;
+            const devId = (typeof currentDeviceId !== 'undefined' && currentDeviceId) ? currentDeviceId : (window._setupDeviceId || null);
+            const resultBox = document.getElementById('verifyResult');
+            const btn = document.getElementById('btnRestorePower');
+            if (orig === null || orig === undefined) {
+                if (resultBox && !resultBox.classList.contains('hidden')) {
+                    resultBox.innerHTML += '<div class="text-[10px] text-amber-300 mt-1">Pôvodná hodnota nie je známa (CM5 ju nemohol prečítať pred testom). Nastav ju ručne v Enspire alebo dashboarde.</div>';
+                }
+                return;
+            }
+            const byCable = (testAttempt === 1); // ak sme ešte v skúške 1, kábel je pripojený → restore káblom
+            if (byCable && activeSerialPort && deviceConnected) {
+                // RESTORE KÁBLOM (rovnaká cesta ako test 1)
+                try {
+                    btn.disabled = true; btn.innerHTML = '⏳ VRACIAM...';
+                    const enc = new TextEncoder();
+                    const writer = activeSerialPort.writable.getWriter();
+                    await writer.write(enc.encode(JSON.stringify({ cmd: 'test_power', ip: window._testIp || '', port: window._testPort || 502, unit_id: window._testUnit || 0, pct: orig }) + "\n"));
+                    writer.releaseLock();
+                    const resp = await readBoxResponse(8000);
+                    btn.disabled = false; btn.innerHTML = '↩ VRAŤ PÔVODNÚ HODNOTU';
+                    if (resp && resp.ok) {
+                        if (resultBox) resultBox.innerHTML += '<div class="text-[10px] text-emerald-400 mt-1">↩ Vrátené na pôvodnú hodnotu ' + orig + ' %' + (resp.readback_pct !== null && resp.readback_pct !== undefined ? ' (overené: ' + resp.readback_pct + ' %)' : '') + '.</div>';
+                        const rr = document.getElementById('restoreRow'); if (rr) rr.classList.add('hidden');
+                    } else {
+                        if (resultBox) resultBox.innerHTML += '<div class="text-[10px] text-rose-400 mt-1">✗ Návrat zlyhal: ' + ((resp && resp.error) || 'neznáma chyba') + ' — nastav ' + orig + ' % ručne v Enspire.</div>';
+                    }
+                } catch (e) {
+                    btn.disabled = false; btn.innerHTML = '↩ VRAŤ PÔVODNÚ HODNOTU';
+                    if (resultBox) resultBox.innerHTML += '<div class="text-[10px] text-rose-400 mt-1">✗ Chyba: ' + e.message + '</div>';
+                }
+            } else if (devId) {
+                // RESTORE CEZ WEB/CLoud (po skúške 2)
+                try {
+                    btn.disabled = true; btn.innerHTML = '⏳ VRACIAM CEZ WEB...';
+                    const r = await fetch('/api/device/' + devId + '/set-power', {
+                        method: 'POST', credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pct: orig, restore: true })
+                    });
+                    const d = await r.json();
+                    btn.disabled = false; btn.innerHTML = '↩ VRAŤ PÔVODNÚ HODNOTU';
+                    if (d.status === 'success') {
+                        // čakaj na potvrdenie od CM5 (rovnako ako skúška 2)
+                        let confirmed = null;
+                        for (let i = 0; i < 15; i++) {
+                            await new Promise(res => setTimeout(res, 2000));
+                            try {
+                                const rr2 = await fetch('/api/device/' + devId + '/last-cmd-result', {credentials: 'same-origin'});
+                                const rd2 = await rr2.json();
+                                if (rd2.status === 'success' && rd2.result && rd2.result.at) {
+                                    const at2 = new Date(rd2.result.at).getTime();
+                                    if (Date.now() - at2 < 60000) { confirmed = rd2.result; break; }
+                                }
+                            } catch (e) { /* retry */ }
+                        }
+                        if (resultBox) {
+                            if (confirmed && confirmed.status === 'success') {
+                                resultBox.innerHTML += '<div class="text-[10px] text-emerald-400 mt-1">↩ CM5 POTVRDIL návrat na ' + orig + ' %' + (confirmed.readback_pct !== null && confirmed.readback_pct !== undefined ? ' (overené: ' + confirmed.readback_pct + ' %)' : '') + '.</div>';
+                            } else if (confirmed) {
+                                resultBox.innerHTML += '<div class="text-[10px] text-rose-400 mt-1">✗ Návrat zlyhal: ' + (confirmed.message || '?') + ' — nastav ' + orig + ' % ručne v Enspire.</div>';
+                            } else {
+                                resultBox.innerHTML += '<div class="text-[10px] text-amber-300 mt-1">⚠ Potvrdenie nedorazilo do 30 s — over v Enspire či je ' + orig + ' %.</div>';
+                            }
+                        }
+                        const rr = document.getElementById('restoreRow'); if (rr) rr.classList.add('hidden');
+                    } else {
+                        if (resultBox) resultBox.innerHTML += '<div class="text-[10px] text-rose-400 mt-1">✗ Web príkaz zlyhal: ' + (d.message || '?') + '</div>';
+                    }
+                } catch (e) {
+                    btn.disabled = false; btn.innerHTML = '↩ VRAŤ PÔVODNÚ HODNOTU';
+                    if (resultBox) resultBox.innerHTML += '<div class="text-[10px] text-rose-400 mt-1">✗ Chyba siete: ' + e.message + '</div>';
+                }
             }
         }
 
@@ -1352,10 +1448,15 @@
                 resultBox.innerHTML = '<div class="font-bold text-emerald-400 text-sm">🎉 SMARTLOGGER OVERENÝ (2/2 skúšky)</div>' +
                     '<div class="text-[10px] text-slate-400 mt-1">Vráť výkon späť na pôvodnú hodnotu' +
                     (window._origPct !== null && window._origPct !== undefined ? ' (' + window._origPct + ' %)' : '') +
-                    ' — v dashboarde po dokončení setupu, alebo v Enspire.</div>' +
+                    ' — tlačidlom dole, alebo v dashboarde po dokončení setupu.</div>' +
                     '<div class="text-[10px] text-cyan-400 mt-1">💡 Po dokončení nastav v dashboarde tvoj bežný režim — CM5 bude riadiť výkon sám.</div>';
                 scanStatus.className = 'p-4 bg-emerald-950/30 border border-emerald-500/40 rounded-xl text-xs text-center font-bold text-emerald-300';
                 scanStatus.innerHTML = '🎉 SmartLogger komunikuje káblom AJ webom! Môžete dokončiť nastavenie.';
+                // Restore tlačidlo po finálnej skúške — VÝZVA na návrat pôvodnej hodnoty
+                if (window._origPct !== null && window._origPct !== undefined) {
+                    const rr = document.getElementById('restoreRow');
+                    if (rr) rr.classList.remove('hidden');
+                }
                 const fb = document.getElementById('finishBtn');
                 if (fb) fb.classList.remove('hidden');
             }

@@ -1795,6 +1795,34 @@ def cloud_sync_loop():
                 except Exception as e_sp:
                     result = {"status": "error", "message": str(e_sp)[:200]}
 
+            elif action == "restore_power":
+                # NÁVRAT PÔVODNEJ HODNOTY po teste (iba na výslovné potvrdenie používateľa v UI)
+                #_pct prišiel z cloudu (pôvodná hodnota uložená pred testom)
+                try:
+                    from serial_config_service import execute_test_power
+                    pct = float(config.get('pct', 0))
+                    sl_ip = str(config.get('ip', '') or '')
+                    sl_port = int(config.get('port', 502) or 502)
+                    sl_unit = int(config.get('unit_id', 0) or 0)
+                    if not sl_ip:
+                        rows = db_execute("SELECT smartlogger_ip, smartlogger_port, modbus_slave_id FROM devices LIMIT 1")
+                        if rows:
+                            sl_ip = str(rows[0].get('smartlogger_ip') or '')
+                            sl_port = int(rows[0].get('smartlogger_port') or 502)
+                            sl_unit = int(rows[0].get('modbus_slave_id') or 0)
+                    if not sl_ip:
+                        result = {"status": "error", "message": "SmartLogger IP nie je nastavená"}
+                    else:
+                        res = execute_test_power(sl_ip, sl_port, sl_unit, pct)
+                        log_message(f"[RESTORE POWER] Navrat {pct}% -> {sl_ip}:{sl_port}: {res}")
+                        if res.get('ok'):
+                            result = {"status": "success", "message": f"Pôvodná hodnota {pct}% obnovená",
+                                      "readback_pct": res.get('readback_pct')}
+                        else:
+                            result = {"status": "error", "message": res.get('error', 'Návrat zlyhal')}
+                except Exception as e_rp:
+                    result = {"status": "error", "message": str(e_rp)[:200]}
+
             try:
                 for _retry in range(3):
                     try:

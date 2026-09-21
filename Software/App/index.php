@@ -1152,6 +1152,8 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
     if ($pct < 0 || $pct > 100) {
         send_json(['status' => 'error', 'message' => 'Hodnota musí byť 0–100 %'], 400);
     }
+    // Voliteľný režim návratu pôvodnej hodnoty (restore) — IBA na výslovné potvrdenie používateľa
+    $restore = !empty($data['restore']);
     try {
         $stmt = $pdo->prepare("SELECT id, serial_number FROM devices WHERE id = ?");
         $stmt->execute([$devId]);
@@ -1163,10 +1165,14 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
         if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
             $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
         }
-        $cmd = json_encode(['action' => 'set_power', 'pct' => $pct]);
+        $cmd = json_encode($restore
+            ? ['action' => 'restore_power', 'pct' => $pct]
+            : ['action' => 'set_power', 'pct' => $pct]);
         $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
         $stmtU->execute([$cmd, $devId]);
-        send_json(['status' => 'success', 'message' => "Príkaz na {$pct} % odoslaný do CM5 (cez WiFi). Over výsledok v Enspire o pár sekúnd."]);
+        send_json(['status' => 'success', 'message' => $restore
+            ? "Návrat na {$pct} % odoslaný do CM5 (cez WiFi)."
+            : "Príkaz na {$pct} % odoslaný do CM5 (cez WiFi). Over výsledok v Enspire o pár sekúnd."]);
     } catch (Exception $e) {
         send_json(['status' => 'error', 'message' => 'Chyba: ' . $e->getMessage()], 500);
     }
