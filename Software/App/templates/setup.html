@@ -492,8 +492,7 @@
                                     <button type="button" onclick="confirmPowerTest(false)" class="py-3 rounded-xl bg-rose-700 hover:bg-rose-600 text-white font-extrabold text-xs cursor-pointer transition">✖ NIE</button>
                                 </div>
                                 <div id="restoreRow" class="hidden">
-                                    <button type="button" onclick="restoreOriginalPower()" id="btnRestorePower" class="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-extrabold text-xs cursor-pointer transition border border-slate-500">↩ VRAŤ PÔVODNÚ HODNOTU</button>
-                                    <p class="text-[9px] text-slate-500 mt-1 text-center">Vráti výkon na hodnotu, ktorá bola na SmartLoggere pred testom — klikni až keď overíš v Enspire.</p>
+                                    <p class="text-[9px] text-slate-500 text-center">↩ Po potvrdení ANO sa výkon automaticky vráti na pôvodnú hodnotu (ktorá bola pred testom).</p>
                                 </div>
                             </div>
                         </div>
@@ -1422,6 +1421,8 @@
             }
 
             confirmRow.classList.add('hidden');
+            // HNEĎ PO POTVRDENÍ ANO sa automaticky vráti pôvodná hodnota (žiadne extra tlačidlo)
+            restoreOriginalPower();
             if (testAttempt === 1) {
                 // SKÚŠKA 1 OK → SKÚŠKA 2 (web, bez kábla)
                 firstTestVal = pct;
