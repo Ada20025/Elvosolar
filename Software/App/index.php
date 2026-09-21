@@ -1310,8 +1310,8 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
         $sStmt = $pdo->prepare("SELECT serial_number FROM devices WHERE serial_number = ? LIMIT 1");
         $sStmt->execute([$serial]);
         if (!$sStmt->fetch()) {
-            // Neznamy serial (nesetupnuty box) - ziadne prikazy
-            send_json(['status' => 'no_pending']);
+            // Neznamy serial — CM5 sa samo pre-registruje (self-healing serialu v DB)
+            send_json(['status' => 'unknown_serial']);
         }
     } catch (Exception $eS) { /* tabulka neexistuje -> pokracuj (cloud sync prvy krat registruje) */ }
     
@@ -1993,6 +1993,15 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             }
             // PURGE: 1 CM5 = 1 zariadenie. Stare smety (Mdatabase, testy, stary serial)
             // tohto usera mazu - inak sa kopia a telemetria/nastavenia idu na zly riadok.
+            // MIGRÁCIA: cakajúci príkaz zo starého riadku prenes na hlavný (inak by sa stratil pri self-heal re-registrácii)
+            try {
+                $stC = $pdo->prepare("SELECT admin_command FROM devices WHERE user_id = ? AND id != ? AND admin_command IS NOT NULL AND admin_command != '' ORDER BY id DESC LIMIT 1");
+                $stC->execute([$user_id, $keep_id]);
+                $pendRow = $stC->fetch();
+                if ($pendRow && !empty($pendRow['admin_command'])) {
+                    $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?")->execute([$pendRow['admin_command'], $keep_id]);
+                }
+            } catch (Exception $eC) { /* ignore */ }
             try {
                 $pdo->prepare("DELETE FROM telemetry WHERE device_id IN (SELECT id FROM devices WHERE user_id = ? AND id != ?)")
                     ->execute([$user_id, $keep_id]);

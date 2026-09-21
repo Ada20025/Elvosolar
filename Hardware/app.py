@@ -1289,6 +1289,16 @@ def _get_local_ip():
     except:
         return "unknown"
 
+def _get_cloud_username():
+    """E-mail vlastníka z lokálnej DB (nastaví sa pri setup-e káblom)."""
+    try:
+        rows = db_execute("SELECT value FROM system_settings WHERE key = 'cloud_username' LIMIT 1")
+        if rows and rows[0].get('value'):
+            return str(rows[0]['value'])
+    except Exception:
+        pass
+    return ""
+
 def _get_serial_number():
     """Stabilna identita boxu - MAC odvodeny serial, rovnaky ako pri registracii do cloudu.
     (Predtym hardcodovane 'CM5-DEFAULT' - cloud potom nevedel sparovat poll/report/telemetriu!)"""
@@ -1434,6 +1444,25 @@ def cloud_sync_loop():
             if resp is None or resp.status_code != 200:
                 continue
             data = resp.json()
+            if data.get("status") == "unknown_serial":
+                # SELF-HEALING: cloud nepozna nas serial (stary/prepísany riadok v DB).
+                # Pre-registruj sa (claim-device so svojim serialom) — cakajúci príkaz
+                # sa pritom premigruje na hlavný riadok a poll ho hneď vyzdvihne.
+                try:
+                    _name = "Moje zariadenie"
+                    try:
+                        _rows = db_execute("SELECT name FROM devices LIMIT 1")
+                        if _rows and _rows[0].get('name'): _name = str(_rows[0]['name'])
+                    except Exception: pass
+                    requests.post(CLOUD_SERVER_URL + "/api/user/claim-device",
+                        json={"serial": serial_num, "name": _name, "brand_id": "huawei",
+                              "category_id": "smartlogger", "model_id": "sl3000", "slave_id": 1,
+                              "has_battery": True, "owner_email": _get_cloud_username()},
+                        timeout=10, verify=False)
+                    log_message("[CLOUD SYNC] unknown_serial -> samo-pre-registracia vykonana")
+                except Exception as _e_sh:
+                    log_message(f"[CLOUD SYNC] Self-heal registracia zlyhala: {_e_sh}")
+                continue
             if data.get("status") != "success":
                 continue
 
