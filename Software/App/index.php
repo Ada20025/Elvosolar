@@ -2477,10 +2477,26 @@ elseif ($path === '/api/push/unsubscribe' && $method === 'POST') {
     send_json(['status' => 'success']);
 }
 
-// --- PUSH SUBSCRIBE (ulozenie subscription) ---
-elseif ($path === '/api/push/subscribe' && $method === 'POST') {
- // Lokalne notifikacie bezia cez Notification API (zvoncek) - subscription sa neuklada
-    send_json(['status' => 'success']);
+// --- PUSH TEST (realna web push notifikacia na vsetky zariadenia usera) ---
+elseif ($path === '/api/push/test' && $method === 'POST') {
+    $uid = intval($_SESSION['user_id'] ?? 0);
+    if (!$uid) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    require_once __DIR__ . '/push_helper.php';
+    // pocet aktivnych subscriptions
+    try {
+        $st = $pdo->prepare("SELECT COUNT(*) AS cnt FROM push_subs WHERE user_id = ?");
+        $st->execute([$uid]);
+        $cnt = intval($st->fetchColumn());
+    } catch (Exception $e) { $cnt = 0; }
+    if ($cnt === 0) {
+        send_json(['status' => 'error', 'message' => 'Nemáš žiadne prihlásené push zariadenia. Obnov stránku a povoľ notifikácie.']);
+    }
+    $ok = elvo_push_user($pdo, $uid,
+        '\u{1F514} Test notifikácia',
+        'Web Push funguje! Toto je skúšobná správa z ElvoControll (' . date('H:i') . ').',
+        'elvo-test', '/dashboard');
+    send_json(['status' => $ok ? 'success' : 'error',
+               'message' => $ok ? "Test push odoslaný na $cnt zariadenie(í)" : 'Push sa nepodarilo odoslať (pozri server log)']);
 }
 
 // --- DEVICE RENAME ---
