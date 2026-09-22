@@ -1828,8 +1828,11 @@ elseif ($path === '/api/user/test-email' && $method === 'POST') {
             '#10b981');
     } catch (Exception $e) { $ok = false; }
     if ($ok) send_json(['status' => 'success', 'message' => 'Test email bol odoslaný na ' . $u['email']]);
-    if (!getenv('SMTP_PASS')) send_json(['status' => 'error', 'message' => 'SMTP nie je nastavené na serveri (chýba SMTP_PASS). Kontaktujte administrátora.']);
-    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo - skontrolujte SMTP nastavenia']);
+    // Diagnostika: resend ani relay nie su nastavene
+    $hasResend = getenv('RESEND_API_KEY') && trim(getenv('RESEND_API_KEY')) !== '';
+    $hasRelay = getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '';
+    if (!$hasResend && !$hasRelay) send_json(['status' => 'error', 'message' => 'E-mailová služba nie je nastavená na serveri (chýba RESEND_API_KEY). Nastav ju v Railway premenných.']);
+    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo — skontroluj RESEND_API_KEY alebo mail doručenia']);
 }
 
 elseif ($path === '/forgot-password' && $method === 'GET') {
@@ -2018,8 +2021,11 @@ elseif ($path === '/api/user/test-email' && $method === 'POST') {
             '#10b981');
     } catch (Exception $e) { $ok = false; }
     if ($ok) send_json(['status' => 'success', 'message' => 'Test email bol odoslaný na ' . $u['email']]);
-    if (!getenv('SMTP_PASS')) send_json(['status' => 'error', 'message' => 'SMTP nie je nastavené na serveri (chýba SMTP_PASS). Kontaktujte administrátora.']);
-    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo - skontrolujte SMTP nastavenia']);
+    // Diagnostika: resend ani relay nie su nastavene
+    $hasResend = getenv('RESEND_API_KEY') && trim(getenv('RESEND_API_KEY')) !== '';
+    $hasRelay = getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '';
+    if (!$hasResend && !$hasRelay) send_json(['status' => 'error', 'message' => 'E-mailová služba nie je nastavená na serveri (chýba RESEND_API_KEY). Nastav ju v Railway premenných.']);
+    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo — skontroluj RESEND_API_KEY alebo mail doručenia']);
 }
 
 elseif ($path === '/forgot-password' && $method === 'GET') {
