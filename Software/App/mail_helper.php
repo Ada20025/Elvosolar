@@ -34,12 +34,13 @@ if (!function_exists('elvo_mail_relay')) {
         $api_key = getenv('RESEND_API_KEY');
         if (!$api_key || trim($api_key) === '') return false;
         $from = getenv('RESEND_FROM') ?: 'ElvoControll <onboarding@resend.dev>';
+        // Predmet s diakritikou — Resend akceptuje plain UTF-8, ale bez RFC encoding
         $payload = json_encode([
             'from' => $from,
             'to' => [$to],
             'subject' => $subject,
             'html' => $message_html,
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
         $ctx = stream_context_create(['http' => [
             'method' => 'POST',
             'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $api_key . "\r\n",
@@ -48,9 +49,9 @@ if (!function_exists('elvo_mail_relay')) {
             'ignore_errors' => true,
         ]]);
         $resp = @file_get_contents('https://api.resend.com/emails', false, $ctx);
-        if ($resp === false) return false;
+        if ($resp === false) { error_log('[RESEND] Spojenie zlyhalo (timeout/DNS)'); return false; }
         $ok = (strpos($resp, '"id"') !== false);
-        if (!$ok) error_log('[RESEND] Chyba: ' . substr($resp, 0, 200));
+        if (!$ok) error_log('[RESEND] Chyba pre ' . $to . ': ' . substr($resp, 0, 300));
         return $ok;
     }
     function elvo_mail_relay($to, $subject, $message_html, $accent_color = '#007aff') {
