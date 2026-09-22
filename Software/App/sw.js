@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elvosolar-v5';
+const CACHE_NAME = 'elvosolar-v6';
 const urlsToCache = ['/', '/login', '/templates/ElvosolarLogo.png'];
 
 // Staticke subory -> cache-first (hned, bez cakania na siet)
@@ -15,6 +15,33 @@ self.addEventListener('activate', e => {
         caches.keys().then(names => Promise.all(
             names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
         )).then(() => clients.claim())
+    );
+});
+
+// Obnova push subscription — Chrome/Android obcas zmeni token (update prehliadaca),
+// bez tejto udalosti by notifikacie po case umreli. Novy token sa samodosle na server.
+self.addEventListener('pushsubscriptionchange', (event) => {
+    event.waitUntil(
+        self.registration.pushManager.subscribe(
+            (event.oldSubscription && event.oldSubscription.options)
+                ? event.oldSubscription.options
+                : { userVisibleOnly: true, applicationServerKey: undefined }
+        )
+        .catch(() => null)
+        .then(async (newSubscription) => {
+            if (!newSubscription) return;
+            // Posli novy token na backend (cookie -> credentials include)
+            try {
+                await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(newSubscription.toJSON())
+                });
+            } catch (e) { /* skusime pri dalsej udalosti */ }
+            // Ak zmena vznikla zo starej subscription, backend si mrtvy endpoint
+            // vycisti automaticky pri prvom push (410 Gone handler)
+        })
     );
 });
 

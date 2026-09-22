@@ -4017,21 +4017,22 @@
                     return Promise.all([reg, fetch(basePath + '/api/push/vapid').then(r => r.json())]);
                 }).then(([reg, vk]) => {
                     if (!vk.pub) throw new Error('no vapid key');
-                    const existing = localStorage.getItem('elvo_push_endpoint');
-                    // Ak uz mame subscription, obnov ju (endpoint moze byt stary)
+                    // Pri KAŽDOM otvorení: existujúcu subscription VŽDY znova pošle na server
+                    // (token sa môže zmeniť pri update prehliadača — bez refreshu by push umrel)
                     return reg.pushManager.getSubscription().then(sub => {
-                        if (sub) {
-                            fetch(basePath + '/api/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(sub.toJSON()) });
+                        if (sub && sub.endpoint) {
+                            fetch(basePath + '/api/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'same-origin', body: JSON.stringify(sub.toJSON()) });
                             localStorage.setItem('elvo_push_endpoint', sub.endpoint);
                             return null;
                         }
+                        // Nepoužívame options starej subscription (môžu byť neplatné) — vždy čerstvý kľúč zo servera
                         return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vk.pub) });
                     });
                 }).then(sub => {
                     if (!sub) return;
                     console.log('[PUSH] Subscribed:', sub.endpoint.substring(0, 40));
                     localStorage.setItem('elvo_push_endpoint', sub.endpoint);
-                    fetch(basePath + '/api/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(sub.toJSON()) });
+                    fetch(basePath + '/api/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'same-origin', body: JSON.stringify(sub.toJSON()) });
                 }).catch(e => console.log('[PUSH] Error:', e.message));
             }
             // === ONBOARDING ===
