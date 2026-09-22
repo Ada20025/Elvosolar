@@ -51,7 +51,16 @@ if (!function_exists('elvo_mail_relay')) {
         $resp = @file_get_contents('https://api.resend.com/emails', false, $ctx);
         if ($resp === false) { error_log('[RESEND] Spojenie zlyhalo (timeout/DNS)'); return false; }
         $ok = (strpos($resp, '"id"') !== false);
-        if (!$ok) error_log('[RESEND] Chyba pre ' . $to . ': ' . substr($resp, 0, 300));
+        if (!$ok) {
+            // 403 = restricted key / From doména nie je overená (resend.dev posiela len na vlastný účet)
+            if (strpos($resp, '403') !== false || strpos($resp, 'restricted') !== false || strpos($resp, 'verified') !== false) {
+                error_log('[RESEND] RESTRICTED (From doména neoverená) pre ' . $to . ': ' . substr($resp, 0, 200));
+                $GLOBALS['elvo_mail_last_error'] = 'RESEND: odosielateľ nie je overený (From doména). Over doménu v Resende alebo nastav RESEND_FROM.';
+            } else {
+                error_log('[RESEND] Chyba pre ' . $to . ': ' . substr($resp, 0, 300));
+                $GLOBALS['elvo_mail_last_error'] = 'RESEND: ' . substr($resp, 0, 150);
+            }
+        }
         return $ok;
     }
     function elvo_mail_relay($to, $subject, $message_html, $accent_color = '#007aff') {

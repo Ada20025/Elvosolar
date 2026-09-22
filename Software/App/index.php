@@ -1831,7 +1831,9 @@ elseif ($path === '/api/user/test-email' && $method === 'POST') {
     // Diagnostika: resend ani relay nie su nastavene
     $hasResend = getenv('RESEND_API_KEY') && trim(getenv('RESEND_API_KEY')) !== '';
     $hasRelay = getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '';
+    $lastErr = $GLOBALS['elvo_mail_last_error'] ?? '';
     if (!$hasResend && !$hasRelay) send_json(['status' => 'error', 'message' => 'E-mailová služba nie je nastavená na serveri (chýba RESEND_API_KEY). Nastav ju v Railway premenných.']);
+    if ($lastErr !== '') send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo: ' . $lastErr]);
     send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo — skontroluj RESEND_API_KEY alebo mail doručenia']);
 }
 
@@ -2024,7 +2026,9 @@ elseif ($path === '/api/user/test-email' && $method === 'POST') {
     // Diagnostika: resend ani relay nie su nastavene
     $hasResend = getenv('RESEND_API_KEY') && trim(getenv('RESEND_API_KEY')) !== '';
     $hasRelay = getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '';
+    $lastErr = $GLOBALS['elvo_mail_last_error'] ?? '';
     if (!$hasResend && !$hasRelay) send_json(['status' => 'error', 'message' => 'E-mailová služba nie je nastavená na serveri (chýba RESEND_API_KEY). Nastav ju v Railway premenných.']);
+    if ($lastErr !== '') send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo: ' . $lastErr]);
     send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo — skontroluj RESEND_API_KEY alebo mail doručenia']);
 }
 
