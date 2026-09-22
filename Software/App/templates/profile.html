@@ -406,11 +406,44 @@
     <script>
         let userProfile = {};
 
+        // Bezpecny JSON fetch — ak server vrati HTML (gate/warning), jasna hlaska
+        async function safeJson(url, opts) {
+            const res = await fetch(url, opts || { credentials: 'same-origin' });
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                if (text.indexOf('<') === 0) {
+                    return { status: 'error', message: 'Server vrátil neočakávanú odpoveď (pravdepodobne vypršala relácia). Obnov stránku.' };
+                }
+                return { status: 'error', message: 'Neplatná odpoveď servera: ' + text.substring(0, 80) };
+            }
+        }
+
+        // Push registracia aj na profile — subscription sa ulozi hned
+        async function registerPushOnProfile() {
+            try {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                const reg = await navigator.serviceWorker.register('/sw.js');
+                await navigator.serviceWorker.ready;
+                const vk = await safeJson('/api/push/vapid');
+                if (!vk.pub) return;
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    const u8 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+                    let key = vk.pub; while (key.length % 4) key += '=';
+                    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(key).buffer });
+                }
+                await safeJson('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+                localStorage.setItem('elvo_push_endpoint', sub.endpoint);
+                console.log('[PUSH] subscribed (profile)');
+            } catch (e) { console.log('[PUSH] profile err:', e.message); }
+        }
+
         // Nahraj ulozene notifikacne nastavenia (vratane kanalov)
         async function loadUserNotifications() {
             try {
-                const r = await fetch('/api/user/notifications', { credentials: 'same-origin' });
-                const d = await r.json();
+                const d = await safeJson('/api/user/notifications');
                 if (d.status === 'success') {
                     const n = d.notifications;
                     const map = { notifNewDevice: 'new_device', notifError: 'error', notifDaily: 'daily_report', notifNegPrice: 'negative_price', notifEmail: 'notif_email', notifPush: 'notif_push' };
@@ -429,8 +462,7 @@
         async function testEmailChannel() {
             showToast('Odosielam test email...');
             try {
-                const r = await fetch('/api/user/test-email', { method: 'POST', credentials: 'same-origin' });
-                const d = await r.json();
+                const d = await safeJson('/api/user/test-email', { method: 'POST', credentials: 'same-origin' });
                 showToast(d.status === 'success' ? '✅ Test email odoslaný — skontroluj schránku' : '⚠️ ' + (d.message || 'Email sa nepodarilo odoslať'), d.status !== 'success');
             } catch (e) { showToast('Chyba: ' + e.message, true); }
         }
@@ -438,8 +470,7 @@
         // Test push kanalu
         async function testPushChannel() {
             try {
-                const r = await fetch('/api/push/test', { method: 'POST', credentials: 'same-origin' });
-                const d = await r.json();
+                const d = await safeJson('/api/push/test', { method: 'POST', credentials: 'same-origin' });
                 showToast(d.status === 'success' ? '🔔 ' + (d.message || 'Test notifikácia odoslaná') : '⚠️ ' + (d.message || 'Push sa nepodarilo odoslať'), d.status !== 'success');
             } catch (e) { showToast('Chyba: ' + e.message, true); }
         }
@@ -502,8 +533,7 @@
 
         async function loadDevices() {
             try {
-                const res = await fetch('/api/user/devices', { credentials: 'same-origin' });
-                const data = await res.json();
+                const data = await safeJson('/api/user/devices');
                 const leftList = document.getElementById('devicesListLeft');
                 const rightList = document.getElementById('devicesListRight');
 
@@ -548,13 +578,14 @@
                 notif_push: document.getElementById('notifPush').checked,
             };
             try {
-                await fetch('/api/user/notifications', {
+                const d = await safeJson('/api/user/notifications', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     credentials: 'same-origin',
                     body: JSON.stringify(settings)
                 });
-                showToast('Nastavenia uložené!');
+                if (d.status === 'success') showToast('Nastavenia uložené!');
+                else showToast(d.message || 'Uloženie zlyhalo', true);
             } catch(e) { showToast('Chyba: ' + e.message, true); }
         }
 
@@ -624,6 +655,7 @@
         loadProfile();
         loadDevices();
         loadUserNotifications();
+        registerPushOnProfile();
         if (window.lucide) lucide.createIcons();
     </script>
 </body>

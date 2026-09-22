@@ -1243,9 +1243,7 @@
 
                 <!-- Right: Settings gear (profil replaced by gear icon) -->
                 <div class="user-profile-container">
-                    <button id="alertsBtn" onclick="toggleAlertsPanel(event)" aria-label="Notifikácie" style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);cursor:pointer;transition:all 0.2s;">
-                        <i data-lucide="bell" style="width:18px;height:18px;color:var(--text-primary);"></i>
-                    </button>
+                    <!-- Zvoncek odstraneny — notifikacie chodia do systemovej listy -->
                     <div id="alertsPanel" class="user-dropdown-card hidden" style="width:320px;max-height:420px;overflow-y:auto;right:0;">
                         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border-card);position:sticky;top:0;background:var(--bg-card);z-index:2;">
                             <span style="font-size:12px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:6px;"><i data-lucide="bell-ring" style="width:14px;height:14px;color:var(--accent-solar);"></i> Notifikácie</span>
@@ -2520,7 +2518,7 @@
                     + '<div class="toast-time"><span>' + (a.dev || '') + '</span><span>·</span><span>' + new Date().toLocaleTimeString('sk-SK', {hour:'2-digit',minute:'2-digit'}) + '</span></div>'
                     + '</div>'
                     + '<button class="toast-close" onclick="event.stopPropagation();this.closest(\'.toast-item\').remove()">✕</button>';
-                el.onclick = function() { dismissToast(el); switchTab('tabDashboard'); toggleAlertsPanel(); };
+                el.onclick = function() { dismissToast(el); switchTab('tabDashboard'); };
                 wrap.appendChild(el);
                 requestAnimationFrame(() => { requestAnimationFrame(() => el.classList.add('show')); });
                 // Auto-hide po 8 s (kritické 12 s)
