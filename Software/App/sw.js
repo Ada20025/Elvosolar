@@ -20,12 +20,16 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('push', e => {
     const data = e.data ? e.data.json() : { title: 'ElvoControll', body: 'Notifikácia' };
+    const isAlert = (data.tag || '').startsWith('alert-');
     e.waitUntil(self.registration.showNotification(data.title, {
         body: data.body,
         icon: '/templates/ElvosolarLogo.png',
         badge: '/templates/ElvosolarLogo.png',
-        vibrate: [200, 100, 200],
+        vibrate: [200, 100, 200, 100, 200],
         tag: data.tag || 'elvo-notification',
+        renotify: true,
+        requireInteraction: isAlert,
+        silent: false,
         data: { url: data.url || '/' }
     }));
 });

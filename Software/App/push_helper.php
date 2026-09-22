@@ -103,7 +103,7 @@ if (!function_exists('elvo_push_b64url_enc')) {
             $httpBody = $salt . pack('N', 4096) . chr(65) . $asPub . $ct . $tagBin;
             $ctx = stream_context_create(['http' => [
                 'method' => 'POST',
-                'header' => "Content-Type: application/octet-stream\r\nContent-Encoding: aes128gcm\r\nTTL: 604800\r\nUrgency: high\r\nAuthorization: vapid t=" . $jwt . ", k=" . $keys['pub'] . "\r\n",
+                'header' => "Content-Type: application/octet-stream\r\nContent-Encoding: aes128gcm\r\nTTL: 604800\r\nUrgency: high\r\nTopic: elvo-alert\r\nAuthorization: vapid t=" . $jwt . ", k=" . $keys['pub'] . "\r\n",
                 'content' => $httpBody,
                 'timeout' => 6,
                 'ignore_errors' => true,
