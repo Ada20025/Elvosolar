@@ -285,6 +285,36 @@
         .fs-site-link:hover { text-decoration: underline; }
 
         /* 4. VS CODE ROZHRANIE PRE SÚBORY (READONLY + NAHRÁVANIE + ADMIN HESLO) */
+        /* ===== RESPONSIVE: vsetky velkosti zariadeni ===== */
+        @media (max-width: 1024px) {
+            .fs-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+            .fs-hero-inner { grid-template-columns: 1fr !important; }
+            .fs-menu-links .fs-menu-link { padding: 6px 8px !important; font-size: 11px !important; }
+            .fs-menu-links .fs-menu-link span, .fs-menu-links .fs-menu-link { white-space: normal !important; }
+        }
+        @media (max-width: 768px) {
+            .fs-nav { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; padding: 10px 12px !important; }
+            .fs-nav-left { flex-wrap: wrap !important; }
+            .fs-menu-links { flex-wrap: wrap !important; gap: 4px !important; }
+            .fs-menu-links .fs-menu-link { font-size: 10.5px !important; padding: 5px 7px !important; }
+            .fs-kpi-grid { grid-template-columns: 1fr 1fr !important; }
+            .fs-donut-panel { margin-top: 8px !important; }
+            .fs-table-wrap, .sites-table { font-size: 11px !important; }
+            #vscodeModal .vscode-window { width: 98vw !important; height: 92vh !important; }
+            .vscode-body { flex-direction: column !important; }
+            .vscode-sidebar { width: 100% !important; max-height: 130px; border-right: none !important; border-bottom: 1px solid #333; }
+            .vscode-editor-container { min-height: 160px; }
+            .vscode-terminal-body { max-height: 110px; }
+            .vscode-top-actions { flex-wrap: wrap !important; }
+            .vscode-top-actions .vscode-btn { font-size: 11px !important; padding: 5px 8px !important; }
+        }
+        @media (max-width: 480px) {
+            .fs-kpi-grid { grid-template-columns: 1fr !important; }
+            .fs-menu-links .fs-menu-link { font-size: 10px !important; padding: 4px 6px !important; }
+            .fs-brand-img { max-height: 30px !important; }
+            .admin-badge-btn { font-size: 11px !important; padding: 5px 8px !important; }
+        }
+
         .vscode-modal-backdrop {
             position: fixed;
             inset: 0;
@@ -906,7 +936,10 @@
                         <i data-lucide="folder-up" style="width:13px;height:13px;"></i> Nahrať priečinok
                     </button>
                     
-                    <!-- ROVNO TLAČIDLO S HESLOM (BEZ AI DETEKCIE) -->
+                    <!-- CIELOVE ZARIADENIE (realny serial z DB) -->
+                    <select id="hwDeviceSelect" class="vscode-btn" style="max-width:230px;color:#e2e8f0;background:#1e1e1e;"></select>
+
+                    <!-- DEPLOY S HESLOM (server-side overenie) -->
                     <button class="vscode-btn deploy" onclick="promptPasswordAndDeploy()">
                         <i data-lucide="key" style="width:13px;height:13px;"></i> Nahrať do HW (Heslo)
                     </button>
@@ -993,11 +1026,7 @@ if __name__ == "__main__":
             'config.json': `{\n  "gateway": "Elvo-CM5",\n  "baudrate": 9600,\n  "modbus_slaves": [1, 2, 3, 4]\n}`
         };
 
-        function openVsCodeModal() {
-            document.getElementById('vscodeModal').classList.remove('hidden');
-            renderFileList();
-            selectVsFile(currentActiveFile);
-        }
+        // openVsCodeModal je definovaná vyššie (s renderHwDeviceSelect)
 
         function closeVsCodeModal() {
             document.getElementById('vscodeModal').classList.add('hidden');
@@ -1082,31 +1111,99 @@ if __name__ == "__main__":
             });
         }
 
-        // DEPLOY IBA CEZ ADMIN HESLO (BEZ AI DETEKCIE)
-        function promptPasswordAndDeploy() {
+        // Zoznam cielovych CM5 (realne serialy z DB, renderovane PHP-ckom)
+        const hwDevices = <?php echo json_encode(array_map(function($d){ return ['serial' => $d['serial_number'], 'name' => $d['name']]; }, array_values(array_filter($devicesList, function($d){ return !empty($d['serial_number']); })))); ?>;
+
+        let hwDeployPollTimer = null;
+
+        function openVsCodeModal() {
+            document.getElementById('vscodeModal').classList.remove('hidden');
+            renderFileList();
+            selectVsFile(currentActiveFile);
+            renderHwDeviceSelect();
+        }
+
+        function renderHwDeviceSelect() {
+            const sel = document.getElementById('hwDeviceSelect');
+            if (!sel) return;
+            if (!hwDevices.length) {
+                sel.innerHTML = '<option value="">Žiadne zariadenie v DB</option>';
+                return;
+            }
+            sel.innerHTML = hwDevices.map(d =>
+                `<option value="${d.serial}">${d.name} — ${d.serial}</option>`).join('');
+        }
+
+        // DEPLOY: server-side overenie hesla + realny zapis na vybrane CM5
+        async function promptPasswordAndDeploy() {
+            const term = document.getElementById('vscodeTerminalBody');
             const pass = prompt("ZADAJTE ADMINISTRÁTORSKÉ HESLO PRE DEPLOY DO HARDVÉRU:");
             if (!pass) return;
 
-            const term = document.getElementById('vscodeTerminalBody');
-
-            // Overenie hesla
-            if (pass !== 'admin' && pass !== 'root' && pass !== 'elvosolar') {
-                term.innerHTML += `<div style="color:#ef4444;">[AUTH FAILED] Nesprávne heslo! Zápis do hardvéru bol zamietnutý.</div>`;
+            const sel = document.getElementById('hwDeviceSelect');
+            const serial = sel ? sel.value : '';
+            if (!serial) {
+                term.innerHTML += `<div style="color:#ef4444;">[TARGET] Vyber cieľové zariadenie CM5 zo zoznamu.</div>`;
                 term.scrollTop = term.scrollHeight;
-                alert("Nesprávne administrátorské heslo!");
                 return;
             }
 
-            // Úspech
             const fileCount = Object.keys(fileDatabase).length;
-            term.innerHTML += `<div style="color:#10b981;font-weight:700;">[AUTH OK] Administrátor overený. Zapisujem ${fileCount} súborov do Gateway CM5...</div>`;
-            
-            setTimeout(() => {
-                term.innerHTML += `<div style="color:#22c55e;font-weight:700;">[DEPLOY SUCCESS] ✅ Všetky súbory boli úspešne zapísané do hardvéru a démon reštartovaný!</div>`;
+            if (!fileCount) {
+                term.innerHTML += `<div style="color:#ef4444;">[FILES] Najprv nahraj súbory.</div>`;
                 term.scrollTop = term.scrollHeight;
-                alert("✅ Všetky súbory boli úspešne nahraté do hardvéru riadiacej jednotky!");
-                closeVsCodeModal();
-            }, 600);
+                return;
+            }
+
+            term.innerHTML += `<div style="color:#38bdf8;">[DEPLOY] Cieľ: ${serial} — odosielam ${fileCount} súborov na server (overenie hesla)...</div>`;
+            term.scrollTop = term.scrollHeight;
+
+            try {
+                const resp = await fetch('<?php echo $base_url; ?>/api/hw-deploy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ files: fileDatabase, serial, password: pass })
+                });
+                const data = await resp.json();
+                if (!data || data.status !== 'success') {
+                    term.innerHTML += `<div style="color:#ef4444;">[AUTH FAILED] ${data && data.message ? data.message : 'Deploy zamietnutý'}</div>`;
+                    term.scrollTop = term.scrollHeight;
+                    return;
+                }
+                term.innerHTML += `<div style="color:#10b981;font-weight:700;">[AUTH OK] Server prijal ${data.count} súborov. Čakám, kým CM5 ${serial} prevezme a zapíše balík...</div>`;
+                term.scrollTop = term.scrollHeight;
+                pollHwDeployStatus(serial, term);
+            } catch (err) {
+                term.innerHTML += `<div style="color:#ef4444;">[ERROR] ${err}</div>`;
+                term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        function pollHwDeployStatus(serial, term) {
+            if (hwDeployPollTimer) clearInterval(hwDeployPollTimer);
+            let ticks = 0;
+            hwDeployPollTimer = setInterval(async () => {
+                ticks++;
+                try {
+                    const r = await fetch('<?php echo $base_url; ?>/api/hw-deploy/status', {credentials: 'same-origin'});
+                    const d = await r.json();
+                    const st = d && d.deploy ? d.deploy.status : 'idle';
+                    if (st === 'success') {
+                        clearInterval(hwDeployPollTimer); hwDeployPollTimer = null;
+                        term.innerHTML += `<div style="color:#22c55e;font-weight:700;">[DEPLOY SUCCESS] ✅ CM5 ${serial} potvrdil zápis súborov (reštart vykonaný).</div>`;
+                        term.scrollTop = term.scrollHeight;
+                    } else if (st === 'error') {
+                        clearInterval(hwDeployPollTimer); hwDeployPollTimer = null;
+                        term.innerHTML += `<div style="color:#ef4444;">[DEPLOY FAILED] ❌ CM5 ${serial} oznámil chybu pri zápise. Pozri log na zariadení (elvo-log).</div>`;
+                        term.scrollTop = term.scrollHeight;
+                    } else if (ticks > 60) {
+                        clearInterval(hwDeployPollTimer); hwDeployPollTimer = null;
+                        term.innerHTML += `<div style="color:#eab308;">[TIMEOUT] CM5 ${serial} nepotvrdil do 5 minút. Skontroluj, či je online (elvo-log).</div>`;
+                        term.scrollTop = term.scrollHeight;
+                    }
+                } catch (e) { /* keep polling */ }
+            }, 5000);
         }
 
         function clearVsTerminal() {

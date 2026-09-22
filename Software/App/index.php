@@ -1001,7 +1001,13 @@ elseif ($path === '/register') {
         try {
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
             $stmt->execute([$username, $email, $hashed]);
-            flash('Účet vytvorený. Môžete sa prihlásiť.', 'success');
+            // AUTO-LOGIN: pouzivatela rovno prihlasime - nemusi sa 2x prihlasovat
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $pdo->lastInsertId();
+            $_SESSION['username'] = $username;
+            $_SESSION['email'] = $email;
+            $_SESSION['last_activity'] = time();
+            flash('Účet vytvorený. Vitajte, ' . htmlspecialchars($username) . '!', 'success');
             // Vitajte email
             require_once __DIR__ . '/mail_helper.php';
             try {
@@ -1011,7 +1017,7 @@ elseif ($path === '/register') {
                     '<a href="https://' . ($_SERVER['SERVER_NAME'] ?? 'elvosolar-production.up.railway.app') . '/login" style="display:inline-block;padding:12px 24px;background:#10b981;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Prihlásiť sa</a>',
                     '#10b981');
             } catch (Exception $me) { /* mail nie je kritický */ }
-            header("Location: " . $base_path . "/login");
+            header("Location: " . $base_path . "/dashboard");
             exit;
         } catch (PDOException $e) {
             flash('Meno alebo e-mail už existuje.', 'error');
@@ -1418,6 +1424,18 @@ elseif ($path === '/api/cm5/result' && $method === 'POST') {
         // UPSERT: prepíš posledný výsledok (INSERT zlyhá na duplicate key pri druhom pupusu)
         $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
             ->execute(['last_cmd_result_dev_' . intval($dev['id']), $payload]);
+        // HW DEPLOY: ak CM5 potvrdil/nepotvrdil deploy súborov, zapis stav pre admin terminal
+        if (($res['status'] ?? '') === 'success' && isset($res['applied'])) {
+            try {
+                $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES ('hw_deploy_status', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
+                    ->execute(['success']);
+            } catch (Exception $e) {}
+        } elseif (($res['status'] ?? '') !== 'success') {
+            $cur = $pdo->query("SELECT `value` FROM system_settings WHERE `key` = 'hw_deploy_status' LIMIT 1")->fetch();
+            if ($cur && $cur['value'] === 'pending') {
+                $pdo->prepare("UPDATE system_settings SET `value` = 'error' WHERE `key` = 'hw_deploy_status'")->execute();
+            }
+        }
         send_json(['status' => 'success']);
     } catch (Exception $e) {
         try {
@@ -1553,6 +1571,73 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
 
 // --- CM5 REGISTER ---
 // --- CM5 REGISTER (startova registracia z lokalnej DB) ---
+        // ===== HW DEPLOY: ulozenie suborov + planovanie deployu na CM5 (admin only) =====
+        elseif ($path === '/api/hw-deploy' && $method === 'POST') {
+            if (($_SESSION['role'] ?? '') !== 'admin') send_json(['status' => 'error', 'message' => 'Iba admin'], 403);
+            $input = json_decode(file_get_contents('php://input'), true) ?: [];
+            $files = $input['files'] ?? [];
+            $serial = trim($input['serial'] ?? '');
+            $password = trim($input['password'] ?? '');
+            if (!$files || !is_array($files)) send_json(['status' => 'error', 'message' => 'Žiadne súbory'], 400);
+            if ($serial === '') send_json(['status' => 'error', 'message' => 'Vyber cieľové zariadenie (CM5)'], 400);
+            // Server-side heslo (nie JS!) - admin musi potvrdit svoje heslo
+            $st = $pdo->prepare("SELECT password_hash FROM users WHERE id = ? AND role = 'admin'");
+            $st->execute([$_SESSION['user_id']]);
+            $adminRow = $st->fetch();
+            if (!$adminRow || !password_verify($password, $adminRow['password_hash'])) {
+                send_json(['status' => 'error', 'message' => 'Nesprávne administrátorské heslo'], 403);
+            }
+            // Limit: max 20 suborov, max 400 KB kazdy, 2 MB spolu
+            $clean = [];
+            $totalBytes = 0;
+            foreach ($files as $name => $content) {
+                if (!is_string($name) || !is_string($content)) continue;
+                $name = str_replace(['..', '\\', chr(0)], '', $name);
+                if (strlen($content) > 400 * 1024) send_json(['status' => 'error', 'message' => "Súbor $name je príliš veľký (>400 KB)"], 400);
+                $totalBytes += strlen($content);
+                $clean[$name] = $content;
+                if (count($clean) >= 20) break;
+            }
+            if (!$clean) send_json(['status' => 'error', 'message' => 'Žiadne platné súbory'], 400);
+            if ($totalBytes > 2 * 1024 * 1024) send_json(['status' => 'error', 'message' => 'Spolu príliš veľa dát (>2 MB)'], 400);
+            // Ulozenie balika + planovanie prikazu pre cielovy CM5
+            $st = $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES ('hw_deploy_files', ?), ('hw_deploy_serial', ?), ('hw_deploy_time', ?), ('hw_deploy_status', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)");
+            $st->execute([json_encode($clean), $serial, date('Y-m-d H:i:s'), 'pending']);
+            $st = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
+            $st->execute([$serial]);
+            $dev = $st->fetch();
+            if (!$dev) send_json(['status' => 'error', 'message' => "Zariadenie $serial neexistuje v databáze"], 404);
+            $payload = json_encode(['action' => 'deploy_files', 'count' => count($clean)]);
+            $st = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
+            $st->execute([$payload, $dev['id']]);
+            send_json(['status' => 'success', 'message' => 'Deploy naplánovaný', 'device_id' => intval($dev['id']), 'count' => count($clean)]);
+        }
+
+        // ===== HW DEPLOY STATUS (admin polling - realny stav z CM5 result) =====
+        elseif ($path === '/api/hw-deploy/status' && $method === 'GET') {
+            if (($_SESSION['role'] ?? '') !== 'admin') send_json(['status' => 'error', 'message' => 'Iba admin'], 403);
+            $st = $pdo->query("SELECT `key`, `value` FROM system_settings WHERE `key` IN ('hw_deploy_status','hw_deploy_serial','hw_deploy_time')");
+            $out = ['status' => 'idle', 'serial' => '', 'time' => ''];
+            foreach ($st->fetchAll() as $row) {
+                if ($row['key'] === 'hw_deploy_status') $out['status'] = $row['value'];
+                elseif ($row['key'] === 'hw_deploy_serial') $out['serial'] = $row['value'];
+                elseif ($row['key'] === 'hw_deploy_time') $out['time'] = $row['value'];
+            }
+            send_json(['status' => 'success', 'deploy' => $out]);
+        }
+
+        // ===== CM5: stiahnutie HW suborov (poll nachystany balik) =====
+        elseif ($path === '/api/cm5/hw-files' && $method === 'GET') {
+            $serial = trim($_GET['serial'] ?? '');
+            if ($serial === '') send_json(['status' => 'error', 'message' => 'Chýba serial'], 400);
+            $st = $pdo->query("SELECT `value` FROM system_settings WHERE `key` = 'hw_deploy_files' LIMIT 1");
+            $row = $st->fetch();
+            if (!$row) send_json(['status' => 'error', 'message' => 'Žiadny deploy pripravený'], 404);
+            $files = json_decode($row['value'], true);
+            if (!is_array($files) || !$files) send_json(['status' => 'error', 'message' => 'Balík je prázdny'], 404);
+            send_json(['status' => 'success', 'serial' => $serial, 'files' => $files]);
+        }
+
 elseif ($path === '/api/cm5/register' && $method === 'POST') {
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');

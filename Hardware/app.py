@@ -1811,6 +1811,44 @@ def cloud_sync_loop():
                 log_message(f"[CLOUD] Nastavenia aktualizovane: {list(config.keys())}")
                 result = {"status": "success", "message": "Nastavenia ulozene"}
 
+            elif action == "deploy_files":
+                # ADMIN DEPLOY HW SUBOROV: stiahne balik z cloudu, zapise subory, restart app.py
+                try:
+                    import shutil, zipfile, io as _io
+                    r_files = requests.get(CLOUD_SERVER_URL + "/api/cm5/hw-files",
+                                           params={"serial": serial_num}, timeout=20, verify=False)
+                    data_files = r_files.json()
+                    if data_files.get("status") != "success" or not data_files.get("files"):
+                        result = {"status": "error", "message": "Balík súborov sa nepodarilo stiahnuť"}
+                    else:
+                        hw_dir = os.path.dirname(os.path.abspath(__file__))
+                        backup_dir = os.path.join(hw_dir, "hw_backup")
+                        os.makedirs(backup_dir, exist_ok=True)
+                        applied = []
+                        for fname, content in data_files["files"].items():
+                            fname = str(fname).replace("..", "").replace(chr(92), "").lstrip("/")
+                            if not fname:
+                                continue
+                            target = os.path.join(hw_dir, fname)
+                            # zaloha povodneho suboru
+                            if os.path.exists(target):
+                                bdir = os.path.join(backup_dir, time.strftime("%Y%m%d_%H%M%S"))
+                                os.makedirs(bdir, exist_ok=True)
+                                shutil.copy2(target, os.path.join(bdir, os.path.basename(fname)))
+                            with open(target, "w", encoding="utf-8") as f:
+                                f.write(content)
+                            applied.append(fname)
+                        log_message(f"[HW DEPLOY] Zapisanych {len(applied)} suborov: {applied}")
+                        result = {"status": "success", "applied": applied}
+                        # restart appky (deploy sa prejavi po reboote sluzby)
+                        def _delayed_restart():
+                            time.sleep(2)
+                            log_message("[HW DEPLOY] Restart app.py po deploji...")
+                            os._exit(0)
+                        threading.Thread(target=_delayed_restart, daemon=True).start()
+                except Exception as e_df:
+                    result = {"status": "error", "message": str(e_df)[:200]}
+
             elif action == "set_power":
                 # MANUÁLNY ZÁPIS VÝKONU cez web (skúška 2 bez kábla / ovládanie z dashboardu)
                 # Prijme pct (0-100), zapíše na SmartLogger (40428, FC16, gain 10) cez LAN
