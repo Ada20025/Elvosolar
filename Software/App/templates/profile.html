@@ -408,17 +408,45 @@
 
         // Bezpecny JSON fetch — ak server vrati HTML (gate/warning), jasna hlaska
         async function safeJson(url, opts) {
-            const res = await fetch(url, opts || { credentials: 'same-origin' });
+            let res;
+            try {
+                res = await fetch(url, opts || { credentials: 'same-origin' });
+            } catch (netErr) {
+                return { status: 'error', message: '⚠️ Žiadne spojenie so serverom. Skontroluj internet.' };
+            }
             const text = await res.text();
             try {
-                return JSON.parse(text);
-            } catch (e) {
-                if (text.indexOf('<') === 0) {
-                    return { status: 'error', message: 'Server vrátil neočakávanú odpoveď (pravdepodobne vypršala relácia). Obnov stránku.' };
+                const data = JSON.parse(text);
+                // Gate 401 (relacia vyprsala) -> hned na login, ziadne visiace chyby
+                if (data.gate === true || (res.status === 401 && url.indexOf('/api/push/vapid') === -1)) {
+                    return { status: 'error', expired: true, message: '🔒 Relácia vypršala. Prihlás sa znova.' };
                 }
-                return { status: 'error', message: 'Neplatná odpoveď servera: ' + text.substring(0, 80) };
+                return data;
+            } catch (e) {
+                return { status: 'error', message: '⚠️ Neočakávaná odpoveď servera. Obnov stránku (F5).' };
             }
         }
+
+        // VRTKO: informativny banner dole (zeleny=OK / modry=info / cerveny=chyba)
+        function showVrcko(message, type) {
+            type = type || 'info';
+            const old = document.getElementById('elvoVrcko');
+            if (old) old.remove();
+            const colors = { ok: ['#10b981', '✅'], info: ['#3b82f6', 'ℹ️'], error: ['#f43f5e', '🚨'] };
+            const [bg, icon] = colors[type] || colors.info;
+            const v = document.createElement('div');
+            v.id = 'elvoVrcko';
+            v.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99999;' +
+                'display:flex;align-items:center;gap:10px;padding:14px 22px;border-radius:14px;' +
+                'background:' + bg + ';color:#fff;font-size:12.5px;font-weight:800;max-width:90vw;' +
+                'box-shadow:0 12px 40px rgba(0,0,0,0.4);animation:vrckoIn .3s ease;';
+            v.innerHTML = '<span style="font-size:16px;">' + icon + '</span><span>' + message + '</span>';
+            document.body.appendChild(v);
+            setTimeout(() => { v.style.transition = 'opacity .4s'; v.style.opacity = '0'; setTimeout(() => v.remove(), 400); }, type === 'error' ? 5000 : 3000);
+        }
+        const st = document.createElement('style');
+        st.textContent = '@keyframes vrckoIn{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}';
+        document.head.appendChild(st);
 
         // Push registracia aj na profile — subscription sa ulozi hned
         async function registerPushOnProfile() {
@@ -460,10 +488,10 @@
 
         // Test email kanalu
         async function testEmailChannel() {
-            showToast('Odosielam test email...');
+            showVrcko('Odosielam test email...', 'info');
             try {
                 const d = await safeJson('/api/user/test-email', { method: 'POST', credentials: 'same-origin' });
-                showToast(d.status === 'success' ? '✅ Test email odoslaný — skontroluj schránku' : '⚠️ ' + (d.message || 'Email sa nepodarilo odoslať'), d.status !== 'success');
+                showVrcko(d.status === 'success' ? 'Test email odoslaný — skontroluj schránku' : (d.message || 'Email sa nepodarilo odoslať'), d.status === 'success' ? 'ok' : 'error');
             } catch (e) { showToast('Chyba: ' + e.message, true); }
         }
 
@@ -471,7 +499,7 @@
         async function testPushChannel() {
             try {
                 const d = await safeJson('/api/push/test', { method: 'POST', credentials: 'same-origin' });
-                showToast(d.status === 'success' ? '🔔 ' + (d.message || 'Test notifikácia odoslaná') : '⚠️ ' + (d.message || 'Push sa nepodarilo odoslať'), d.status !== 'success');
+                showVrcko(d.status === 'success' ? (d.message || 'Test notifikácia odoslaná') : (d.message || 'Push sa nepodarilo odoslať'), d.status === 'success' ? 'ok' : 'error');
             } catch (e) { showToast('Chyba: ' + e.message, true); }
         }
 
@@ -584,8 +612,8 @@
                     credentials: 'same-origin',
                     body: JSON.stringify(settings)
                 });
-                if (d.status === 'success') showToast('Nastavenia uložené!');
-                else showToast(d.message || 'Uloženie zlyhalo', true);
+                if (d.status === 'success') showVrcko('Nastavenia uložené', 'ok');
+                else showVrcko(d.message || 'Uloženie zlyhalo', 'error');
             } catch(e) { showToast('Chyba: ' + e.message, true); }
         }
 

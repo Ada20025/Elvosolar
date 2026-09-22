@@ -2386,6 +2386,19 @@
 
 
 
+        // safeJson: vsetky fetchy dostanu JSON (alebo citatelnu chybu, nie "Unexpected token")
+        async function safeJson(url, opts) {
+            let res;
+            try { res = await fetch(url, opts || { credentials: 'same-origin' }); }
+            catch (netErr) { return { status: 'error', message: 'Žiadne spojenie so serverom' }; }
+            const text = await res.text();
+            try {
+                const data = JSON.parse(text);
+                if (data.gate === true) return { status: 'error', expired: true, message: 'Relácia vypršala' };
+                return data;
+            } catch (e) { return { status: 'error', message: 'Neočakávaná odpoveď servera' }; }
+        }
+
         // ============ ALERT SYSTEM (zvoncek + nativne notifikacie) ============
         let lastAlertIds = new Set();
         let notifPermissionAsked = false;
