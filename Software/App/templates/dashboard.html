@@ -737,9 +737,15 @@
         @media (max-width: 768px) {
             .okte-sidebar { display: none !important; }
             .okte-mobile-top { display: block !important; }
-            .metrics-grid-4 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .metric-card { padding: 14px; border-radius: 14px; }
-            .metric-value-styled { font-size: 20px; }
+            /* KPI: 2x2 mriezka, vecie karty a citatelne hodnoty */
+            .metrics-grid-4 { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+            .metric-card { padding: 16px 14px; border-radius: 16px; gap: 10px; }
+            .metric-value-styled { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; }
+            .metric-label-styled { font-size: 9px; }
+            .metric-indicator-bar { height: 5px; border-radius: 3px; }
+            /* Graf cela sirka, primerana vyska */
+            .dashboard-grid { grid-template-columns: 1fr !important; gap: 14px; }
+            .main-wrapper { padding: 14px 12px !important; }
             .glass-card { padding: 18px; border-radius: 18px; margin-bottom: 16px; }
             .card-header-styled { margin-bottom: 14px; padding-bottom: 10px; }
             .card-title-styled { font-size: 11px; }
@@ -759,14 +765,17 @@
             .okte-mobile-top { margin-bottom: 0 !important; }
         }
         @media (max-width: 768px) {
-            #elvoChart { height: 250px !important; }
-            #sectionDashboard .glass-card div[style*="height:320px"] { height: 250px !important; }
+            #elvoChart { height: 260px !important; width: 100% !important; }
+            #sectionDashboard .glass-card div[style*="height:320px"] { height: 260px !important; }
+            .glass-card { overflow: hidden; }
         }
         @media (max-width: 480px) {
-            .metrics-grid-4 { grid-template-columns: 1fr 1fr; gap: 8px; }
-            .metric-card { padding: 12px; }
-            .metric-value-styled { font-size: 18px; }
-            .metric-label-styled { font-size: 8px; }
+            /* KPI zostavaju 2x2 aj na malych telefonoch — hodnoty velke a citatelne */
+            .metrics-grid-4 { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+            .metric-card { padding: 14px 12px; border-radius: 14px; gap: 8px; }
+            .metric-value-styled { font-size: 20px; font-weight: 900; }
+            .metric-label-styled { font-size: 8.5px; }
+            .metric-indicator-bar { height: 4px; }
             .header-brand-center { display: none; }
             .brand-title { font-size: 13px; }
             .nav-tab { padding: 10px 14px; font-size: 11px; gap: 6px; }
@@ -1390,7 +1399,7 @@
                         </div>
                     </div>
 
-                    <!-- Mobile OKTE (top) -->
+                    <!-- Mobile OKTE (pod grafom) -->
                     <div class="okte-mobile-top" style="display:none;">
                         <div class="okte-mini-card" style="margin-bottom:16px;">
                             <div class="okte-header">
