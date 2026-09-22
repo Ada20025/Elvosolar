@@ -116,6 +116,8 @@ $elvo_open = (bool)(preg_match('#^/(sw\.js|manifest\.json|favicon\.ico|healthche
     || preg_match('#^/(templates|css|js|img)(/|$)#', $elvo_uri)
     || preg_match('#^/api/user/(notifications|devices|me)(/|$)#', $elvo_uri)
     || preg_match('#^/api/push/(vapid|test|subscribe|unsubscribe)$#', $elvo_uri)
+    || preg_match('#^/api/user/(test-email|change-password|delete-account)$#', $elvo_uri)
+    || preg_match('#^/api/device/\d+/(telemetry|control|rename)$#', $elvo_uri)
     || in_array($elvo_uri, ['/api/cm5/poll', '/api/cm5/result', '/api/cm5/register', '/api/cm5/hw-files', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/user/claim-device'], true));
 $elvo_gate_ok = false;
 if (!empty($_SESSION['user_id'])) {
@@ -131,6 +133,16 @@ if (!empty($_SESSION['user_id'])) {
 }
 if (!$elvo_gate_ok && !$elvo_open) {
     $bp = $base_path ?? '';
+    // API volania NIKDY nedostanu HTML gate — vzdy cisty JSON 401.
+    // (fetch z PWA/Service Workera casto ide bez gate cookie; HTML v JSON
+    //  odpovedi robi "Unexpected token '<'" chyby na fronte)
+    if (strpos($elvo_uri, '/api/') === 0) {
+        while (ob_get_level() > 0) { @ob_end_clean(); }
+        header('Content-Type: application/json; charset=UTF-8');
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Neautorizovaný — prihlás sa znova', 'gate' => true]);
+        exit;
+    }
     // Validácia "next" — iba lokálna cesta
     $elvo_next = (string)($_REQUEST['next'] ?? $elvo_uri);
     if ($elvo_next === '' || $elvo_next[0] !== '/' || strpos($elvo_next, '//') === 0 || preg_match('#^[a-z]+:#i', $elvo_next)) $elvo_next = '/';
