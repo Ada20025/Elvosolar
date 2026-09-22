@@ -114,7 +114,7 @@ if (!function_exists('elvo_gate_creds')) {
 $elvo_uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $elvo_open = (bool)(preg_match('#^/(sw\.js|manifest\.json|favicon\.ico|healthcheck|health)$#', $elvo_uri)
     || preg_match('#^/(templates|css|js|img)(/|$)#', $elvo_uri)
-    || in_array($elvo_uri, ['/api/cm5/poll', '/api/cm5/result', '/api/cm5/register', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/user/claim-device'], true));
+    || in_array($elvo_uri, ['/api/cm5/poll', '/api/cm5/result', '/api/cm5/register', '/api/cm5/hw-files', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/user/claim-device'], true));
 $elvo_gate_ok = false;
 if (!empty($_SESSION['user_id'])) {
     // Prihlásený (nainštalovaná appka) — auto priechod + ticho obnov cookie
