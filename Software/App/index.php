@@ -429,6 +429,9 @@ if ($apply_timeout && isset($_SESSION['user_id'])) {
 // --- HELPER FUNKCIE ---
 if (!function_exists('send_json')) {
     function send_json($data, $status = 200) {
+        // Zahod pripadne PHP warnings/notices v bufferi — inak by sa primiesali
+        // do JSON odpovede ("Unexpected token '<', \"<br />\" is not valid JSON")
+        while (ob_get_level() > 0) { @ob_end_clean(); }
         header("Content-Type: application/json; charset=UTF-8");
         http_response_code($status);
         echo json_encode($data);
