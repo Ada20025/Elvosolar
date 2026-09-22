@@ -1973,6 +1973,12 @@ elseif ($path === '/api/user/notifications' && $method === 'POST') {
     if (!is_array($data)) send_json(['status' => 'error', 'message' => 'Neplatné dáta'], 400);
     $clean = [
         'new_device' => !empty($data['new_device']),
+        'error' => !empty($data['error']),
+        'daily_report' => !empty($data['daily_report']),
+        'negative_price' => !empty($data['negative_price']),
+        'notif_email' => !empty($data['notif_email']),
+        'notif_push' => !empty($data['notif_push']),
+    ];
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
         $stmt = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
