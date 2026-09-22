@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elvosolar-v3';
+const CACHE_NAME = 'elvosolar-v4';
 const urlsToCache = ['/', '/login', '/templates/ElvosolarLogo.png'];
 
 // Staticke subory -> cache-first (hned, bez cakania na siet)
