@@ -1574,6 +1574,8 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
         // ===== HW DEPLOY: ulozenie suborov + planovanie deployu na CM5 (admin only) =====
         elseif ($path === '/api/hw-deploy' && $method === 'POST') {
             if (($_SESSION['role'] ?? '') !== 'admin') send_json(['status' => 'error', 'message' => 'Iba admin'], 403);
+            // Auto-create system_settings (MySQL + SQLite kompatibilné)
+            try { $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)"); } catch (Exception $e) {}
             $input = json_decode(file_get_contents('php://input'), true) ?: [];
             $files = $input['files'] ?? [];
             $serial = trim($input['serial'] ?? '');
@@ -1616,9 +1618,15 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
         // ===== HW DEPLOY STATUS (admin polling - realny stav z CM5 result) =====
         elseif ($path === '/api/hw-deploy/status' && $method === 'GET') {
             if (($_SESSION['role'] ?? '') !== 'admin') send_json(['status' => 'error', 'message' => 'Iba admin'], 403);
-            $st = $pdo->query("SELECT `key`, `value` FROM system_settings WHERE `key` IN ('hw_deploy_status','hw_deploy_serial','hw_deploy_time')");
+            try { $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)"); } catch (Exception $e) {}
+            try {
+                $st = $pdo->query("SELECT `key`, `value` FROM system_settings WHERE `key` IN ('hw_deploy_status','hw_deploy_serial','hw_deploy_time')");
+                $rows = $st->fetchAll();
+            } catch (Exception $e) {
+                $rows = [];
+            }
             $out = ['status' => 'idle', 'serial' => '', 'time' => ''];
-            foreach ($st->fetchAll() as $row) {
+            foreach ($rows as $row) {
                 if ($row['key'] === 'hw_deploy_status') $out['status'] = $row['value'];
                 elseif ($row['key'] === 'hw_deploy_serial') $out['serial'] = $row['value'];
                 elseif ($row['key'] === 'hw_deploy_time') $out['time'] = $row['value'];
@@ -1630,8 +1638,14 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
         elseif ($path === '/api/cm5/hw-files' && $method === 'GET') {
             $serial = trim($_GET['serial'] ?? '');
             if ($serial === '') send_json(['status' => 'error', 'message' => 'Chýba serial'], 400);
-            $st = $pdo->query("SELECT `value` FROM system_settings WHERE `key` = 'hw_deploy_files' LIMIT 1");
-            $row = $st->fetch();
+            try {
+                $st = $pdo->query("SELECT `value` FROM system_settings WHERE `key` = 'hw_deploy_files' LIMIT 1");
+                $row = $st->fetch();
+            } catch (Exception $e) {
+                // Tabulka neexistuje — vytvor ju (MySQL + SQLite kompatibilné)
+                try { $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)"); } catch (Exception $e2) {}
+                $row = false;
+            }
             if (!$row) send_json(['status' => 'error', 'message' => 'Žiadny deploy pripravený'], 404);
             $files = json_decode($row['value'], true);
             if (!is_array($files) || !$files) send_json(['status' => 'error', 'message' => 'Balík je prázdny'], 404);
