@@ -1953,7 +1953,7 @@ elseif ($path === '/api/user/devices' && $method === 'GET') {
 
 elseif ($path === '/api/user/notifications' && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
-    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true];
+    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true, 'notif_email' => true, 'notif_push' => true];
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
         $stmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
@@ -1973,10 +1973,6 @@ elseif ($path === '/api/user/notifications' && $method === 'POST') {
     if (!is_array($data)) send_json(['status' => 'error', 'message' => 'Neplatné dáta'], 400);
     $clean = [
         'new_device' => !empty($data['new_device']),
-        'error' => !empty($data['error']),
-        'daily_report' => !empty($data['daily_report']),
-        'negative_price' => !empty($data['negative_price']),
-    ];
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
         $stmt = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
