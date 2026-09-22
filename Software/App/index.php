@@ -554,8 +554,21 @@ if (!function_exists('get_user_devices')) {
                     $ins = $pdo->prepare("INSERT INTO device_alerts (device_id, alert_key, title, body, severity, last_seen) VALUES (?,?,?,?,?,NOW())
                         ON DUPLICATE KEY UPDATE last_seen = NOW(), body = VALUES(body), resolved_at = NULL");
                     $ins->execute([$did, $key, $a[0], $a[1], $a[2]]);
-                    // Email pri NOVOM alerte (nie pri kazdom opakovani)
-                    if ($isNew && $notify_email) {
+                    // Email/push pri NOVOM alerte (nie pri kazdom opakovani) — podla kanalov usera
+                    $devPrefs = ['notif_email' => true, 'notif_push' => true];
+                    try {
+                        $pfStmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = (SELECT user_id FROM devices WHERE id = ?)");
+                        $pfStmt->execute([$did]);
+                        $pfRow = $pfStmt->fetch();
+                        if ($pfRow) {
+                            $pf = json_decode($pfRow['prefs'], true);
+                            if (is_array($pf)) {
+                                $devPrefs['notif_email'] = array_key_exists('notif_email', $pf) ? !empty($pf['notif_email']) : true;
+                                $devPrefs['notif_push'] = array_key_exists('notif_push', $pf) ? !empty($pf['notif_push']) : true;
+                            }
+                        }
+                    } catch (Exception $e) { /* default both on */ }
+                    if ($isNew && ($devPrefs['notif_email'] || $devPrefs['notif_push'])) {
                         try {
                             $u = $pdo->prepare("SELECT email FROM users WHERE id = (SELECT user_id FROM devices WHERE id = ?)");
                             $u->execute([$did]);
@@ -566,7 +579,7 @@ if (!function_exists('get_user_devices')) {
                                     $uidStmt = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
                                     $uidStmt->execute([$did]);
                                     $alertUid = intval($uidStmt->fetchColumn());
-                                    if ($alertUid) {
+                                    if ($alertUid && $devPrefs['notif_push']) {
 // --- INTERNY: posli push vsetkym zariadeniam usera (pouziva aj eval_device_alerts) ---
 if (!function_exists('elvo_push_user')) {
     function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url) {
@@ -594,6 +607,9 @@ if (!function_exists('elvo_push_user')) {
                                             $a[1], 'alert-' . $key, '/dashboard');
                                     }
                                 } catch (Exception $eP) { /* ignore */ }
+                                if (!$devPrefs['notif_email']) {
+                                    // user nepozeli email kanal — preskoc odoslanie
+                                } else {
                                 require_once __DIR__ . '/mail_helper.php';
                                 $sevIcon = ($a[2] === 'crit') ? '🚨' : '⚠️';
                                 $sevColor = ($a[2] === 'crit') ? '#f43f5e' : '#f59e0b';
@@ -605,6 +621,7 @@ if (!function_exists('elvo_push_user')) {
                                     '</div>' .
                                     '<p style="margin:0;font-size:13px;color:#cbd5e1;">Otvor dashboard pre detaily a stav zariadenia.</p>',
                                     $sevColor);
+                                }
                             }
                         } catch (Exception $eM) { /* ignore */ }
                     }
@@ -1743,7 +1760,7 @@ elseif ($path === '/api/user/devices' && $method === 'GET') {
 
 elseif ($path === '/api/user/notifications' && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
-    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true];
+    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true, 'notif_email' => true, 'notif_push' => true];
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
         $stmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
@@ -1766,6 +1783,8 @@ elseif ($path === '/api/user/notifications' && $method === 'POST') {
         'error' => !empty($data['error']),
         'daily_report' => !empty($data['daily_report']),
         'negative_price' => !empty($data['negative_price']),
+        'notif_email' => !empty($data['notif_email']),
+        'notif_push' => !empty($data['notif_push']),
     ];
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");

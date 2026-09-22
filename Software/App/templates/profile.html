@@ -293,6 +293,36 @@
                     </div>
                 </div>
 
+                <!-- KANÁLY: Email / Push -->
+                <div class="glass-card" style="margin-bottom:14px;">
+                    <div class="card-header">
+                        <span class="card-title"><i data-lucide="bell-ring" style="width:14px;height:14px;color:#38bdf8;"></i> Spôsob doručenia</span>
+                    </div>
+                    <p style="font-size:10px;color:var(--text-muted);margin:0 0 12px 0;">Vyber, ako ti majú chodiť upozornenia — emailom, notifikáciou do zariadenia, obojím, alebo ničím.</p>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">📧 Email</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Upozornenia prídu na tvoj e-mail</span>
+                            </div>
+                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifEmail')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifEmail" checked style="display:none;">
+                        </div>
+                        <div class="notif-item">
+                            <div>
+                                <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">🔔 Notifikácie do zariadenia (Push)</span>
+                                <span style="font-size:10px;color:var(--text-muted);">Systémové notifikácie — chodia aj keď je appka zatvorená</span>
+                            </div>
+                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifPush')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifPush" checked style="display:none;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                        <button onclick="testEmailChannel()" class="btn-primary" style="flex:1;min-width:140px;padding:10px;">Otestovať email</button>
+                        <button onclick="testPushChannel()" class="btn-primary" style="flex:1;min-width:140px;padding:10px;">Otestovať notifikáciu</button>
+                    </div>
+                </div>
+
                 <!-- Email notifikácie -->
                 <div class="glass-card" style="margin-bottom:0;">
                     <div class="card-header">
@@ -375,6 +405,44 @@
 
     <script>
         let userProfile = {};
+
+        // Nahraj ulozene notifikacne nastavenia (vratane kanalov)
+        async function loadUserNotifications() {
+            try {
+                const r = await fetch('/api/user/notifications', { credentials: 'same-origin' });
+                const d = await r.json();
+                if (d.status === 'success') {
+                    const n = d.notifications;
+                    const map = { notifNewDevice: 'new_device', notifError: 'error', notifDaily: 'daily_report', notifNegPrice: 'negative_price', notifEmail: 'notif_email', notifPush: 'notif_push' };
+                    for (const [cbId, key] of Object.entries(map)) {
+                        const cb = document.getElementById(cbId);
+                        if (!cb) continue;
+                        cb.checked = !!n[key];
+                        const tr = document.getElementById('track' + cbId.replace('notif', 'Notif'));
+                        if (tr) tr.className = 'toggle-track ' + (cb.checked ? 'on' : 'off');
+                    }
+                }
+            } catch (e) { /* defaulty */ }
+        }
+
+        // Test email kanalu
+        async function testEmailChannel() {
+            showToast('Odosielam test email...');
+            try {
+                const r = await fetch('/api/user/test-email', { method: 'POST', credentials: 'same-origin' });
+                const d = await r.json();
+                showToast(d.status === 'success' ? '✅ Test email odoslaný — skontroluj schránku' : '⚠️ ' + (d.message || 'Email sa nepodarilo odoslať'), d.status !== 'success');
+            } catch (e) { showToast('Chyba: ' + e.message, true); }
+        }
+
+        // Test push kanalu
+        async function testPushChannel() {
+            try {
+                const r = await fetch('/api/push/test', { method: 'POST', credentials: 'same-origin' });
+                const d = await r.json();
+                showToast(d.status === 'success' ? '🔔 ' + (d.message || 'Test notifikácia odoslaná') : '⚠️ ' + (d.message || 'Push sa nepodarilo odoslať'), d.status !== 'success');
+            } catch (e) { showToast('Chyba: ' + e.message, true); }
+        }
 
         // Toggle notification
         function toggleNotif(el, checkboxId) {
@@ -476,6 +544,8 @@
                 error: document.getElementById('notifError').checked,
                 daily_report: document.getElementById('notifDaily').checked,
                 negative_price: document.getElementById('notifNegPrice').checked,
+                notif_email: document.getElementById('notifEmail').checked,
+                notif_push: document.getElementById('notifPush').checked,
             };
             try {
                 await fetch('/api/user/notifications', {
@@ -553,6 +623,7 @@
         loadAvatar();
         loadProfile();
         loadDevices();
+        loadUserNotifications();
         if (window.lucide) lucide.createIcons();
     </script>
 </body>
