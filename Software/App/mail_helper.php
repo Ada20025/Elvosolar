@@ -96,62 +96,72 @@ if (!function_exists('send_elvo_email')) {
 
         // Moderná tmavá šablóna - ladi s aplikaciou ElvoControll
         $year = date('Y');
-        $message_html = '
-        <!DOCTYPE html>
-        <html lang="sk">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="color-scheme" content="dark">
-            <meta name="supported-color-schemes" content="dark">
-            <title>' . htmlspecialchars($subject) . '</title>
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #05070f; font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #05070f; padding: 36px 14px;">
-                <tr>
-                    <td align="center">
-                        <!-- Foto pozadie (Fotovoltika) - viditelne ak klient nepodporuje vml/vmlframme, inak prekryva foto -->
-                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; border-radius: 26px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 70px rgba(0,0,0,0.6); background-color: #0b1226; background-image: url(\"https://adamdz.alwaysdata.net/templates/Fotovoltika1.jpg\"); background-size: cover; background-position: center;">
-                            <!-- Horný gradient prúžok -->
-                            <tr>
-                                <td style="background: linear-gradient(90deg, #10b981 0%, #06b6d4 50%, #6366f1 100%); height: 5px; line-height: 5px; font-size: 5px;">&nbsp;</td>
-                            </tr>
-                            <!-- Hlavička s logom -->
-                            <tr>
-                                <td align="center" style="padding: 32px 38px 22px 38px; background-color: rgba(5,7,15,0.78); border-bottom: 1px solid rgba(255,255,255,0.08);">
-                                    <img src="https://adamdz.alwaysdata.net/templates/ElvosolarLogo1.png" alt="ElvoControll" style="max-height: 46px; width: auto; display: block;" border="0">
-                                    <div style="margin-top: 12px; font-size: 10px; font-weight: 800; letter-spacing: 3.5px; text-transform: uppercase; color: #34d399; font-family: monospace;">SMART EMS</div>
-                                </td>
-                            </tr>
-                            <!-- Hlavný obsah -->
-                            <tr>
-                                <td style="padding: 36px 40px 32px 40px; background-color: rgba(5,7,15,0.82);">
-                                    <h1 style="margin: 0 0 18px 0; font-size: 23px; font-weight: 800; color: #f9fafb; letter-spacing: -0.02em; line-height: 1.3;">' . $title . '</h1>
-                                    <div style="font-size: 14.5px; line-height: 1.75; color: #d3dce8;">
-                                        ' . $content_html . '
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Pätička správy -->
-                            <tr>
-                                <td style="padding: 26px 38px; background-color: rgba(5,7,15,0.88); border-top: 1px solid rgba(255,255,255,0.08); text-align: center;">
-                                    <div style="margin-bottom: 10px; font-size: 10px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; color: #34d399; font-family: monospace;">ElvoControll &middot; Smart EMS</div>
-                                    <p style="margin: 0 0 6px 0; font-size: 10.5px; color: #7c8ba1; line-height: 1.7;">
-                                        Toto je automaticky generovaná správa z portálu ElvoControll.
-                                    </p>
-                                    <p style="margin: 0; font-size: 10px; color: #475569; line-height: 1.6;">
-                                        &copy; 2011&ndash;' . $year . ' Elvosolar s.r.o. Všetky práva vyhradené.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                        <div style="margin-top: 14px; font-size: 10px; color: #475569;">Powered by ElvoControll Smart EMS</div>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        ';
+                // LUXUSNA tmava sablona — foto pozadie (VML pre Outlook), sklenené panely, gradient.
+        // Nowdoc <<<'ELVOTPL' = ziadne PHP escapovanie (predchadzajuce \" rozbijali background-image).
+        $year = date('Y');
+        $img_url = 'https://adamdz.alwaysdata.net/templates/Fotovoltika1.jpg';
+        $logo_url = 'https://adamdz.alwaysdata.net/templates/ElvosolarLogo1.png';
+
+        $tmpl = <<<'ELVOTPL'
+<!DOCTYPE html>
+<html lang="sk" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>ElvoControll</title>
+</head>
+<body style="margin:0;padding:0;background-color:#04060d;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#04060d;">
+<tr><td align="center" style="padding:30px 12px;">
+<!--[if mso]>
+<v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;"><v:fill type="frame" src="%IMG%" color="#0b1226" /><v:textbox inset="0,0,0,0"><![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;border-radius:24px;overflow:hidden;background-color:#0b1226;background-image:url('%IMG%');background-size:cover;background-position:center;background-repeat:no-repeat;">
+  <tr>
+    <td style="height:6px;line-height:6px;font-size:6px;background-color:#10b981;background-image:linear-gradient(90deg,#10b981 0%,#06b6d4 50%,#818cf8 100%);">&nbsp;</td>
+  </tr>
+  <tr>
+    <td align="center" bgcolor="#04070f" style="padding:34px 36px 20px 36px;background-color:rgba(4,7,15,0.74);">
+      <img src="%LOGO%" alt="ElvoControll" width="190" style="max-height:52px;width:auto;display:block;border:0;">
+      <div style="margin-top:16px;display:inline-block;padding:7px 18px;border-radius:999px;border:1px solid rgba(52,211,153,0.35);background-color:#0a2b1f;background-color:rgba(16,185,129,0.14);font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#34d399;font-family:Consolas,'Courier New',monospace;">Smart&nbsp;EMS</div>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:10px 24px 4px 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#050914" style="background-color:#050914;background-color:rgba(4,8,18,0.88);border-radius:18px;border:1px solid rgba(255,255,255,0.10);">
+        <tr>
+          <td style="padding:34px 32px 30px 32px;">
+            <h1 style="margin:0 0 6px 0;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:-0.02em;line-height:1.25;">%TITLE%</h1>
+            <div style="width:56px;height:4px;border-radius:2px;background-color:#10b981;background-color:%ACCENT%;margin:14px 0 22px 0;">&nbsp;</div>
+            <div style="font-size:15px;line-height:1.75;color:#d5deeb;">%CONTENT%</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#03060d" style="padding:26px 30px 30px 30px;background-color:rgba(3,6,13,0.90);border-top:1px solid rgba(255,255,255,0.08);text-align:center;">
+      <div style="font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#34d399;font-family:Consolas,'Courier New',monospace;">ElvoControll &middot; Smart EMS</div>
+      <p style="margin:12px 0 5px 0;font-size:11px;color:#8494ab;line-height:1.7;">Automaticky generovaná správa z portálu ElvoControll.</p>
+      <p style="margin:0;font-size:10px;color:#55637a;line-height:1.6;">&copy; 2011&ndash;%YEAR% Elvosolar s.r.o. &middot; Všetky práva vyhradené</p>
+    </td>
+  </tr>
+</table>
+<!--[if mso]></v:textbox></v:rect><![endif]-->
+<div style="margin-top:14px;font-size:10px;color:#55637a;">Powered by <span style="color:#34d399;font-weight:700;">ElvoControll</span> Smart EMS</div>
+</td></tr>
+</table>
+</body>
+</html>
+ELVOTPL;
+
+        $message_html = str_replace(
+            ['%TITLE%', '%CONTENT%', '%YEAR%', '%IMG%', '%LOGO%', '%ACCENT%'],
+            [$title, $content_html, $year, $img_url, $logo_url, $accent_color],
+            $tmpl
+        );
 
         // Zakódovanie predmetu správy do formátu RFC Base64 pre bezchybnú diakritiku a antispam
         $subject_encoded = "=?UTF-8?B?" . base64_encode($subject) . "?=";
