@@ -568,23 +568,38 @@ class SolarBackgroundService:
             elif st == 0xC000:
                 status_msg = "Uploading"
 
-        # FIRMWARE verzia — Huawei 40420 (Model ID text). Cita sa len raz za 6 h (lacne Modbus).
+        # MODEL INFO — Huawei SUN2000/SmartLogger standard (dokumentovane registre):
+        #   30070 (U32) = Model ID  |  30000 (10x U16 ASCII) = SN. Cita sa raz za 6 h.
+        # Ak citanie neuspeje, fw ostane prazdne -> UI ukaze "–" (ziadne vymyslane data).
         fw_val = ''
         try:
             now_ts = time.time()
             if now_ts - getattr(self, '_fw_read_ts', 0) > 21600:
                 self._fw_read_ts = now_ts
-                fw_regs = self.tcp_read_holding_registers(device_id, slave_id, 40420, 15)
-                if fw_regs:
-                    chars = []
-                    for r in fw_regs:
-                        chars.append(chr((r >> 8) & 0xFF))
-                        chars.append(chr(r & 0xFF))
-                    text = ''.join(chars).replace('\x00', '').strip()
-                    if text and all(32 <= ord(ch) < 127 for ch in text):
-                        fw_val = text[:40]
-                        self._fw_cache = fw_val
-            fw_val = getattr(self, '_fw_cache', '') or fw_val
+                info = []
+                try:
+                    mid = self.tcp_read_holding_registers(device_id, slave_id, 30070, 2)
+                    if mid and len(mid) >= 2:
+                        model_id = (mid[0] << 16) | mid[1]
+                        if 10000 <= model_id <= 9999999:
+                            info.append("Model %d" % model_id)
+                except Exception:
+                    pass
+                try:
+                    sn = self.tcp_read_holding_registers(device_id, slave_id, 30000, 10)
+                    if sn:
+                        chars = []
+                        for r in sn:
+                            chars.append(chr((r >> 8) & 0xFF))
+                            chars.append(chr(r & 0xFF))
+                        text = ''.join(chars).replace('\x00', '').strip()
+                        if text and all(32 <= ord(ch) < 127 for ch in text):
+                            info.append("SN " + text[:20])
+                except Exception:
+                    pass
+                if info:
+                    self._fw_cache = " ".join(info)
+            fw_val = getattr(self, '_fw_cache', '') or ''
         except Exception:
             fw_val = getattr(self, '_fw_cache', '') or ''
 

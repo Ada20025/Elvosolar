@@ -2025,44 +2025,6 @@ elseif ($path === '/api/user/devices' && $method === 'GET') {
     send_json(['status' => 'success', 'devices' => $out]);
 }
 
-elseif ($path === '/api/user/notifications' && $method === 'GET') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
-    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true, 'notif_email' => true, 'notif_push' => true];
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
-        $stmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
-        $stmt->execute([$_SESSION['user_id']]);
-        $row = $stmt->fetch();
-        if ($row) {
-            $saved = json_decode($row['prefs'], true);
-            if (is_array($saved)) $defaults = array_merge($defaults, $saved);
-        }
-    } catch (Exception $e) { /* ignore */ }
-    send_json(['status' => 'success', 'notifications' => $defaults]);
-}
-
-elseif ($path === '/api/user/notifications' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (!is_array($data)) send_json(['status' => 'error', 'message' => 'Neplatné dáta'], 400);
-    $clean = [
-        'new_device' => !empty($data['new_device']),
-        'error' => !empty($data['error']),
-        'daily_report' => !empty($data['daily_report']),
-        'negative_price' => !empty($data['negative_price']),
-        'notif_email' => !empty($data['notif_email']),
-        'notif_push' => !empty($data['notif_push']),
-    ];
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
-        $stmt = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
-        $stmt->execute([$_SESSION['user_id'], json_encode($clean)]);
-    } catch (Exception $e) {
-        send_json(['status' => 'error', 'message' => 'Uloženie zlyhalo'], 500);
-    }
-    send_json(['status' => 'success', 'message' => 'Nastavenia uložené']);
-}
-
 elseif ($path === '/api/user/change-password' && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
     $data = json_decode(file_get_contents('php://input'), true);
@@ -2076,29 +2038,6 @@ elseif ($path === '/api/user/change-password' && $method === 'POST') {
     $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
     $stmt->execute([password_hash($new, PASSWORD_BCRYPT), $_SESSION['user_id']]);
     send_json(['status' => 'success', 'message' => 'Heslo úspešne zmenené']);
-}
-
-elseif ($path === '/api/user/test-email' && $method === 'POST') {
-    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
-    $stmt = $pdo->prepare("SELECT email, username FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $u = $stmt->fetch();
-    if (!$u) send_json(['status' => 'error', 'message' => 'Používateľ neexistuje'], 404);
-    require_once __DIR__ . '/mail_helper.php';
-    $ok = false;
-    try {
-        $ok = send_elvo_email($u['email'], 'Test email | ElvoControll', 'Test odosielania emailov',
-            '<p>Ak vidíte tento email, odosielanie funguje správne.</p><p style="color:#94a3b8;font-size:12px;">Čas: ' . date('d.m.Y H:i:s') . '</p>',
-            '#10b981');
-    } catch (Exception $e) { $ok = false; }
-    if ($ok) send_json(['status' => 'success', 'message' => 'Test email bol odoslaný na ' . $u['email']]);
-    // Diagnostika: resend ani relay nie su nastavene
-    $hasResend = getenv('RESEND_API_KEY') && trim(getenv('RESEND_API_KEY')) !== '';
-    $hasRelay = getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '';
-    $lastErr = $GLOBALS['elvo_mail_last_error'] ?? '';
-    if (!$hasResend && !$hasRelay) send_json(['status' => 'error', 'message' => 'E-mailová služba nie je nastavená na serveri (chýba RESEND_API_KEY). Nastav ju v Railway premenných.']);
-    if ($lastErr !== '') send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo: ' . $lastErr]);
-    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo — skontroluj RESEND_API_KEY alebo mail doručenia']);
 }
 
 elseif ($path === '/forgot-password' && $method === 'GET') {
