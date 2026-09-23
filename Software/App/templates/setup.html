@@ -1275,10 +1275,25 @@
                 const d = await r.json();
                 btn.disabled = false; btn.innerHTML = origHtml;
                 if (d.status === 'success') {
+                    // STAVOVY RETAZEC: Odoslane -> Prijate -> Vykonane (viditelny priamy prehlad)
+                    const chainEl = () => {
+                        const st = {
+                            sent:     ['⏳', 'Odoslané do cloudu', 'text-cyan-300'],
+                            received: ['📡', 'Prijaté — CM5 si vyzdvihol príkaz', 'text-blue-300'],
+                            success:  ['✅', 'Vykonané — zápis na SmartLogger prebehol', 'text-emerald-400'],
+                            error:    ['❌', 'Chyba vykonania', 'text-rose-400'],
+                        };
+                        return st;
+                    };
                     resultBox.className = 'text-xs rounded-xl p-3 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
-                    resultBox.innerHTML = '⏳ Príkaz ' + pct + ' % odoslaný. Čakám na potvrdenie od CM5 (vykoná zápis na SmartLogger)...';
+                    resultBox.innerHTML =
+                        '<div id="stSent" class="flex items-center gap-2"><span>⏳</span><span class="text-cyan-300 font-semibold">Odoslané do cloudu</span></div>' +
+                        '<div id="stReceived" class="flex items-center gap-2 opacity-30"><span>📡</span><span class="text-blue-300 font-semibold">Prijaté — CM5 si vyzdvihol príkaz</span></div>' +
+                        '<div id="stExecuted" class="flex items-center gap-2 opacity-30"><span>✅</span><span class="text-emerald-400 font-semibold">Vykonané — zápis na SmartLogger</span></div>' +
+                        '<div class="text-[10px] text-slate-400 mt-1">Príkaz ' + pct + ' % ide cez WiFi do CM5 → CM5 zapisuje cez LAN na SmartLogger...</div>';
                     // POLLING: CM5 po zápise pošle výsledok do cloudu → my ho vyzdvihneme (max 30 s)
                     let confirmed = null;
+                    let receivedShown = false;
                     for (let i = 0; i < 15; i++) {
                         await new Promise(r => setTimeout(r, 2000));
                         try {
@@ -1287,16 +1302,42 @@
                             if (rd.status === 'success' && rd.result && rd.result.at) {
                                 const at = new Date(rd.result.at).getTime();
                                 // berieme len čerstvý výsledok (posledných 60 s)
-                                if (Date.now() - at < 60000) { confirmed = rd.result; break; }
+                                if (Date.now() - at < 60000) {
+                                    // LIVE status: prijaté (kym nie je vykonané)
+                                    if (!receivedShown && (rd.result.status === 'received')) {
+                                        receivedShown = true;
+                                        const rec = document.getElementById('stReceived');
+                                        if (rec) { rec.classList.remove('opacity-30'); rec.querySelector('span').textContent = '📡'; }
+                                    }
+                                    // po 'received' cakaj na 'success'/'error' (nie sent/received ako finálny)
+                                    if (rd.result.status === 'success' || rd.result.status === 'error') { confirmed = rd.result; break; }
+                                }
                             }
                         } catch (e) { /* retry */ }
+                    }
+                    // Ak dorazilo len "received" bez finalneho — skus este raz krat
+                    if (!confirmed && receivedShown) {
+                        for (let i = 0; i < 8; i++) {
+                            await new Promise(r => setTimeout(r, 2000));
+                            try {
+                                const rr2 = await fetch('/api/device/' + devId + '/last-cmd-result?serial=' + encodeURIComponent(window._cm5Serial || ''), {credentials: 'same-origin'});
+                                const rd2 = await rr2.json();
+                                if (rd2.status === 'success' && rd2.result && (rd2.result.status === 'success' || rd2.result.status === 'error')) {
+                                    const at2 = new Date(rd2.result.at).getTime();
+                                    if (Date.now() - at2 < 90000) { confirmed = rd2.result; break; }
+                                }
+                            } catch (e) { /* retry */ }
+                        }
                     }
                     if (confirmed && confirmed.status === 'success') {
                         const rb = confirmed.readback_pct !== null && confirmed.readback_pct !== undefined ? confirmed.readback_pct : '?';
                         const og = confirmed.original_pct !== null && confirmed.original_pct !== undefined ? confirmed.original_pct : null;
                         if (og !== null && (window._origPct === null || window._origPct === undefined)) window._origPct = og;
                         resultBox.className = 'text-xs rounded-xl p-3 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 space-y-1';
-                        resultBox.innerHTML = '✓ CM5 POTVRDIL zápis: ' + pct + ' % → SmartLogger vrátil ' + rb + ' %.' +
+                        resultBox.innerHTML =
+                            '<div class="flex items-center gap-2"><span>⏳</span><span class="text-cyan-300">Odoslané do cloudu</span></div>' +
+                            '<div class="flex items-center gap-2"><span>📡</span><span class="text-blue-300">Prijaté — CM5 si vyzdvihol príkaz</span></div>' +
+                            '<div class="flex items-center gap-2"><span>✅</span><span class="text-emerald-400 font-bold">Vykonané — SmartLogger vrátil ' + rb + ' %</span></div>' +
                             (og !== null ? '<div class="text-[10px] text-slate-400 mt-1">Pôvodná hodnota: ' + og + ' % (tú vráť späť na konci).</div>' : '') +
                             '<div class="text-[10px] text-slate-400 mt-1">Over aj v Enspire a potvrď:</div>';
                     } else if (confirmed) {

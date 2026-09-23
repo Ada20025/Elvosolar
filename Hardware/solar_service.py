@@ -568,6 +568,26 @@ class SolarBackgroundService:
             elif st == 0xC000:
                 status_msg = "Uploading"
 
+        # FIRMWARE verzia — Huawei 40420 (Model ID text). Cita sa len raz za 6 h (lacne Modbus).
+        fw_val = ''
+        try:
+            now_ts = time.time()
+            if now_ts - getattr(self, '_fw_read_ts', 0) > 21600:
+                self._fw_read_ts = now_ts
+                fw_regs = self.tcp_read_holding_registers(device_id, slave_id, 40420, 15)
+                if fw_regs:
+                    chars = []
+                    for r in fw_regs:
+                        chars.append(chr((r >> 8) & 0xFF))
+                        chars.append(chr(r & 0xFF))
+                    text = ''.join(chars).replace('\x00', '').strip()
+                    if text and all(32 <= ord(ch) < 127 for ch in text):
+                        fw_val = text[:40]
+                        self._fw_cache = fw_val
+            fw_val = getattr(self, '_fw_cache', '') or fw_val
+        except Exception:
+            fw_val = getattr(self, '_fw_cache', '') or ''
+
         if read_soc:
             # 40515 je U16, gain 10 -> %
             soc_val = float(read_soc[0]) / 10.0
@@ -730,10 +750,13 @@ class SolarBackgroundService:
                                 'power_ac': float(d.get('power_ac', 0) or 0),
                                 'battery_soc': float(d.get('battery_soc', 0) or 0),
                                 'status_msg': str(d.get('status_msg', ''))[:120],
+                                'fw_version': str(d.get('fw_version', '') or '')[:40],
                             })
                         except Exception:
                             continue
                     payload['connected_devices'] = conn_devs
+                    if getattr(self, '_fw_cache', ''):
+                        payload['fw_version'] = str(self._fw_cache)[:40]
             except Exception:
                 pass
             if self.cloud_queue.full():
@@ -1166,6 +1189,7 @@ class SolarBackgroundService:
                         "temp": temp_val,
                         "freq": freq_val,
                         "status_msg": status_msg,
+                        "fw_version": fw_val,
                         "_ts": time.time()
                     }
                     
@@ -1206,7 +1230,8 @@ class SolarBackgroundService:
                     "battery_soc": 0.0,
                     "temp": 0.0,
                     "freq": 0.0,
-                    "status_msg": f"Zbernica nedostupná: {com_err}"
+                    "status_msg": f"Zbernica nedostupná: {com_err}",
+                    "fw_version": getattr(self, '_fw_cache', '')
                 }
                 self.push_to_cloud(self.live_data[slave_id])
 

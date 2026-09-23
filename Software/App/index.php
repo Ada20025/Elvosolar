@@ -336,6 +336,13 @@ CREATE TABLE IF NOT EXISTS users (
     } catch (Exception $e) { /* ignore */ }
 }
 
+// === DEDUP ZARIADENI: 1 serial = 1 riadok (inak telemetria/nastavenia idu na zly riadok a dashboard ukazuje zle cisla) ===
+if (isset($pdo) && !$migrations_done) {
+    try {
+        $pdo->exec("UPDATE devices AS d LEFT JOIN devices AS keep ON keep.serial_number = d.serial_number AND keep.id < d.id SET d.serial_number = CONCAT('DEAD-', d.id) WHERE d.serial_number IS NOT NULL AND d.serial_number != '' AND keep.id IS NOT NULL");
+    } catch (Exception $eDedup) { /* ignore */ }
+}
+
 // === DEMO USER SEED ===
 if (isset($pdo) && !$migrations_done) {
     try {
@@ -1255,11 +1262,20 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
         if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
             $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
         }
+        $cmd_key = 'cmd_' . $target_id . '_' . time();
         $cmd = json_encode($restore
-            ? ['action' => 'restore_power', 'pct' => $pct]
-            : ['action' => 'set_power', 'pct' => $pct]);
+            ? ['action' => 'restore_power', 'pct' => $pct, 'cmd_key' => $cmd_key]
+            : ['action' => 'set_power', 'pct' => $pct, 'cmd_key' => $cmd_key]);
         $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
         $stmtU->execute([$cmd, $target_id]);
+        // STATUS 1: ODOSLANE (cloud zapisal prikaz; CM5 si ho ma vyzdvihnut pri polle)
+        try {
+            $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
+                ->execute(['last_cmd_result_dev_' . $target_id, json_encode([
+                    'at' => date('c'), 'command_id' => $target_id, 'cmd_key' => $cmd_key,
+                    'status' => 'sent', 'message' => 'Odoslané — čakám na prevzatie CM5',
+                ])]);
+        } catch (Exception $eSent) { /* ignore */ }
         send_json(['status' => 'success', 'target_device_id' => $target_id, 'message' => $restore
             ? "Návrat na {$pct} % odoslaný do CM5 (cez WiFi)."
             : "Príkaz na {$pct} % odoslaný do CM5 (cez WiFi). Over výsledok v Enspire o pár sekúnd."]);
@@ -1357,6 +1373,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'last_comm_sec' => $latest ? max(0, time() - strtotime($latest['timestamp'])) : null,
         // Typ zariadenia - podla sub_type/category_id (jedina pravda v DB)
         'is_smartlogger' => (strpos(strtolower($device['sub_type'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($device['category_id'] ?? ''), 'smartlogger') !== false),
+        // Firmware verzia (z Modbus — ak CM5 posiela)
+        'fw_version' => $device['fw_version'] ?? '',
         // Zoznam vsetkych pripojenych zariadeni (striedace/SmartLoggery) nahlásené CM5
         'connected_devices' => (function() use ($device) {
             $raw = $device['connected_devices'] ?? null;
@@ -1437,6 +1455,19 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
             }
             // Vycisti prikaz (jednorazovy)
             $pdo->prepare("UPDATE devices SET admin_command = NULL WHERE id = ?")->execute([$dRow['id']]);
+            // STATUS 2: PRIJATE — CM5 si vyzdvihol prikaz (setup/Riadenie si to precita cez last-cmd-result)
+            try {
+                $cmdKey = '';
+                if ($cmd !== '' && $cmd[0] === '{') {
+                    $pj = json_decode($cmd, true);
+                    if (is_array($pj)) $cmdKey = (string)($pj['cmd_key'] ?? '');
+                }
+                $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
+                    ->execute(['last_cmd_result_dev_' . intval($dRow['id']), json_encode([
+                        'at' => date('c'), 'command_id' => intval($dRow['id']), 'cmd_key' => $cmdKey,
+                        'status' => 'received', 'message' => 'Prijaté — CM5 vykonáva',
+                    ])]);
+            } catch (Exception $eRcv) { /* ignore */ }
             send_json([
                 'status' => 'success',
                 'command' => $action,
@@ -1465,6 +1496,7 @@ elseif ($path === '/api/cm5/result' && $method === 'POST') {
         $payload = json_encode([
             'at' => date('c'),
             'command_id' => intval($data['command_id'] ?? 0),
+            'cmd_key' => ($res['cmd_key'] ?? ''),
             'status' => ($res['status'] ?? 'unknown'),
             'message' => ($res['message'] ?? ''),
             'readback_pct' => isset($res['readback_pct']) ? $res['readback_pct'] : null,
@@ -1580,6 +1612,14 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             $updVals[] = $device_id;
             $stmt2 = $pdo->prepare("UPDATE devices SET " . implode(', ', $updParts) . " WHERE id = ?");
             $stmt2->execute($updVals);
+            // FIRMWARE: verzia striedaca/SmartLoggera (ak ju CM5 nacital cez Modbus)
+            try {
+                $fw = trim((string)($data['fw_version'] ?? ''));
+                if ($fw !== '') {
+                    if (!in_array('fw_version', $dcols ?? [])) $pdo->exec("ALTER TABLE devices ADD COLUMN fw_version VARCHAR(64) DEFAULT ''");
+                    $pdo->prepare("UPDATE devices SET fw_version = ? WHERE id = ?")->execute([substr($fw, 0, 64), $device_id]);
+                }
+            } catch (Exception $eFw) { /* ignore */ }
             // Zoznam pripojenych zariadeni (striedace/SmartLoggery nahlásené CM5)
             try {
                 if (!in_array('connected_devices', $dcols ?? [])) $pdo->exec("ALTER TABLE devices ADD COLUMN connected_devices TEXT");

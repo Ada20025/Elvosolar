@@ -1872,9 +1872,11 @@ def cloud_sync_loop():
                         log_message(f"[WEB POWER] Zapis {pct}% -> {sl_ip}:{sl_port}: {res}")
                         if res.get('ok'):
                             result = {"status": "success", "message": f"Výkon nastavený na {pct}%",
-                                      "readback_pct": res.get('readback_pct'), "original_pct": res.get('original_pct')}
+                                      "readback_pct": res.get('readback_pct'), "original_pct": res.get('original_pct'),
+                                      "cmd_key": str(config.get('cmd_key', ''))}
                         else:
-                            result = {"status": "error", "message": res.get('error', 'Zápis zlyhal')}
+                            result = {"status": "error", "message": res.get('error', 'Zápis zlyhal'),
+                                      "cmd_key": str(config.get('cmd_key', ''))}
                 except Exception as e_sp:
                     result = {"status": "error", "message": str(e_sp)[:200]}
 
@@ -1900,9 +1902,11 @@ def cloud_sync_loop():
                         log_message(f"[RESTORE POWER] Navrat {pct}% -> {sl_ip}:{sl_port}: {res}")
                         if res.get('ok'):
                             result = {"status": "success", "message": f"Pôvodná hodnota {pct}% obnovená",
-                                      "readback_pct": res.get('readback_pct')}
+                                      "readback_pct": res.get('readback_pct'),
+                                      "cmd_key": str(config.get('cmd_key', ''))}
                         else:
-                            result = {"status": "error", "message": res.get('error', 'Návrat zlyhal')}
+                            result = {"status": "error", "message": res.get('error', 'Návrat zlyhal'),
+                                      "cmd_key": str(config.get('cmd_key', ''))}
                 except Exception as e_rp:
                     result = {"status": "error", "message": str(e_rp)[:200]}
 
