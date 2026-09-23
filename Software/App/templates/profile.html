@@ -678,6 +678,27 @@
         }
         highlightTheme();
 
+        // === SELF-CLEAN: vymaz stare Service Workery + cache (raz, kontrola verzii) ===
+        (async function selfCleanStaleSW() {
+            try {
+                const BUILD = '2026-09-22-vrcko';  // verzia buildu
+                const seen = localStorage.getItem('elvo_build');
+                if (seen === BUILD) return;  // tento build uz bezal — nic
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    for (const r of regs) { try { await r.unregister(); } catch (e) {} }
+                }
+                if (window.caches && caches.keys) {
+                    const keys = await caches.keys();
+                    for (const k of keys) { try { await caches.delete(k); } catch (e) {} }
+                }
+                localStorage.setItem('elvo_build', BUILD);
+                console.log('[SELF-CLEAN] Stare SW + cache vymazane, build:', BUILD);
+                // hned reload — nacita vsetko cerstve
+                setTimeout(() => location.reload(), 300);
+            } catch (e) { console.log('[SELF-CLEAN] err', e); }
+        })();
+
         // Init
         loadAvatar();
         loadProfile();

@@ -434,6 +434,13 @@ if ($apply_timeout && isset($_SESSION['user_id'])) {
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout_seconds) {
         session_unset();
         session_destroy();
+        // API volania MUSIA dostat JSON (nie HTML redirect) — inak safeJson na telefone spadne na "neocekavana odpoved"
+        if (strpos($path, '/api/') === 0) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'message' => 'Relácia vypršala — prihlás sa znova', 'session_expired' => true], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         header("Location: " . $base_path . "/login");
         exit;
     }

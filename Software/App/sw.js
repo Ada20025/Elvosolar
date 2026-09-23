@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elvosolar-v6';
+const CACHE_NAME = 'elvosolar-v7';
 const urlsToCache = ['/', '/login', '/templates/ElvosolarLogo.png'];
 
 // Staticke subory -> cache-first (hned, bez cakania na siet)
@@ -13,7 +13,7 @@ self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => {
     e.waitUntil(
         caches.keys().then(names => Promise.all(
-            names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+            names.map(n => caches.delete(n))  // VYMAZE VSETKY cache (aj aktualnu) — cisty start
         )).then(() => clients.claim())
     );
 });
@@ -72,6 +72,10 @@ self.addEventListener('fetch', e => {
     const url = req.url;
     // API nikdy necachujeme (vzdy cerstve data)
     if (url.includes('/api/') || url.includes('/healthcheck')) return;
+    // HTML navigacie NIKDY z cache — vzdy zo siete (inak stary JS)
+    if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) return;
+    // HTML stranky (navigacie) NIKDY z cache — vzdy zo siete (inak stary JS na telefone)
+    if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) return;
     const isStatic = STATIC_PATTERNS.some(rx => rx.test(url));
     if (!isStatic) return;
     e.respondWith(
