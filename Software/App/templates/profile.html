@@ -407,23 +407,29 @@
         let userProfile = {};
 
         // Bezpecny JSON fetch — ak server vrati HTML (gate/warning), jasna hlaska
-        async function safeJson(url, opts) {
+        // silent=true => ZIADNY banner (pozadie: load notifications, push reg) — chyby len do konzoly.
+        // Banner (vrcko) sa zobrazuje IBA pri akciach, ktore spusti user (uloz, test).
+        async function safeJson(url, opts, silent) {
             let res;
             try {
                 res = await fetch(url, opts || { credentials: 'same-origin' });
             } catch (netErr) {
-                return { status: 'error', message: '⚠️ Žiadne spojenie so serverom. Skontroluj internet.' };
+                if (!silent) console.log('[API] Ziadne spojenie:', url);
+                return { status: 'error', message: 'Žiadne spojenie so serverom. Skontroluj internet.' };
             }
             const text = await res.text();
             try {
                 const data = JSON.parse(text);
                 // Gate 401 (relacia vyprsala) -> hned na login, ziadne visiace chyby
                 if (data.gate === true || (res.status === 401 && url.indexOf('/api/push/vapid') === -1)) {
-                    return { status: 'error', expired: true, message: '🔒 Relácia vypršala. Prihlás sa znova.' };
+                    return { status: 'error', expired: true, message: 'Relácia vypršala. Prihlás sa znova.' };
                 }
                 return data;
             } catch (e) {
-                return { status: 'error', message: '⚠️ Neočakávaná odpoveď servera. Obnov stránku (F5).' };
+                // ZIADNY banner — len konzola (telefon so starym SW dostane HTML;
+                // po SW update sa to samo opravi, banner by len zbytocne rusil)
+                console.log('[API] Neočakávaná odpoveď (HTML?) z', url);
+                return { status: 'error', message: 'Neočakávaná odpoveď servera. Obnov stránku (F5).' };
             }
         }
 
@@ -448,13 +454,13 @@
         st.textContent = '@keyframes vrckoIn{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}';
         document.head.appendChild(st);
 
-        // Push registracia aj na profile — subscription sa ulozi hned
+        // Push registracia aj na profile — subscription sa ulozi hned — TICHO (ziadne bannery)
         async function registerPushOnProfile() {
             try {
                 if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
                 const reg = await navigator.serviceWorker.register('/sw.js');
                 await navigator.serviceWorker.ready;
-                const vk = await safeJson('/api/push/vapid');
+                const vk = await safeJson('/api/push/vapid', null, true);
                 if (!vk.pub) return;
                 let sub = await reg.pushManager.getSubscription();
                 if (!sub) {
@@ -462,16 +468,16 @@
                     let key = vk.pub; while (key.length % 4) key += '=';
                     sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(key).buffer });
                 }
-                await safeJson('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+                await safeJson('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) }, true);
                 localStorage.setItem('elvo_push_endpoint', sub.endpoint);
                 console.log('[PUSH] subscribed (profile)');
             } catch (e) { console.log('[PUSH] profile err:', e.message); }
         }
 
-        // Nahraj ulozene notifikacne nastavenia (vratane kanalov)
+        // Nahraj ulozene notifikacne nastavenia (vratane kanalov) — TICHO, ziadne bannery
         async function loadUserNotifications() {
             try {
-                const d = await safeJson('/api/user/notifications');
+                const d = await safeJson('/api/user/notifications', null, true);
                 if (d.status === 'success') {
                     const n = d.notifications;
                     const map = { notifNewDevice: 'new_device', notifError: 'error', notifDaily: 'daily_report', notifNegPrice: 'negative_price', notifEmail: 'notif_email', notifPush: 'notif_push' };
@@ -561,7 +567,7 @@
 
         async function loadDevices() {
             try {
-                const data = await safeJson('/api/user/devices');
+                const data = await safeJson('/api/user/devices', null, true);
                 const leftList = document.getElementById('devicesListLeft');
                 const rightList = document.getElementById('devicesListRight');
 
@@ -681,7 +687,7 @@
         // === SELF-CLEAN: vymaz stare Service Workery + cache (raz, kontrola verzii) ===
         (async function selfCleanStaleSW() {
             try {
-                const BUILD = '2026-09-22-vrcko';  // verzia buildu
+                const BUILD = '2026-09-23-swfix';  // verzia buildu
                 const seen = localStorage.getItem('elvo_build');
                 if (seen === BUILD) return;  // tento build uz bezal — nic
                 if ('serviceWorker' in navigator) {

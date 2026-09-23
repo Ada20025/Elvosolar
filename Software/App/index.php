@@ -691,9 +691,17 @@ if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
             ];
             $ext = strtolower(pathinfo($static_file, PATHINFO_EXTENSION));
             header('Content-Type: ' . ($mime_types[$ext] ?? 'application/octet-stream'));
-            // Cache: staticke subory 30 dni (prehlivac nesťahuje znova = jedno nacitanie menej)
-            header('Cache-Control: public, max-age=2592000, immutable');
-            header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT');
+            // CRITICAL: Service Worker NESMIE byt cache-ovany — inak telefony drzia
+            // stary SW aj mesiac (immutable) a vsetky opravy "nechodia". vzdy no-cache.
+            if (preg_match('#(^|/)sw\.js$#i', $path)) {
+                header('Cache-Control: no-cache, no-store, must-revalidate');
+                header('Expires: 0');
+                header('Pragma: no-cache');
+            } else {
+                // Cache: staticke subory 30 dni (prehladac nesťahuje znova = jedno nacitanie menej)
+                header('Cache-Control: public, max-age=2592000, immutable');
+                header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT');
+            }
             readfile($static_file);
             exit;
         }
