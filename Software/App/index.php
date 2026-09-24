@@ -634,7 +634,7 @@ if (!function_exists('elvo_push_user')) {
     }
 }
                                         elvo_push_user($pdo, $alertUid,
-                                            ($a[2] === 'crit' ? '\u{1F6A8} ' : '\u{26A0}\u{FE0F} ') . $a[0],
+                                            ($a[2] === 'crit' ? "\u{1F6A8} " : "\u{26A0}\u{FE0F} ") . $a[0],
                                             $a[1], 'alert-' . $key, '/dashboard');
                                     }
                                 } catch (Exception $eP) { /* ignore */ }
@@ -2534,7 +2534,7 @@ elseif ($path === '/api/push/test' && $method === 'POST') {
         send_json(['status' => 'error', 'message' => 'Nemáš žiadne prihlásené push zariadenia. Obnov stránku a povoľ notifikácie.']);
     }
     $ok = elvo_push_user($pdo, $uid,
-        '\u{1F514} Test notifikácia',
+        "\u{1F514} Test notifikácia",
         'Web Push funguje! Toto je skúšobná správa z ElvoControll (' . date('H:i') . ').',
         'elvo-test', '/dashboard');
     send_json(['status' => $ok ? 'success' : 'error',
