@@ -466,6 +466,11 @@
                 if (!vk.pub) return;
                 let sub = await reg.pushManager.getSubscription();
                 if (!sub) {
+                    // OPRAVA: subscribe bez kliku Chrome zamietne (permission denied) — len ak uz granted
+                    if ('Notification' in window && Notification.permission !== 'granted') {
+                        console.log('[PUSH] profile: cakam na povolenie (klik pouzivatela)');
+                        return;
+                    }
                     const u8 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
                     let key = vk.pub; while (key.length % 4) key += '=';
                     sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(key).buffer });

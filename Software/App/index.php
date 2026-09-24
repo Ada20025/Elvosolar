@@ -704,6 +704,12 @@ if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
                 header('Cache-Control: no-cache, no-store, must-revalidate');
                 header('Expires: 0');
                 header('Pragma: no-cache');
+            } elseif (preg_match('#(^|/)manifest\.json$#i', $path)) {
+                // Manifest tiez vzdy cerstvy — Chrome pri starom manifeste ignoruje PWA
+                // (start_url/scope "invalid") a instalacia na plochu je rozbita
+                header('Cache-Control: no-cache, no-store, must-revalidate');
+                header('Expires: 0');
+                header('Pragma: no-cache');
             } else {
                 // Cache: staticke subory 30 dni (prehladac nesťahuje znova = jedno nacitanie menej)
                 header('Cache-Control: public, max-age=2592000, immutable');
@@ -2480,6 +2486,102 @@ elseif ($path === '/admin-recovery' && $method === 'POST') {
     } catch (Exception $e) {
         send_json(['status' => 'error', 'message' => 'DB chyba: ' . $e->getMessage()], 500);
     }
+}
+
+// --- GET DEVICE METER MODE (rezim riadenia + OKTE cena pre widget) ---
+elseif (preg_match('#^/api/device/(\d+)/meter$#', $path, $matches) && $method === 'GET') {
+    $dev_id = intval($matches[1]);
+    $mode = 'SMART';
+    $oktePrice = null;
+    try {
+        $stmt = $pdo->prepare("SELECT meter_control_mode FROM devices WHERE id = ?");
+        $stmt->execute([$dev_id]);
+        $row = $stmt->fetch();
+        if ($row && !empty($row['meter_control_mode'])) $mode = $row['meter_control_mode'];
+    } catch (Exception $e) { /* default SMART */ }
+    try {
+        // najnovsia OKTE cena z telemetry zariadenia (CM5 ju posila)
+        $st2 = $pdo->prepare("SELECT okte_price FROM device_telemetry WHERE device_id = ? AND okte_price IS NOT NULL ORDER BY id DESC LIMIT 1");
+        $st2->execute([$dev_id]);
+        $p = $st2->fetchColumn();
+        if ($p !== false && $p !== null) $oktePrice = floatval($p);
+    } catch (Exception $e) { /* table moze neexistovat */ }
+    send_json(['status' => 'success', 'meter' => ['control_mode' => $mode, 'okte_price' => $oktePrice]]);
+}
+
+// --- GET DEVICE RELAYS (konfiguracia releov pre Riadenie) ---
+elseif (preg_match('#^/api/device/(\d+)/relays$#', $path, $matches) && $method === 'GET') {
+    $dev_id = intval($matches[1]);
+    $relays = [];
+    try {
+        $st = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
+        $st->execute([$dev_id]);
+        $u = $st->fetch();
+        if ($u) {
+            $sp = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+            $sp->execute([$u['user_id']]);
+            $pr = $sp->fetch();
+            $prefs = $pr ? (json_decode($pr['prefs'] ?: '{}', true) ?: []) : [];
+            $rel = $prefs['relays'][$dev_id] ?? [];
+            $cfg = (isset($rel['config']) && is_array($rel['config'])) ? $rel['config'] : [];
+            $states = (isset($rel['states']) && is_array($rel['states'])) ? $rel['states'] : [];
+            foreach ($cfg as $rid => $c) {
+                $relays[] = [
+                    'id' => intval($rid),
+                    'name' => $c['name'] ?? ('Relé ' . $rid),
+                    'type' => $c['type'] ?? 'bojler',
+                    'temp' => floatval($c['temp'] ?? 55),
+                    'state' => $states[$rid] ?? 'OFF'
+                ];
+            }
+        }
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success', 'relays' => $relays]);
+}
+
+// --- GET + POST DEVICE HOLIDAY MODE (dovolenkovy rezim) ---
+elseif (preg_match('#^/api/device/(\d+)/holiday-mode$#', $path, $matches) && $method === 'GET') {
+    $dev_id = intval($matches[1]);
+    $hm = ['enabled' => false, 'from' => '', 'until' => '', 'preheat_hours' => 3, 'min_soc' => 40];
+    try {
+        $st = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
+        $st->execute([$dev_id]);
+        $u = $st->fetch();
+        if ($u) {
+            $sp = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+            $sp->execute([$u['user_id']]);
+            $pr = $sp->fetch();
+            $prefs = $pr ? (json_decode($pr['prefs'] ?: '{}', true) ?: []) : [];
+            $saved = $prefs['holiday_mode'][$dev_id] ?? null;
+            if (is_array($saved)) $hm = array_merge($hm, $saved);
+        }
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success', 'holiday_mode' => $hm]);
+}
+elseif (preg_match('#^/api/device/(\d+)/holiday-mode$#', $path, $matches) && $method === 'POST') {
+    $dev_id = intval($matches[1]);
+    $data = get_json_input();
+    try {
+        $st = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
+        $st->execute([$dev_id]);
+        $u = $st->fetch();
+        if ($u) {
+            $sp = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+            $sp->execute([$u['user_id']]);
+            $pr = $sp->fetch();
+            $prefs = $pr ? (json_decode($pr['prefs'] ?: '{}', true) ?: []) : [];
+            $prefs['holiday_mode'][$dev_id] = [
+                'enabled' => !empty($data['enabled']),
+                'from' => trim($data['from'] ?? ''),
+                'until' => trim($data['until'] ?? ''),
+                'preheat_hours' => intval($data['preheat_hours'] ?? 3),
+                'min_soc' => intval($data['min_soc'] ?? 40)
+            ];
+            $up = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
+            $up->execute([$u['user_id'], json_encode($prefs)]);
+        }
+    } catch (Exception $e) { /* ignore */ }
+    send_json(['status' => 'success']);
 }
 
 // --- VAPID PUBLIC KEY pre frontend ---

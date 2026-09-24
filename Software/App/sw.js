@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elvosolar-v7';
+const CACHE_NAME = 'elvosolar-v8';
 
 // Staticke subory -> cache-first (hned, bez cakania na siet)
 const STATIC_PATTERNS = [

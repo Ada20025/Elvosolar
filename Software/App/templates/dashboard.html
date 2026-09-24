@@ -2444,10 +2444,34 @@
                 if ('Notification' in window) {
                     Notification.requestPermission().then(p => {
                         initNotifPermission();
-                        if (p === 'granted') showNativeAlert('ElvoControll', 'Notifikácie sú zapnuté — upozorníme ťa pri chybách zariadenia.');
+                        if (p === 'granted') {
+                            showNativeAlert('ElvoControll', 'Notifikácie sú zapnuté — upozorníme ťa pri chybách zariadenia.');
+                            // Po kliku a granted: hned uloz push subscription na server
+                            subscribePushAfterGrant();
+                        }
                     });
                 }
             } catch (e) {}
+        }
+
+        // Subscribe az po explicitnom kliku (permission granted) — bezpecne volanie
+        async function subscribePushAfterGrant() {
+            try {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                const reg = await navigator.serviceWorker.register(basePath + '/sw.js');
+                await navigator.serviceWorker.ready;
+                const vk = await fetch(basePath + '/api/push/vapid').then(r => r.json());
+                if (!vk.pub) return;
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vk.pub) });
+                }
+                if (sub && sub.endpoint) {
+                    await fetch(basePath + '/api/push/subscribe', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'same-origin', body: JSON.stringify(sub.toJSON()) });
+                    localStorage.setItem('elvo_push_endpoint', sub.endpoint);
+                    console.log('[PUSH] Subscribed po kliku:', sub.endpoint.substring(0, 40));
+                }
+            } catch (e) { console.log('[PUSH] subscribeAfterGrant err:', e.message); }
         }
 
         function showNativeAlert(title, body, tag) {
@@ -4041,6 +4065,9 @@
                             localStorage.setItem('elvo_push_endpoint', sub.endpoint);
                             return null;
                         }
+                        // OPRAVA: subscribe BEZ kliku uzivatela Chrome automaticky zamietne (permission denied).
+                        // Auto-registracia IBA ak uz povolenie je granted; inak pockame na klik na tlacidlo.
+                        if (Notification.permission !== 'granted') { console.log('[PUSH] Cakam na povolenie (klik pouzivatela)'); return null; }
                         // Nepoužívame options starej subscription (môžu byť neplatné) — vždy čerstvý kľúč zo servera
                         return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vk.pub) });
                     });
