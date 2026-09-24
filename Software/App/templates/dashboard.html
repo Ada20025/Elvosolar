@@ -2412,8 +2412,14 @@
                     const b = document.getElementById('notifPermBtn');
                     if (b) {
                         const tb = document.getElementById('pushTestBtn');
-                        if (Notification.permission === 'default' && !notifPermissionAsked) { b.style.display = 'inline-block'; }
+                        if (Notification.permission === 'default' && !notifPermissionAsked) { b.style.display = 'inline-block'; b.textContent = 'ZAPNÚŤ NOTIFIKÁCIE'; }
                         else if (Notification.permission === 'granted') { b.style.display = 'none'; if (tb) tb.style.display = 'inline-block'; }
+                        else if (Notification.permission === 'denied') {
+                            // Chrome si zapamatal Zamietnute z predchadzajucich auto-pokusov —
+                            // bez odblokovania v nastaveniach prehliadaca push NIKDY nebude fungovat
+                            b.style.display = 'inline-block';
+                            b.textContent = '⚠ NOTIFIKÁCIE BLOKOVANÉ — KLIKNUTÍ';
+                        }
                         else { b.style.display = 'none'; }
                     }
                 }
@@ -2442,12 +2448,20 @@
             notifPermissionAsked = true;
             try {
                 if ('Notification' in window) {
+                    // Ak su Blokovane, requestPermission uz nezobrazi nic — treba navod
+                    if (Notification.permission === 'denied') {
+                        showNativeAlert('⚠ Notifikácie sú blokované', 'V Chrome klikni na ikonu zamknutia 🔒 v adresnom riadku → Notifikácie → Povoliť → obnov stránku. Na telefóne: Chrome → ⋮ → Info stránky → Notifikácie → Povoliť.');
+                        return;
+                    }
                     Notification.requestPermission().then(p => {
                         initNotifPermission();
                         if (p === 'granted') {
                             showNativeAlert('ElvoControll', 'Notifikácie sú zapnuté — upozorníme ťa pri chybách zariadenia.');
                             // Po kliku a granted: hned uloz push subscription na server
                             subscribePushAfterGrant();
+                        } else if (p === 'denied') {
+                            showNativeAlert('⚠ Notifikácie zamietnuté', 'Kedykoľvek ich zapneš cez ikonu 🔒 v adresnom riadku → Notifikácie → Povoliť.');
+                            initNotifPermission();
                         }
                     });
                 }
