@@ -2349,7 +2349,9 @@
             }
             const realLatency = (commOk && data.latency_ms !== undefined && data.latency_ms !== null) ? (data.latency_ms + ' ms') : '–';
             if (busLatency) busLatency.textContent = realLatency;
-            if (dailyProd) dailyProd.textContent = isOnline ? (totalKwh.toFixed(1) + ' kWh') : '–';
+            // Jednotny zdroj: rovnaky prah (hasReal = CM5 poslal telemetriu) ako v detailoch karty,
+            // inak by horné KPI ukazovali čísla a tento riadok '–' (alebo naopak)
+            if (dailyProd) dailyProd.textContent = hasReal ? (totalKwh.toFixed(1) + ' kWh') : '–';
             // Skry citacky (Latencia/Vyroba) ked je zariadenie offline
             const footerStats = document.getElementById('busFooterStats');
             if (footerStats) footerStats.style.display = isOnline ? 'grid' : 'none';
