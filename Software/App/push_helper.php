@@ -105,9 +105,11 @@ if (!function_exists('elvo_push_b64url_enc')) {
             if ($shared === false) return false;
 
             // RFC 8291: HKDF retaz
+            // IKM  = HKDF(salt, ecdh_secret, "WebPush: info"||0x00||ua_pub||as_pub, 32)
+            // PRK  = HKDF(salt=auth_secret, IKM=ikm, "Content-Encoding: auth"||0x00, 32)
             $info = "WebPush: info\x00" . $uaPub . $asPub;
             $ikm = hash_hkdf('sha256', $shared, 32, $info, $salt);
-            $prk = hash_hkdf('sha256', $authSec, 32, "Content-Encoding: auth\x00", $ikm);
+            $prk = hash_hkdf('sha256', $ikm, 32, "Content-Encoding: auth\x00", $authSec);
             $cek = hash_hkdf('sha256', $prk, 16, "Content-Encoding: aes128gcm\x00", $salt);
             $nonce = hash_hkdf('sha256', $prk, 12, "Content-Encoding: nonce\x00", $salt);
 
