@@ -135,8 +135,8 @@ if (!function_exists('elvo_push_b64url_enc')) {
             $cek = hash_hkdf('sha256', $ikm, 16, "Content-Encoding: aes128gcm\x00", $salt);
             $nonce = hash_hkdf('sha256', $ikm, 12, "Content-Encoding: nonce\x00", $salt);
 
-            // RFC 8291 padding: content || 0x01 (padding delimiter) || 0x02 (payload delimiter)
-            $plaintext = json_encode(['title' => $title, 'body' => $body, 'tag' => $tag, 'url' => $url]) . "\x01\x02";
+            // RFC 8291 (aes128gcm): padding delimiter je IBA 0x02 na konci (potvrdené RFC Appendix A vektorom)
+            $plaintext = json_encode(['title' => $title, 'body' => $body, 'tag' => $tag, 'url' => $url]) . "\x02";
             $tagBin = '';
             $ct = openssl_encrypt($plaintext, 'aes-128-gcm', $cek, OPENSSL_RAW_DATA, $nonce, $tagBin);
             if ($ct === false) return false;
