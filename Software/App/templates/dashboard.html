@@ -2216,9 +2216,16 @@
                 commText = 'Žiadna odpoveď';
                 commColor = '#ef4444';
             }
-            // === STAV ZARIADENIA ===
+            // === STAV ZARIADENIA — reálny stav zo zariadenia (status_msg z DB, posiela CM5) ===
+            const devStatus = String(data.status_msg || '').trim();
+            const statusIsError = (s) => { const l = String(s || '').toLowerCase(); return l.indexOf('chyba') !== -1 || l.indexOf('nedostup') !== -1 || l.indexOf('neodpoved') !== -1 || l.indexOf('interrupt') !== -1 || l.indexOf('offline') !== -1 || l.indexOf('fail') !== -1; };
             let stateText, stateColor;
-            if (!commOk) { stateText = 'OFFLINE'; stateColor = '#ef4444'; }
+            if (devStatus) {
+                // Stav priamo od zariadenia (napr. Standby, Uploading, SmartLogger online) — jediná pravda z DB
+                stateText = devStatus.length > 42 ? devStatus.slice(0, 42) + '…' : devStatus;
+                stateColor = statusIsError(devStatus) ? '#ef4444' : 'var(--accent-grid)';
+            }
+            else if (!commOk) { stateText = 'OFFLINE'; stateColor = '#ef4444'; }
             else if (power > 50) { stateText = '⚡ Výroba'; stateColor = 'var(--accent-solar)'; }
             else if (soc >= 95) { stateText = '🔋 Plná batéria'; stateColor = 'var(--accent-battery)'; }
             else if (soc > 30) { stateText = 'Pohotovostný režim'; stateColor = 'var(--accent-grid)'; }
@@ -2267,6 +2274,10 @@
                     const cIcon = cIsLogger ? 'server' : 'zap';
                     const cBrand = cd.brand || '';
                     const cSid = (cd.slave_id !== undefined && cd.slave_id !== null) ? cd.slave_id : '?';
+                    // Stav tohto zariadenia — status_msg z DB (posiela CM5)
+                    const cStatus = String(cd.status_msg || '').trim();
+                    const cStatusText = cStatus ? (cStatus.length > 42 ? cStatus.slice(0, 42) + '…' : cStatus) : (cOk ? 'Online' : '–');
+                    const cStatusColor = (cStatus && statusIsError(cStatus)) ? '#ef4444' : (cStatus ? 'var(--accent-grid)' : (cOk ? 'var(--accent-battery)' : '#ef4444'));
                     rowsHtml += `
                     <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;margin-bottom:8px;${cOk ? '' : 'border:1px solid rgba(239,68,68,0.45);background:rgba(239,68,68,0.06);padding:8px;box-shadow:0 0 20px rgba(239,68,68,0.07);'}">
                         <div class="inverter-status-row" onclick="toggleInverterDetails('invD${i}', 'invC${i}')">
@@ -2292,6 +2303,7 @@
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(cd.battery_soc || 0)}%</strong></div>
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Slave ID:</span><strong class="font-mono">${cSid}</strong></div>
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${cd.fw_version ? 'var(--text-primary)' : '#64748b'};">${cd.fw_version || '–'}</strong></div>
+                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav zariadenia:</span><strong class="font-mono" style="font-size:10px;color:${cStatusColor};">${cStatusText}</strong></div>
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav komunikácie:</span><strong class="font-mono" style="color:${cOk ? 'var(--accent-battery)' : '#ef4444'};font-size:10px;">${cOk ? 'Odpovedá' : 'Nereaguje'}</strong></div>
                         </div>
                     </div>`;
@@ -2311,9 +2323,9 @@
                             <span class="pulse-dot ${commOk ? 'online' : 'offline'}"></span>
                             <div style="display:flex;flex-direction:column;">
                                 <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceType}${brandName ? ' · ' + brandName : ''}</span>
-                                <span style="font-size:9px;color:${commOk ? 'var(--text-muted)' : '#f87171'};display:flex;align-items:center;gap:4px;">
+                                <span style="font-size:9px;color:${stateColor};display:flex;align-items:center;gap:4px;">
                                     <i data-lucide="${deviceIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
-                                    ${commOk ? stateText : 'Nereaguje'}
+                                    ${stateText}
                                 </span>
                             </div>
                         </div>
@@ -2327,6 +2339,7 @@
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${hasReal ? 'var(--accent-battery)' : '#64748b'};">${hasReal ? Math.round(soc) + '%' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${data.fw_version ? 'var(--text-primary)' : '#64748b'};">${data.fw_version || '–'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav zariadenia:</span><strong class="font-mono" style="font-size:10px;color:${stateColor};">${stateText}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav komunikácie:</span><strong class="font-mono" style="color:${commColor};font-size:10px;">${commText}</strong></div>
                     </div>
                 </div>

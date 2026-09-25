@@ -1424,6 +1424,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'is_smartlogger' => (strpos(strtolower($device['sub_type'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($device['category_id'] ?? ''), 'smartlogger') !== false),
         // Firmware verzia (z Modbus — ak CM5 posiela)
         'fw_version' => $device['fw_version'] ?? '',
+        // Reálny stav zariadenia z DB (status_msg od CM5 — napr. Standby, Uploading, chyba)
+        'status_msg' => $latest ? (string)($latest['status_msg'] ?? '') : '',
         // Zoznam vsetkych pripojenych zariadeni (striedace/SmartLoggery) nahlásené CM5
         'connected_devices' => (function() use ($device) {
             $raw = $device['connected_devices'] ?? null;
