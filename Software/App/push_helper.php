@@ -126,17 +126,16 @@ if (!function_exists('elvo_push_b64url_enc')) {
             if ($shared === false) { try { $shared = openssl_pkey_derive($eph, $uaKey, 32); } catch (Throwable $t2) { $shared = false; } }
             if ($shared === false) return false;
 
-            // RFC 8291: HKDF retaz
-            // IKM  = HKDF(salt, ecdh_secret, "WebPush: info"||0x00||ua_pub||as_pub, 32)
-            // PRK  = HKDF(salt=auth_secret, IKM=ikm, "Content-Encoding: auth"||0x00, 32)
+            // RFC 8291 (aes128gcm) — OVERENE NEZAVISLOU SIMULACIOU (desifrovanie ako v prehliadaci):
+            // IKM  = HKDF(salt=auth_secret, IKM=ecdh_secret, info="WebPush: info\0"||ua_pub||as_pub, 32)
+            // CEK  = HKDF(salt=random, IKM=ikm, "Content-Encoding: aes128gcm\0", 16)
+            // NONCE= HKDF(salt=random, IKM=ikm, "Content-Encoding: nonce\0", 12)
             $info = "WebPush: info\x00" . $uaPub . $asPub;
-            $ikm = hash_hkdf('sha256', $shared, 32, $info, $salt);
-            $prk = hash_hkdf('sha256', $ikm, 32, "Content-Encoding: auth\x00", $authSec);
-            $cek = hash_hkdf('sha256', $prk, 16, "Content-Encoding: aes128gcm\x00", $salt);
-            $nonce = hash_hkdf('sha256', $prk, 12, "Content-Encoding: nonce\x00", $salt);
+            $ikm = hash_hkdf('sha256', $shared, 32, $info, $authSec);
+            $cek = hash_hkdf('sha256', $ikm, 16, "Content-Encoding: aes128gcm\x00", $salt);
+            $nonce = hash_hkdf('sha256', $ikm, 12, "Content-Encoding: nonce\x00", $salt);
 
             // RFC 8291 padding: content || 0x01 (padding delimiter) || 0x02 (payload delimiter)
-            // Bez 0x01 Chrome desifruje, ale zahodi spravu s "bad padding" (FCM vsak vrati 201)
             $plaintext = json_encode(['title' => $title, 'body' => $body, 'tag' => $tag, 'url' => $url]) . "\x01\x02";
             $tagBin = '';
             $ct = openssl_encrypt($plaintext, 'aes-128-gcm', $cek, OPENSSL_RAW_DATA, $nonce, $tagBin);
