@@ -3742,6 +3742,30 @@
                 oktePrices = [];
             }
 
+            // === TERAZ index — presna pozicia terajsej chvile na casovej osi ===
+            // nowFrac = float index slotu (1 slot = 15 min od prveho OKTE slotu)
+            // Sluzi: 1) ciara TERAZ na presnom case  2) zapis merani IBA DO TERAZ (nic po nej)
+            let nowFrac = null;
+            if (hasOkte && okteData.prices.length) {
+                try {
+                    const first = okteData.prices[0];
+                    const firstStart = new Date(first.day + 'T' + first.hour + ':00');
+                    const SLOT_MS = 15 * 60000;
+                    if (!isNaN(firstStart.getTime())) {
+                        nowFrac = (Date.now() - firstStart.getTime()) / SLOT_MS;
+                        nowFrac = Math.max(0, Math.min(okteData.prices.length - 1, nowFrac));
+                    }
+                } catch (e) { nowFrac = null; }
+            }
+            // Merania NIKDY do buducnosti: sloty PO terajsej chvili vynuluj
+            // (riesi aj posunute hodiny CM5 — 'zajtra 23' uz nikdy nezobazi terajsie hodnoty)
+            if (nowFrac !== null) {
+                const lastPastIdx = Math.floor(nowFrac);
+                for (let i = 0; i < fveData.length; i++) {
+                    if (i > lastPastIdx) { fveData[i] = null; socData[i] = null; }
+                }
+            }
+
             // Average FVE line
             const validFve = fveData.filter(v => v !== null);
             const avgFve = validFve.length > 0 ? validFve.reduce((a,b)=>a+b,0) / validFve.length : 0;
@@ -3823,17 +3847,29 @@
                 afterDatasetsDraw(chart) {
                     const labels = chart.data.labels;
                     if (!labels || !labels.length) return;
-                    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-                    let idx = -1, best = Infinity;
-                    labels.forEach((l, i) => {
-                        if (typeof l === 'string' && l.indexOf(':') !== -1) {
-                            const p = l.split(':');
-                            const d = Math.abs((parseInt(p[0]) * 60 + parseInt(p[1])) - nowMin);
-                            if (d < best) { best = d; idx = i; }
-                        }
-                    });
-                    if (idx < 0) return;
-                    const x = chart.scales.x.getPixelForValue(idx);
+                    let x = null;
+                    // Presna pozicia z nowFrac (float index — interpolacia medzi slotmi)
+                    if (nowFrac !== null && nowFrac !== undefined) {
+                        const i0 = Math.floor(nowFrac);
+                        const i1 = Math.min(i0 + 1, labels.length - 1);
+                        const t = nowFrac - i0;
+                        const x0 = chart.scales.x.getPixelForValue(i0);
+                        const x1 = chart.scales.x.getPixelForValue(i1);
+                        x = x0 + (x1 - x0) * t;
+                    } else {
+                        // Fallback: najblizsi dnesny casovy slot (prefix 'Zaj'/'Po'... vyluc)
+                        const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+                        let idx = -1, best = Infinity;
+                        labels.forEach((l, i) => {
+                            if (typeof l === 'string' && l.indexOf(':') !== -1 && l.indexOf(' ') === -1) {
+                                const p = l.split(':');
+                                const d = Math.abs((parseInt(p[0]) * 60 + parseInt(p[1])) - nowMin);
+                                if (d < best) { best = d; idx = i; }
+                            }
+                        });
+                        if (idx >= 0) x = chart.scales.x.getPixelForValue(idx);
+                    }
+                    if (x === null) return;
                     const area = chart.chartArea;
                     if (!area) return;
                     const ctx2 = chart.ctx;
