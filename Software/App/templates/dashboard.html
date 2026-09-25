@@ -626,6 +626,11 @@
             box-shadow: 0 0 10px var(--accent-battery);
         }
 
+        .pulse-dot.warn {
+            background: var(--accent-solar);
+            box-shadow: 0 0 10px var(--accent-solar);
+        }
+
         .pulse-dot.offline {
             background: var(--accent-warn);
             box-shadow: 0 0 10px var(--accent-warn);
@@ -2217,21 +2222,27 @@
                 commColor = '#ef4444';
             }
             // === STAV ZARIADENIA — reálny stav zo zariadenia (status_msg z DB, posiela CM5) ===
+            // Farby podla stavu: online/OK = ZELENÁ, porucha = ČERVENÁ, ostatné (standby...) = ŽLTÁ
             const devStatus = String(data.status_msg || '').trim();
             const statusIsError = (s) => { const l = String(s || '').toLowerCase(); return l.indexOf('chyba') !== -1 || l.indexOf('nedostup') !== -1 || l.indexOf('neodpoved') !== -1 || l.indexOf('interrupt') !== -1 || l.indexOf('offline') !== -1 || l.indexOf('fail') !== -1; };
-            let stateText, stateColor;
-            if (devStatus) {
-                // Stav priamo od zariadenia (napr. Standby, Uploading, SmartLogger online) — jediná pravda z DB
-                stateText = devStatus.length > 42 ? devStatus.slice(0, 42) + '…' : devStatus;
-                stateColor = statusIsError(devStatus) ? '#ef4444' : 'var(--accent-grid)';
+            const statusIsOk = (s) => { const l = String(s || '').toLowerCase(); return l.indexOf('online') !== -1 || l.indexOf('aktívne') !== -1 || l.indexOf('aktivne') !== -1 || l.indexOf('uploading') !== -1; };
+            const COLOR_ERR = '#ef4444', COLOR_WARN = '#f59e0b', COLOR_OK = 'var(--accent-battery)';
+            // Uroven karty: 'ok' (zelená) | 'warn' (žltá) | 'error' (červená)
+            let cardLevel, stateText;
+            if (!commOk) { cardLevel = 'error'; stateText = 'OFFLINE'; }
+            else if (devStatus) {
+                cardLevel = statusIsError(devStatus) ? 'error' : (statusIsOk(devStatus) ? 'ok' : 'warn');
+                stateText = devStatus;
             }
-            else if (!commOk) { stateText = 'OFFLINE'; stateColor = '#ef4444'; }
-            else if (power > 50) { stateText = '⚡ Výroba'; stateColor = 'var(--accent-solar)'; }
-            else if (soc >= 95) { stateText = '🔋 Plná batéria'; stateColor = 'var(--accent-battery)'; }
-            else if (soc > 30) { stateText = 'Pohotovostný režim'; stateColor = 'var(--accent-grid)'; }
-            else { stateText = 'Nízky SOC'; stateColor = 'var(--accent-warn)'; }
-            // Cela karta cervena ked zariadenie dlhsie neodpoveda
-            const cardAlert = (!commOk);
+            else if (power > 50 || soc >= 95) { cardLevel = 'ok'; stateText = (power > 50) ? '⚡ Výroba' : '🔋 Plná batéria'; }
+            else { cardLevel = 'warn'; stateText = (soc > 30) ? 'Pohotovostný režim' : 'Nízky SOC'; }
+            const stateColor = cardLevel === 'error' ? COLOR_ERR : (cardLevel === 'warn' ? COLOR_WARN : COLOR_OK);
+            if (stateText.length > 42) stateText = stateText.slice(0, 42) + '…';
+            // Odstin karty: ok = čistá (zelený bod), warn = žltý rám, error = červený rám
+            const cardTint = (lvl) => lvl === 'error'
+                ? 'border:1px solid rgba(239,68,68,0.45);background:rgba(239,68,68,0.06);padding:8px;box-shadow:0 0 24px rgba(239,68,68,0.08);'
+                : (lvl === 'warn' ? 'border:1px solid rgba(245,158,11,0.40);background:rgba(245,158,11,0.05);padding:8px;' : '');
+            const dotClass = (lvl) => lvl === 'error' ? 'offline' : (lvl === 'warn' ? 'warn' : 'online');
             const statusBadge = document.getElementById('deviceStatusBadge');
             if (statusBadge) {
                 statusBadge.textContent = commOk ? 'ONLINE' : 'NO COMM';
@@ -2247,9 +2258,9 @@
             const isDevLogger = (cd) => cd && (cd.is_smartlogger === true || String(cd.type || '').toLowerCase().indexOf('logger') !== -1);
             const perDevOk = (cd) => {
                 if (!cd) return false;
-                const sm = String(cd.status_msg || '').toLowerCase();
-                if (sm.indexOf('neodpoved') !== -1 || sm.indexOf('chyba') !== -1 || sm.indexOf('nedostup') !== -1 || sm.indexOf('interrupt') !== -1) return false;
-                return true;
+                const sm = String(cd.status_msg || '').trim();
+                if (!sm) return true;
+                return !statusIsError(sm);
             };
             // Titulok podla typu pripojenych zariadeni: Striedače / SmartLogger / oboje
             if (titleEl) {
@@ -2274,15 +2285,16 @@
                     const cIcon = cIsLogger ? 'server' : 'zap';
                     const cBrand = cd.brand || '';
                     const cSid = (cd.slave_id !== undefined && cd.slave_id !== null) ? cd.slave_id : '?';
-                    // Stav tohto zariadenia — status_msg z DB (posiela CM5)
+                    // Stav tohto zariadenia — status_msg z DB (posiela CM5); farby: OK=zelená, porucha=červená, ostatné=žltá
                     const cStatus = String(cd.status_msg || '').trim();
+                    const cLvl = cStatus ? (statusIsError(cStatus) ? 'error' : (statusIsOk(cStatus) ? 'ok' : 'warn')) : (cOk ? 'ok' : 'warn');
                     const cStatusText = cStatus ? (cStatus.length > 42 ? cStatus.slice(0, 42) + '…' : cStatus) : (cOk ? 'Online' : '–');
-                    const cStatusColor = (cStatus && statusIsError(cStatus)) ? '#ef4444' : (cStatus ? 'var(--accent-grid)' : (cOk ? 'var(--accent-battery)' : '#ef4444'));
+                    const cStatusColor = cLvl === 'error' ? COLOR_ERR : (cLvl === 'warn' ? COLOR_WARN : COLOR_OK);
                     rowsHtml += `
-                    <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;margin-bottom:8px;${cOk ? '' : 'border:1px solid rgba(239,68,68,0.45);background:rgba(239,68,68,0.06);padding:8px;box-shadow:0 0 20px rgba(239,68,68,0.07);'}">
+                    <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;margin-bottom:8px;${cardTint(cLvl)}">
                         <div class="inverter-status-row" onclick="toggleInverterDetails('invD${i}', 'invC${i}')">
                             <div style="display:flex;align-items:center;gap:10px;">
-                                <span class="pulse-dot ${cOk ? 'online' : 'offline'}"></span>
+                                <span class="pulse-dot ${dotClass(cLvl)}"></span>
                                 <div style="display:flex;flex-direction:column;">
                                     <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${cType}${cBrand ? ' · ' + cBrand : ''}</span>
                                     <span style="font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
@@ -2294,7 +2306,7 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <span class="font-mono" style="font-size:10px;font-weight:700;color:var(--text-primary);">${Math.round(cd.power_ac || 0)} W</span>
                                 <span class="font-mono" style="font-size:10px;font-weight:700;color:var(--accent-battery);">${Math.round(cd.battery_soc || 0)}%</span>
-                                <span class="font-mono" style="font-size:9px;font-weight:700;color:${cOk ? 'var(--accent-battery)' : '#ef4444'};">${cOk ? 'OK' : 'NO COMM'}</span>
+                                <span class="font-mono" style="font-size:9px;font-weight:700;color:${cStatusColor};">${cLvl === 'error' ? 'CHYBA' : (cLvl === 'warn' ? 'POZOR' : 'OK')}</span>
                                 <i data-lucide="chevron-down" id="invC${i}" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
                             </div>
                         </div>
@@ -2317,10 +2329,10 @@
                 }
             } else {
                 rowsHtml = `
-                <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;${cardAlert ? 'border:1px solid rgba(239,68,68,0.45);background:rgba(239,68,68,0.06);padding:8px;box-shadow:0 0 24px rgba(239,68,68,0.08);' : ''}">
+                <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;${cardTint(cardLevel)}">
                     <div class="inverter-status-row" onclick="toggleInverterDetails('invD1', 'invC1')">
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <span class="pulse-dot ${commOk ? 'online' : 'offline'}"></span>
+                            <span class="pulse-dot ${dotClass(cardLevel)}"></span>
                             <div style="display:flex;flex-direction:column;">
                                 <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceType}${brandName ? ' · ' + brandName : ''}</span>
                                 <span style="font-size:9px;color:${stateColor};display:flex;align-items:center;gap:4px;">
