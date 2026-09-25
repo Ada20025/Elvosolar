@@ -508,22 +508,76 @@
             } catch (e) { showToast('Chyba: ' + e.message, true); }
         }
 
-        // Test push kanalu
+        // Test push kanalu — najprv overi ze toto zariadenie JE prihlasene, inak neklame
         async function testPushChannel() {
             try {
+                let myEndpoint = null;
+                try {
+                    const reg = await navigator.serviceWorker.getRegistration();
+                    const sub = reg && await reg.pushManager.getSubscription();
+                    if (sub) myEndpoint = sub.endpoint;
+                } catch (e) {}
+                if (!myEndpoint) {
+                    showVrcko('Toto zariadenie nie je prihlásené na push — zapni prepínač 🔔 hore a potom testuj', 'error');
+                    return;
+                }
                 const d = await safeJson('/api/push/test', { method: 'POST', credentials: 'same-origin' });
-                showVrcko(d.status === 'success' ? (d.message || 'Test notifikácia odoslaná') : (d.message || 'Push sa nepodarilo odoslať'), d.status === 'success' ? 'ok' : 'error');
+                if (d.status === 'success') {
+                    showVrcko(d.message || 'Notifikácia odoslaná — ak nič nepríde, skontroluj režim Nerušiť', 'ok');
+                } else {
+                    showVrcko(d.message || 'Push sa nepodarilo odoslať', 'error');
+                }
             } catch (e) { showToast('Chyba: ' + e.message, true); }
         }
 
-        // Toggle notification
+        // Toggle notification — zapnutie Push toggle NASKUTOCNE ziada povolenie a uklada subscription
         function toggleNotif(el, checkboxId) {
             const cb = document.getElementById(checkboxId);
             cb.checked = !cb.checked;
-            if (cb.checked) {
+            el.className = 'toggle-track ' + (cb.checked ? 'on' : 'off');
+            if (cb.checked && checkboxId === 'notifPush') {
+                enablePushOnToggle(el);
+            }
+        }
+
+        // Zapne push: poziada o povolenie (az na klik — Chrome to vyzaduje) a ulozi subscription na server
+        async function enablePushOnToggle(el) {
+            const cb = document.getElementById('notifPush');
+            try {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                    showVrcko('Tento prehliadač nepodporuje push notifikácie', 'error');
+                    cb.checked = false; el.className = 'toggle-track off'; return;
+                }
+                let perm = Notification.permission;
+                if (perm === 'denied') {
+                    showVrcko('⚠ Notifikácie sú zablokované — klikni na 🔒 v adresnom riadku → Notifikácie → Povoliť', 'error');
+                    cb.checked = false; el.className = 'toggle-track off'; return;
+                }
+                if (perm === 'default') {
+                    perm = await Notification.requestPermission();
+                }
+                if (perm !== 'granted') {
+                    showVrcko('Povolenie nezadané — skús to znova', 'error');
+                    cb.checked = false; el.className = 'toggle-track off'; return;
+                }
                 el.className = 'toggle-track on';
-            } else {
-                el.className = 'toggle-track off';
+                const reg = await navigator.serviceWorker.register('/sw.js');
+                await navigator.serviceWorker.ready;
+                const vk = await safeJson('/api/push/vapid', null, true);
+                if (!vk.pub) throw new Error('Server nevratil VAPID kluc');
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    const u8 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+                    let key = vk.pub; while (key.length % 4) key += '=';
+                    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(key).buffer });
+                }
+                await safeJson('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) }, true);
+                localStorage.setItem('elvo_push_endpoint', sub.endpoint);
+                showVrcko('🔔 Push zapnuté na tomto zariadení!', 'ok');
+            } catch (e) {
+                console.log('[PUSH] toggle err:', e.message);
+                showVrcko('Push sa nepodarilo zapnúť: ' + e.message, 'error');
+                cb.checked = false; el.className = 'toggle-track off';
             }
         }
 
