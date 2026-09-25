@@ -436,7 +436,7 @@
         }
 
         // VRTKO: informativny banner dole (zeleny=OK / modry=info / cerveny=chyba)
-        function showVrcko(message, type) {
+        function showVrcko(message, type, ms) {
             type = type || 'info';
             const old = document.getElementById('elvoVrcko');
             if (old) old.remove();
@@ -450,7 +450,8 @@
                 'box-shadow:0 12px 40px rgba(0,0,0,0.4);animation:vrckoIn .3s ease;';
             v.innerHTML = '<span style="font-size:16px;">' + icon + '</span><span>' + message + '</span>';
             document.body.appendChild(v);
-            setTimeout(() => { v.style.transition = 'opacity .4s'; v.style.opacity = '0'; setTimeout(() => v.remove(), 400); }, type === 'error' ? 5000 : 3000);
+            const life = (typeof ms === 'number') ? ms : (type === 'error' ? 5000 : 3000);
+            setTimeout(() => { v.style.transition = 'opacity .4s'; v.style.opacity = '0'; setTimeout(() => v.remove(), 400); }, life);
         }
         const st = document.createElement('style');
         st.textContent = '@keyframes vrckoIn{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}';
@@ -523,9 +524,11 @@
                 }
                 const d = await safeJson('/api/push/test', { method: 'POST', credentials: 'same-origin' });
                 if (d.status === 'success') {
-                    showVrcko(d.message || 'Notifikácia odoslaná — ak nič nepríde, skontroluj režim Nerušiť', 'ok');
+                    const devs = Array.isArray(d.devices) && d.devices.length ? d.devices.join('  ·  ') : '';
+                    showVrcko((d.message || 'Notifikácia odoslaná') + (devs ? ' — ' + devs : ''), 'ok', 8000);
                 } else {
-                    showVrcko(d.message || 'Push sa nepodarilo odoslať', 'error');
+                    const devs = Array.isArray(d.devices) && d.devices.length ? ' (' + d.devices.join(' · ') + ')' : '';
+                    showVrcko((d.message || 'Push sa nepodarilo odoslať') + devs, 'error', 8000);
                 }
             } catch (e) { showToast('Chyba: ' + e.message, true); }
         }

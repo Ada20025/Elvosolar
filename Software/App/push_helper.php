@@ -59,16 +59,38 @@ if (!function_exists('elvo_push_b64url_enc')) {
         return openssl_pkey_get_public($pem);
     }
 
+    // Typ zariadenia z User-Agenta (kratky popis pre diagnostiku)
+    if (!function_exists('elvo_push_device_label')) {
+        function elvo_push_device_label($ua) {
+            $ua = (string)$ua;
+            if (stripos($ua, 'Android') !== false)  return 'Android';
+            if (stripos($ua, 'iPhone') !== false || stripos($ua, 'iPad') !== false) return 'iPhone/iPad';
+            if (stripos($ua, 'Windows') !== false)  return 'Windows PC';
+            if (stripos($ua, 'Macintosh') !== false || stripos($ua, 'Mac OS') !== false) return 'Mac';
+            if (stripos($ua, 'Linux') !== false)    return 'Linux';
+            return 'Neznáme zariadenie';
+        }
+    }
+
     // Posle push VSETKYM zariadeniam usera. Vracia pocet uspesnych odoslani.
-    function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url) {
+    // Ak $details je pole (referencia), doplni pre kazde zariadenie: device + result (pre diagnostiku).
+    function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url, &$details = null) {
         try {
-            $stmt = $pdo->prepare("SELECT sub_json FROM push_subs WHERE user_id = ?");
+            $stmt = $pdo->prepare("SELECT sub_json, ua FROM push_subs WHERE user_id = ?");
             $stmt->execute([$user_id]);
             $sent = 0;
             foreach ($stmt->fetchAll() as $row) {
                 $sub = json_decode($row['sub_json'], true);
                 if (!is_array($sub)) continue;
                 $r = elvo_push_send($pdo, $sub, $title, $body, $tag, $url);
+                if ($details !== null) {
+                    $lbl = elvo_push_device_label($row['ua'] ?? '');
+                    $short = substr(parse_url($sub['endpoint'] ?? '', PHP_URL_HOST) ?? '?', 0, 24);
+                    if ($r === true)          $res = 'OK (201 prijaté)';
+                    elseif ($r === 'expired') $res = 'neplatná (vymazaná)';
+                    else                      $res = 'CHYBA odosielania';
+                    $details[] = ['device' => $lbl . ' [' . $short . ']', 'result' => $res];
+                }
                 if ($r === 'expired') {
                     $pdo->prepare("DELETE FROM push_subs WHERE endpoint = ?")->execute([$sub['endpoint'] ?? '']);
                 } elseif ($r === true) {

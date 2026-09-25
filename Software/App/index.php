@@ -2581,13 +2581,16 @@ elseif ($path === '/api/push/subscribe' && $method === 'POST') {
             user_id INT NOT NULL,
             endpoint VARCHAR(500) NOT NULL,
             sub_json TEXT NOT NULL,
+            ua VARCHAR(200) DEFAULT '',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_endpoint (endpoint)
         )");
+        try { $pdo->exec("ALTER TABLE push_subs ADD COLUMN ua VARCHAR(200) DEFAULT ''"); } catch (Exception $e) { /* uz existuje */ }
         $uid = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0;
-        $pdo->prepare("INSERT INTO push_subs (user_id, endpoint, sub_json) VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), sub_json = VALUES(sub_json)")
-            ->execute([$uid, $endpoint, json_encode($data)]);
+        $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200);
+        $pdo->prepare("INSERT INTO push_subs (user_id, endpoint, sub_json, ua) VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), sub_json = VALUES(sub_json), ua = VALUES(ua)")
+            ->execute([$uid, $endpoint, json_encode($data), $ua]);
     } catch (Exception $e) { /* ignore */ }
     send_json(['status' => 'success']);
 }
@@ -2614,12 +2617,19 @@ elseif ($path === '/api/push/test' && $method === 'POST') {
     if ($cnt === 0) {
         send_json(['status' => 'error', 'message' => 'Nemáš žiadne prihlásené push zariadenia. Obnov stránku a povoľ notifikácie.']);
     }
+    $details = [];
     $sent = elvo_push_user($pdo, $uid,
         "\u{1F514} Test notifikácia",
         'Web Push funguje! Toto je skúšobná správa z ElvoControll (' . date('H:i') . ').',
-        'elvo-test', '/dashboard');
+        'elvo-test', '/dashboard', $details);
+    // Diagnostika: presny zoznam zariadeni, ktorym sa poslalo + vysledok
+    $devLines = [];
+    foreach ($details as $d) {
+        $devLines[] = $d['device'] . ' … ' . $d['result'];
+    }
     send_json(['status' => $sent > 0 ? 'success' : 'error',
-               'message' => $sent > 0 ? "Notifikácia doručená na $sent z $cnt zariadení ✔" : 'Odoslanie zlyhalo — skús obnoviť stránku a povoliť notifikácie znova.']);
+               'message' => $sent > 0 ? "Odoslané na $sent z $cnt zariadení" : 'Odosielanie zlyhalo',
+               'devices' => $devLines]);
 }
 
 // --- DEVICE RENAME ---
