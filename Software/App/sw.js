@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elvosolar-v8';
+const CACHE_NAME = 'elvosolar-v9';
 
 // Staticke subory -> cache-first (hned, bez cakania na siet)
 const STATIC_PATTERNS = [
@@ -50,7 +50,7 @@ self.addEventListener('push', e => {
     e.waitUntil(self.registration.showNotification(data.title, {
         body: data.body,
         icon: '/templates/ElvosolarLogo.png',
-        badge: '/templates/ElvosolarLogo.png',
+        badge: '/templates/push-badge.png',
         vibrate: [200, 100, 200, 100, 200],
         tag: data.tag || 'elvo-notification',
         renotify: true,
