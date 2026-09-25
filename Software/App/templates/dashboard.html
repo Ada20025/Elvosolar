@@ -1132,32 +1132,20 @@
             font-size: 10px; color: var(--text-secondary); line-height: 1.5;
         }
 
-        /* Mobile gear modal fix - spravny scroll (100dvh — mobilne prehliadace rezaju viewport) */
+        /* Gear modal: JEDEN scroll kontajner (samotny modal) — najsposahlivejsie na mobile.
+           Hlavicka je sticky top:0, content tecie prirodzene — scroll dosiahne vzdy az k OKTE a Uloz. */
         #gearModal, #repeatModal {
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
-            height: 100dvh;
-        }
-        #gearModal > div:last-of-type,
-        #repeatModal > div:last-of-type {
-            overscroll-behavior: contain;
         }
         @media (max-width: 640px) {
-            #gearModal > div:last-of-type,
-            #repeatModal > div:last-of-type {
-                max-height: calc(100dvh - 70px) !important;
-                overflow-y: auto !important;
-                -webkit-overflow-scrolling: touch !important;
-                padding: 16px !important;
-                padding-bottom: 40px !important;
-            }
             #gearModal input[type=range],
             #repeatModal input[type=range] {
                 touch-action: pan-y;
             }
-            /* Uloz button musí byť dosiahnutý — žiadny overflow:hidden rodič */
-            #gearModal, #repeatModal {
-                overflow-y: auto !important;
+            #gearModal > div:last-of-type,
+            #repeatModal > div:last-of-type {
+                padding-bottom: 48px !important; /* priestor pod Uloz — vzdy dosiahnutelne */
             }
         }
         /* Smooth scroll for all modals */
@@ -2338,7 +2326,6 @@
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? Math.round(power) + ' W' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${hasReal ? 'var(--accent-battery)' : '#64748b'};">${hasReal ? Math.round(soc) + '%' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${data.fw_version ? 'var(--text-primary)' : '#64748b'};">${data.fw_version || '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${data.fw_version ? 'var(--text-primary)' : '#64748b'};">${data.fw_version || '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav komunikácie:</span><strong class="font-mono" style="color:${commColor};font-size:10px;">${commText}</strong></div>
                     </div>
