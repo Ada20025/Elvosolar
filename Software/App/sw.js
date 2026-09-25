@@ -50,7 +50,7 @@ self.addEventListener('push', e => {
     e.waitUntil(self.registration.showNotification(data.title, {
         body: data.body,
         icon: '/templates/ElvosolarLogo.png',
-        badge: '/templates/push-badge.png',
+        badge: '/templates/ElvosolarLogo.png',
         vibrate: [200, 100, 200, 100, 200],
         tag: data.tag || 'elvo-notification',
         renotify: true,
