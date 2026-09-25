@@ -145,6 +145,21 @@
         .toggle-track.on .toggle-knob { background: white; margin-left: 23px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         .toggle-track.off .toggle-knob { background: #4b5563; margin-left: 3px; }
 
+        /* Vyber kanala notifikacie (Oboje/Iba push/Iba email/Ziadne) */
+        .channel-select {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border-card);
+            color: var(--text-primary);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            flex-shrink: 0;
+            outline: none;
+        }
+        .channel-select option { background: #0f172a; color: #e2e8f0; }
+
         /* Avatar upload */
         .avatar-container {
             position: relative;
@@ -336,7 +351,9 @@
                                 <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Nové zariadenie</span>
                                 <span style="font-size:10px;color:var(--text-muted);">Oznamenie keď sa pridá nové zariadenie</span>
                             </div>
-                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifNewDevice')"><div class="toggle-knob"></div></div>
+                            <select id="chNewDevice" onchange="onChannelChange('notifNewDevice', this.value)" class="channel-select">
+                                <option value="both">Oboje</option><option value="push">Iba push</option><option value="email">Iba email</option><option value="none">Žiadne</option>
+                            </select>
                             <input type="checkbox" id="notifNewDevice" checked style="display:none;">
                         </div>
                         <div class="notif-item">
@@ -344,7 +361,9 @@
                                 <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Porucha zariadenia</span>
                                 <span style="font-size:10px;color:var(--text-muted);">Upozornenie pri chybe alebo offline stave</span>
                             </div>
-                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifError')"><div class="toggle-knob"></div></div>
+                            <select id="chError" onchange="onChannelChange('notifError', this.value)" class="channel-select">
+                                <option value="both">Oboje</option><option value="push">Iba push</option><option value="email">Iba email</option><option value="none">Žiadne</option>
+                            </select>
                             <input type="checkbox" id="notifError" checked style="display:none;">
                         </div>
                         <div class="notif-item">
@@ -352,7 +371,9 @@
                                 <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Denný report</span>
                                 <span style="font-size:10px;color:var(--text-muted);">Súhrn výroby a spotreby za deň</span>
                             </div>
-                            <div class="toggle-track off" onclick="toggleNotif(this, 'notifDaily')"><div class="toggle-knob"></div></div>
+                            <select id="chDaily" onchange="onChannelChange('notifDaily', this.value)" class="channel-select">
+                                <option value="both">Oboje</option><option value="push">Iba push</option><option value="email">Iba email</option><option value="none">Žiadne</option>
+                            </select>
                             <input type="checkbox" id="notifDaily" style="display:none;">
                         </div>
                         <div class="notif-item">
@@ -360,7 +381,9 @@
                                 <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">Negatívna cena OKTE</span>
                                 <span style="font-size:10px;color:var(--text-muted);">Upozornenie keď je cena elektriny záporná</span>
                             </div>
-                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifNegPrice')"><div class="toggle-knob"></div></div>
+                            <select id="chNegPrice" onchange="onChannelChange('notifNegPrice', this.value)" class="channel-select">
+                                <option value="both">Oboje</option><option value="push">Iba push</option><option value="email">Iba email</option><option value="none">Žiadne</option>
+                            </select>
                             <input type="checkbox" id="notifNegPrice" checked style="display:none;">
                         </div>
                         <button onclick="saveNotifications()" class="btn-primary" style="margin-top:8px;">Uložiť nastavenia</button>
@@ -496,8 +519,39 @@
                         const tr = document.getElementById('track' + cbId.replace('notif', 'Notif'));
                         if (tr) tr.className = 'toggle-track ' + (cb.checked ? 'on' : 'off');
                     }
+                    // Kanaly (select): zmeni aj viditelnost toggle-track podla kanala
+                    const chMap = { chNewDevice: 'new_device_channel', chError: 'error_channel', chDaily: 'daily_report_channel', chNegPrice: 'negative_price_channel' };
+                    for (const [selId, key] of Object.entries(chMap)) {
+                        const sel = document.getElementById(selId);
+                        if (sel) sel.value = n[key] || 'both';
+                    }
+                    syncChannelToggles();
                 }
             } catch (e) { /* defaulty */ }
+        }
+
+        // Zmena kanala -> synchronizuj toggle (on = both/push/email, off = none)
+        function onChannelChange(checkboxId, val) {
+            const cb = document.getElementById(checkboxId);
+            cb.checked = (val !== 'none');
+            // najdi toggle-track v tom istom notif-item a prefarbi
+            const item = cb.closest('.notif-item');
+            const tr = item && item.querySelector('.toggle-track');
+            if (tr) tr.className = 'toggle-track ' + (cb.checked ? 'on' : 'off');
+        }
+
+        // Pri nacitani: podla kanala nastav checkbox + farbu toggle (toggle uz nie je klikaci pre typy s kanalom)
+        function syncChannelToggles() {
+            const pairs = [['notifNewDevice', 'chNewDevice'], ['notifError', 'chError'], ['notifDaily', 'chDaily'], ['notifNegPrice', 'chNegPrice']];
+            for (const [cbId, selId] of pairs) {
+                const sel = document.getElementById(selId);
+                const cb = document.getElementById(cbId);
+                if (!sel || !cb) continue;
+                cb.checked = (sel.value !== 'none');
+                const item = cb.closest('.notif-item');
+                const tr = item && item.querySelector('.toggle-track');
+                if (tr) tr.className = 'toggle-track ' + (cb.checked ? 'on' : 'off');
+            }
         }
 
         // Test email kanalu
@@ -674,6 +728,10 @@
                 negative_price: document.getElementById('notifNegPrice').checked,
                 notif_email: document.getElementById('notifEmail').checked,
                 notif_push: document.getElementById('notifPush').checked,
+                new_device_channel: document.getElementById('chNewDevice').value,
+                error_channel: document.getElementById('chError').value,
+                daily_report_channel: document.getElementById('chDaily').value,
+                negative_price_channel: document.getElementById('chNegPrice').value,
             };
             try {
                 const d = await safeJson('/api/user/notifications', {

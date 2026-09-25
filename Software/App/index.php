@@ -657,6 +657,48 @@ if (!function_exists('get_user_devices')) {
     }
 }
 
+// --- NOTIFIKACNE KANALY (both|push|email|none) — citanie z user_prefs + odoslanie podla kanala ---
+if (!function_exists('elvo_notif_channels')) {
+    /** Vrati kanal pre dany typ notifikacie: both|push|email|none */
+    function elvo_notif_channel($pdo, $user_id, $type) {
+        try {
+            $st = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+            $st->execute([$user_id]);
+            $pf = $st->fetchColumn();
+            if ($pf) {
+                $arr = json_decode($pf, true);
+                if (is_array($arr) && isset($arr[$type . '_channel'])) {
+                    $ch = $arr[$type . '_channel'];
+                    if (in_array($ch, ['both', 'push', 'email', 'none'], true)) return $ch;
+                }
+            }
+        } catch (Exception $e) { /* default */ }
+        return 'both';
+    }
+
+    /** Odosle notifikaciu podla kanala: push (vsetky zariadenia) + email podla potreby. */
+    function elvo_notif_send($pdo, $user_id, $channel, $type, $title, $body, $tag, $url, $mailHtml, $mailColor) {
+        if ($channel === 'none') return;
+        if ($channel === 'push' || $channel === 'both') {
+            try {
+                require_once __DIR__ . '/push_helper.php';
+                elvo_push_user($pdo, $user_id, $title, $body, $tag, $url);
+            } catch (Exception $e) { /* push best-effort */ }
+        }
+        if ($channel === 'email' || $channel === 'both') {
+            try {
+                $st = $pdo->prepare("SELECT email FROM users WHERE id = ?");
+                $st->execute([$user_id]);
+                $email = $st->fetchColumn();
+                if ($email) {
+                    require_once __DIR__ . '/mail_helper.php';
+                    send_elvo_email($email, $title . ' | ElvoControll', $body, $mailHtml, $mailColor);
+                }
+            } catch (Exception $e) { /* mail best-effort */ }
+        }
+    }
+}
+
 // Spracovanie statických súborov
 if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
     $clean_path = ltrim($path, '/');
@@ -974,12 +1016,34 @@ elseif ($path === '/verify-login') {
         }
         if ($code && password_verify($code, $pl['code_hash'])) {
             // Uspesne overenie -> uloz trusted device + prihlas
+            $isNewLoginDevice = false;
             try {
                 $pdo->exec("CREATE TABLE IF NOT EXISTS login_throttle (device_hash VARCHAR(64) PRIMARY KEY, blocked_until DATETIME NOT NULL)");
                 $pdo->exec("CREATE TABLE IF NOT EXISTS login_devices (id INTEGER PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, device_hash VARCHAR(64) NOT NULL, device_name VARCHAR(100) DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login DATETIME NULL, UNIQUE KEY uq_userdev (user_id, device_hash))");
+                $stLD = $pdo->prepare("SELECT id FROM login_devices WHERE user_id = ? AND device_hash = ?");
+                $stLD->execute([$pl['user_id'], $pl['device_hash']]);
+                $isNewLoginDevice = !$stLD->fetch();
                 $pdo->prepare("INSERT INTO login_devices (user_id, device_hash, device_name, last_login) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE last_login = NOW()")
                     ->execute([$pl['user_id'], $pl['device_hash'], substr($_SERVER['HTTP_USER_AGENT'] ?? 'Zariadenie', 0, 100)]);
             } catch (Exception $e) { /* ignore */ }
+            // ALERT: nove zariadenie sa prihlasilo na ucet (push + email podla kanala usera)
+            if ($isNewLoginDevice && !empty($pl['user_id'])) {
+                try {
+                    $uaShort = substr($_SERVER['HTTP_USER_AGENT'] ?? 'Neznáme zariadenie', 0, 60);
+                    $ip = $_SERVER['REMOTE_ADDR'] ?? '-';
+                    $chan = elvo_notif_channel($pdo, $pl['user_id'], 'new_device');
+                    $pushBody = 'Nové zariadenie sa prihlásilo do vášho účtu (' . $uaShort . ', IP ' . $ip . '). Ak ste to neboli vy, okamžite si zmeňte heslo.';
+                    $mailHtml = '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Nové zariadenie sa úspešne prihlásilo do vášho účtu ElvoControll:</p>' .
+                        '<div style="margin:0 0 20px 0;padding:20px 24px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:16px;">' .
+                        '<div style="font-size:10px;color:#fbbf24;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:8px;">Nové prihlásenie</div>' .
+                        '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;">🖥️ ' . htmlspecialchars($uaShort) . '</div>' .
+                        '<div style="font-size:12px;color:#94a3b8;">🌐 IP: ' . htmlspecialchars($ip) . ' · 🕐 ' . date('d.m.Y H:i') . '</div>' .
+                        '</div>' .
+                        '<p style="margin:0;font-size:12px;color:#64748b;">Ak ste to neboli vy, okamžite si zmeňte heslo v Profile aplikácie.</p>';
+                    elvo_notif_send($pdo, $pl['user_id'], $chan, 'new_device',
+                        '\u{1F4BB} Nové prihlásenie do účtu', $pushBody, 'new-login', '/profile', $mailHtml, '#f59e0b');
+                } catch (Exception $eN) { /* notifikacia best-effort */ }
+            }
             session_regenerate_id(true);
             $_SESSION['user_id'] = $pl['user_id'];
             $_SESSION['username'] = $pl['username'];
@@ -1817,7 +1881,8 @@ elseif ($path === '/api/user/devices' && $method === 'GET') {
 
 elseif ($path === '/api/user/notifications' && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
-    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true, 'notif_email' => true, 'notif_push' => true];
+    $defaults = ['new_device' => true, 'error' => true, 'daily_report' => false, 'negative_price' => true, 'notif_email' => true, 'notif_push' => true,
+                 'new_device_channel' => 'both', 'error_channel' => 'both', 'daily_report_channel' => 'both', 'negative_price_channel' => 'both'];
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
         $stmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
@@ -1843,6 +1908,12 @@ elseif ($path === '/api/user/notifications' && $method === 'POST') {
         'notif_email' => !empty($data['notif_email']),
         'notif_push' => !empty($data['notif_push']),
     ];
+    // Kanal pre kazdy typ: both | push | email | none (kanalove volby — oboje/iba push/iba mail/ziadne)
+    $chVal = function ($v) { return in_array($v, ['both', 'push', 'email', 'none'], true) ? $v : 'both'; };
+    $clean['new_device_channel'] = $chVal($data['new_device_channel'] ?? 'both');
+    $clean['error_channel'] = $chVal($data['error_channel'] ?? 'both');
+    $clean['daily_report_channel'] = $chVal($data['daily_report_channel'] ?? 'both');
+    $clean['negative_price_channel'] = $chVal($data['negative_price_channel'] ?? 'both');
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
         $stmt = $pdo->prepare("INSERT INTO user_prefs (user_id, prefs) VALUES (?, ?) ON DUPLICATE KEY UPDATE prefs = VALUES(prefs)");
@@ -2220,21 +2291,18 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
         // NOTIFIKÁCIA vlastníkovi (len pri NOVEJ registrácii — nie pri každom self-heal update)
         if (isset($keep_id) && !empty($data['owner_email'])) {
             try {
-                $stmtN = $pdo->prepare("SELECT email, username FROM users WHERE id = ? LIMIT 1");
-                $stmtN->execute([$user_id]);
-                $owner = $stmtN->fetch();
-                if ($owner) {
-                    require_once __DIR__ . '/mail_helper.php';
-                    $emailBody = '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Bolo pridané nové zariadenie do vášho účtu:</p>' .
-                        '<div style="margin:0 0 20px 0;padding:20px 24px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.3);border-radius:16px;">' .
-                        '<div style="font-size:10px;color:#67e8f9;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:8px;">Nové zariadenie</div>' .
-                        '<div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">' . htmlspecialchars($name) . '</div>' .
-                        '<div style="font-size:12px;color:#94a3b8;">Sériové číslo: ' . htmlspecialchars($serial ?: '—') . '</div>' .
-                        '</div>' .
-                        '<p style="margin:0;font-size:12px;color:#64748b;">Zariadenie spravujete v aplikácii ElvoControll na dashboarde.</p>';
-                    send_elvo_email($owner['email'], 'Nové zariadenie: ' . $name . ' | ElvoControll', 'Zariadenie pridané', $emailBody, '#06b6d4');
-                }
-            } catch (Exception $eM) { /* mail je best-effort */ }
+                $chan = elvo_notif_channel($pdo, $user_id, 'new_device');
+                $pushBody = 'Do vášho účtu bolo pridané nové zariadenie: ' . $name . ' (SN ' . ($serial ?: '—') . ').';
+                $mailHtml = '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Bolo pridané nové zariadenie do vášho účtu:</p>' .
+                    '<div style="margin:0 0 20px 0;padding:20px 24px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.3);border-radius:16px;">' .
+                    '<div style="font-size:10px;color:#67e8f9;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:8px;">Nové zariadenie</div>' .
+                    '<div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">' . htmlspecialchars($name) . '</div>' .
+                    '<div style="font-size:12px;color:#94a3b8;">Sériové číslo: ' . htmlspecialchars($serial ?: '—') . '</div>' .
+                    '</div>' .
+                    '<p style="margin:0;font-size:12px;color:#64748b;">Zariadenie spravujete v aplikácii ElvoControll na dashboarde.</p>';
+                elvo_notif_send($pdo, $user_id, $chan, 'new_device',
+                    '\u{1F50C} Nové zariadenie: ' . $name, $pushBody, 'new-device', '/dashboard', $mailHtml, '#06b6d4');
+            } catch (Exception $eM) { /* notifikacia best-effort */ }
         }
         send_json(['status' => 'success', 'name' => $name, 'user_id' => $user_id, 'serial' => $serial, 'device_id' => isset($keep_id) ? intval($keep_id) : null]);
     } catch (Exception $e) {
