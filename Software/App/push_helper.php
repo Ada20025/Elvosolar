@@ -59,6 +59,26 @@ if (!function_exists('elvo_push_b64url_enc')) {
         return openssl_pkey_get_public($pem);
     }
 
+    // Posle push VSETKYM zariadeniam usera. Vracia pocet uspesnych odoslani.
+    function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url) {
+        try {
+            $stmt = $pdo->prepare("SELECT sub_json FROM push_subs WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+            $sent = 0;
+            foreach ($stmt->fetchAll() as $row) {
+                $sub = json_decode($row['sub_json'], true);
+                if (!is_array($sub)) continue;
+                $r = elvo_push_send($pdo, $sub, $title, $body, $tag, $url);
+                if ($r === 'expired') {
+                    $pdo->prepare("DELETE FROM push_subs WHERE endpoint = ?")->execute([$sub['endpoint'] ?? '']);
+                } elseif ($r === true) {
+                    $sent++;
+                }
+            }
+            return $sent;
+        } catch (Exception $e) { error_log('[WEBPUSH] user: ' . $e->getMessage()); return 0; }
+    }
+
     // Posle push notifikaciu. true = OK, 'expired' = subscription mrtva (vymazat), false = ina chyba
     function elvo_push_send($pdo, $sub, $title, $body, $tag, $url) {
         try {

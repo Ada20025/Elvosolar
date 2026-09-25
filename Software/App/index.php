@@ -611,28 +611,7 @@ if (!function_exists('get_user_devices')) {
                                     $uidStmt->execute([$did]);
                                     $alertUid = intval($uidStmt->fetchColumn());
                                     if ($alertUid && $devPrefs['notif_push']) {
-// --- INTERNY: posli push vsetkym zariadeniam usera (pouziva aj eval_device_alerts) ---
-if (!function_exists('elvo_push_user')) {
-    function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url) {
-        try {
-            require_once __DIR__ . '/push_helper.php';
-            $stmt = $pdo->prepare("SELECT sub_json FROM push_subs WHERE user_id = ?");
-            $stmt->execute([$user_id]);
-            $sent = 0;
-            foreach ($stmt->fetchAll() as $row) {
-                $sub = json_decode($row['sub_json'], true);
-                if (!is_array($sub)) continue;
-                $r = elvo_push_send($pdo, $sub, $title, $body, $tag, $url);
-                if ($r === 'expired') {
-                    $pdo->prepare("DELETE FROM push_subs WHERE endpoint = ?")->execute([$sub['endpoint'] ?? '']);
-                } elseif ($r === true) {
-                    $sent++;
-                }
-            }
-            return $sent > 0;
-        } catch (Exception $e) { return false; }
-    }
-}
+                                        require_once __DIR__ . '/push_helper.php';
                                         elvo_push_user($pdo, $alertUid,
                                             ($a[2] === 'crit' ? "\u{1F6A8} " : "\u{26A0}\u{FE0F} ") . $a[0],
                                             $a[1], 'alert-' . $key, '/dashboard');
@@ -2635,12 +2614,12 @@ elseif ($path === '/api/push/test' && $method === 'POST') {
     if ($cnt === 0) {
         send_json(['status' => 'error', 'message' => 'Nemáš žiadne prihlásené push zariadenia. Obnov stránku a povoľ notifikácie.']);
     }
-    $ok = elvo_push_user($pdo, $uid,
+    $sent = elvo_push_user($pdo, $uid,
         "\u{1F514} Test notifikácia",
         'Web Push funguje! Toto je skúšobná správa z ElvoControll (' . date('H:i') . ').',
         'elvo-test', '/dashboard');
-    send_json(['status' => $ok ? 'success' : 'error',
-               'message' => $ok ? "Test push odoslaný na $cnt zariadenie(í)" : 'Push sa nepodarilo odoslať (pozri server log)']);
+    send_json(['status' => $sent > 0 ? 'success' : 'error',
+               'message' => $sent > 0 ? "Notifikácia doručená na $sent z $cnt zariadení ✔" : 'Odoslanie zlyhalo — skús obnoviť stránku a povoliť notifikácie znova.']);
 }
 
 // --- DEVICE RENAME ---
