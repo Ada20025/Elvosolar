@@ -2193,6 +2193,9 @@
             const temp = data.temp || 0;
             const power = data.total_live_power || 0;
             const soc = data.avg_live_soc || 0;
+            // Zobraz hodnoty vždy, keď CM5 poslal telemetriu (rovnaké čísla hore aj dole).
+            // '–' IBA keď CM5 nikdy neposlal dáta. Stav komunikácie (čerstvosť) je zvlášť.
+            const hasReal = data.has_real_data === true;
             // Pouzi realny status z DB (is_online) alebo fallback na power/soc
             const isOnline = data.is_online === true || (data.is_online === undefined && (power > 0 || soc > 0));
             // Typ zariadenia: SmartLogger alebo Striedač - IBA podla model_name/sub_type z DB
@@ -2327,9 +2330,9 @@
                         </div>
                     </div>
                     <div id="invD1" class="inverter-details-box">
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono" style="${commOk ? '' : 'color:#64748b;'}">${commOk ? Math.round(power) + ' W' : '–'}</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${commOk ? 'var(--accent-battery)' : '#64748b'};">${commOk ? Math.round(soc) + '%' : '–'}</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${commOk ? '' : 'color:#64748b;'}">${commOk ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? Math.round(power) + ' W' : '–'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${hasReal ? 'var(--accent-battery)' : '#64748b'};">${hasReal ? Math.round(soc) + '%' : '–'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${data.fw_version ? 'var(--text-primary)' : '#64748b'};">${data.fw_version || '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);margin-top:6px;padding-top:6px;"><span style="color:var(--text-secondary);">Komunikácia:</span><strong class="font-mono" style="color:${commColor};font-size:10px;">${commText}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav:</span><strong class="font-mono" style="color:${stateColor};font-size:10px;">${stateText}</strong></div>
