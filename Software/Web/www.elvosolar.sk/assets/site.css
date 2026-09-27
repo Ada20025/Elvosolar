@@ -123,6 +123,122 @@
 .elvo-toast[data-kind="error"] .toast-progress { background: linear-gradient(90deg, #f43f5e, #fb7185); }
 .elvo-toast[data-kind="info"] .toast-progress { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
 
+/* ---------- 4b. MODERNÉ COOKIES (banner + modal) ---------- */
+/* Banner — sklenená karta vľavo dole */
+#elvo-cookie-banner {
+    position: fixed;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 9998;
+    max-width: 400px;
+    width: calc(100vw - 2rem);
+    background: rgba(2, 6, 23, .92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 18px;
+    padding: 1.1rem 1.2rem;
+    color: #f1f5f9;
+    box-shadow: 0 24px 60px -12px rgba(0, 0, 0, .6);
+    opacity: 0;
+    transform: translateY(24px) scale(.98);
+    transition: opacity .45s, transform .45s cubic-bezier(.2, .9, .3, 1.15);
+    pointer-events: none;
+}
+#elvo-cookie-banner.ec-show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+#elvo-cookie-banner .ec-head { display: flex; align-items: center; gap: .5rem; font-size: .9rem; margin-bottom: .45rem; }
+#elvo-cookie-banner .ec-ico { font-size: 1.05rem; }
+#elvo-cookie-banner .ec-text { font-size: 12px; line-height: 1.55; color: #94a3b8; margin: 0 0 .9rem; }
+#elvo-cookie-banner .ec-actions { display: flex; gap: .45rem; flex-wrap: wrap; }
+
+.ec-btn {
+    border: 0; cursor: pointer; border-radius: 10px;
+    font-size: 11.5px; font-weight: 700; letter-spacing: .01em;
+    padding: .55rem .9rem; transition: all .2s;
+}
+.ec-btn.ec-solid { background: #10b981; color: #fff; flex: 1 1 auto; }
+.ec-btn.ec-solid:hover { background: #059669; transform: translateY(-1px); }
+.ec-btn.ec-ghost { background: rgba(255, 255, 255, .07); color: #cbd5e1; }
+.ec-btn.ec-ghost:hover { background: rgba(255, 255, 255, .14); color: #fff; }
+.ec-btn.ec-outline { background: transparent; color: #10b981; border: 1px solid rgba(16, 185, 129, .45); }
+.ec-btn.ec-outline:hover { background: rgba(16, 185, 129, .1); }
+
+/* Backdrop + modal */
+#elvo-cookie-backdrop {
+    position: fixed; inset: 0; z-index: 9998;
+    background: rgba(2, 6, 23, .6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+#elvo-cookie-backdrop.ec-show { opacity: 1; pointer-events: auto; }
+#elvo-cookie-modal {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem; pointer-events: none;
+}
+#elvo-cookie-modal .ecm-card {
+    pointer-events: auto;
+    background: #0f172a; color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, .1); border-radius: 20px;
+    width: 100%; max-width: 480px; max-height: min(86vh, 620px); overflow-y: auto;
+    padding: 1.4rem;
+    box-shadow: 0 30px 80px -12px rgba(0, 0, 0, .7);
+    opacity: 0; transform: translateY(16px) scale(.97);
+    transition: opacity .3s, transform .3s cubic-bezier(.2, .9, .3, 1.15);
+}
+#elvo-cookie-modal.ec-open .ecm-card { opacity: 1; transform: translateY(0) scale(1); }
+#elvo-cookie-modal .ecm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .6rem; }
+#elvo-cookie-modal .ecm-head b { font-size: .95rem; }
+#elvo-cookie-modal .ecm-x { background: none; border: 0; color: #64748b; cursor: pointer; font-size: .95rem; padding: 4px; }
+#elvo-cookie-modal .ecm-x:hover { color: #e2e8f0; }
+#elvo-cookie-modal .ecm-text { font-size: 12px; color: #94a3b8; line-height: 1.55; margin: 0 0 1rem; }
+#elvo-cookie-modal .ecm-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .07);
+    border-radius: 14px; padding: .9rem 1rem; margin-bottom: .6rem;
+}
+#elvo-cookie-modal .ecm-row b { display: block; font-size: .8rem; color: #f1f5f9; margin-bottom: 2px; }
+#elvo-cookie-modal .ecm-row span { font-size: 11px; color: #94a3b8; line-height: 1.5; }
+#elvo-cookie-modal .ec-tag {
+    flex: none; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+    color: #34d399; background: rgba(16, 185, 129, .12); border: 1px solid rgba(16, 185, 129, .3);
+    border-radius: 999px; padding: 4px 10px;
+}
+#elvo-cookie-modal .ecm-actions { display: flex; gap: .5rem; margin-top: .9rem; }
+#elvo-cookie-modal .ecm-actions .ec-btn { flex: 1; padding: .7rem .9rem; }
+
+/* iOS-style prepínač */
+.ec-switch { position: relative; display: inline-block; width: 44px; height: 25px; flex: none; }
+.ec-switch input { opacity: 0; width: 0; height: 0; }
+.ec-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #334155; border-radius: 999px; transition: background .25s;
+}
+.ec-slider::before {
+    content: ""; position: absolute; height: 19px; width: 19px;
+    left: 3px; top: 3px; background: #fff; border-radius: 50%;
+    transition: transform .25s cubic-bezier(.2, .9, .3, 1.2);
+}
+.ec-switch input:checked + .ec-slider { background: #10b981; }
+.ec-switch input:checked + .ec-slider::before { transform: translateX(19px); }
+.ec-switch input:focus-visible + .ec-slider { box-shadow: 0 0 0 3px rgba(16, 185, 129, .3); }
+
+/* Diskrétny odkaz na cookies v pätičke */
+.ec-footer-link {
+    display: inline-flex; align-items: center; gap: .35rem;
+    background: none; border: 0; cursor: pointer;
+    color: #64748b; font-size: 11px; padding: 4px 0;
+    transition: color .2s;
+}
+.ec-footer-link:hover { color: #10b981; }
+
+/* ---------- 6. VIZUÁLNY POLISH ---------- */
+::selection { background: rgba(16, 185, 129, .28); }
+html { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; border: 2px solid transparent; background-clip: content-box; }
+
 /* ---------- 5. NOTIFIKAČNÝ PANEL (odber noviniek) ---------- */
 .elvo-notify { display: flex; flex-direction: column; gap: .8rem; }
 .elvo-notify .notify-row { display: flex; gap: .6rem; }

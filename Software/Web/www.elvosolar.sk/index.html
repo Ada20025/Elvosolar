@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ELVOSOLAR a.s. ponúka inovatívne a ekologické riešenia pre optimalizáciu elektrickej energie, fotovoltiku, solárny ohrev a smart EMS systémy pre firmy a domácnosti.">
     <title data-translate="title">ELVOSOLAR a.s.</title>
+    <link rel="icon" type="image/png" href="Png/download.png">
     
     <!-- Kritické CSS na zamedzenie posunov rozloženia (CLS = 0) a zrýchlenie FCP -->
     <style>
@@ -575,98 +576,6 @@
         </div>
     </div>
 
-    <!-- Cookies lišta s moderným dizajnom -->
-    <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 md:left-auto md:max-w-md z-50 bg-slate-950/95 backdrop-blur-md border border-slate-800 text-white p-5 rounded-2xl hidden shadow-2xl transition-all duration-300 flex-col gap-4">
-        <div>
-            <h4 class="text-sm font-bold tracking-wide text-white mb-1.5 flex items-center gap-2">
-                <span>🍪</span> <span data-translate="cookie.title">Vážime si vaše súkromie</span>
-            </h4>
-            <p class="text-xs text-slate-300 leading-relaxed" data-translate="cookie.text"></p>
-        </div>
-        <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-900">
-            <button onclick="openCookieModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-colors" data-translate="cookie.customize">Prispôsobiť</button>
-            <button onclick="setCookieConsent('rejected')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 px-3 rounded-lg text-xs transition-colors" data-translate="cookie.reject">Odmietnuť</button>
-            <button onclick="setCookieConsent('accepted')" class="flex-2 w-full sm:w-auto bg-brand-green hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-xs transition-colors" data-translate="cookie.accept_all">Prijať všetko</button>
-        </div>
-    </div>
-
-    <!-- Modálne okno pre Prispôsobenie Cookies (Preference Center) -->
-    <div id="cookie-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden" role="dialog" aria-modal="true">
-        <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <!-- Header -->
-            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="text-base font-bold text-brand-dark" data-translate="cookie.modal_title">Prispôsobte preferencie súhlasu</h3>
-                <button onclick="closeCookieModal()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50" aria-label="Zatvoriť nastavenia cookies">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            
-            <!-- Body -->
-            <div class="p-6 overflow-y-auto space-y-6 text-xs text-slate-600 leading-relaxed">
-                <p id="cookie-modal-desc-text" data-translate="cookie.modal_desc"></p>
-                
-                <!-- Sekcia Nevyhnutné -->
-                <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-bold text-brand-dark text-sm flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-brand-green"></span>
-                            <span data-translate="cookie.necessary_title">Nevyhnutné</span>
-                        </h4>
-                        <span class="text-[10px] font-bold text-brand-green uppercase tracking-wider bg-brand-green/10 px-2 py-0.5 rounded" data-translate="cookie.necessary_status">Vždy aktívny</span>
-                    </div>
-                    <p class="mb-4 text-slate-500" data-translate="cookie.necessary_desc"></p>
-
-                    <!-- Tabuľka cookies -->
-                    <div class="border-t border-slate-200/60 pt-4 space-y-4">
-                        <!-- Cookie 1 -->
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
-                            <div class="md:col-span-3">
-                                <span class="font-semibold text-slate-500" data-translate="cookie.table_cookie_label">Súbory Cookies</span>
-                                <p class="font-mono font-bold text-brand-dark mt-0.5">cookieyes-consent</p>
-                            </div>
-                            <div class="md:col-span-2">
-                                <span class="font-semibold text-slate-500" data-translate="cookie.table_duration_label">Trvanie</span>
-                                <p class="text-slate-800 mt-0.5" data-translate="cookie.cookie1_duration">1 rok</p>
-                            </div>
-                            <div class="md:col-span-7">
-                                <span class="font-semibold text-slate-500" data-translate="cookie.table_desc_label">Popis</span>
-                                <p class="text-slate-500 mt-0.5" data-translate="cookie.cookie1_desc"></p>
-                            </div>
-                        </div>
-
-                        <!-- Cookie 2 -->
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 pt-1">
-                            <div class="md:col-span-3">
-                                <span class="font-semibold text-slate-500" data-translate="cookie.table_cookie_label">Súbory Cookies</span>
-                                <p class="font-mono font-bold text-brand-dark mt-0.5">_GRECAPTCHA</p>
-                            </div>
-                            <div class="md:col-span-2">
-                                <span class="font-semibold text-slate-500" data-translate="cookie.table_duration_label">Trvanie</span>
-                                <p class="text-slate-800 mt-0.5" data-translate="cookie.cookie2_duration">6 mesiacov</p>
-                            </div>
-                            <div class="md:col-span-7">
-                                <span class="font-semibold text-slate-500" data-translate="cookie.table_desc_label">Popis</span>
-                                <p class="text-slate-500 mt-0.5" data-translate="cookie.cookie2_desc"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="p-6 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <span class="text-[10px] text-slate-400 font-semibold">Powered by <span class="text-brand-dark font-extrabold">CookieYes</span></span>
-                <div class="flex gap-2 w-full sm:w-auto">
-                    <button onclick="setCookieConsent('rejected')" class="flex-1 sm:flex-none bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs transition-colors" data-translate="cookie.reject">Odmietnuť</button>
-                    <button onclick="setCookieConsent('custom')" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors" data-translate="cookie.save_preferences">Uložiť moje predvoľby</button>
-                    <button onclick="setCookieConsent('accepted')" class="flex-1 sm:flex-none bg-brand-green hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors" data-translate="cookie.accept_all">Prijať všetko</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Back to Top -->
     <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 left-6 z-50 w-11 h-11 rounded-full bg-brand-dark hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all" aria-label="Späť hore">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
@@ -885,32 +794,6 @@
                 button.disabled = false;
                 button.innerHTML = originalButtonText;
             }
-        }
-
-        // ----------------- COOKIES LIŠTA LOGIKA -----------------
-        function checkCookieConsent() {
-            const consent = localStorage.getItem('elvo_cookie_consent');
-            if (!consent) {
-                document.getElementById('cookie-banner').classList.remove('hidden');
-                document.getElementById('cookie-banner').classList.add('flex');
-            }
-        }
-
-        function setCookieConsent(status) {
-            localStorage.setItem('elvo_cookie_consent', status);
-            document.getElementById('cookie-banner').classList.add('hidden');
-            document.getElementById('cookie-banner').classList.remove('flex');
-            closeCookieModal();
-        }
-
-        function openCookieModal() {
-            document.getElementById('cookie-modal').classList.remove('hidden');
-            document.getElementById('cookie-modal').classList.add('flex');
-        }
-
-        function closeCookieModal() {
-            document.getElementById('cookie-modal').classList.add('hidden');
-            document.getElementById('cookie-modal').classList.remove('flex');
         }
 
         // ----------------- LOGIKA KOŠÍKA -----------------

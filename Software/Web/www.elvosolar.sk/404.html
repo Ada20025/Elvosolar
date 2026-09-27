@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="sk" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Stránka sa nenašla | ELVOSOLAR a.s.</title>
+    <link rel="icon" type="image/png" href="Png/download.png">
+    <link rel="stylesheet" href="assets/site.css">
+    <script src="assets/site.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0f172a',
+                            green: '#10b981',
+                            light: '#f8fafc',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .float-anim { animation: floatY 5s ease-in-out infinite; }
+        @keyframes ghostPulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+        .ghost-pulse { animation: ghostPulse 3s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-brand-light text-slate-800 font-sans antialiased flex flex-col min-h-screen">
+
+    <main class="flex-grow flex items-center justify-center px-6 py-20 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] dot-grid"></div>
+        <div class="max-w-lg w-full text-center relative z-10">
+            <div class="text-[110px] md:text-[150px] leading-none font-black select-none float-anim bg-gradient-to-br from-brand-dark via-brand-green to-cyan-500 bg-clip-text text-transparent">404</div>
+            <h1 class="text-2xl md:text-3xl font-extrabold text-brand-dark mt-2 tracking-tight">Táto stránka sa nenašla</h1>
+            <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                Obsah, ktorý hľadáte, bol presunutý alebo už neexistuje.
+                Skúste sa vrátiť na hlavnú stránku alebo si pozrite naše riešenia.
+            </p>
+            <div class="flex flex-wrap justify-center gap-3 mt-8">
+                <a href="index.html" class="bg-brand-green hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-emerald-500/20">← Späť na domov</a>
+                <a href="smart-riesenia/index.html" class="bg-white border border-slate-200 hover:border-brand-green hover:text-brand-green text-slate-700 px-6 py-3 rounded-xl font-bold text-sm transition-all">Smart riešenia</a>
+                <a href="kontakt/index.html" class="bg-white border border-slate-200 hover:border-brand-green hover:text-brand-green text-slate-700 px-6 py-3 rounded-xl font-bold text-sm transition-all">Kontakt</a>
+            </div>
+            <p class="text-xs text-slate-400 mt-10 ghost-pulse">☀️ ELVOSOLAR a.s. — obnoviteľná a optimalizovaná energia</p>
+        </div>
+    </main>
+
+    <footer class="bg-slate-950 text-slate-500 py-8 text-xs">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>2026 © Elvosolar, a.s.</p>
+            <p class="text-slate-600">Inovatívne energetické riešenia</p>
+        </div>
+    </footer>
+</body>
+</html>
