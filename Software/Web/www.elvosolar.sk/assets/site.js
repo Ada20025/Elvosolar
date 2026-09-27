@@ -260,7 +260,14 @@
                 var honeypot = form.querySelector('input[name="website"]');
                 var payload = { action: 'newsletter', email: email, page: location.pathname, website: honeypot ? honeypot.value : '' };
                 if (btn) { btn.disabled = true; btn.dataset.origText = btn.innerHTML; btn.innerHTML = 'Odosiela sa…'; }
-                fetch(form.getAttribute('data-endpoint') || 'send.php', {
+                // Endpoint podla hlbky stranky: / -> send.php, /kontakt/ -> ../send.php, /a/b/ -> ../../send.php
+                var endpoint = form.getAttribute('data-endpoint');
+                if (!endpoint) {
+                    var segs = location.pathname.replace(/\/+$/, '').split('/');
+                    var depth = Math.max(0, segs.length - 1);
+                    endpoint = '../'.repeat(depth) + 'send.php';
+                }
+                fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
