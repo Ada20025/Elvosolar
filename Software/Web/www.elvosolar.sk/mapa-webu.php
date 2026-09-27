@@ -12,7 +12,7 @@ $root = __DIR__;
 $pages = [];
 $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
 foreach ($rii as $file) {
-    if ($file->getFilename() !== 'index.html') continue;
+    if (substr($file->getFilename(), -5) !== '.html' || $file->isDir() || strpos($rel, 'templates') === 0 || in_array($file->getFilename(), ['404.html','mapa-webu.html'])) continue;
     $dir = str_replace('\\', '/', dirname($file->getPathname()));
     $rel = ltrim(str_replace($root, '', $dir), '/');
     $title = 'Bez názvu';

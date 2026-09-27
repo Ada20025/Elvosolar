@@ -261,3 +261,54 @@ html { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
     .elvo-notify .notify-row { flex-direction: column; }
     .elvo-notify .notify-row button { width: 100%; }
 }
+
+/* ---------- 6. ANIMOVANÁ OBLOHA (slnko podľa času dňa) ---------- */
+#elvo-sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+body > header, body > main, body > footer { position: relative; z-index: 1; }
+
+/* Vrstva NAD obsahom — slnko/mesiac/hviezdy presvietavajú cez tmavé sekcie.
+   mix-blend-mode: screen = na svetlom pozadí neviditeľné, na tmavom svieti. */
+#elvo-sky-top { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; mix-blend-mode: screen; }
+#elvo-sky-top .es-sun-wrap, #elvo-sky-top .es-moon { transition: opacity 1.2s ease; }
+#elvo-sky-top.es-scrolled .es-sun-wrap, #elvo-sky-top.es-scrolled .es-moon { opacity: .35; }
+
+.es-sun-wrap { position: absolute; width: 130px; height: 130px; margin: -65px 0 0 -65px; }
+.es-sun {
+    width: 100%; height: 100%; border-radius: 50%;
+    background: radial-gradient(circle at 38% 38%, #fffbe6 0%, #ffe082 40%, #ffb300 72%, rgba(255,179,0,0) 100%);
+    box-shadow: 0 0 36px 12px rgba(255,202,64,.5), 0 0 110px 44px rgba(255,183,40,.16);
+    animation: esPulse 6s ease-in-out infinite;
+}
+.es-moon {
+    position: absolute; right: 12%; top: 9%; width: 72px; height: 72px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #f8fafc, #cbd5e1 72%);
+    box-shadow: 0 0 28px 10px rgba(226,232,240,.22);
+}
+.es-star {
+    position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff;
+    animation: esTwinkle 4s ease-in-out infinite;
+}
+#elvo-sky.es-night { background: linear-gradient(180deg, rgba(15,23,42,.14), rgba(15,23,42,.03) 60%, transparent); }
+
+.es-cloud {
+    position: absolute; width: 120px; height: 30px;
+    background: rgba(255,255,255,.85); border-radius: 999px; opacity: .5; filter: blur(.5px);
+}
+.es-cloud::before { content: ''; position: absolute; left: 20px; top: -16px; width: 50px; height: 38px; background: inherit; border-radius: 50%; }
+.es-cloud::after  { content: ''; position: absolute; left: 58px; top: -9px;  width: 36px; height: 28px; background: inherit; border-radius: 50%; }
+
+@keyframes esDrift { from { transform: translateX(-35vw); } to { transform: translateX(135vw); } }
+@keyframes esPulse { 0%, 100% { opacity: .9; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+@keyframes esTwinkle { 0%, 100% { opacity: .15; } 50% { opacity: .95; } }
+
+/* Slnko v hero sekcii (tmavé pozadie homepage) */
+.es-hero-sun {
+    position: absolute; right: -40px; top: 16%; width: 190px; height: 190px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,204,64,.30) 0%, rgba(255,183,40,.10) 52%, transparent 70%);
+    animation: esPulse 7s ease-in-out infinite; pointer-events: none;
+}
+@media (max-width: 640px) { .es-hero-sun { width: 120px; height: 120px; right: -30px; top: 8%; } }
+
+@media (prefers-reduced-motion: reduce) {
+    #elvo-sky, #elvo-sky-top, .es-hero-sun { display: none; }
+}

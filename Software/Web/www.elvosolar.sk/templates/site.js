@@ -260,11 +260,12 @@
                 var honeypot = form.querySelector('input[name="website"]');
                 var payload = { action: 'newsletter', email: email, page: location.pathname, website: honeypot ? honeypot.value : '' };
                 if (btn) { btn.disabled = true; btn.dataset.origText = btn.innerHTML; btn.innerHTML = 'Odosiela sa…'; }
-                // Endpoint podla hlbky stranky: / -> send.php, /kontakt/ -> ../send.php, /a/b/ -> ../../send.php
+                // Endpoint podla hlbky stranky: /index.html aj /kontakt.html -> send.php, /a/b/ -> ../../send.php
+                // pocitaju sa len adresarove segmenty (segmenty s priponou suboru sa nepocitaju)
                 var endpoint = form.getAttribute('data-endpoint');
                 if (!endpoint) {
-                    var segs = location.pathname.replace(/\/+$/, '').split('/');
-                    var depth = Math.max(0, segs.length - 1);
+                    var segs = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+                    var depth = segs.filter(function (s) { return !/\.[a-z0-9]+$/i.test(s); }).length;
                     endpoint = '../'.repeat(depth) + 'send.php';
                 }
                 fetch(endpoint, {
@@ -316,8 +317,78 @@
         });
     }
 
+    /* ---------------- ANIMOVANÁ OBLOHA ----------------
+       Fixed vrstva so slnkom, ktoré sa hýbe podľa reálneho času dňa.
+       Ráno/večer nízko pri horizonte, v noci mesiac + hviezdy.
+       Pridám aj svietiace slnko do hero sekcie homepage. */
+    function initSky() {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var sky = document.getElementById('elvo-sky');
+        if (!sky) {
+            sky = document.createElement('div');
+            sky.id = 'elvo-sky';
+            document.body.insertBefore(sky, document.body.firstChild);
+        }
+        // horná vrstva nad obsahom — svieti cez tmavé sekcie (mix-blend-mode: screen)
+        var skyTop = document.getElementById('elvo-sky-top');
+        if (!skyTop) {
+            skyTop = document.createElement('div');
+            skyTop.id = 'elvo-sky-top';
+            document.body.insertBefore(skyTop, document.body.firstChild);
+        }
+        var h = new Date().getHours();
+        if (h >= 22 || h < 6) {
+            // NOC — mesiac a hviezdy (vo vrstve nad obsahom)
+            sky.classList.add('es-night');
+            var moon = document.createElement('div'); moon.className = 'es-moon';
+            skyTop.appendChild(moon);
+            for (var i = 0; i < 26; i++) {
+                var st = document.createElement('div'); st.className = 'es-star';
+                st.style.left = (Math.random() * 100) + '%';
+                st.style.top = (Math.random() * 60) + '%';
+                st.style.animationDelay = (Math.random() * 4) + 's';
+                skyTop.appendChild(st);
+            }
+            addClouds(2);
+        } else {
+            // DEŇ — slnko na pozícii podľa hodiny (6→22 h mapované na oblohu)
+            var t = Math.min(1, Math.max(0, (h - 6) / 16));
+            var x = 12 + 76 * t; // 12 % → 88 % šírky
+            var y = 34 - 26 * Math.sin(Math.PI * t); // nižšie ráno/večer, vyššie na poludnie
+            var sunWrap = document.createElement('div'); sunWrap.className = 'es-sun-wrap';
+            sunWrap.style.left = x + '%'; sunWrap.style.top = y + '%';
+            var sun = document.createElement('div'); sun.className = 'es-sun';
+            sunWrap.appendChild(sun); skyTop.appendChild(sunWrap);
+            addClouds(4);
+        }
+        function addClouds(n) {
+            for (var c = 0; c < n; c++) {
+                var cl = document.createElement('div'); cl.className = 'es-cloud';
+                var scale = .7 + Math.random() * .9;
+                cl.style.transform = 'scale(' + scale + ')';
+                cl.style.opacity = (.35 + Math.random() * .3).toFixed(2);
+                cl.style.top = (4 + Math.random() * 40) + '%';
+                var dur = 70 + Math.random() * 90;
+                cl.style.animation = 'esDrift ' + dur + 's linear infinite';
+                cl.style.animationDelay = '-' + (Math.random() * dur) + 's';
+                sky.appendChild(cl);
+            }
+        }
+        // Slnko v hero sekcii (len ak existuje)
+        var hero = document.querySelector('.hero-section');
+        if (h >= 6 && h < 22 && hero && !hero.querySelector('.es-hero-sun')) {
+            var hs = document.createElement('div'); hs.className = 'es-hero-sun';
+            hero.appendChild(hs);
+        }
+        // Po prejdení hero stmaviť nebeské telesá (nerušia obsah ani fotky)
+        window.addEventListener('scroll', function () {
+            skyTop.classList.toggle('es-scrolled', window.scrollY > window.innerHeight * 0.5);
+        }, { passive: true });
+    }
+
     function initAll() {
         initReveal();
+        initSky();
         bindNotifyForms();
         bindSmartButtons();
         applyDotGrid();

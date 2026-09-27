@@ -61,14 +61,14 @@
     </style>
 
     <!-- Preload LCP a preconnect -->
-    <link rel="preload" href="../../Png/Fotovoltika1.jpg" as="image" fetchpriority="high">
+    <link rel="preload" href="templates/Png/Fotovoltika1.jpg" as="image" fetchpriority="high">
     <link rel="preconnect" href="https://images.unsplash.com">
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
 
     <!-- Odložené načítanie Tailwind CSS pre elimináciu TBT -->
     <script src="https://cdn.tailwindcss.com" defer></script>
-    <link rel="stylesheet" href="../../assets/site.css">
-    <script src="../../assets/site.js" defer></script>
+    <link rel="stylesheet" href="templates/site.css">
+    <script src="templates/site.js" defer></script>
     <script src="https://unpkg.com/lucide@latest" defer></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
@@ -94,15 +94,15 @@
     <header class="sticky top-0 z-40 backdrop-blur-md">
         <div class="header-container">
             <a href="index.html" class="flex items-center" aria-label="ELVOSOLAR domovská stránka">
-                <img src="../../Png/download.png" alt="ELVOSOLAR a.s." class="logo-img" width="150" height="40" decoding="async">
+                <img src="templates/Png/download.png" alt="ELVOSOLAR a.s." class="logo-img" width="150" height="40" decoding="async">
             </a>
             
             <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600" aria-label="Hlavné menu">
-                <a href="../../o-nás/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.about">O nás</a>
-                <a href="../../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.renewable">Obnoviteľná energia</a>
-                <a href="../../smart-riesenia/index.html" class="text-brand-green transition-colors font-bold" data-translate="nav.smart">Smart riešenia</a>
-                <a href="../../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services">Služby</a>
-                <a href="../../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact">Kontakt</a>
+                <a href="o-nas.html" class="hover:text-brand-green transition-colors" data-translate="nav.about">O nás</a>
+                <a href="fotovoltika.html" class="hover:text-brand-green transition-colors" data-translate="nav.renewable">Obnoviteľná energia</a>
+                <a href="smart-riesenia.html" class="text-brand-green transition-colors font-bold" data-translate="nav.smart">Smart riešenia</a>
+                <a href="sluzby.html" class="hover:text-brand-green transition-colors" data-translate="nav.services">Služby</a>
+                <a href="kontakt.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact">Kontakt</a>
             </nav>
 
             <div class="flex items-center space-x-4">
@@ -127,7 +127,7 @@
                     </div>
                 </div>
 
-                <a href="../../kontakt/index.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all">Nezáväzný dopyt</a>
+                <a href="kontakt.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all">Nezáväzný dopyt</a>
             </div>
         </div>
     </header>
@@ -135,9 +135,9 @@
     <!-- BREADCRUMBS -->
     <div class="bg-white py-3 border-b border-slate-100">
         <div class="max-w-7xl mx-auto px-6 text-xs text-slate-400 flex gap-2">
-            <a href="../../index.html" class="hover:text-brand-green">Domov</a>
+            <a href="index.html" class="hover:text-brand-green">Domov</a>
             <span>/</span>
-            <a href="../../smart-riesenia/index.html" class="hover:text-brand-green">Smart riešenia</a>
+            <a href="smart-riesenia.html" class="hover:text-brand-green">Smart riešenia</a>
             <span>/</span>
             <span class="text-slate-600 font-semibold font-mono">CM5 AI EMS Pro</span>
         </div>
@@ -569,7 +569,7 @@
     <!-- Pätička -->
     <footer class="bg-slate-950 text-slate-500 py-8 text-xs border-t border-slate-900 mt-auto">
         <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p>2026 © Elvosolar, a.s. • <a href="../../Png/ochrana-osobnych-udajov.pdf" target="_blank" class="hover:underline text-slate-400">Ochrana osobných údajov</a></p>
+            <p>2026 © Elvosolar, a.s. • <a href="templates/Png/ochrana-osobnych-udajov.pdf" target="_blank" class="hover:underline text-slate-400">Ochrana osobných údajov</a></p>
             <p class="text-slate-600">Inteligentné energetické riadenie</p>
         </div>
     
@@ -755,7 +755,7 @@
             const total = document.getElementById('cart-total-price').innerText;
 
             try {
-                const response = await fetch('../../send.php', {
+                const response = await fetch('send.php', {
                     method: 'POST',
                     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: total })
