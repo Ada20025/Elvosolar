@@ -6,6 +6,8 @@
     <title data-translate="title">Smart riešenia | ELVOSOLAR a.s.</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/site.css">
+    <script src="../assets/site.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -54,7 +56,6 @@
                 </div>
 
                 <a href="../smart-riesenia/index.html" class="text-brand-green transition-colors" data-translate="nav.smart"></a>
-                <a href="../eshop/index.html" class="text-brand-green hover:text-emerald-600 font-extrabold flex items-center gap-1">🛒 E-Shop</a>
                 <a href="../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
                 <a href="../zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
                 <a href="../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
@@ -166,9 +167,7 @@
                     </div>
                 </div>
                 <div class="p-8 pt-0">
-                    <button onclick="location.href='../eshop/index.html'" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 btn-glow">
-                        <span data-translate="smart_page.prod1_btn"></span>
-                    </button>
+                    <a href="Solarcontroller2/index.html" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 btn-glow" data-translate="smart_page.prod1_btn"></a>
                 </div>
             </div>
 
@@ -186,9 +185,7 @@
                     </div>
                 </div>
                 <div class="p-8 pt-0">
-                    <button onclick="location.href='../eshop/index.html'" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 btn-glow">
-                        <span data-translate="smart_page.prod2_btn"></span>
-                    </button>
+                    <a href="../kontakt/index.html" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 btn-glow" data-translate="smart_page.prod2_btn"></a>
                 </div>
             </div>
 
@@ -245,7 +242,20 @@
             <p data-translate="footer.copyright"></p>
             <p class="text-slate-600" data-translate="footer.tagline"></p>
         </div>
-    </footer>
+    
+    <!-- Notifikácie e-mailom (odber noviniek) -->
+    <div class="max-w-7xl mx-auto px-6 pb-8">
+      <form class="elvo-notify" novalidate>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;opacity:0">
+        <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider">🔔 Notifikácie e-mailom</label>
+        <div class="notify-row">
+          <input type="email" name="email" required placeholder="Váš e-mail — novinky, dotácie, akcie">
+          <button type="submit" class="bg-brand-green hover:bg-emerald-600 text-white font-bold px-5 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors whitespace-nowrap">Prihlásiť odber</button>
+        </div>
+        <p class="notify-note">Jeden e-mail mesačne: novinky, dotácie Zelená podnikom a tipy na úspory. Odhlásenie jedným klikom.</p>
+      </form>
+    </div>
+</footer>
 
     <!-- Skripty -->
     <script>
@@ -485,33 +495,41 @@
             cartTotalPrice.innerText = `${totalPrice.toLocaleString(formatterLang)} €`;
         }
 
-        function handleCheckout(event) {
+async function handleCheckout(event) {
             event.preventDefault();
-            const name = document.getElementById('checkout-name').value;
-            const email = document.getElementById('checkout-email').value;
+            const name = document.getElementById('checkout-name').value.trim();
+            const email = document.getElementById('checkout-email').value.trim();
 
             if (cart.length === 0) return;
 
             let itemsSummary = cart.map(item => {
-                const translatedName = getNestedValue(currentTranslations, item.translationKey) || item.translationKey;
-                return `- ${translatedName} (${item.quantity}x)`;
+                const finalName = item.translationKey ? (getNestedValue(currentTranslations, item.translationKey) || item.name) : item.name;
+                return `- ${finalName} (${item.quantity}x)`;
             }).join('\n');
 
-            const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
-            const alertThankYou = getNestedValue(dictionary, 'cart.alert_thank_you') || "Ďakujeme za váš dopyt, {name}!";
-            const alertReceived = getNestedValue(dictionary, 'cart.alert_received') || "Na e-mail {email} sme zaznamenali záujem o produkty:";
-            const alertContact = getNestedValue(dictionary, 'cart.alert_contact') || "Čoskoro vás budeme kontaktovať.";
+            const button = event.target.querySelector('button[type="submit"]');
+            const originalButtonText = button ? button.innerHTML : '';
+            if (button) { button.disabled = true; button.innerHTML = 'Odosiela sa...'; }
 
-            const formattedThankYou = alertThankYou.replace('{name}', name);
-            const formattedReceived = alertReceived.replace('{email}', email);
-
-            alert(`${formattedThankYou}\n\n${formattedReceived}\n${itemsSummary}\n\n${alertContact}`);
-            
-            cart = [];
-            saveCart();
-            updateCartUI();
-            toggleCartDrawer();
-            document.getElementById('checkout-form').reset();
+            try {
+                const response = await fetch('../send.php', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: document.getElementById('cart-total-price').innerText, page: location.pathname })
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    elvoNotify({ kind: 'success', title: 'Dopyt odoslaný', message: `Ďakujeme, ${name}! Dopyt bol odoslaný na info@elvosolar.sk, ozveme sa čoskoro.` });
+                    cart = []; saveCart(); updateCartUI(); toggleCartDrawer();
+                    document.getElementById('checkout-form').reset();
+                } else {
+                    elvoNotify({ kind: 'error', title: 'Chyba odoslania', message: (result && result.message) || 'Dopyt sa nepodarilo odoslať. Skúste to prosím znova.' });
+                }
+            } catch (err) {
+                elvoNotify({ kind: 'error', title: 'Chyba siete', message: 'Nepodarilo sa spojiť so serverom. Skúste to prosím znova.' });
+            } finally {
+                if (button) { button.disabled = false; button.innerHTML = originalButtonText; }
+            }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -545,12 +563,12 @@
                     "prod1_title": "Smart Cenový kontroler",
                     "prod1_desc": "Precízny fázový monitoring spotreby a odberných miest. Umožňuje automatizované spínanie a vypínanie príkonu energie na základe vývoja cien elektriny pre maximálnu úsporu.",
                     "prod1_more": "Zobraziť parametre a obsah balenia ►",
-                    "prod1_btn": "Pridať do dopytového košíka",
+                    "prod1_btn": "Zobraziť detail a parametre ►",
                     "prod2_badge": "Vo vývoji: Riadenie tokov energií",
                     "prod2_title": "Smart EMS Controller (Projekt Stanov)",
                     "prod2_desc": "Inteligentný energetický manažment (EMS) riadi výrobu a spotrebu elektriny v reálnom čase. Vyhodnocuje predpovede počasia, spotrebiteľské správanie a optimalizuje toky do spotrebičov, batérií či distribučnej siete.",
                     "prod2_more": "Zobraziť parametre a obsah balenia ►",
-                    "prod2_btn": "Pridať do dopytového košíka"
+                    "prod2_btn": "Nezáväzný dopyt ►"
                 },
                 "cart": {
                     "title": "Váš dopytový košík",
@@ -595,12 +613,12 @@
                     "prod1_title": "Smart Price Controller",
                     "prod1_desc": "Precise phase monitoring of consumption and delivery points. Enables automated switching and power load shedding based on grid electricity prices for maximum savings.",
                     "prod1_more": "Show parameters and package contents ►",
-                    "prod1_btn": "Add to inquiry cart",
+                    "prod1_btn": "View details and specs ►",
                     "prod2_badge": "In development: Energy flow management",
                     "prod2_title": "Smart EMS Controller (Stano's Project)",
                     "prod2_desc": "Intelligent Energy Management System (EMS) controls production and consumption in real time. It analyzes weather forecasts, consumer behavior, and dynamically manages flows to appliances, batteries, or the grid.",
                     "prod2_more": "Show parameters and package contents ►",
-                    "prod2_btn": "Add to inquiry cart"
+                    "prod2_btn": "Non-binding inquiry ►"
                 },
                 "cart": {
                     "title": "Your Inquiry Cart",

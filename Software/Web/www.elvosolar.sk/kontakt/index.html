@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-translate="contact_page.title">Kontakt | ELVOSOLAR a.s.</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/site.css">
+    <script src="../assets/site.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -150,7 +152,7 @@
             <!-- Formulár -->
             <div id="kontakt-formular" class="lg:col-span-7 bg-white p-6 md:p-10 rounded-3xl border border-slate-100 shadow-sm">
                 <h3 class="text-xl font-bold text-brand-dark mb-6" data-translate="contact_page.form_title"></h3>
-                <form class="space-y-4">
+                <form class="space-y-4" onsubmit="handleContactSubmit(event)" novalidate>
                     <div class="grid md:grid-cols-2 gap-4">
                         <input type="text" required data-translate-placeholder="contact_page.form_name_placeholder" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green">
                         <input type="email" required data-translate-placeholder="contact_page.form_email_placeholder" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green">
@@ -202,7 +204,20 @@
             <p data-translate="footer.copyright"></p>
             <p class="text-slate-600" data-translate="footer.tagline"></p>
         </div>
-    </footer>
+    
+    <!-- Notifikácie e-mailom (odber noviniek) -->
+    <div class="max-w-7xl mx-auto px-6 pb-8">
+      <form class="elvo-notify" novalidate>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;opacity:0">
+        <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider">🔔 Notifikácie e-mailom</label>
+        <div class="notify-row">
+          <input type="email" name="email" required placeholder="Váš e-mail — novinky, dotácie, akcie">
+          <button type="submit" class="bg-brand-green hover:bg-emerald-600 text-white font-bold px-5 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors whitespace-nowrap">Prihlásiť odber</button>
+        </div>
+        <p class="notify-note">Jeden e-mail mesačne: novinky, dotácie Zelená podnikom a tipy na úspory. Odhlásenie jedným klikom.</p>
+      </form>
+    </div>
+</footer>
 
     <script>
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
@@ -417,6 +432,47 @@
 
             cart = []; saveCart(); updateCartUI(); toggleCartDrawer();
             document.getElementById('checkout-form').reset();
+        }
+
+        async function handleContactSubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            const inputs = form.querySelectorAll('input[required], textarea[required]');
+            const name = inputs[0] ? inputs[0].value.trim() : '';
+            const email = inputs[1] ? inputs[1].value.trim() : '';
+            const phone = inputs[2] ? inputs[2].value.trim() : '';
+            const message = inputs[3] ? inputs[3].value.trim() : '';
+
+            if (!name || !email || !message) {
+                elvoNotify({ kind: 'error', title: 'Chýbajú údaje', message: 'Vyplňte prosím meno, e-mail a správu.' });
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                elvoNotify({ kind: 'error', title: 'Nesprávny e-mail', message: 'Zadajte platnú e-mailovú adresu.' });
+                return;
+            }
+            const button = form.querySelector('button[type="submit"]');
+            const originalButtonText = button ? button.innerHTML : '';
+            if (button) { button.disabled = true; button.innerHTML = 'Odosiela sa...'; }
+
+            try {
+                const response = await fetch('../send.php', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'contact', name, email, message: phone ? (message + '\nTel.: ' + phone) : message })
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    elvoNotify({ kind: 'success', title: 'Správa odoslaná', message: 'Ďakujeme! Ozveme sa vám čoskoro.' });
+                    form.reset();
+                } else {
+                    elvoNotify({ kind: 'error', title: 'Chyba odoslania', message: (result && result.message) || 'Skúste to prosím znova.' });
+                }
+            } catch (err) {
+                elvoNotify({ kind: 'error', title: 'Chyba siete', message: 'Nepodarilo sa spojiť so serverom. Skúste to prosím znova.' });
+            } finally {
+                if (button) { button.disabled = false; button.innerHTML = originalButtonText; }
+            }
         }
 
         document.addEventListener("DOMContentLoaded", () => {

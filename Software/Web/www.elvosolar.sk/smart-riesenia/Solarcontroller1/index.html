@@ -67,6 +67,8 @@
 
     <!-- Odložené načítanie Tailwind CSS pre elimináciu TBT -->
     <script src="https://cdn.tailwindcss.com" defer></script>
+    <link rel="stylesheet" href="../../assets/site.css">
+    <script src="../../assets/site.js" defer></script>
     <script src="https://unpkg.com/lucide@latest" defer></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
@@ -570,7 +572,20 @@
             <p>2026 © Elvosolar, a.s. • <a href="ochrana-osobnych-udajov.pdf" target="_blank" class="hover:underline text-slate-400">Ochrana osobných údajov</a></p>
             <p class="text-slate-600">Inteligentné energetické riadenie</p>
         </div>
-    </footer>
+    
+    <!-- Notifikácie e-mailom (odber noviniek) -->
+    <div class="max-w-7xl mx-auto px-6 pb-8">
+      <form class="elvo-notify" novalidate>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;opacity:0">
+        <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider">🔔 Notifikácie e-mailom</label>
+        <div class="notify-row">
+          <input type="email" name="email" required placeholder="Váš e-mail — novinky, dotácie, akcie">
+          <button type="submit" class="bg-brand-green hover:bg-emerald-600 text-white font-bold px-5 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors whitespace-nowrap">Prihlásiť odber</button>
+        </div>
+        <p class="notify-note">Jeden e-mail mesačne: novinky, dotácie Zelená podnikom a tipy na úspory. Odhlásenie jedným klikom.</p>
+      </form>
+    </div>
+</footer>
 
     <script>
         const SEASON_STRATEGIES = {
@@ -740,7 +755,7 @@
             const total = document.getElementById('cart-total-price').innerText;
 
             try {
-                const response = await fetch('send.php', {
+                const response = await fetch('../../send.php', {
                     method: 'POST',
                     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: total })

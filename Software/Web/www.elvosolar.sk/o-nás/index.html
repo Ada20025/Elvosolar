@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-translate="about_page.title">O nás | ELVOSOLAR a.s.</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/site.css">
+    <script src="../assets/site.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -189,7 +191,20 @@
             <p data-translate="footer.copyright"></p>
             <p class="text-slate-600" data-translate="footer.tagline"></p>
         </div>
-    </footer>
+    
+    <!-- Notifikácie e-mailom (odber noviniek) -->
+    <div class="max-w-7xl mx-auto px-6 pb-8">
+      <form class="elvo-notify" novalidate>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;opacity:0">
+        <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider">🔔 Notifikácie e-mailom</label>
+        <div class="notify-row">
+          <input type="email" name="email" required placeholder="Váš e-mail — novinky, dotácie, akcie">
+          <button type="submit" class="bg-brand-green hover:bg-emerald-600 text-white font-bold px-5 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors whitespace-nowrap">Prihlásiť odber</button>
+        </div>
+        <p class="notify-note">Jeden e-mail mesačne: novinky, dotácie Zelená podnikom a tipy na úspory. Odhlásenie jedným klikom.</p>
+      </form>
+    </div>
+</footer>
 
     <script>
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
@@ -384,27 +399,41 @@
             cartTotalPrice.innerText = `${totalPrice.toLocaleString(formatterLang)} €`;
         }
 
-        function handleCheckout(event) {
+async function handleCheckout(event) {
             event.preventDefault();
-            const name = document.getElementById('checkout-name').value;
-            const email = document.getElementById('checkout-email').value;
+            const name = document.getElementById('checkout-name').value.trim();
+            const email = document.getElementById('checkout-email').value.trim();
 
             if (cart.length === 0) return;
 
-            let itemsSummary = cart.map(item => `- ${item.name} (${item.quantity}x)`).join('\n');
+            let itemsSummary = cart.map(item => {
+                const finalName = item.translationKey ? (getNestedValue(currentTranslations, item.translationKey) || item.name) : item.name;
+                return `- ${finalName} (${item.quantity}x)`;
+            }).join('\n');
 
-            const dictionary = translations[currentLang] || translations['sk'];
-            const alertThankYou = getNestedValue(currentTranslations, 'cart.alert_thank_you') || "Ďakujeme za váš dopyt, {name}!";
-            const alertReceived = getNestedValue(currentTranslations, 'cart.alert_received') || "Na e-mail {email} sme zaznamenali záujem o produkty:";
-            const alertContact = getNestedValue(currentTranslations, 'cart.alert_contact') || "Čoskoro vás budeme kontaktovať.";
+            const button = event.target.querySelector('button[type="submit"]');
+            const originalButtonText = button ? button.innerHTML : '';
+            if (button) { button.disabled = true; button.innerHTML = 'Odosiela sa...'; }
 
-            const formattedThankYou = alertThankYou.replace('{name}', name);
-            const formattedReceived = alertReceived.replace('{email}', email);
-
-            alert(`${formattedThankYou}\n\n${formattedReceived}\n${itemsSummary}\n\n${alertContact}`);
-
-            cart = []; saveCart(); updateCartUI(); toggleCartDrawer();
-            document.getElementById('checkout-form').reset();
+            try {
+                const response = await fetch('../send.php', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: document.getElementById('cart-total-price').innerText, page: location.pathname })
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    elvoNotify({ kind: 'success', title: 'Dopyt odoslaný', message: `Ďakujeme, ${name}! Dopyt bol odoslaný na info@elvosolar.sk, ozveme sa čoskoro.` });
+                    cart = []; saveCart(); updateCartUI(); toggleCartDrawer();
+                    document.getElementById('checkout-form').reset();
+                } else {
+                    elvoNotify({ kind: 'error', title: 'Chyba odoslania', message: (result && result.message) || 'Dopyt sa nepodarilo odoslať. Skúste to prosím znova.' });
+                }
+            } catch (err) {
+                elvoNotify({ kind: 'error', title: 'Chyba siete', message: 'Nepodarilo sa spojiť so serverom. Skúste to prosím znova.' });
+            } finally {
+                if (button) { button.disabled = false; button.innerHTML = originalButtonText; }
+            }
         }
 
         document.addEventListener("DOMContentLoaded", () => {

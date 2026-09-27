@@ -99,6 +99,10 @@
         .stat-card:hover { transform: scale(1.03); }
     </style>
 
+    <!-- Zdieľané štýly a skripty: animácie + notifikácie -->
+    <link rel="stylesheet" href="assets/site.css">
+    <script src="assets/site.js" defer></script>
+
     <!-- Odložené načítanie Tailwind CSS pre elimináciu TBT -->
     <script src="https://cdn.tailwindcss.com" defer></script>
     <script>
@@ -148,7 +152,6 @@
                 </div>
 
                 <a href="smart-riesenia/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
-                <a href="eshop/index.html" class="text-brand-green hover:text-emerald-600 font-extrabold flex items-center gap-1">🛒 E-Shop</a>
                 <a href="služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
                 <a href="zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
                 <a href="kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
@@ -218,7 +221,7 @@
     <main id="main-content">
         <!-- Hero Sekcia -->
         <section class="hero-section text-white py-20 lg:py-32 overflow-hidden" id="hero">
-            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] dot-grid"></div>
             <div class="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-12 gap-12 items-center">
                 <div class="lg:col-span-7">
                     <!-- badge removed per request -->
@@ -227,6 +230,21 @@
                     <p class="text-slate-400 text-sm mb-8 italic border-l-2 border-brand-green pl-4" data-translate="hero.quote"></p>
                     <div class="flex flex-wrap gap-4">
                         <a href="o-nás/index.html" class="bg-brand-green hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold transition-all inline-block btn-glow" data-translate="hero.cta"></a>
+                        <a href="smart-riesenia/index.html" class="border border-emerald-400/40 text-emerald-300 hover:bg-emerald-400/10 px-6 py-3 rounded-lg font-semibold transition-all inline-block">Smart riešenia ►</a>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mt-10 max-w-md">
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 text-center backdrop-blur-sm">
+                            <div class="text-xl font-black text-emerald-400 font-mono">14+</div>
+                            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold mt-0.5">rokov skúseností</div>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 text-center backdrop-blur-sm">
+                            <div class="text-xl font-black text-emerald-400 font-mono">MW</div>
+                            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold mt-0.5">inštalovaný výkon</div>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 text-center backdrop-blur-sm">
+                            <div class="text-xl font-black text-emerald-400 font-mono">24/7</div>
+                            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold mt-0.5">monitoring EMS</div>
+                        </div>
                     </div>
                 </div>
                 <div class="lg:col-span-5 relative">
@@ -234,39 +252,6 @@
                         <img src="Png/Fotovoltika1.jpg" alt="Fotovoltická inštalácia na streche budovy" class="w-full h-full object-cover" width="550" height="400" fetchpriority="high" decoding="async">
                         <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-transparent to-transparent"></div>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Sekcia: Aktuálne výzvy na dotácie -->
-        <section id="zelena-podnikom" class="py-20 bg-slate-900 text-white">
-            <div class="max-w-7xl mx-auto px-6">
-                <div class="mb-12">
-                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="subsidies.badge"></span>
-                    <h2 class="text-3xl font-bold tracking-tight" data-translate="subsidies.title"></h2>
-                </div>
-                <div class="grid lg:grid-cols-3 gap-8">
-                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all">
-                        <div>
-                            <span class="bg-brand-green/20 text-brand-green text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card1_badge"></span>
-                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card1_title"></h3>
-                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card1_desc"></p>
-                        </div>
-                    </article>
-                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all">
-                        <div>
-                            <span class="bg-blue-500/20 text-blue-400 text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card2_badge"></span>
-                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card2_title"></h3>
-                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card2_desc"></p>
-                        </div>
-                    </article>
-                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all">
-                        <div>
-                            <span class="bg-purple-500/20 text-purple-400 text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card3_badge"></span>
-                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card3_title"></h3>
-                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card3_desc"></p>
-                        </div>
-                    </article>
                 </div>
             </div>
         </section>
@@ -355,16 +340,50 @@
             </div>
         </section>
 
+        <!-- Sekcia: Aktuálne výzvy na dotácie (presunutá pod Obnoviteľnú energiu) -->
+        <section id="zelena-podnikom" class="py-20 bg-slate-900 text-white">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="mb-12">
+                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="subsidies.badge"></span>
+                    <h2 class="text-3xl font-bold tracking-tight" data-translate="subsidies.title"></h2>
+                </div>
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all reveal-item">
+                        <div>
+                            <span class="bg-brand-green/20 text-brand-green text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card1_badge"></span>
+                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card1_title"></h3>
+                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card1_desc"></p>
+                        </div>
+                    </article>
+                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all reveal-item rv-d1">
+                        <div>
+                            <span class="bg-blue-500/20 text-blue-400 text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card2_badge"></span>
+                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card2_title"></h3>
+                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card2_desc"></p>
+                        </div>
+                    </article>
+                    <article class="bg-slate-800/50 border border-slate-700/50 p-8 rounded-2xl flex flex-col justify-between hover:border-brand-green/30 transition-all reveal-item rv-d2">
+                        <div>
+                            <span class="bg-purple-500/20 text-purple-400 text-xs px-3 py-1 rounded-full font-semibold" data-translate="subsidies.card3_badge"></span>
+                            <h3 class="text-xl font-bold mt-4 mb-3" data-translate="subsidies.card3_title"></h3>
+                            <p class="text-slate-400 text-sm leading-relaxed" data-translate="subsidies.card3_desc"></p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
         <!-- Sekcia: Naše smart riešenia -->
         <section id="smart-riesenia" class="py-20 bg-slate-50 border-t border-slate-100">
             <div class="max-w-7xl mx-auto px-6">
                 <div class="mb-12">
                     <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart.badge"></span>
+                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full mb-3"><span class="soft-pulse">●</span> TERAZ</span>
                     <h2 class="text-3xl font-bold text-brand-dark" data-translate="smart.title"></h2>
                     <p class="text-slate-500 mt-3 max-w-3xl text-sm leading-relaxed" data-translate="smart.desc"></p>
                 </div>
                 <div class="grid md:grid-cols-2 gap-8">
-                    <article class="bg-white rounded-3xl border border-slate-100 hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
+                    <article class="bg-white rounded-3xl border border-slate-100 hover:shadow-md transition-all overflow-hidden flex flex-col justify-between reveal-item">
                         <div>
                             <div class="card-img-wrapper">
                                 <img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=800&q=80" alt="Grafy monitorovania energie" class="card-img" width="580" height="224" loading="lazy" decoding="async">
@@ -439,6 +458,18 @@
             </div>
         </section>
 
+        <!-- CTA pás: máte projekt? -->
+        <section class="py-16 bg-gradient-to-r from-emerald-600 via-emerald-500 to-cyan-600 relative overflow-hidden">
+            <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:18px_18px] dot-grid"></div>
+            <div class="max-w-7xl mx-auto px-6 relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                    <h2 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Plánujete fotovoltiku alebo smart riadenie energií?</h2>
+                    <p class="text-emerald-50 text-sm mt-2">Pripravíme vám nezáväznú ponuku na mieru — pre domácnosti aj firmy.</p>
+                </div>
+                <a href="kontakt/index.html" class="bg-white text-emerald-700 hover:bg-emerald-50 px-7 py-3.5 rounded-xl font-bold text-sm shadow-lg transition-all whitespace-nowrap">Nezáväzný dopyt ►</a>
+            </div>
+        </section>
+
         <!-- Kontaktná Sekcia -->
         <section id="kontakt" class="bg-slate-900 text-white py-20 border-t border-slate-800">
             <div class="max-w-7xl mx-auto px-6">
@@ -489,6 +520,19 @@
                             </div>
                             <button type="submit" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3 rounded-lg text-sm transition-colors" data-translate="contact.form_submit"></button>
                         </form>
+
+                        <!-- Notifikácie e-mailom (odber noviniek) -->
+                        <div class="mt-8 pt-6 border-t border-slate-700/50">
+                            <form class="elvo-notify" novalidate>
+                                <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;opacity:0">
+                                <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider" for="nl-email-home">🔔 Notifikácie e-mailom</label>
+                                <div class="notify-row">
+                                    <input type="email" id="nl-email-home" name="email" required placeholder="Váš e-mail — novinky, dotácie, akcie">
+                                    <button type="submit" class="bg-brand-green hover:bg-emerald-600 text-white font-bold px-5 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors whitespace-nowrap">Prihlásiť odber</button>
+                                </div>
+                                <p class="notify-note">Jeden e-mail mesačne: novinky, dotácie Zelená podnikom a tipy na úspory. Odhlásenie jedným klikom.</p>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -642,6 +686,7 @@
                     <a href="smart-riesenia/index.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
                     <a href="služby/index.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.services"></a>
                     <a href="kontakt/index.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+                    <a href="mapa-webu.html" class="block text-slate-500 hover:text-brand-green transition-colors">Mapa webu</a>
                 </div>
                 <div class="space-y-2">
                     <h4 class="text-slate-300 font-bold text-xs uppercase tracking-wider">Kontakt</h4>

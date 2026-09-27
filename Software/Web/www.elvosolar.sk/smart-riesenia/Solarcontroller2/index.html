@@ -6,6 +6,8 @@
     <title>Smart Bojler Regulátor & Prebytky 3.5 kW | ELVOSOLAR a.s.</title>
     <link rel="icon" type="image/png" href="../../Png/download.png">
     <script src="https://cdn.tailwindcss.com" defer></script>
+    <link rel="stylesheet" href="../../assets/site.css">
+    <script src="../../assets/site.js" defer></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             tailwind.config = {
@@ -53,14 +55,13 @@
                 <a href="../../o-nás/index.html" class="hover:text-brand-green transition-colors">O nás</a>
                 <a href="../../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green transition-colors">Obnoviteľná energia</a>
                 <a href="../../smart-riesenia/index.html" class="text-brand-green transition-colors font-bold">Smart riešenia</a>
-                <a href="../../eshop/index.html" class="text-brand-green font-extrabold flex items-center gap-1">🛒 E-Shop</a>
                 <a href="../../služby/index.html" class="hover:text-brand-green transition-colors">Služby</a>
                 <a href="../../kontakt/index.html" class="hover:text-brand-green transition-colors">Kontakt</a>
             </nav>
 
             <div class="flex items-center space-x-3">
-                <a href="../../eshop/index.html" class="bg-brand-green hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm btn-glow">
-                    <span>🛒</span> <span>Do E-Shopu</span>
+                <a href="#dopyt" class="bg-brand-green hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm btn-glow">
+                    <span>📥</span> <span>Nezáväzný dopyt</span>
                 </a>
             </div>
         </div>
@@ -394,7 +395,7 @@
                             <span class="text-[9px] text-slate-400 block uppercase font-bold">Cena s DPH</span>
                             <div class="text-lg font-black text-brand-dark font-mono">89.00 €</div>
                         </div>
-                        <a href="../../eshop/index.html" class="px-3.5 py-2 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition btn-glow">Kúpiť v E-Shope</a>
+                        <a href="#dopyt" class="px-3.5 py-2 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition btn-glow">Dopyt / objednávka</a>
                     </div>
                 </div>
 
@@ -414,7 +415,7 @@
                             <span class="text-[9px] text-slate-400 block uppercase font-bold">Set cena s DPH</span>
                             <div class="text-lg font-black text-brand-dark font-mono">268.00 €</div>
                         </div>
-                        <a href="../../eshop/index.html" class="px-3.5 py-2 rounded-xl bg-brand-green hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition btn-glow">Kúpiť set</a>
+                        <a href="../../kontakt/index.html" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-wider transition btn-glow">Dopyt setu ►</a>
                     </div>
                 </div>
 
@@ -476,7 +477,20 @@
             <p>© 2026 ELVOSOLAR a.s. Všetky práva vyhradené.</p>
             <p class="text-slate-600">Inteligentné energetické riadenie pre Slovensko.</p>
         </div>
-    </footer>
+    
+    <!-- Notifikácie e-mailom (odber noviniek) -->
+    <div class="max-w-7xl mx-auto px-6 pb-8">
+      <form class="elvo-notify" novalidate>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;opacity:0">
+        <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider">🔔 Notifikácie e-mailom</label>
+        <div class="notify-row">
+          <input type="email" name="email" required placeholder="Váš e-mail — novinky, dotácie, akcie">
+          <button type="submit" class="bg-brand-green hover:bg-emerald-600 text-white font-bold px-5 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors whitespace-nowrap">Prihlásiť odber</button>
+        </div>
+        <p class="notify-note">Jeden e-mail mesačne: novinky, dotácie Zelená podnikom a tipy na úspory. Odhlásenie jedným klikom.</p>
+      </form>
+    </div>
+</footer>
 
     <script>
         // Kalkulačka

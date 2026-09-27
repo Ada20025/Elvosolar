@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-translate="solar_heating_page.title">Solárny ohrev | ELVOSOLAR a.s.</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../../assets/site.css">
+    <script src="../../assets/site.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -412,7 +414,20 @@
             <p data-translate="footer.copyright">2026 © Elvosolar, a.s. • Ochrana osobných údajov</p>
             <p class="text-slate-600" data-translate="footer.tagline">Inovatívne energetické riešenia</p>
         </div>
-    </footer>
+    
+    <!-- Notifikácie e-mailom (odber noviniek) -->
+    <div class="max-w-7xl mx-auto px-6 pb-8">
+      <form class="elvo-notify" novalidate>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;opacity:0">
+        <label class="text-xs font-bold text-emerald-400 uppercase tracking-wider">🔔 Notifikácie e-mailom</label>
+        <div class="notify-row">
+          <input type="email" name="email" required placeholder="Váš e-mail — novinky, dotácie, akcie">
+          <button type="submit" class="bg-brand-green hover:bg-emerald-600 text-white font-bold px-5 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors whitespace-nowrap">Prihlásiť odber</button>
+        </div>
+        <p class="notify-note">Jeden e-mail mesačne: novinky, dotácie Zelená podnikom a tipy na úspory. Odhlásenie jedným klikom.</p>
+      </form>
+    </div>
+</footer>
 
     <!-- Skripty -->
     <script>
@@ -702,62 +717,41 @@
             cartTotalPrice.innerText = `${totalPrice.toLocaleString(formatterLang)} €`;
         }
 
-        function handleCheckout(event) {
+async function handleCheckout(event) {
             event.preventDefault();
-            const name = document.getElementById('checkout-name').value;
-            const email = document.getElementById('checkout-email').value;
+            const name = document.getElementById('checkout-name').value.trim();
+            const email = document.getElementById('checkout-email').value.trim();
 
             if (cart.length === 0) return;
 
-            const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
-            const alertThankYou = getNestedValue(dictionary, 'cart.alert_thank_you') || "Ďakujeme za váš dopyt, {name}!";
-            const alertContact = getNestedValue(dictionary, 'cart.alert_contact') || "Čoskoro vás budeme kontaktovať.";
-            const tUnitPrice = getNestedValue(dictionary, 'cart.unit_price') || "€ / ks";
-            const tError = getNestedValue(dictionary, 'solar_heating_page.alert_error') || "Nastal problém pri odosielaní. Skúste to neskôr prosím.";
+            let itemsSummary = cart.map(item => {
+                const finalName = item.translationKey ? (getNestedValue(currentTranslations, item.translationKey) || item.name) : item.name;
+                return `- ${finalName} (${item.quantity}x)`;
+            }).join('\n');
 
-            // Sumarizácia položiek košíka
-            let itemsSummary = cart.map(item => `- ${item.name} (${item.quantity}x) - ${item.price} ${tUnitPrice}`).join('\n');
-            let totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-            const formatterLang = currentLang === 'sk' ? 'sk-SK' : 'en-US';
-            let formattedTotalPrice = `${totalPrice.toLocaleString(formatterLang)} €`;
+            const button = event.target.querySelector('button[type="submit"]');
+            const originalButtonText = button ? button.innerHTML : '';
+            if (button) { button.disabled = true; button.innerHTML = 'Odosiela sa...'; }
 
-            // Odoslanie AJAX/Fetch požiadavky na mail.php s akciou "cart"
-            fetch('../../mail.php', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json; charset=utf-8"
-                },
-                body: JSON.stringify({
-                    action: "cart",
-                    name: name,
-                    email: email,
-                    cart_items: itemsSummary,
-                    total_price: formattedTotalPrice
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Chyba sieťovej odpovede");
-                }
-                return response.json();
-            })
-            .then(resData => {
-                if (resData.success) {
-                    const formattedThankYou = alertThankYou.replace('{name}', name);
-                    alert(`${formattedThankYou}\n\n${alertContact}`);
-                    cart = [];
-                    saveCart();
-                    updateCartUI();
-                    toggleCartDrawer();
+            try {
+                const response = await fetch('../send.php', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: document.getElementById('cart-total-price').innerText, page: location.pathname })
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    elvoNotify({ kind: 'success', title: 'Dopyt odoslaný', message: `Ďakujeme, ${name}! Dopyt bol odoslaný na info@elvosolar.sk, ozveme sa čoskoro.` });
+                    cart = []; saveCart(); updateCartUI(); toggleCartDrawer();
                     document.getElementById('checkout-form').reset();
                 } else {
-                    alert(resData.message || tError);
+                    elvoNotify({ kind: 'error', title: 'Chyba odoslania', message: (result && result.message) || 'Dopyt sa nepodarilo odoslať. Skúste to prosím znova.' });
                 }
-            })
-            .catch(error => {
-                console.error("Chyba odosielania objednávky košíka:", error);
-                alert(tError);
-            });
+            } catch (err) {
+                elvoNotify({ kind: 'error', title: 'Chyba siete', message: 'Nepodarilo sa spojiť so serverom. Skúste to prosím znova.' });
+            } finally {
+                if (button) { button.disabled = false; button.innerHTML = originalButtonText; }
+            }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
