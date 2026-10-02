@@ -152,20 +152,13 @@
                     </div>
                 </div>
 
-                <a href="smart-riesenia.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
                 <a href="služby.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
                 <a href="zelená-podnikom.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
                 <a href="kontakt.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
             </nav>
 
             <div class="flex items-center space-x-4">
-                <button id="cart-icon-btn" onclick="toggleCartDrawer()" class="hidden relative p-2.5 text-slate-600 hover:text-brand-green transition-colors rounded-full hover:bg-slate-50 mr-1" aria-label="Zobraziť nákupný košík">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                    </svg>
-                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-brand-green text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
-                </button>
-
+                
                 <div class="relative inline-block text-left" id="lang-selector-container">
                     <button id="lang-menu-btn" class="flex items-center space-x-1 text-xs font-bold text-slate-600 hover:text-brand-green uppercase tracking-wider transition-colors focus:outline-none py-2" aria-expanded="false" aria-haspopup="true" aria-label="Zmeniť jazyk">
                         <span id="current-lang">SK</span>
@@ -209,7 +202,6 @@
                     </div>
                 </div>
 
-                <a href="smart-riesenia.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
                 <a href="služby.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
                 <a href="zelená-podnikom.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
                 <a href="kontakt.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
@@ -231,7 +223,6 @@
                     <p class="text-slate-400 text-sm mb-8 italic border-l-2 border-brand-green pl-4" data-translate="hero.quote"></p>
                     <div class="flex flex-wrap gap-4">
                         <a href="o-nás.html" class="bg-brand-green hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold transition-all inline-block btn-glow" data-translate="hero.cta"></a>
-                        <a href="smart-riesenia.html" class="border border-emerald-400/40 text-emerald-300 hover:bg-emerald-400/10 px-6 py-3 rounded-lg font-semibold transition-all inline-block">Smart riešenia ►</a>
                     </div>
                     <div class="grid grid-cols-3 gap-4 mt-10 max-w-md">
                         <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 text-center backdrop-blur-sm">
@@ -374,51 +365,7 @@
             </div>
         </section>
 
-        <!-- Sekcia: Naše smart riešenia -->
-        <section id="smart-riesenia" class="py-20 bg-slate-50 border-t border-slate-100">
-            <div class="max-w-7xl mx-auto px-6">
-                <div class="mb-12">
-                    <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart.badge"></span>
-                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full mb-3"><span class="soft-pulse">●</span> TERAZ</span>
-                    <h2 class="text-3xl font-bold text-brand-dark" data-translate="smart.title"></h2>
-                    <p class="text-slate-500 mt-3 max-w-3xl text-sm leading-relaxed" data-translate="smart.desc"></p>
-                </div>
-                <div class="grid md:grid-cols-2 gap-8">
-                    <article class="bg-white rounded-3xl border border-slate-100 hover:shadow-md transition-all overflow-hidden flex flex-col justify-between reveal-item">
-                        <div>
-                            <div class="card-img-wrapper">
-                                <img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=800&q=80" alt="Grafy monitorovania energie" class="card-img" width="580" height="224" loading="lazy" decoding="async">
-                            </div>
-                            <div class="p-8">
-                                <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart.card2_badge"></span>
-                                <h3 class="text-xl font-bold text-brand-dark mb-3" data-translate="smart.card2_title"></h3>
-                                <p class="text-slate-500 text-sm leading-relaxed" data-translate="smart.card2_desc"></p>
-                            </div>
-                        </div>
-                        <div class="p-8 pt-0">
-                            <a href="smart-riesenia.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="smart.card2_more"></a>
-                        </div>
-                    </article>
-                    <article class="bg-white rounded-3xl border border-slate-100 hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
-                        <div>
-                            <div class="card-img-wrapper">
-                                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Riadenie toku energií na obrazovke" class="card-img" width="580" height="224" loading="lazy" decoding="async">
-                            </div>
-                            <div class="p-8">
-                                <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart.card1_badge"></span>
-                                <h3 class="text-xl font-bold text-brand-dark mb-3" data-translate="smart.card1_title"></h3>
-                                <p class="text-slate-500 text-sm leading-relaxed" data-translate="smart.card1_desc"></p>
-                            </div>
-                        </div>
-                        <div class="p-8 pt-0">
-                            <a href="smart-riesenia.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="smart.card1_more"></a>
-                        </div>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <!-- Sekcia: Služby -->
+                <!-- Sekcia: Služby -->
         <section id="sluzby" class="py-20 bg-white border-t border-slate-100">
             <div class="max-w-7xl mx-auto px-6">
                 <div class="mb-12">
@@ -540,41 +487,6 @@
         </section>
     </main>
 
-    <!-- Nákupný košík - Vysúvací bočný panel (Drawer) -->
-    <div id="cart-drawer" class="fixed inset-0 z-50 pointer-events-none hidden" role="dialog" aria-modal="true">
-        <div id="cart-backdrop" onclick="toggleCartDrawer()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
-        <div id="cart-panel" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto transform translate-x-full transition-transform duration-300">
-            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="text-lg font-bold text-brand-dark" data-translate="cart.title"></h3>
-                <button onclick="toggleCartDrawer()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50" aria-label="Zatvoriť košík">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4"></div>
-
-            <div class="p-6 border-t border-slate-100 bg-slate-50">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-sm font-semibold text-slate-500" data-translate="cart.estimated_price"></span>
-                    <span id="cart-total-price" class="text-xl font-black text-brand-dark">0 €</span>
-                </div>
-
-                <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-3">
-                    <div>
-                        <label for="checkout-name" class="block text-xs font-semibold text-slate-500 mb-1" data-translate="cart.checkout_name_placeholder">Meno / Firma</label>
-                        <input type="text" id="checkout-name" name="name" required class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
-                    </div>
-                    <div>
-                        <label for="checkout-email" class="block text-xs font-semibold text-slate-500 mb-1" data-translate="cart.checkout_email_placeholder">Váš E-mail</label>
-                        <input type="email" id="checkout-email" name="email" required class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
-                    </div>
-                    <button type="submit" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg text-sm transition-colors" data-translate="cart.checkout_submit"></button>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- Back to Top -->
     <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 left-6 z-50 w-11 h-11 rounded-full bg-brand-dark hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all" aria-label="Späť hore">
@@ -592,7 +504,6 @@
                 <div class="space-y-2">
                     <h4 class="text-slate-300 font-bold text-xs uppercase tracking-wider">Rýchle odkazy</h4>
                     <a href="o-nás.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.about"></a>
-                    <a href="smart-riesenia.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
                     <a href="služby.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.services"></a>
                     <a href="kontakt.html" class="block text-slate-500 hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
                     <a href="mapa-webu.html" class="block text-slate-500 hover:text-brand-green transition-colors">Mapa webu</a>
@@ -790,174 +701,6 @@
                 }
             } catch (error) {
                 alert("Problém so sieťou alebo serverom. Skontrolujte nastavenie hostingu.");
-            } finally {
-                button.disabled = false;
-                button.innerHTML = originalButtonText;
-            }
-        }
-
-        // ----------------- LOGIKA KOŠÍKA -----------------
-        let cart = JSON.parse(localStorage.getItem('elvo_cart')) || [];
-
-        function toggleCartDrawer() {
-            const drawer = document.getElementById('cart-drawer');
-            const backdrop = document.getElementById('cart-backdrop');
-            const panel = document.getElementById('cart-panel');
-
-            if (drawer.classList.contains('hidden')) {
-                drawer.classList.remove('hidden');
-                setTimeout(() => {
-                    backdrop.classList.replace('opacity-0', 'opacity-100');
-                    panel.classList.replace('translate-x-full', 'translate-x-0');
-                }, 10);
-            } else {
-                backdrop.classList.replace('opacity-100', 'opacity-0');
-                panel.classList.replace('translate-x-0', 'translate-x-full');
-                setTimeout(() => {
-                    drawer.classList.add('hidden');
-                }, 300);
-            }
-        }
-
-        function changeQuantity(id, delta) {
-            const itemIndex = cart.findIndex(item => item.id === id);
-            if (itemIndex > -1) {
-                cart[itemIndex].quantity += delta;
-                if (cart[itemIndex].quantity <= 0) {
-                    cart.splice(itemIndex, 1);
-                }
-                saveCart();
-                updateCartUI();
-            }
-        }
-
-        function removeItem(id) {
-            cart = cart.filter(item => item.id !== id);
-            saveCart();
-            updateCartUI();
-        }
-
-        function saveCart() {
-            localStorage.setItem('elvo_cart', JSON.stringify(cart));
-        }
-
-        function updateCartUI() {
-            const cartItemsContainer = document.getElementById('cart-items');
-            const cartIconBtn = document.getElementById('cart-icon-btn');
-            const cartBadge = document.getElementById('cart-badge');
-            const cartTotalPrice = document.getElementById('cart-total-price');
-
-            let totalQuantity = 0;
-            let totalPrice = 0;
-
-            cartItemsContainer.innerHTML = '';
-
-            const tEmptyTitle = getNestedValue(currentTranslations, 'cart.empty_title') || 'Váš košík je prázdny';
-            const tEmptySubtitle = getNestedValue(currentTranslations, 'cart.empty_subtitle') || 'Pridajte smart riešenia v príslušnej sekcii.';
-            const tUnitPrice = getNestedValue(currentTranslations, 'cart.unit_price') || '€ / ks';
-
-            if (cart.length === 0) {
-                cartItemsContainer.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-12">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mb-3 text-slate-300" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                        </svg>
-                        <p class="text-sm font-semibold">${tEmptyTitle}</p>
-                        <p class="text-xs mt-1">${tEmptySubtitle}</p>
-                    </div>
-                `;
-                cartIconBtn.classList.add('hidden');
-            } else {
-                cart.forEach(item => {
-                    totalQuantity += item.quantity;
-                    totalPrice += item.price * item.quantity;
-
-                    const finalName = item.translationKey ? (getNestedValue(currentTranslations, item.translationKey) || item.name) : item.name;
-
-                    const itemElement = document.createElement('div');
-                    itemElement.className = "flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 relative text-xs";
-                    itemElement.innerHTML = `
-                        <img src="${item.img}" alt="${finalName}" class="w-12 h-12 object-cover rounded-lg bg-white border border-slate-100" width="48" height="48" decoding="async">
-                        <div class="flex-grow">
-                            <h4 class="font-bold text-brand-dark leading-tight">${finalName}</h4>
-                            <p class="text-slate-500 mt-0.5">${item.price} ${tUnitPrice}</p>
-                            
-                            <div class="flex items-center gap-2 mt-1.5">
-                                <button onclick="changeQuantity('${item.id}', -1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center" aria-label="Znížiť množstvo">-</button>
-                                <span class="font-bold text-slate-700 w-4 text-center">${item.quantity}</span>
-                                <button onclick="changeQuantity('${item.id}', 1)" class="w-5 h-5 bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded flex items-center justify-center" aria-label="Zvýšiť množstvo">+</button>
-                            </div>
-                        </div>
-                        <button onclick="removeItem('${item.id}')" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-red-500 transition-colors" aria-label="Odstrániť položku">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                            </svg>
-                        </button>
-                    `;
-                    cartItemsContainer.appendChild(itemElement);
-                });
-
-                cartIconBtn.classList.remove('hidden');
-                cartBadge.innerText = totalQuantity;
-            }
-
-            const formatterLang = currentLang === 'sk' ? 'sk-SK' : 'en-US';
-            cartTotalPrice.innerText = `${totalPrice.toLocaleString(formatterLang)} €`;
-        }
-
-        // ----------------- ODOSLANIE KOŠÍKA CEZ PHP -----------------
-        async function handleCheckout(event) {
-            event.preventDefault();
-            const name = document.getElementById('checkout-name').value.trim();
-            const email = document.getElementById('checkout-email').value.trim();
-
-            if (cart.length === 0) return;
-
-            let itemsSummary = cart.map(item => {
-                const finalName = item.translationKey ? (getNestedValue(currentTranslations, item.translationKey) || item.name) : item.name;
-                return `- ${finalName} (Množstvo: ${item.quantity}x, Cena/ks: ${item.price} €)`;
-            }).join('\n');
-
-            const dictionary = currentTranslations || fullEmbeddedTranslations[currentLang] || fullEmbeddedTranslations['sk'];
-            const totalPrice = document.getElementById('cart-total-price').innerText;
-
-            const button = event.target.querySelector('button[type="submit"]');
-            const originalButtonText = button.innerHTML;
-            button.disabled = true;
-            button.innerHTML = "Odosiela sa...";
-
-            try {
-                const response = await fetch('send.php', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'cart',
-                        name,
-                        email,
-                        cart_items: itemsSummary,
-                        total_price: totalPrice
-                    })
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    const alertThankYou = getNestedValue(dictionary, 'cart.alert_thank_you') || "Ďakujeme za váš dopyt, {name}!";
-                    alert(alertThankYou.replace('{name}', name));
-                    
-                    cart = [];
-                    saveCart();
-                    updateCartUI();
-                    toggleCartDrawer();
-                    document.getElementById('checkout-form').reset();
-                } else {
-                    alert(result.message || "Chyba pri spracovaní dopytu.");
-                }
-            } catch (error) {
-                alert("Chyba siete. Nepodarilo sa odoslať dopyt.");
             } finally {
                 button.disabled = false;
                 button.innerHTML = originalButtonText;

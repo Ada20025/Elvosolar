@@ -12,9 +12,6 @@ ErrorDocument 404 /404.html
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Starý e-shop bol zrušený -> Smart riešenia
-    RewriteRule ^eshop(/.*)?$ /smart-riesenia.html [R=301,L]
-
     # Staré adresárové URL stránok -> ploché .html súbory
     RewriteRule ^kontakt/?$ /kontakt.html [R=301,L]
     RewriteRule ^smart-riesenia/Solarcontroller1/?$ /Solarcontroller1.html [R=301,L]
