@@ -6,8 +6,8 @@
     <title data-translate="green_enterprise_page.title">Zelená podnikom & Projekty SAMRS | ELVOSOLAR a.s.</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="templates/site.css">
-    <script src="templates/site.js" defer></script>
+    <link rel="stylesheet" href="../assets/site.css">
+    <script src="../assets/site.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -47,13 +47,13 @@
     <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <!-- Logo - opravené relatívne cesty pre 1 úroveň hlbšie -->
-            <a href="index.html" class="flex items-center transition-transform active:scale-95">
-                <img src="templates/Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain" onerror="this.src='templates/Png/download.png'">
+            <a href="../index.html" class="flex items-center transition-transform active:scale-95">
+                <img src="../Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain" onerror="this.src='../Png/download.png'">
             </a>
             
             <!-- Menu pre počítače -->
             <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600">
-                <a href="o-nas.html" class="hover:text-brand-green transition-colors" data-translate="nav.about"></a>
+                <a href="../o-nás/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.about"></a>
                 
                 <!-- Dropdown Obnoviteľná energia (Desktop) -->
                 <div class="relative inline-block text-left" id="renewable-dropdown-container">
@@ -64,19 +64,19 @@
                         </svg>
                     </button>
                     <div id="renewable-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-lg shadow-lg py-1.5 z-50">
-                        <a href="fotovoltika.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
-                        <a href="solarny-ohrev.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
-                        <a href="orc-jednotky.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
-                        <a href="absorpcne-chladenie.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
-                        <a href="bateriove-uloziska.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
+                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
+                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
+                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
+                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
+                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
                     </div>
                 </div>
 
                 <!-- Opravené z smart-riešenia na smart-riesenia -->
-                <a href="smart-riesenia.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
-                <a href="sluzby.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
+                <a href="../smart-riesenia/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
+                <a href="../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
                 <a href="index.html" class="text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
-                <a href="kontakt.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+                <a href="../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
             </nav>
 
             <div class="flex items-center space-x-4">
@@ -102,7 +102,7 @@
                     </div>
                 </div>
 
-                <a href="kontakt.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]" data-translate="nav.quick_inquiry"></a>
+                <a href="../kontakt/index.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]" data-translate="nav.quick_inquiry"></a>
                 
                 <!-- Hamburger tlačidlo pre mobilné telefóny -->
                 <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-brand-green focus:outline-none p-2" aria-label="Menu">
@@ -116,7 +116,7 @@
         <!-- Mobilné menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 transition-all duration-300">
             <nav class="flex flex-col px-6 py-4 space-y-4 font-semibold text-slate-600">
-                <a href="o-nas.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
+                <a href="../o-nás/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
                 
                 <!-- Akordeón pre Obnoviteľnú energiu v mobile -->
                 <div class="flex flex-col">
@@ -127,19 +127,19 @@
                         </svg>
                     </button>
                     <div id="mobile-renewable-submenu" class="hidden pl-4 flex-col space-y-2 py-2 border-b border-slate-50 bg-slate-50/50">
-                        <a href="fotovoltika.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
-                        <a href="solarny-ohrev.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
-                        <a href="orc-jednotky.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
-                        <a href="absorpcne-chladenie.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
-                        <a href="bateriove-uloziska.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
+                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
+                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
+                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
+                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
+                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
                     </div>
                 </div>
 
-                <a href="smart-riesenia.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
-                <a href="sluzby.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
+                <a href="../smart-riesenia/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
+                <a href="../služby/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
                 <a href="index.html" class="text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
-                <a href="kontakt.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
-                <a href="kontakt.html" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+                <a href="../kontakt/index.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
+                <a href="../kontakt/index.html" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
             </nav>
         </div>
     </header>
@@ -453,11 +453,11 @@
                     <div class="pt-6 border-t border-slate-100 space-y-4">
                         <h4 class="font-bold text-xs text-brand-dark uppercase tracking-wider" data-translate="samrs.additional_heading"></h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                            <a href="templates/Png/Samrs Kena/Prezentacia-Projektu-podpory-v-Keni.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-100 p-3 rounded-lg border border-slate-200 font-medium text-slate-700 flex items-center gap-2 transition-all">
+                            <a href="../Png/Samrs Kena/Prezentacia-Projektu-podpory-v-Keni.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-100 p-3 rounded-lg border border-slate-200 font-medium text-slate-700 flex items-center gap-2 transition-all">
                                 <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10v-9a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h12a1 1 0 001-1z" /></svg>
                                 <span data-translate="samrs.file_brochure"></span>
                             </a>
-                            <a href="templates/Png/Samrs Kena/Studia-realizovatelnosti-vyuzitia-riesenia-FVE-ESS-v-podmienkach-Kene.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-100 p-3 rounded-lg border border-slate-200 font-medium text-slate-700 flex items-center gap-2 transition-all">
+                            <a href="../Png/Samrs Kena/Studia-realizovatelnosti-vyuzitia-riesenia-FVE-ESS-v-podmienkach-Kene.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-100 p-3 rounded-lg border border-slate-200 font-medium text-slate-700 flex items-center gap-2 transition-all">
                                 <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                                 <span data-translate="samrs.file_feasibility"></span>
                             </a>
@@ -467,21 +467,21 @@
                             <div>
                                 <span class="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-wider" data-translate="samrs.calls_heading"></span>
                                 <div class="flex flex-wrap gap-1">
-                                    <a href="templates/Png/Samrs Kena/Vyzva-na-predkladanie-ponuk-001-2021.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call1"></a>
-                                    <a href="templates/Png/Samrs Kena/Vyzva-na-predkladanie-ponuk-002-2021.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call2"></a>
-                                    <a href="templates/Png/Samrs Kena/Vyzva-na-predkladanie-ponuk-003-2021.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call3"></a>
-                                    <a href="templates/Png/Samrs Kena/Vyzva-na-prekladanie-ponuk-c.-4.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call4"></a>
-                                    <a href="templates/Png/Samrs Kena/Vyzva-005_2022.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call5"></a>
+                                    <a href="../Png/Samrs Kena/Vyzva-na-predkladanie-ponuk-001-2021.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call1"></a>
+                                    <a href="../Png/Samrs Kena/Vyzva-na-predkladanie-ponuk-002-2021.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call2"></a>
+                                    <a href="../Png/Samrs Kena/Vyzva-na-predkladanie-ponuk-003-2021.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call3"></a>
+                                    <a href="../Png/Samrs Kena/Vyzva-na-prekladanie-ponuk-c.-4.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call4"></a>
+                                    <a href="../Png/Samrs Kena/Vyzva-005_2022.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call5"></a>
                                 </div>
                             </div>
                             <div>
                                 <span class="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-wider" data-translate="samrs.minutes_heading"></span>
                                 <div class="flex flex-wrap gap-1">
-                                    <a href="templates/Png/Samrs Kena/Zapisnica-z-vyhodnotenia-ponuk-c.-001-SAMRS-2020-PPP-1-11.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute1"></a>
-                                    <a href="templates/Png/Samrs Kena/Zapisnica-z-vyhodnotenia-ponuk-c.-002-SAMRS-2020-PPP-1-11.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute2"></a>
-                                    <a href="templates/Png/Samrs Kena/Zapisnica-z-vyhodnotenia-ponuk-c.-003-SAMRS-2020-PPP-1-11.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute3"></a>
-                                    <a href="templates/Png/Samrs Kena/Zapisnica-z-vyhodnotenia-ponuk-c.004-SAMRS-2020-PPP-1-11.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute4"></a>
-                                    <a href="templates/Png/Samrs Kena/Zapisnica-z-vyhodnotenia-005.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute5"></a>
+                                    <a href="../Png/Samrs Kena/Zapisnica-z-vyhodnotenia-ponuk-c.-001-SAMRS-2020-PPP-1-11.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute1"></a>
+                                    <a href="../Png/Samrs Kena/Zapisnica-z-vyhodnotenia-ponuk-c.-002-SAMRS-2020-PPP-1-11.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute2"></a>
+                                    <a href="../Png/Samrs Kena/Zapisnica-z-vyhodnotenia-ponuk-c.-003-SAMRS-2020-PPP-1-11.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute3"></a>
+                                    <a href="../Png/Samrs Kena/Zapisnica-z-vyhodnotenia-ponuk-c.004-SAMRS-2020-PPP-1-11.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute4"></a>
+                                    <a href="../Png/Samrs Kena/Zapisnica-z-vyhodnotenia-005.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute5"></a>
                                 </div>
                             </div>
                         </div>
@@ -510,18 +510,18 @@
                             <div>
                                 <span class="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-wider" data-translate="samrs.calls_heading"></span>
                                 <div class="flex flex-wrap gap-1">
-                                    <a href="templates/Png/Samrs Afganistan/Vyzva_001.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call1"></a>
-                                    <a href="templates/Png/Samrs Afganistan/Vyzva_002.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call2"></a>
-                                    <a href="templates/Png/Samrs Afganistan/Vyzva_003.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call3"></a>
+                                    <a href="../Png/Samrs Afganistan/Vyzva_001.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call1"></a>
+                                    <a href="../Png/Samrs Afganistan/Vyzva_002.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call2"></a>
+                                    <a href="../Png/Samrs Afganistan/Vyzva_003.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.call3"></a>
                                 </div>
                             </div>
                             <div>
                                 <span class="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-wider" data-translate="samrs.minutes_heading"></span>
                                 <div class="flex flex-wrap gap-1">
-                                    <a href="templates/Png/Samrs Afganistan/Zápisnica_z_vyhodnotenia_001.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute1"></a>
-                                    <a href="templates/Png/Samrs Afganistan/Zápisnica_z_vyhodnotenia_002.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute2"></a>
-                                    <a href="templates/Png/Samrs Afganistan/Zápisnica_z_vyhodnotenia_003.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute3"></a>
-                                    <a href="templates/Png/Samrs Afganistan/Zápisnica_z_vyhodnotenia_005.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute5"></a>
+                                    <a href="../Png/Samrs Afganistan/Zápisnica_z_vyhodnotenia_001.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute1"></a>
+                                    <a href="../Png/Samrs Afganistan/Zápisnica_z_vyhodnotenia_002.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute2"></a>
+                                    <a href="../Png/Samrs Afganistan/Zápisnica_z_vyhodnotenia_003.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute3"></a>
+                                    <a href="../Png/Samrs Afganistan/Zápisnica_z_vyhodnotenia_005.pdf" target="_blank" rel="noopener noreferrer" class="bg-slate-50 hover:bg-slate-150 border border-slate-200 px-2.5 py-1.5 rounded text-[10px] font-semibold text-slate-600 transition-all" data-translate="samrs.minute5"></a>
                                 </div>
                             </div>
                         </div>
@@ -658,8 +658,8 @@
         async function loadLanguage(lang) {
             let fetchedData = null;
             try {
-                // Súbor je o 1 úroveň hlbšie (templates/preklad/)
-                const response = await fetch(`templates/preklad/${lang.toUpperCase()}/index.json`);
+                // Súbor je o 1 úroveň hlbšie (../preklad/)
+                const response = await fetch(`../preklad/${lang.toUpperCase()}/index.json`);
                 if (response.ok) {
                     fetchedData = await response.json();
                 }
@@ -835,7 +835,7 @@ async function handleCheckout(event) {
             if (button) { button.disabled = true; button.innerHTML = 'Odosiela sa...'; }
 
             try {
-                const response = await fetch('send.php', {
+                const response = await fetch('../send.php', {
                     method: 'POST',
                     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: document.getElementById('cart-total-price').innerText, page: location.pathname })
