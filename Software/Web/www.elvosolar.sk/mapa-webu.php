@@ -1,22 +1,21 @@
 <?php
 /**
  * MAPA WEBU — Elvosolar prehliadač stránok www.elvosolar.sk
- * Automaticky nájde všetky stránky (index.html) v celej štruktúre.
+ * Automaticky nájde všetky .html stránky v koreni webu (plochá štruktúra).
  * Nahraj na alwaysdata do koreňa webu → otvor /mapa-webu.php
  */
 header('Content-Type: text/html; charset=utf-8');
 
 $root = __DIR__;
 
-// --- 1. Automatické nájdenie všetkých stránok ---
+// --- 1. Automatické nájdenie všetkých stránok (ploché .html v koreni) ---
 $pages = [];
-$rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
-foreach ($rii as $file) {
-    if ($file->getFilename() !== 'index.html') continue;
-    $dir = str_replace('\\', '/', dirname($file->getPathname()));
-    $rel = ltrim(str_replace($root, '', $dir), '/');
+foreach (glob($root . '/*.html') as $file) {
+    $name = basename($file);
+    if ($name === '404.html' || $name === 'mapa-webu.html') continue;
+    $isHome = ($name === 'index.html');
     $title = 'Bez názvu';
-    $html = @file_get_contents($file->getPathname());
+    $html = @file_get_contents($file);
     if ($html && preg_match('#<title[^>]*>([^<]+)</title>#i', $html, $m)) {
         $title = trim(html_entity_decode($m[1]));
         $title = preg_replace('/\s*\|\s*ELVOSOLAR.*$/i', '', $title);
@@ -26,13 +25,12 @@ foreach ($rii as $file) {
     if ($html && preg_match('#<meta\s+name="description"\s+content="([^"]*)"#i', $html, $m2)) {
         $desc = mb_substr(trim(html_entity_decode($m2[1])), 0, 110);
     }
-    $depth = ($rel === '' ? 0 : substr_count($rel, '/') + 1);
     $pages[] = [
-        'url'   => ($rel === '' ? './' : '/' . rawurlencode($rel) . '/'),
-        'path'  => ($rel === '' ? '(koreň webu)' : $rel . '/'),
-        'title' => ($title !== '' ? $title : basename($rel)),
+        'url'   => ($isHome ? './' : '/' . rawurlencode($name)),
+        'path'  => ($isHome ? '(koreň webu)' : $name),
+        'title' => ($title !== '' ? $title : $name),
         'desc'  => $desc,
-        'depth' => $depth,
+        'depth' => ($isHome ? 0 : 1),
     ];
 }
 usort($pages, fn($a, $b) => [$a['depth'], $a['path']] <=> [$b['depth'], $b['path']]);

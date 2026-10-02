@@ -13,11 +13,22 @@ ErrorDocument 404 /404.html
     RewriteRule ^ - [L]
 
     # Starý e-shop bol zrušený -> Smart riešenia
-    RewriteRule ^eshop(/.*)?$ /smart-riesenia/ [R=301,L]
+    RewriteRule ^eshop(/.*)?$ /smart-riesenia.html [R=301,L]
 
-    # Automatické presmerovanie bez koncovej lomky na index.html v podadresároch
-    RewriteCond %{REQUEST_FILENAME}/index.html -f
-    RewriteRule ^(.*)$ $1/index.html [L]
+    # Staré adresárové URL stránok -> ploché .html súbory
+    RewriteRule ^kontakt/?$ /kontakt.html [R=301,L]
+    RewriteRule ^smart-riesenia/Solarcontroller1/?$ /Solarcontroller1.html [R=301,L]
+    RewriteRule ^smart-riesenia/Solarcontroller2/?$ /Solarcontroller2.html [R=301,L]
+    RewriteRule ^smart-riesenia/?$ /smart-riesenia.html [R=301,L]
+    RewriteRule ^o-nás/?$ /o-nás.html [R=301,L]
+    RewriteRule ^služby/?$ /služby.html [R=301,L]
+    RewriteRule ^zelená-podnikom/?$ /zelená-podnikom.html [R=301,L]
+    RewriteRule ^obnoviteľná-energia/fotovoltika/?$ /fotovoltika.html [R=301,L]
+    RewriteRule ^obnoviteľná-energia/solárny-ohrev/?$ /solárny-ohrev.html [R=301,L]
+    RewriteRule ^obnoviteľná-energia/orc-jednotky/?$ /orc-jednotky.html [R=301,L]
+    RewriteRule ^obnoviteľná-energia/absorpčné-chladenie/?$ /absorpčné-chladenie.html [R=301,L]
+    RewriteRule ^obnoviteľná-energia/bateriové-úložiská/?$ /bateriové-úložiská.html [R=301,L]
+    RewriteRule ^obnoviteľná-energia/?$ /index.html [R=301,L]
 </IfModule>
 
 <IfModule mod_expires.c>

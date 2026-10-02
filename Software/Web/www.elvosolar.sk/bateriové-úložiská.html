@@ -1,14 +1,15 @@
-<!-- Uložiť do: obnoviteľná-energia/absorpčné-chladenie/index.html -->
+<!-- Uložiť do: bateriové-úložiská.html -->
 <!DOCTYPE html>
 <html lang="sk" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-translate="absorption_page.title">Absorpčné chladenie | ELVOSOLAR a.s.</title>
+    <link rel="icon" type="image/png" href="Png/download.png">
+    <title data-translate="battery_page.title">Batériové úložiská | ELVOSOLAR a.s.</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../../assets/site.css">
-    <script src="../../assets/site.js" defer></script>
+    <link rel="stylesheet" href="assets/site.css">
+    <script src="assets/site.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -48,13 +49,13 @@
     <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <!-- Logo -->
-            <a href="../../index.html" class="flex items-center transition-transform active:scale-95">
-                <img src="../../Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
+            <a href="index.html" class="flex items-center transition-transform active:scale-95">
+                <img src="Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
             </a>
             
             <!-- Menu pre počítače -->
             <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600">
-                <a href="../../o-nás/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.about"></a>
+                <a href="o-nás.html" class="hover:text-brand-green transition-colors" data-translate="nav.about"></a>
                 
                 <!-- Dropdown Obnoviteľná energia (Desktop) -->
                 <div class="relative inline-block text-left" id="renewable-dropdown-container">
@@ -65,18 +66,18 @@
                         </svg>
                     </button>
                     <div id="renewable-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-lg shadow-lg py-1.5 z-50">
-                        <a href="../fotovoltika/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
-                        <a href="../solárny-ohrev/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
-                        <a href="../orc-jednotky/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
-                        <a href="../absorpčné-chladenie/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
-                        <a href="../bateriové-úložiská/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
+                        <a href="fotovoltika.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
+                        <a href="solárny-ohrev.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
+                        <a href="orc-jednotky.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
+                        <a href="absorpčné-chladenie.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
+                        <a href="bateriové-úložiská.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
                     </div>
                 </div>
 
-                <a href="../../smart-riesenia/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
-                <a href="../../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
-                <a href="../../zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
-                <a href="../../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+                <a href="smart-riesenia.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
+                <a href="služby.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
+                <a href="zelená-podnikom.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
+                <a href="kontakt.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
             </nav>
 
             <div class="flex items-center space-x-4">
@@ -102,7 +103,7 @@
                     </div>
                 </div>
 
-                <a href="../../kontakt/index.html#kontakt-formular" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]" data-translate="nav.quick_inquiry"></a>
+                <a href="kontakt.html#kontakt-formular" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]" data-translate="nav.quick_inquiry"></a>
                 
                 <!-- Hamburger pre mobilné telefóny -->
                 <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-brand-green focus:outline-none p-2" aria-label="Menu">
@@ -116,7 +117,8 @@
         <!-- Mobilné menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 transition-all duration-300">
             <nav class="flex flex-col px-6 py-4 space-y-4 font-semibold text-slate-600">
-                <a href="../../o-nás/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
+                <a href="index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.home">Domov</a>
+                <a href="o-nás.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
                 
                 <!-- Akordeón pre Obnoviteľnú energiu v mobile -->
                 <div class="flex flex-col">
@@ -127,19 +129,19 @@
                         </svg>
                     </button>
                     <div id="mobile-renewable-submenu" class="hidden pl-4 flex-col space-y-2 py-2 border-b border-slate-50 bg-slate-50/50">
-                        <a href="../fotovoltika/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
-                        <a href="../solárny-ohrev/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
-                        <a href="../orc-jednotky/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
-                        <a href="../absorpčné-chladenie/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
-                        <a href="../bateriové-úložiská/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
+                        <a href="fotovoltika.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
+                        <a href="solárny-ohrev.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
+                        <a href="orc-jednotky.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
+                        <a href="absorpčné-chladenie.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
+                        <a href="bateriové-úložiská.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
                     </div>
                 </div>
 
-                <a href="../../smart-riesenia/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
-                <a href="../../služby/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
-                <a href="../../zelená-podnikom/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
-                <a href="../../kontakt/index.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
-                <a href="../../kontakt/index.html#kontakt-formular" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+                <a href="smart-riesenia.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
+                <a href="služby.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
+                <a href="zelená-podnikom.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
+                <a href="kontakt.html#kontakt-formular" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
+                <a href="kontakt.html#kontakt-formular" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
             </nav>
         </div>
     </header>
@@ -148,8 +150,8 @@
     <section class="relative bg-brand-dark text-white py-16 lg:py-24 overflow-hidden">
         <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
         <div class="max-w-7xl mx-auto px-6 relative z-10 animate-fade-in-up">
-            <span class="text-brand-green text-xs font-bold uppercase tracking-widest mb-3 block" data-translate="absorption_page.hero_badge"></span>
-            <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight" data-translate="absorption_page.hero_title"></h1>
+            <span class="text-brand-green text-xs font-bold uppercase tracking-widest mb-3 block" data-translate="battery_page.hero_badge"></span>
+            <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight" data-translate="battery_page.hero_title"></h1>
         </div>
     </section>
 
@@ -160,159 +162,64 @@
             <!-- Hlavný obsah podstránky -->
             <div class="lg:col-span-8 space-y-8 text-slate-600 text-sm md:text-base leading-relaxed animate-fade-in-up animate-delay-100">
                 <div class="space-y-4">
-                    <p class="text-lg md:text-xl text-slate-900 font-semibold leading-snug" data-translate="absorption_page.lead_text"></p>
-                    <p data-translate="absorption_page.desc_p1"></p>
-                    <p class="font-semibold text-slate-900" data-translate="absorption_page.desc_p2"></p>
+                    <p class="text-lg md:text-xl text-slate-900 font-semibold leading-snug" data-translate="battery_page.lead_text"></p>
+                    <p data-translate="battery_page.desc_p1"></p>
+                    <p class="font-semibold text-slate-900" data-translate="battery_page.desc_p2"></p>
                 </div>
 
-                <!-- Obrázok -->
+                <!-- Reprezentatívny obrázok pre Batériové úložiská -->
                 <div class="rounded-2xl overflow-hidden border border-slate-100 shadow-sm group">
-                    <img src="../../Png/Absobér/absorber-polnohospodarstvo-1-550x200.jpg" alt="Absorpčné chladiace jednotky" class="w-full h-64 md:h-80 object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80'">
+                    <img src="Png/BaterioveUloziska/baterie.jpg" alt="Batériové úložiská" class="w-full h-64 md:h-80 object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?auto=format&fit=crop&w=1200&q=80'">
                 </div>
 
                 <div class="space-y-4">
-                    <h2 class="text-xl md:text-2xl font-bold text-brand-dark" data-translate="absorption_page.more_info_title"></h2>
-                    <p data-translate="absorption_page.more_info_p1"></p>
-                    <p data-translate="absorption_page.more_info_p2"></p>
-                    <p data-translate="absorption_page.more_info_p3"></p>
-                    <p class="italic text-xs md:text-sm text-slate-500 border-l-2 border-brand-green pl-4" data-translate="absorption_page.more_info_p4"></p>
-                </div>
-
-                <!-- Výhody -->
-                <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <h3 class="font-bold text-brand-dark text-lg" data-translate="absorption_page.advantages_title"></h3>
-                    <ul class="list-disc pl-5 space-y-1.5 text-xs md:text-sm text-slate-650">
-                        <li data-translate="absorption_page.adv_li1"></li>
-                        <li data-translate="absorption_page.adv_li2"></li>
-                        <li data-translate="absorption_page.adv_li3"></li>
-                        <li data-translate="absorption_page.adv_li4"></li>
-                        <li data-translate="absorption_page.adv_li5"></li>
-                        <li data-translate="absorption_page.adv_li6"></li>
-                        <li data-translate="absorption_page.adv_li7"></li>
-                    </ul>
-                </div>
-
-                <div class="space-y-2 text-xs md:text-sm">
-                    <p data-translate="absorption_page.specs_p1"></p>
-                    <p data-translate="absorption_page.specs_p2"></p>
-                </div>
-
-                <!-- Tabuľka referencií -->
-                <div class="space-y-4 pt-6">
-                    <h3 class="text-xl font-bold text-brand-dark" data-translate="absorption_page.references_title"></h3>
+                    <h2 class="text-xl md:text-2xl font-bold text-brand-dark" data-translate="battery_page.advantages_title"></h2>
+                    <p data-translate="battery_page.advantages_desc"></p>
                     
-                    <div class="pt-1">
-                        <button id="toggle-refs-btn" onclick="toggleReferencesTable()" class="bg-brand-dark hover:bg-slate-800 text-white font-semibold px-6 py-3 rounded-lg text-sm transition-all flex items-center gap-2">
-                            <span data-translate="absorption_page.ref_btn">Zobraziť referencie</span>
-                            <svg id="ref-btn-icon" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div id="references-container" class="hidden overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-white transition-all duration-300">
-                        <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
-                            <table class="w-full text-left border-collapse text-xs md:text-sm">
-                                <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-                                    <tr class="text-slate-700 font-semibold">
-                                        <th class="p-4" data-translate="absorption_page.th_customer"></th>
-                                        <th class="p-4" data-translate="absorption_page.th_sector"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 text-slate-600">
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Tesco Stores, UK</td>
-                                        <td class="p-4" data-translate="absorption_page.sec1"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Wall Mart, USA</td>
-                                        <td class="p-4" data-translate="absorption_page.sec1"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Airport Berlin, Nemecko</td>
-                                        <td class="p-4" data-translate="absorption_page.sec2"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Rome Airport, Taliansko</td>
-                                        <td class="p-4" data-translate="absorption_page.sec2"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Royal Free Hospital, UK</td>
-                                        <td class="p-4" data-translate="absorption_page.sec3"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Hospital San Carlo, Španielsko</td>
-                                        <td class="p-4" data-translate="absorption_page.sec3"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Michelin, Francúzsko</td>
-                                        <td class="p-4" data-translate="absorption_page.sec4"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">BASF, Nemecko</td>
-                                        <td class="p-4" data-translate="absorption_page.sec4"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Nestle, Filipíny</td>
-                                        <td class="p-4" data-translate="absorption_page.sec5"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">T-Mobile center, Nemecko</td>
-                                        <td class="p-4" data-translate="absorption_page.sec6"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Daimler Chrysler, Nemecko</td>
-                                        <td class="p-4" data-translate="absorption_page.sec7"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">United Gulf Steel, UAE</td>
-                                        <td class="p-4" data-translate="absorption_page.sec8"></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50/50">
-                                        <td class="p-4 font-medium text-slate-900">Hilton Olympia Londýn, UK</td>
-                                        <td class="p-4" data-translate="absorption_page.sec9"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-150/80 shadow-sm space-y-3">
+                        <h3 class="font-bold text-brand-dark text-sm" data-translate="battery_page.benefits_card_title"></h3>
+                        <ul class="list-none space-y-2 text-xs md:text-sm text-slate-650">
+                            <li class="flex items-start gap-2">
+                                <span class="text-brand-green font-bold shrink-0">✓</span>
+                                <span data-translate="battery_page.benefits_li1"></span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-brand-green font-bold shrink-0">✓</span>
+                                <span data-translate="battery_page.benefits_li2"></span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-brand-green font-bold shrink-0">✓</span>
+                                <span data-translate="battery_page.benefits_li3"></span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
 
             </div>
 
-            <!-- Pravá časť: Aplikácie -->
+            <!-- Pravá časť: Možnosti aplikácie -->
             <div class="lg:col-span-4 space-y-8 animate-fade-in-up animate-delay-200">
                 
                 <!-- Aplikácie sekcia -->
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
-                    <h3 class="font-bold text-brand-dark text-base border-b pb-3 border-slate-100" data-translate="absorption_page.sidebar_title"></h3>
+                    <h3 class="font-bold text-brand-dark text-base border-b pb-3 border-slate-100" data-translate="battery_page.sidebar_title"></h3>
                     
                     <div class="space-y-4 text-xs">
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="absorption_page.app1_title"></h4>
-                            <p class="text-slate-500 leading-relaxed" data-translate="absorption_page.app1_desc"></p>
+                            <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="battery_page.app1_title"></h4>
+                            <p class="text-slate-500 leading-relaxed" data-translate="battery_page.app1_desc"></p>
                         </div>
                         
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="absorption_page.app2_title"></h4>
-                            <p class="text-slate-500 leading-relaxed" data-translate="absorption_page.app2_desc"></p>
-                        </div>
-
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="absorption_page.app3_title"></h4>
-                            <p class="text-slate-500 leading-relaxed" data-translate="absorption_page.app3_desc"></p>
-                        </div>
-
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="absorption_page.app4_title"></h4>
-                            <p class="text-slate-500 leading-relaxed" data-translate="absorption_page.app4_desc"></p>
+                            <h4 class="font-bold text-brand-dark text-sm mb-1" data-translate="battery_page.app2_title"></h4>
+                            <p class="text-slate-500 leading-relaxed" data-translate="battery_page.app2_desc"></p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Druhá fotografia -->
-                <div class="rounded-2xl overflow-hidden border border-slate-100 group shadow-sm">
-                    <img src="../../Png/instalace.jpg" alt="Inštalácia" class="w-full h-48 object-cover transition-transform duration-700 group-hover:scale-105">
+                <!-- Druhá podporná fotografia -->
+                <div class="rounded-2xl overflow-hidden border border-slate-100 group">
+                    <img src="Png/instalace.jpg" alt="Inštalácia" class="w-full h-48 object-cover transition-transform duration-700 group-hover:scale-105">
                 </div>
 
             </div>
@@ -356,35 +263,49 @@
                 <!-- Formulár dopytu -->
                 <div class="lg:col-span-7 bg-slate-800/40 p-6 md:p-8 rounded-2xl border border-slate-700/50">
                     <h3 class="text-lg font-bold mb-6" data-translate="contact.form_title"></h3>
-                    <form id="absorber-inquiry-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                    <form class="space-y-4">
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_name_label"></label>
-                                <input id="form-name" type="text" required data-translate-placeholder="contact.form_name_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
+                                <input type="text" required data-translate-placeholder="contact.form_name_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
                             </div>
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_email_label"></label>
-                                <input id="form-email" type="email" required data-translate-placeholder="contact.form_email_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
+                                <input type="email" required data-translate-placeholder="contact.form_email_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_phone_label"></label>
-                            <input id="form-phone" type="tel" required data-translate-placeholder="contact.form_phone_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_phone_label"></label>
+                                <input type="tel" required data-translate-placeholder="contact.form_phone_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_capacity_label"></label>
+                                <input type="number" data-translate-placeholder="contact.form_capacity_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
+                            </div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_request_label"></label>
-                            <select id="form-request" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
-                                <option value="viac-info" data-translate="contact.form_opt1"></option>
-                                <option value="stretnutie" data-translate="contact.form_opt2"></option>
-                                <option value="vypracovanie-ponuky" data-translate="contact.form_opt3"></option>
-                            </select>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_offer_type_label"></label>
+                                <select class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
+                                    <option value="baterie" data-translate="contact.form_offer_opt1"></option>
+                                    <option value="hybridna-ftv" data-translate="contact.form_offer_opt2"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_client_type_label"></label>
+                                <select class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all">
+                                    <option value="domacnost" data-translate="contact.form_client_opt1"></option>
+                                    <option value="podnikatel" data-translate="contact.form_client_opt2"></option>
+                                </select>
+                            </div>
                         </div>
 
                         <div>
                             <label class="block text-xs text-slate-400 mb-1" data-translate="contact.form_msg_label"></label>
-                            <textarea id="form-message" required rows="4" data-translate-placeholder="contact.form_message_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all"></textarea>
+                            <textarea required rows="4" data-translate-placeholder="contact.form_message_placeholder" class="w-full bg-slate-900 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-green text-white transition-all"></textarea>
                         </div>
 
                         <p class="text-[10px] text-slate-500 italic" data-translate="contact.form_required_note"></p>
@@ -411,7 +332,7 @@
             </div>
 
             <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4">
-                <!-- Generované dynamicky -->
+                <!-- Generované dynamic -->
             </div>
 
             <div class="p-6 border-t border-slate-100 bg-slate-50">
@@ -505,38 +426,6 @@
             closeDropdowns();
         });
 
-        // Zobrazenie tabuľky referencií
-        function toggleReferencesTable() {
-            const container = document.getElementById('references-container');
-            const icon = document.getElementById('ref-btn-icon');
-            
-            if (container.classList.contains('hidden')) {
-                container.classList.remove('hidden');
-                icon.classList.add('rotate-180');
-            } else {
-                container.classList.add('hidden');
-                icon.classList.remove('rotate-180');
-            }
-        }
-
-        // ----------------- ODOSLANIE DOPYTOVÉHO FORMULÁRA -----------------
-        function handleFormSubmit(event) {
-            event.preventDefault();
-            const name = document.getElementById('form-name').value;
-            const email = document.getElementById('form-email').value;
-            const phone = document.getElementById('form-phone').value;
-            const message = document.getElementById('form-message').value;
-            const requestElement = document.getElementById('form-request');
-            const requestText = requestElement.options[requestElement.selectedIndex].text;
-
-            const thankMsg = currentLang === 'sk'
-                ? `Ďakujeme za Váš záujem, ${name}.\nFormulár dopytu bol úspešne odoslaný. Čoskoro Vás budeme kontaktovať na e-mail ${email} alebo telefónne číslo ${phone} ohľadom: "${requestText}".`
-                : `Thank you for your interest, ${name}.\nThe inquiry form has been successfully sent. We will contact you shortly at ${email} or ${phone} regarding: "${requestText}".`;
-
-            alert(thankMsg);
-            document.getElementById('absorber-inquiry-form').reset();
-        }
-
         // ----------------- LOKALIZAČNÝ ENGINE -----------------
         let currentTranslations = {};
         let currentLang = localStorage.getItem('elvo_lang') || 'sk';
@@ -544,8 +433,8 @@
         async function loadLanguage(lang) {
             let fetchedData = null;
             try {
-                // Súbor je o 3 úrovne hlbšie (../../preklad/)
-                const response = await fetch(`../../preklad/${lang.toUpperCase()}/index.json`);
+                // preklad/ je v koreni webu
+                const response = await fetch(`preklad/${lang.toUpperCase()}/index.json`);
                 if (response.ok) {
                     fetchedData = await response.json();
                 }
@@ -605,12 +494,16 @@
             if (drawer.classList.contains('hidden')) {
                 drawer.classList.remove('hidden');
                 setTimeout(() => {
-                    backdrop.classList.replace('opacity-0', 'opacity-100');
-                    panel.classList.replace('translate-x-full', 'translate-x-0');
+                    backdrop.classList.remove('opacity-0');
+                    backdrop.classList.add('opacity-100');
+                    panel.classList.remove('translate-x-full');
+                    panel.classList.add('translate-x-0');
                 }, 10);
             } else {
-                backdrop.classList.replace('opacity-100', 'opacity-0');
-                panel.classList.replace('translate-x-0', 'translate-x-full');
+                backdrop.classList.remove('opacity-100');
+                backdrop.classList.add('opacity-0');
+                panel.classList.remove('translate-x-0');
+                panel.classList.add('translate-x-full');
                 setTimeout(() => {
                     drawer.classList.add('hidden');
                 }, 300);
@@ -718,7 +611,7 @@ async function handleCheckout(event) {
             if (button) { button.disabled = true; button.innerHTML = 'Odosiela sa...'; }
 
             try {
-                const response = await fetch('../send.php', {
+                const response = await fetch('send.php', {
                     method: 'POST',
                     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: document.getElementById('cart-total-price').innerText, page: location.pathname })
@@ -746,6 +639,7 @@ async function handleCheckout(event) {
         const fullEmbeddedTranslations = {
             sk: {
                 "nav": {
+                    "home": "Domov",
                     "about": "O nás",
                     "renewable": "Obnoviteľná energia",
                     "smart": "Smart riešenia",
@@ -761,51 +655,24 @@ async function handleCheckout(event) {
                     "card4_title": "Absorpčné chladenie",
                     "card5_title": "Batériové úložištia"
                 },
-                "absorption_page": {
-                    "title": "Absorpčné chladenie | ELVOSOLAR a.s.",
-                    "hero_badge": "Ekologické chladenie",
-                    "hero_title": "Absorpčné chladenie",
-                    "lead_text": "Požiadavka na produkciu chladu má v súčasnosti stúpajúci trend, preto je nevyhnutné začať využívať technológie, ktoré by dokázali vyrobiť túto komoditu z obnoviteľných alebo odpadových zdrojov.",
-                    "desc_p1": "Výroba chladu absorpčnými jednotkami využíva ako zdroj energie odpadové teplo z výrobných alebo nevýrobných procesov, a tak voči konvenčnej výrobe chladu výrazne znižuje spotrebu elektrickej energie.",
-                    "desc_p2": "Nami navrhované a ponúkané jednotky Thermax ponúkajú technológie absorpčného chladenia od 35 kW do 12 000 kW chladu, pričom zdrojom je teplo získané z horúcej vody, pary, oleja, spaľovaním plynu, z výfukových plynov alebo spalín.",
-                    "more_info_title": "Viac informácií o absorpcii",
-                    "more_info_p1": "Absorpcia je chemický dej, pri ktorom dochádza k procesu rozpúšťania či pohlcovania plynnej zlúčeniny v kvapaline (absorbente). Využitím tohto poznatku je možné technologicky vyrobiť chlad.",
-                    "more_info_p2": "Absorpčné systémy využívajú tepelnú energiu k výrobe chladiaceho efektu. Pre výrobu chladu je preto možné použiť ako zdroj energie nevyužiteľné (odpadové) teplo. V týchto systémoch chladivo (voda) absorbuje teplo pri nižšej teplote a nižšom tlaku počas odparovania a uvoľňuje teplo pri vyššej teplote a vyššym tlaku počas kondenzácie.",
-                    "more_info_p3": "Absorbent (v tomto prípade roztok LiBr) pohlcuje výpary chladiva v nízkotlakovej časti systému a po ohriatí ich vo vysokotlakovej časti systému uvoľňuje. Pre účely ohrevu a následného oddelenia absorbenta od chladiva sa využíva odpadové teplo (napríklad z procesov). Uvoľnené pary chladiva sa dostávajú do kondenzátora, kde kondenzujú. Čiastočne schladené kvapalné chladivo sa potom pod vysokým tlakom uvoľňuje späť do priestoru výparníka (nízkotlaková časť systému). Zmenou tlakov dochádza k významnej zmene teploty kvapalného chladiva, ktoré následným odparovaním vo výparníku ochladzuje chladenú vodu, ktorú môžeme použiť pre chladenie vybraného priestoru. Odovzdaním teploty chladiva chladiacej vode sa celý cyklus dostane na svoj začiatok.",
-                    "more_info_p4": "V ProChill (twin design) absorpčnom stroji prejde horúca voda najprv vysokotlakovým generátorom a následne prejde cez nízkotlakový generátor, čím sa významne zvyšuje účinnosť cyklu.",
-                    "advantages_title": "Výhody absorpčných jednotiek voči kompresorovým:",
-                    "adv_li1": "Hlavným zdrojom energie sú teplá voda, para, spaliny, výfukové plyny, odpadný plyn alebo odpadové teplo.",
-                    "adv_li2": "Využívajú pre svoj chod iba 5 % elektrickej energie v porovnaní s klasickými kompresorovými chladičmi.",
-                    "adv_li3": "Veľmi tichá, bezúdržbová a vysoko spoľahlivá prevádzka.",
-                    "adv_li4": "Zariadenia sú ekologické s minimálnou vlastnou spotrebou energie.",
-                    "adv_li5": "Zariadenie disponuje vysokou účinnosťou pre rekuperáciu tepla.",
-                    "adv_li6": "Systém je možné použiť súčasne pre chladenie a ohrev (použitím chladiacej vody z procesu kondenzácie).",
-                    "adv_li7": "Veľmi rýchla návratnosť investície (približne 4 roky aj napriek vyššej obstarávacej cene).",
-                    "specs_p1": "Nami navrhované a ponúkané jednotky Thermax ponúkajú technológiu absorpčného chladenia od 35 kW do 12 000 kW chladu s vysokým koeficientom COP do 1,8.",
-                    "specs_p2": "Chladiče Thermax sú vyrábané na mieru výrobného procesu s akreditovanými certifikátmi ISO 9001, ISO 14001 a ISO 18001. Absorpčné chladiče Thermax majú všetky svetové certifikáty a všetky jednotky sú pred inštaláciou otestované na nominálny výkon prevádzky priamo vo výrobnom podniku Thermax.",
-                    "ref_btn": "Zobraziť referencie",
-                    "references_title": "Medzinárodné Referencie",
-                    "references_desc": "Nízke prevádzkové náklady, jednoduchá a bezpečná technológia. Absorpčné chladenie predstavuje ekologický a ekonomicky spôsob výroby chladu z odpadového tepla.",
-                    "th_customer": "Zákazník",
-                    "th_sector": "Cieľový sektor",
-                    "sec1": "Obchodné reťazce",
-                    "sec2": "Infraštruktúra",
-                    "sec3": "Zdravotníctvo",
-                    "sec4": "Chemický priemysel",
-                    "sec5": "F&B",
-                    "sec6": "Telekomunikácie",
-                    "sec7": "Automobilový priemysel",
-                    "sec8": "Železiarne",
-                    "sec9": "Hotely",
+                "battery_page": {
+                    "title": "Batériové úložiská | ELVOSOLAR a.s.",
+                    "hero_badge": "Akumulácia energie",
+                    "hero_title": "Batériové úložiská",
+                    "lead_text": "Ukladanie vyrobenej elektrickej energie je kľúčom k jej efektívnemu využívaniu. Batériové úložiská (ESS) predstavujú dôležitý pilier moderných obnoviteľných zdrojov energie.",
+                    "desc_p1": "Umožňujú spoľahlivo akumulovať nespotrebovanú elektrickú energiu vyrobenú z fotovoltických panelov počas dňa a využiť ju v čase špičiek, v noci alebo pri náhlom výpadku distribučnej siete (funkcia zálohy/UPS).",
+                    "desc_p2": "Naša spoločnosť ponúka návrh, výstavbu a servis spoľahlivých batériových úložísk pre rodinné domy, priemyselné prevádzky, poľnohospodárstvo a komerčné subjekty.",
+                    "advantages_title": "Výhody batériových úložísk",
+                    "advantages_desc": "Moderné lítiové batériové systémy (predovšetkým technológia LiFePO4) disponujú vysokou životnosťou až cez 6 000 nabíjacích cyklov a vysokou bezpečnosťou prevádzky. Správne navrhnuté úložisko eliminuje nutnosť dodávať prebytky vyrobenej energie nevýhodne do distribučnej siete a stabilizuje lokálnu sieť odberateľa.",
+                    "benefits_card_title": "Prečo investovať do batérií?",
+                    "benefits_li1": "<strong>Nezávislosť:</strong> Záloha dôležitých okruhov pri výpadkoch distribučnej siete.",
+                    "benefits_li2": "<strong>Zníženie nákladov:</strong> Maximálne využitie vlastnej vyrobenej solárnej energie namiesto jej nákupu.",
+                    "benefits_li3": "<strong>Inteligentný manažment:</strong> Plynulé riadenie tokov energie v reálnom čase (Peak Shaving).",
                     "sidebar_title": "Možnosti aplikácie",
-                    "app1_title": "/// Priemysel",
-                    "app1_desc": "Priemyselné podniky, výrobné závody, potravinárske podniky, chemické závody,… s možnosťou spracovania odpadového tepla z horúcej vody, pary, plynu, oleja, výfukových plynov alebo spalín.",
-                    "app2_title": "/// Energetika",
-                    "app2_desc": "Výroba energie z obnoviteľných zdrojov, teplárne, kompresorové stanice,… s možnosťou spracovania odpadového tepla z horúcej vody, pary, plynu.",
-                    "app3_title": "/// Poľnohospodárstvo",
-                    "app3_desc": "Družstvá, mliekarne,… s možnosťou spracovania odpadového tepla z horúcej vody, pary, plynu.",
-                    "app4_title": "/// Komerčné budovy",
-                    "app4_desc": "Wellness centrá, aquaparky, nákupné centrá, … s možnosťou spracovania odpadového tepla z horúcej vody alebo pary."
+                    "app1_title": "/// Rezidenčné objekty",
+                    "app1_desc": "Ukladanie energie pre rodinné domy s inteligentným riadením.",
+                    "app2_title": "/// Priemysel & komerčný sektor",
+                    "app2_desc": "Vykrývanie špičiek (peak-shaving) a znižovanie rezervovanej kapacity pre firmy."
                 },
                 "contact": {
                     "badge": "Kontakt",
@@ -827,10 +694,14 @@ async function handleCheckout(event) {
                     "form_email_placeholder": "kovac@domena.sk",
                     "form_phone_label": "Vaše tel. číslo *",
                     "form_phone_placeholder": "+421 9xx xxx xxx",
-                    "form_request_label": "Žiadam o",
-                    "form_opt1": "Viac informácií k absorbérom",
-                    "form_opt2": "Stretnutie ohľadom energetických opatrení",
-                    "form_opt3": "Vypracovanie ponuky na absorbér",
+                    "form_capacity_label": "Kapacita úložiska (kWh)",
+                    "form_capacity_placeholder": "Napr. 20",
+                    "form_offer_type_label": "Žiadam si vypracovať ponuku na",
+                    "form_offer_opt1": "Samostatné batériové úložisko",
+                    "form_offer_opt2": "Hybridná FTV s úložiskom",
+                    "form_client_type_label": "Žiadam si vypracovať ponuku pre",
+                    "form_client_opt1": "Domácnosť",
+                    "form_client_opt2": "Podnikateľský subjekt",
                     "form_msg_label": "Vaša otázka *",
                     "form_message_placeholder": "Uveďte bližšie požiadavky...",
                     "form_required_note": "* Povinné údaje",
@@ -856,6 +727,7 @@ async function handleCheckout(event) {
             },
             en: {
                 "nav": {
+                    "home": "Home",
                     "about": "About Us",
                     "renewable": "Renewable Energy",
                     "smart": "Smart Solutions",
@@ -871,51 +743,24 @@ async function handleCheckout(event) {
                     "card4_title": "Absorption cooling",
                     "card5_title": "Battery storage"
                 },
-                "absorption_page": {
-                    "title": "Absorption Cooling | ELVOSOLAR a.s.",
-                    "hero_badge": "Eco-friendly Cooling",
-                    "hero_title": "Absorption Cooling",
-                    "lead_text": "The demand for cooling production currently has a rising trend, making it essential to start using technologies capable of producing this commodity from renewable or waste sources.",
-                    "desc_p1": "Cooling production by absorption units uses waste heat from industrial or non-industrial processes as an energy source, significantly reducing electricity consumption compared to conventional cooling production.",
-                    "desc_p2": "The Thermax units we design and offer provide absorption cooling technology from 35 kW to 12,000 kW of cooling capacity, with the energy source being heat obtained from hot water, steam, oil, gas combustion, exhaust gases, or flue gases.",
-                    "more_info_title": "More Information about Absorption",
-                    "more_info_p1": "Absorption is a chemical process where a gaseous compound is dissolved or absorbed in a liquid (absorbent). Leveraging this principle, cooling can be technologically produced.",
-                    "more_info_p2": "Absorption systems use thermal energy to produce a cooling effect. Unusable (waste) heat can therefore be used as an energy source to produce cooling. In these systems, water (refrigerant) absorbs heat at a lower temperature and lower pressure during evaporation and releases heat at a higher temperature and higher pressure during condensation.",
-                    "more_info_p3": "The absorbent (in this case, LiBr solution) absorbs refrigerant vapors in the low-pressure section of the system and releases them in the high-pressure section after heating. For heating and subsequently separating the absorbent from the refrigerant, waste heat (e.g., from industrial processes) is utilized. The released refrigerant vapors enter the condenser where they condense. Partially cooled liquid refrigerant is then released under high pressure back into the evaporator space (low-pressure section of the system). This change in pressure results in a significant change in the temperature of the liquid refrigerant, which subsequently evaporates in the evaporator, cooling the chilled water used for cooling the selected space.",
-                    "more_info_p4": "In the ProChill (twin design) absorption machine, hot water first passes through a high-pressure generator and then through a low-pressure generator, significantly increasing the cycle efficiency.",
-                    "advantages_title": "Advantages of Absorption Units over Compressor Units:",
-                    "adv_li1": "The main energy sources are hot water, steam, flue gases, exhaust gases, waste gas, or waste heat.",
-                    "adv_li2": "They use only 5% of electrical energy for operation compared to traditional compressor chillers.",
-                    "adv_li3": "Very quiet, maintenance-free, and highly reliable operation.",
-                    "adv_li4": "Devices are eco-friendly with minimal self-consumption of energy.",
-                    "adv_li5": "The equipment features high efficiency for heat recovery.",
-                    "adv_li6": "The system can be used simultaneously for cooling and heating (using cooling water from the condensation process).",
-                    "adv_li7": "Very fast return on investment (approximately 4 years despite the higher purchase price).",
-                    "specs_p1": "The Thermax units we design and offer provide absorption cooling technology from 35 kW to 12,000 kW of cooling with a high COP coefficient of up to 1.8.",
-                    "specs_p2": "Thermax chillers are custom-built for manufacturing processes with accredited certificates ISO 9001, ISO 14001, and ISO 18001. Thermax absorption chillers have all international certificates, and all units are tested for nominal operating performance directly at the Thermax manufacturing facility prior to installation.",
-                    "ref_btn": "Show References",
-                    "references_title": "International References",
-                    "references_desc": "Low operating costs, simple and safe technology. Absorption cooling represents an eco-friendly and economical way to produce cooling from waste heat.",
-                    "th_customer": "Customer",
-                    "th_sector": "Target Sector",
-                    "sec1": "Retail Chains",
-                    "sec2": "Infrastructure",
-                    "sec3": "Healthcare",
-                    "sec4": "Chemical Industry",
-                    "sec5": "F&B",
-                    "sec6": "Telecommunications",
-                    "sec7": "Automotive Industry",
-                    "sec8": "Steelworks",
-                    "sec9": "Hotels",
+                "battery_page": {
+                    "title": "Battery Storage | ELVOSOLAR a.s.",
+                    "hero_badge": "Energy Storage",
+                    "hero_title": "Battery Storage Systems",
+                    "lead_text": "Storing produced electrical energy is key to its efficient use. Battery storage systems (ESS) represent a critical pillar of modern renewable energy sources.",
+                    "desc_p1": "They allow for reliable accumulation of unused electrical energy generated by photovoltaic panels during the day, so it can be utilized during peak hours, at night, or during sudden grid outages (backup/UPS functionality).",
+                    "desc_p2": "Our company offers customized design, construction, and maintenance of reliable battery storage systems for residential homes, industrial facilities, agriculture, and commercial sectors.",
+                    "advantages_title": "Advantages of Battery Storage",
+                    "advantages_desc": "Modern lithium battery systems (especially LiFePO4 technology) feature an outstanding lifespan of over 6,000 charging cycles and high operational safety. A properly designed storage system eliminates the need to feedback solar excess to the grid under disadvantageous terms, and successfully stabilizes the local consumer grid.",
+                    "benefits_card_title": "Why invest in battery storage?",
+                    "benefits_li1": "<strong>Independence:</strong> Backup of key electrical circuits during distribution grid failures.",
+                    "benefits_li2": "<strong>Cost savings:</strong> Maximize the utilization of your self-produced solar energy instead of purchasing from the utility.",
+                    "benefits_li3": "<strong>Intelligent management:</strong> Seamless, real-time energy flow management and peak demand suppression (Peak Shaving).",
                     "sidebar_title": "Application Opportunities",
-                    "app1_title": "/// Industry",
-                    "app1_desc": "Industrial plants, manufacturing facilities, food factories, chemical plants... with the possibility of processing waste heat from hot water, steam, gas, oil, exhaust gases, or flue gases.",
-                    "app2_title": "/// Energy sector",
-                    "app2_desc": "Energy production from renewable sources, heating plants, compressor stations... with the possibility of processing waste heat from hot water, steam, or gas.",
-                    "app3_title": "/// Agriculture",
-                    "app3_desc": "Farms, dairies... with the possibility of processing waste heat from hot water, steam, or gas.",
-                    "app4_title": "/// Commercial Buildings",
-                    "app4_desc": "Wellness centers, water parks, shopping centers... with the possibility of processing waste heat from hot water or steam."
+                    "app1_title": "/// Residential Buildings",
+                    "app1_desc": "Smart-controlled energy storage solutions for residential houses.",
+                    "app2_title": "/// Industry & Commercial Sector",
+                    "app2_desc": "Peak demand suppression (peak-shaving) and reducing reserved capacity and costs for companies."
                 },
                 "contact": {
                     "badge": "Contact",
@@ -937,10 +782,14 @@ async function handleCheckout(event) {
                     "form_email_placeholder": "smith@domain.com",
                     "form_phone_label": "Your phone number *",
                     "form_phone_placeholder": "+421 9xx xxx xxx",
-                    "form_request_label": "Request for",
-                    "form_opt1": "More information on absorbers",
-                    "form_opt2": "Meeting regarding energy measures",
-                    "form_opt3": "Proposal preparation for an absorber",
+                    "form_capacity_label": "Storage capacity (kWh)",
+                    "form_capacity_placeholder": "E.g. 20",
+                    "form_offer_type_label": "I request an offer for",
+                    "form_offer_opt1": "Standalone battery storage system",
+                    "form_offer_opt2": "Hybrid PV system with battery storage",
+                    "form_client_type_label": "I request an offer for",
+                    "form_client_opt1": "Residential / Household",
+                    "form_client_opt2": "Business entity / Company",
                     "form_msg_label": "Your question *",
                     "form_message_placeholder": "Specify detailed requirements...",
                     "form_required_note": "* Required fields",

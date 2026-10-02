@@ -1,13 +1,14 @@
-<!-- Uložiť do: o-nás/index.html -->
+<!-- Uložiť do: o-nás.html -->
 <!DOCTYPE html>
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="Png/download.png">
     <title data-translate="about_page.title">O nás | ELVOSOLAR a.s.</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../assets/site.css">
-    <script src="../assets/site.js" defer></script>
+    <link rel="stylesheet" href="assets/site.css">
+    <script src="assets/site.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -29,12 +30,12 @@
     <!-- Navigácia -->
     <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <a href="../index.html" class="flex items-center">
-                <img src="../Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
+            <a href="index.html" class="flex items-center">
+                <img src="Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
             </a>
             
             <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600">
-                <a href="../o-nás/index.html" class="text-brand-green transition-colors" data-translate="nav.about"></a>
+                <a href="o-nás.html" class="text-brand-green transition-colors" data-translate="nav.about"></a>
                 
                 <!-- Dropdown Obnoviteľná energia (Desktop) -->
                 <div class="relative inline-block text-left" id="renewable-dropdown-container">
@@ -45,18 +46,18 @@
                         </svg>
                     </button>
                     <div id="renewable-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-lg shadow-lg py-1.5 z-50">
-                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
-                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
-                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
-                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
-                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
+                        <a href="fotovoltika.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
+                        <a href="solárny-ohrev.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
+                        <a href="orc-jednotky.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
+                        <a href="absorpčné-chladenie.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
+                        <a href="bateriové-úložiská.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
                     </div>
                 </div>
 
-                <a href="../smart-riesenia/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
-                <a href="../služby/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
-                <a href="../zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
-                <a href="../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+                <a href="smart-riesenia.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
+                <a href="služby.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
+                <a href="zelená-podnikom.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
+                <a href="kontakt.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
             </nav>
 
             <div class="flex items-center space-x-4">
@@ -81,7 +82,7 @@
                     </div>
                 </div>
 
-                <a href="../kontakt/index.html#kontakt-formular" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+                <a href="kontakt.html#kontakt-formular" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
                 
                 <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-brand-green focus:outline-none p-2" aria-label="Menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -94,7 +95,7 @@
         <!-- Mobilné menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 transition-all duration-300">
             <nav class="flex flex-col px-6 py-4 space-y-4 font-semibold text-slate-600">
-                <a href="../o-nás/index.html" class="text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
+                <a href="o-nás.html" class="text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
                 
                 <!-- Akordeón pre Obnoviteľnú energiu v mobile -->
                 <div class="flex flex-col">
@@ -105,19 +106,19 @@
                         </svg>
                     </button>
                     <div id="mobile-renewable-submenu" class="hidden pl-4 flex-col space-y-2 py-2 border-b border-slate-50 bg-slate-50/50">
-                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
-                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
-                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
-                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
-                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
+                        <a href="fotovoltika.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
+                        <a href="solárny-ohrev.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
+                        <a href="orc-jednotky.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
+                        <a href="absorpčné-chladenie.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
+                        <a href="bateriové-úložiská.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
                     </div>
                 </div>
 
-                <a href="../smart-riesenia/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
-                <a href="../služby/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
-                <a href="../zelená-podnikom/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
-                <a href="../kontakt/index.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
-                <a href="../kontakt/index.html#kontakt-formular" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+                <a href="smart-riesenia.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
+                <a href="služby.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
+                <a href="zelená-podnikom.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
+                <a href="kontakt.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
+                <a href="kontakt.html#kontakt-formular" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
             </nav>
         </div>
     </header>
@@ -146,14 +147,14 @@
             <div class="lg:col-span-4 space-y-8">
                 <div class="bg-white p-6 rounded-2xl border border-slate-150 shadow-sm space-y-4">
                     <h3 class="font-bold text-brand-dark text-base mb-3" data-translate="about_page.sidebar_title"></h3>
-                    <a href="../Png/brozura_elvosolar-1.pdf" target="_blank" class="inline-flex items-center justify-between bg-slate-50 hover:bg-slate-100 text-brand-dark text-xs font-bold py-3.5 px-4 rounded-xl w-full border border-slate-100">
+                    <a href="Png/brozura_elvosolar-1.pdf" target="_blank" class="inline-flex items-center justify-between bg-slate-50 hover:bg-slate-100 text-brand-dark text-xs font-bold py-3.5 px-4 rounded-xl w-full border border-slate-100">
                         <span data-translate="about_page.sidebar_brochure"></span>
                         <span class="text-brand-green" data-translate="about_page.sidebar_download"></span>
                     </a>
                 </div>
 
                 <div class="rounded-2xl overflow-hidden border border-slate-100">
-                    <img src="../Png/instalace.jpg" alt="Technológie" class="w-full h-56 object-cover">
+                    <img src="Png/instalace.jpg" alt="Technológie" class="w-full h-56 object-cover">
                 </div>
             </div>
         </div>
@@ -267,8 +268,8 @@
         async function loadLanguage(lang) {
             let fetchedData = null;
             try {
-                // Relatívna cesta k priečinku o-nás vyžaduje ../
-                const response = await fetch(`../preklad/${lang.toUpperCase()}/index.json`);
+                // preklad/ je v koreni webu
+                const response = await fetch(`preklad/${lang.toUpperCase()}/index.json`);
                 if (response.ok) {
                     fetchedData = await response.json();
                 }
@@ -416,7 +417,7 @@ async function handleCheckout(event) {
             if (button) { button.disabled = true; button.innerHTML = 'Odosiela sa...'; }
 
             try {
-                const response = await fetch('../send.php', {
+                const response = await fetch('send.php', {
                     method: 'POST',
                     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: document.getElementById('cart-total-price').innerText, page: location.pathname })

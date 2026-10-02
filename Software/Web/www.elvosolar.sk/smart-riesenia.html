@@ -1,22 +1,23 @@
-<!-- Uložiť do: služby/index.html -->
 <!DOCTYPE html>
 <html lang="sk" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-translate="services_page.title">Služby | ELVOSOLAR a.s.</title>
+    <link rel="icon" type="image/png" href="Png/download.png">
+    <title data-translate="title">Smart riešenia | ELVOSOLAR a.s.</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../assets/site.css">
-    <script src="../assets/site.js" defer></script>
+    <link rel="stylesheet" href="assets/site.css">
+    <script src="assets/site.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         brand: {
-                            dark: '#0f172a',
-                            green: '#10b981',
-                            light: '#f8fafc',
+                            dark: '#0f172a', /* Slate 900 */
+                            green: '#10b981', /* Emerald 500 */
+                            light: '#f8fafc', /* Slate 50 */
                         }
                     }
                 }
@@ -29,14 +30,16 @@
     <!-- Navigácia -->
     <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <a href="../index.html" class="flex items-center transition-transform active:scale-95">
-                <img src="../Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
+            <!-- Logo -->
+            <a href="index.html" class="flex items-center">
+                <img src="Png/download.png" alt="ELVOSOLAR a.s." class="h-10 md:h-12 w-auto object-contain">
             </a>
             
+            <!-- Menu pre počítače -->
             <nav class="hidden md:flex items-center space-x-8 font-semibold text-sm text-slate-600">
-                <a href="../o-nás/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.about"></a>
+                <a href="o-nás.html" class="hover:text-brand-green transition-colors" data-translate="nav.about"></a>
                 
-                <!-- Dropdown Obnoviteľná energia (Desktop) -->
+                <!-- Dropdown Obnoviteľná energia -->
                 <div class="relative inline-block text-left" id="renewable-dropdown-container">
                     <button id="renewable-menu-btn" class="flex items-center gap-1 hover:text-brand-green font-semibold text-sm text-slate-600 transition-colors focus:outline-none py-2">
                         <span data-translate="nav.renewable"></span>
@@ -45,21 +48,22 @@
                         </svg>
                     </button>
                     <div id="renewable-dropdown" class="hidden absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-lg shadow-lg py-1.5 z-50">
-                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
-                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
-                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
-                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
-                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
+                        <a href="fotovoltika.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card1_title"></a>
+                        <a href="solárny-ohrev.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card2_title"></a>
+                        <a href="orc-jednotky.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card3_title"></a>
+                        <a href="absorpčné-chladenie.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card4_title"></a>
+                        <a href="bateriové-úložiská.html" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors" data-translate="renewable.card5_title"></a>
                     </div>
                 </div>
 
-                <a href="../smart-riesenia/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.smart"></a>
-                <a href="../služby/index.html" class="text-brand-green transition-colors" data-translate="nav.services"></a>
-                <a href="../zelená-podnikom/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
-                <a href="../kontakt/index.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
+                <a href="smart-riesenia.html" class="text-brand-green transition-colors" data-translate="nav.smart"></a>
+                <a href="služby.html" class="hover:text-brand-green transition-colors" data-translate="nav.services"></a>
+                <a href="zelená-podnikom.html" class="hover:text-brand-green transition-colors" data-translate="nav.green_enterprise"></a>
+                <a href="kontakt.html" class="hover:text-brand-green transition-colors" data-translate="nav.contact"></a>
             </nav>
 
             <div class="flex items-center space-x-4">
+                <!-- Dynamická ikona košíka -->
                 <button id="cart-icon-btn" onclick="toggleCartDrawer()" class="hidden relative p-2.5 text-slate-600 hover:text-brand-green transition-colors rounded-full hover:bg-slate-50 mr-1">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.116 60.116 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -81,8 +85,9 @@
                     </div>
                 </div>
 
-                <a href="../kontakt/index.html#kontakt-formular" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]" data-translate="nav.quick_inquiry"></a>
-                
+                <a href="kontakt.html" class="hidden sm:inline-block bg-brand-dark hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+
+                <!-- Hamburger pre mobilné telefóny -->
                 <button id="mobile-menu-btn" class="md:hidden text-slate-600 hover:text-brand-green focus:outline-none p-2" aria-label="Menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path id="hamburger-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -94,7 +99,7 @@
         <!-- Mobilné menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 transition-all duration-300">
             <nav class="flex flex-col px-6 py-4 space-y-4 font-semibold text-slate-600">
-                <a href="../o-nás/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
+                <a href="o-nás.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.about"></a>
                 
                 <!-- Akordeón pre Obnoviteľnú energiu v mobile -->
                 <div class="flex flex-col">
@@ -105,115 +110,97 @@
                         </svg>
                     </button>
                     <div id="mobile-renewable-submenu" class="hidden pl-4 flex-col space-y-2 py-2 border-b border-slate-50 bg-slate-50/50">
-                        <a href="../obnoviteľná-energia/fotovoltika/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
-                        <a href="../obnoviteľná-energia/solárny-ohrev/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
-                        <a href="../obnoviteľná-energia/orc-jednotky/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
-                        <a href="../obnoviteľná-energia/absorpčné-chladenie/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
-                        <a href="../obnoviteľná-energia/bateriové-úložiská/index.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
+                        <a href="fotovoltika.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card1_title"></a>
+                        <a href="solárny-ohrev.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card2_title"></a>
+                        <a href="orc-jednotky.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card3_title"></a>
+                        <a href="absorpčné-chladenie.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card4_title"></a>
+                        <a href="bateriové-úložiská.html" class="hover:text-brand-green text-sm text-slate-500 py-1" data-translate="renewable.card5_title"></a>
                     </div>
                 </div>
 
-                <a href="../smart-riesenia/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
-                <a href="../služby/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
-                <a href="../zelená-podnikom/index.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
-                <a href="../kontakt/index.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
-                <a href="../kontakt/index.html#kontakt-formular" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
+                <a href="smart-riesenia.html" class="text-brand-green py-2 border-b border-slate-50" data-translate="nav.smart"></a>
+                <a href="služby.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.services"></a>
+                <a href="zelená-podnikom.html" class="hover:text-brand-green py-2 border-b border-slate-50" data-translate="nav.green_enterprise"></a>
+                <a href="kontakt.html" class="hover:text-brand-green py-2" data-translate="nav.contact"></a>
+                <a href="kontakt.html" class="bg-brand-dark hover:bg-slate-800 text-white py-3 rounded-lg text-sm text-center block font-semibold transition-all" data-translate="nav.quick_inquiry"></a>
             </nav>
         </div>
     </header>
 
-    <!-- Hero záhlavie -->
-    <section class="relative bg-brand-dark text-white py-16 lg:py-20 overflow-hidden">
+    <!-- Premium animácie -->
+    <style>
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); } 50% { box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.15); } }
+        .card-premium { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-premium:hover { transform: translateY(-8px); box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); }
+        .btn-glow { position: relative; overflow: hidden; }
+        .btn-glow::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); transform: translateX(-100%); transition: transform 0.6s; }
+        .btn-glow:hover::after { transform: translateX(100%); }
+        .hero-badge-pulse { animation: pulse-glow 2s ease-in-out infinite; }
+        #back-to-top { opacity: 0; pointer-events: none; transition: all 0.3s; }
+        #back-to-top.show { opacity: 1; pointer-events: auto; }
+        .gradient-text { background: linear-gradient(135deg, #10b981, #06b6d4, #10b981); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer 3s linear infinite; }
+    </style>
+
+    <!-- Hero Sekcia -->
+    <section class="bg-brand-dark text-white py-16 relative overflow-hidden">
         <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
-        <div class="max-w-7xl mx-auto px-6 relative z-10">
-            <span class="text-brand-green text-xs font-bold uppercase tracking-widest mb-3 block" data-translate="services_page.hero_badge"></span>
-            <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight" data-translate="services_page.hero_title"></h1>
+        <div class="max-w-7xl mx-auto px-6 relative z-10 text-center">                    <span class="text-xs font-bold uppercase tracking-widest text-brand-green mb-3 block hero-badge-pulse" data-translate="smart_page.hero_badge"></span>
+            <h1 class="text-3xl lg:text-5xl font-extrabold tracking-tight mb-4" data-translate="smart_page.hero_title"></h1>
         </div>
     </section>
 
-    <!-- Sekcia: RIEŠENIA NA KĽÚČ -->
-    <section id="riesenia-na-kluc" class="py-16 lg:py-24 max-w-7xl mx-auto px-6">
-        <div class="mb-12 border-l-4 border-brand-green pl-4">
-            <h2 class="text-2xl lg:text-3xl font-bold tracking-tight text-brand-dark uppercase" data-translate="services_page.solutions_title"></h2>
-            <p class="text-slate-550 text-sm mt-2 max-w-3xl leading-relaxed" data-translate="services_page.solutions_subtitle"></p>
+    <!-- Hlavný produktový obsah -->
+    <main class="py-16 max-w-7xl mx-auto px-6 flex-grow">
+        <div class="grid md:grid-cols-2 gap-12">
+            
+            <!-- Smart Cenový kontroler -->
+            <div class="bg-white rounded-3xl border border-slate-100 hover:shadow-xl transition-all overflow-hidden flex flex-col justify-between card-premium">
+                <div>
+                    <div class="relative h-64 bg-slate-100 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=800&q=80" alt="Smart Cenový kontroler" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-8">
+                        <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart_page.prod1_badge"></span>
+                        <h2 class="text-2xl font-bold text-brand-dark mb-3" data-translate="smart_page.prod1_title"></h2>
+                        <p class="text-slate-500 text-sm leading-relaxed mb-6" data-translate="smart_page.prod1_desc"></p>
+                        <a href="Solarcontroller2.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="smart_page.prod1_more"></a>
+                    </div>
+                </div>
+                <div class="p-8 pt-0">
+                    <a href="Solarcontroller2.html" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 btn-glow" data-translate="smart_page.prod1_btn"></a>
+                </div>
+            </div>
+
+            <!-- Smart EMS Controller (Stanov projekt) -->
+            <div class="bg-white rounded-3xl border border-slate-100 hover:shadow-xl transition-all overflow-hidden flex flex-col justify-between card-premium">
+                <div>
+                    <div class="relative h-64 bg-slate-100 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Smart EMS Controller" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-8">
+                        <span class="text-brand-green text-xs font-bold uppercase tracking-wider block mb-2" data-translate="smart_page.prod2_badge"></span>
+                        <h2 class="text-2xl font-bold text-brand-dark mb-3" data-translate="smart_page.prod2_title"></h2>
+                        <p class="text-slate-500 text-sm leading-relaxed mb-6" data-translate="smart_page.prod2_desc"></p>
+                        <a href="Solarcontroller2.html" class="text-brand-green text-xs font-bold hover:underline inline-flex items-center gap-1" data-translate="smart_page.prod2_more"></a>
+                    </div>
+                </div>
+                <div class="p-8 pt-0">
+                    <a href="kontakt.html" class="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 btn-glow" data-translate="smart_page.prod2_btn"></a>
+                </div>
+            </div>
+
         </div>
+    </main>
 
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Návrh riešenia -->
-            <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 hover:border-brand-green/30 hover:shadow-lg transition-all duration-300">
-                <h3 class="text-lg font-bold text-brand-dark mb-2" data-translate="services_page.sol1_title"></h3>
-                <p class="text-slate-500 text-xs md:text-sm" data-translate="services_page.sol1_desc"></p>
-            </div>
-            <!-- Realizácia -->
-            <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 hover:border-brand-green/30 hover:shadow-lg transition-all duration-300">
-                <h3 class="text-lg font-bold text-brand-dark mb-2" data-translate="services_page.sol2_title"></h3>
-                <p class="text-slate-500 text-xs md:text-sm" data-translate="services_page.sol2_desc"></p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Sekcia: SERVIS (Nová sekcia) -->
-    <section id="servis" class="py-16 lg:py-24 max-w-7xl mx-auto px-6 border-t border-slate-100">
-        <div class="mb-12 border-l-4 border-brand-green pl-4">
-            <h2 class="text-2xl lg:text-3xl font-bold tracking-tight text-brand-dark uppercase" data-translate="services_page.servis_title"></h2>
-            <p class="text-slate-550 text-sm mt-2 max-w-3xl leading-relaxed" data-translate="services_page.servis_subtitle"></p>
-        </div>
-
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Prevádzka -->
-            <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 hover:border-brand-green/30 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-                <div>
-                    <div class="text-3xl mb-4">⚙️</div>
-                    <h3 class="text-lg font-bold text-brand-dark mb-3" data-translate="services_page.servis1_title"></h3>
-                    <ul class="list-disc pl-5 text-slate-500 text-xs md:text-sm space-y-1.5">
-                        <li data-translate="services_page.servis1_li1"></li>
-                        <li data-translate="services_page.servis1_li2"></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Monitoring -->
-            <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 hover:border-brand-green/30 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-                <div>
-                    <div class="text-3xl mb-4">🖥️</div>
-                    <h3 class="text-lg font-bold text-brand-dark mb-3" data-translate="services_page.servis2_title"></h3>
-                    <p class="text-slate-500 text-xs md:text-sm leading-relaxed" data-translate="services_page.servis2_desc"></p>
-                </div>
-            </div>
-
-            <!-- Údržba -->
-            <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 hover:border-brand-green/30 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-                <div>
-                    <div class="text-3xl mb-4">🛠️</div>
-                    <h3 class="text-lg font-bold text-brand-dark mb-3" data-translate="services_page.servis3_title"></h3>
-                    <p class="text-slate-500 text-xs md:text-sm leading-relaxed" data-translate="services_page.servis3_desc"></p>
-                </div>
-            </div>
-
-            <!-- Revízie -->
-            <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 hover:border-brand-green/30 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-                <div>
-                    <div class="text-3xl mb-4">📋</div>
-                    <h3 class="text-lg font-bold text-brand-dark mb-3" data-translate="services_page.servis4_title"></h3>
-                    <p class="text-slate-500 text-xs md:text-sm leading-relaxed" data-translate="services_page.servis4_desc"></p>
-                </div>
-            </div>
-
-            <!-- Reporting -->
-            <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 hover:border-brand-green/30 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-                <div>
-                    <div class="text-3xl mb-4">📊</div>
-                    <h3 class="text-lg font-bold text-brand-dark mb-3" data-translate="services_page.servis5_title"></h3>
-                    <p class="text-slate-500 text-xs md:text-sm leading-relaxed" data-translate="services_page.servis5_desc"></p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Nákupný košík -->
+    <!-- Nákupný košík - Vysúvací bočný panel (Drawer) -->
     <div id="cart-drawer" class="fixed inset-0 z-50 pointer-events-none hidden" role="dialog" aria-modal="true">
+        <!-- Pozadie / Backdrop -->
         <div id="cart-backdrop" onclick="toggleCartDrawer()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+        
+        <!-- Samotný panel -->
         <div id="cart-panel" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto transform translate-x-full transition-transform duration-300">
+            <!-- Hlavička košíka -->
             <div class="p-6 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-brand-dark" data-translate="cart.title"></h3>
                 <button onclick="toggleCartDrawer()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50">
@@ -222,12 +209,20 @@
                     </svg>
                 </button>
             </div>
-            <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4"></div>
+
+            <!-- Položky košíka -->
+            <div id="cart-items" class="p-6 flex-grow overflow-y-auto space-y-4">
+                <!-- Generované dynamicky prostredníctvom JS -->
+            </div>
+
+            <!-- Pätička košíka s formulárom dopytu -->
             <div class="p-6 border-t border-slate-100 bg-slate-50">
                 <div class="flex justify-between items-center mb-4">
                     <span class="text-sm font-semibold text-slate-500" data-translate="cart.estimated_price"></span>
                     <span id="cart-total-price" class="text-xl font-black text-brand-dark">0 €</span>
                 </div>
+
+                <!-- Formulár odoslania -->
                 <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-3">
                     <input type="text" id="checkout-name" required data-translate-placeholder="cart.checkout_name_placeholder" class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
                     <input type="email" id="checkout-email" required data-translate-placeholder="cart.checkout_email_placeholder" class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-green">
@@ -237,7 +232,13 @@
         </div>
     </div>
 
-    <footer class="bg-slate-950 text-slate-500 py-8 text-xs mt-auto">
+    <!-- Back to Top -->
+    <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 left-6 z-50 w-11 h-11 rounded-full bg-brand-dark hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all" aria-label="Späť hore">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+    </button>
+
+    <!-- Pätička -->
+    <footer class="bg-slate-950 text-slate-500 py-10 text-xs border-t border-slate-900 mt-auto">
         <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <p data-translate="footer.copyright"></p>
             <p class="text-slate-600" data-translate="footer.tagline"></p>
@@ -259,6 +260,7 @@
 
     <!-- Skripty -->
     <script>
+        // Mobilné menu (Hamburger)
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
         const hamburgerIcon = document.getElementById('hamburger-icon');
@@ -303,11 +305,13 @@
             mobileRenewableSubmenu.classList.toggle('hidden');
         });
 
+        // Pomocná funkcia na zatvorenie otvorených desktop dropdownov
         function closeDropdowns() {
             langDropdown.classList.add('hidden');
             renewableDropdown.classList.add('hidden');
         }
 
+        // Zatvorenie všetkých dropdownov pri kliknutí mimo nich
         document.addEventListener('click', () => {
             closeDropdowns();
         });
@@ -319,17 +323,16 @@
         async function loadLanguage(lang) {
             let fetchedData = null;
             try {
-                // Súbor je o 1 úroveň hlbšie (../preklad/)
-                const response = await fetch(`../preklad/${lang.toUpperCase()}/index.json`);
+                const response = await fetch(`preklad/${lang.toUpperCase()}/index.json`);
                 if (response.ok) {
                     fetchedData = await response.json();
                 }
             } catch (error) {
-                console.warn("Spustené lokálne. Načítava sa vstavaná záloha.");
+                console.warn("Spustené lokálne (CORS pravidlo). Načítava sa vstavaná záloha slovníka.");
             }
 
             if (!fetchedData) {
-                fetchedData = fullEmbeddedTranslations[lang];
+                fetchedData = fullEmbeddedTranslations[lang] || localFallbackTranslations[lang];
             }
 
             currentTranslations = fetchedData;
@@ -392,6 +395,20 @@
             }
         }
 
+        function addToCart(id, price, img, translationKey) {
+            const existingItemIndex = cart.findIndex(item => item.id === id);
+            if (existingItemIndex > -1) {
+                cart[existingItemIndex].quantity += 1;
+            } else {
+                cart.push({ id, price, img, translationKey, quantity: 1 });
+            }
+            saveCart();
+            updateCartUI();
+            if (document.getElementById('cart-drawer').classList.contains('hidden')) {
+                toggleCartDrawer();
+            }
+        }
+
         function changeQuantity(id, delta) {
             const itemIndex = cart.findIndex(item => item.id === id);
             if (itemIndex > -1) {
@@ -445,12 +462,15 @@
                     totalQuantity += item.quantity;
                     totalPrice += item.price * item.quantity;
 
+                    // Dynamický preklad názvu produktu v košíku
+                    const translatedName = getNestedValue(currentTranslations, item.translationKey) || item.translationKey;
+
                     const itemElement = document.createElement('div');
                     itemElement.className = "flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 relative text-xs";
                     itemElement.innerHTML = `
-                        <img src="${item.img}" alt="${item.name}" class="w-12 h-12 object-cover rounded-lg bg-white border border-slate-100">
+                        <img src="${item.img}" alt="${translatedName}" class="w-12 h-12 object-cover rounded-lg bg-white border border-slate-100">
                         <div class="flex-grow">
-                            <h4 class="font-bold text-brand-dark leading-tight">${item.name}</h4>
+                            <h4 class="font-bold text-brand-dark leading-tight">${translatedName}</h4>
                             <p class="text-slate-500 mt-0.5">${item.price} ${tUnitPrice}</p>
                             
                             <div class="flex items-center gap-2 mt-1.5">
@@ -493,7 +513,7 @@ async function handleCheckout(event) {
             if (button) { button.disabled = true; button.innerHTML = 'Odosiela sa...'; }
 
             try {
-                const response = await fetch('../send.php', {
+                const response = await fetch('send.php', {
                     method: 'POST',
                     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'cart', name, email, cart_items: itemsSummary, total_price: document.getElementById('cart-total-price').innerText, page: location.pathname })
@@ -520,6 +540,7 @@ async function handleCheckout(event) {
         // ----------------- INTEGROVANÁ ZÁLOHA PREKLADOV (FALLBACK) -----------------
         const fullEmbeddedTranslations = {
             sk: {
+                "title": "Smart riešenia | ELVOSOLAR a.s.",
                 "nav": {
                     "about": "O nás",
                     "renewable": "Obnoviteľná energia",
@@ -536,29 +557,19 @@ async function handleCheckout(event) {
                     "card4_title": "Absorpčné chladenie",
                     "card5_title": "Batériové úložištia"
                 },
-                "services_page": {
-                    "title": "Služby | ELVOSOLAR a.s.",
-                    "hero_badge": "Čo ponúkame",
-                    "hero_title": "Naše služby a riešenia",
-                    "solutions_title": "Riešenia na kľúč",
-                    "solutions_subtitle": "Sme silný a spoľahlivý partner poskytujúci ekonomicky atraktívne riešenia so zárukou optimálnej návratnosti.",
-                    "sol1_title": "Návrh riešenia",
-                    "sol1_desc": "Návrh vhodného riešenia s ohľadom na optimálnu a dlhodobo udržateľnú návratnosť investícií.",
-                    "sol2_title": "Realizácia",
-                    "sol2_desc": "Samotná realizácia a odovzdanie celého diela kompletne na „kľúč“ s dôrazom na maximálnu kvalitu.",
-                    "servis_title": "Servis",
-                    "servis_subtitle": "Sme silný a spoľahlivý partner poskytujúci odborné a ekonomicky výhodné služby",
-                    "servis1_title": "Prevádzka",
-                    "servis1_li1": "Údržba zariadení s komplexným servisom",
-                    "servis1_li2": "Odborné školenia na prevádzku zariadení",
-                    "servis2_title": "Monitoring",
-                    "servis2_desc": "Vzdialený monitoring s pripojením na dispečing",
-                    "servis3_title": "Údržba",
-                    "servis3_desc": "Údržba a oprava NN/VN rozvodní",
-                    "servis4_title": "Revízie",
-                    "servis4_desc": "Povinné revízie a revízne správy podľa platných zákonov a technických noriem",
-                    "servis5_title": "Reporting",
-                    "servis5_desc": "Diagnostika výroby, zaznamenávanie a odstraňovanie porúch, reporting"
+                "smart_page": {
+                    "hero_badge": "Inovácie pre vašu energetiku",
+                    "hero_title": "Smart technologické riešenia",
+                    "prod1_badge": "Optimalizácia a spotreba",
+                    "prod1_title": "Smart Cenový kontroler",
+                    "prod1_desc": "Precízny fázový monitoring spotreby a odberných miest. Umožňuje automatizované spínanie a vypínanie príkonu energie na základe vývoja cien elektriny pre maximálnu úsporu.",
+                    "prod1_more": "Zobraziť parametre a obsah balenia ►",
+                    "prod1_btn": "Zobraziť detail a parametre ►",
+                    "prod2_badge": "Vo vývoji: Riadenie tokov energií",
+                    "prod2_title": "Smart EMS Controller (Projekt Stanov)",
+                    "prod2_desc": "Inteligentný energetický manažment (EMS) riadi výrobu a spotrebu elektriny v reálnom čase. Vyhodnocuje predpovede počasia, spotrebiteľské správanie a optimalizuje toky do spotrebičov, batérií či distribučnej siete.",
+                    "prod2_more": "Zobraziť parametre a obsah balenia ►",
+                    "prod2_btn": "Nezáväzný dopyt ►"
                 },
                 "cart": {
                     "title": "Váš dopytový košík",
@@ -579,6 +590,7 @@ async function handleCheckout(event) {
                 }
             },
             en: {
+                "title": "Smart Solutions | ELVOSOLAR a.s.",
                 "nav": {
                     "about": "About Us",
                     "renewable": "Renewable Energy",
@@ -595,29 +607,19 @@ async function handleCheckout(event) {
                     "card4_title": "Absorption cooling",
                     "card5_title": "Battery storage"
                 },
-                "services_page": {
-                    "title": "Services | ELVOSOLAR a.s.",
-                    "hero_badge": "What we offer",
-                    "hero_title": "Our Services and Solutions",
-                    "solutions_title": "Turnkey Solutions",
-                    "solutions_subtitle": "We are a strong and reliable partner providing economically attractive solutions with a guarantee of optimal return.",
-                    "sol1_title": "Solution Design",
-                    "sol1_desc": "Design of a suitable solution with a focus on optimal and long-term sustainable return on investment.",
-                    "sol2_title": "Execution",
-                    "sol2_desc": "The actual implementation and delivery of the entire project completely on a \"turnkey\" basis with emphasis on maximum quality.",
-                    "servis_title": "Service Operations",
-                    "servis_subtitle": "We are a strong and reliable partner providing professional and cost-effective services",
-                    "servis1_title": "Operation",
-                    "servis1_li1": "Equipment maintenance with comprehensive support",
-                    "servis1_li2": "Professional training for equipment operation",
-                    "servis2_title": "Monitoring",
-                    "servis2_desc": "Remote monitoring with connection to central dispatching",
-                    "servis3_title": "Maintenance",
-                    "servis3_desc": "Maintenance and repair of LV/MV substations",
-                    "servis4_title": "Revisions & Inspections",
-                    "servis4_desc": "Mandatory inspections and inspection reports in accordance with applicable laws and technical standards",
-                    "servis5_title": "Reporting",
-                    "servis5_desc": "Production diagnostics, fault recording and troubleshooting, reporting"
+                "smart_page": {
+                    "hero_badge": "Innovations for your energy sector",
+                    "hero_title": "Smart Technological Solutions",
+                    "prod1_badge": "Optimization and consumption",
+                    "prod1_title": "Smart Price Controller",
+                    "prod1_desc": "Precise phase monitoring of consumption and delivery points. Enables automated switching and power load shedding based on grid electricity prices for maximum savings.",
+                    "prod1_more": "Show parameters and package contents ►",
+                    "prod1_btn": "View details and specs ►",
+                    "prod2_badge": "In development: Energy flow management",
+                    "prod2_title": "Smart EMS Controller (Stano's Project)",
+                    "prod2_desc": "Intelligent Energy Management System (EMS) controls production and consumption in real time. It analyzes weather forecasts, consumer behavior, and dynamically manages flows to appliances, batteries, or the grid.",
+                    "prod2_more": "Show parameters and package contents ►",
+                    "prod2_btn": "Non-binding inquiry ►"
                 },
                 "cart": {
                     "title": "Your Inquiry Cart",
@@ -640,6 +642,37 @@ async function handleCheckout(event) {
         };
 
         const localFallbackTranslations = {}; // Ponechané pre konzistentnosť importu
+    </script>
+
+    <!-- Scroll Reveal + Back to Top -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const revealElements = document.querySelectorAll('section > div, .card-premium, main > div');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry, i) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.style.opacity = '1';
+                            entry.target.style.transform = 'translateY(0)';
+                        }, i * 80);
+                        revealObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08 });
+            revealElements.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                revealObserver.observe(el);
+            });
+
+            // Back to Top
+            const backToTop = document.getElementById('back-to-top');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 400) backToTop.classList.add('show');
+                else backToTop.classList.remove('show');
+            });
+        });
     </script>
 
 </body>
