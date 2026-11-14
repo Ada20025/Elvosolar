@@ -1,5 +1,9 @@
 RewriteEngine On
 
+# Šablóny appky (.html) sa NESMÚ sťahovať priamo — inak by unikol kód/štruktúra appky.
+# Idú cez index.php, kde platí prístupová brána (tajný kľúč / prihlásenie).
+RewriteRule ^templates/.*\.html$ index.php [L,QSA]
+
 # Ak existuje priamy súbor alebo priečinok, použi ho
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

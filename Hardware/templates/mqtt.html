@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MQTT — skúška káblom | ElvoControll</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:radial-gradient(1200px 800px at 50% -10%,#0e1a35 0%,#020617 55%);font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:#e2e8f0;padding:20px}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:20px;font-weight:900;letter-spacing:-.02em;color:#f8fafc}
+.sub{font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#06b6d4;margin:4px 0 18px}
+.card{background:rgba(2,6,23,.85);border:1px solid rgba(6,182,212,.25);border-radius:18px;padding:20px;margin-bottom:16px}
+.card h2{font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#67e8f9;margin-bottom:14px}
+.state-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dot{width:18px;height:18px;border-radius:50%;background:#64748b;box-shadow:0 0 12px rgba(100,116,139,.6)}
+.dot.bezi{background:#22c55e;box-shadow:0 0 14px rgba(34,197,94,.8)}
+.dot.stoji{background:#f43f5e;box-shadow:0 0 14px rgba(244,63,94,.7)}
+.dot.auto{background:#3b82f6;box-shadow:0 0 14px rgba(59,130,246,.7)}
+.dot.offline{background:#64748b}
+.state-text{font-size:22px;font-weight:900}
+.state-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+button{border:0;border-radius:12px;padding:13px 18px;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:#fff;transition:opacity .2s;font-family:inherit}
+button:hover{opacity:.85}
+button:disabled{opacity:.4;cursor:not-allowed}
+.b-on{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.b-off{background:linear-gradient(90deg,#e11d48,#f43f5e)}
+.b-auto{background:linear-gradient(90deg,#2563eb,#3b82f6)}
+.b-sec{background:#1e293b;color:#cbd5e1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.kv{background:#05070f;border:1px solid #1e293b;border-radius:10px;padding:10px 12px}
+.kv .k{font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#64748b}
+.kv .v{font-size:13px;font-weight:700;color:#e2e8f0;margin-top:3px;word-break:break-all}
+.ok{color:#4ade80}.bad{color:#fb7185}.warn{color:#fbbf24}
+label{display:block;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#67e8f9;margin:12px 0 5px}
+input{width:100%;background:#05070f;border:1px solid #334155;color:#fff;font-size:14px;font-weight:600;border-radius:10px;padding:11px 13px;outline:none}
+input:focus{border-color:#06b6d4}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;font-weight:700;color:#cbd5e1}
+.chk input{width:auto}
+.events{background:#05070f;border:1px solid #1e293b;border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:11px;color:#94a3b8;max-height:180px;overflow:auto;white-space:pre-wrap}
+.help{font-size:12px;line-height:1.7;color:#94a3b8;border-left:3px solid #06b6d4;padding-left:12px}
+.help b{color:#e2e8f0}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#052e16;border:1px solid #22c55e;color:#bbf7d0;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;display:none;max-width:90vw}
+.toast.err{background:#450a0a;border-color:#f43f5e;color:#fecdd3}
+.msg{margin-top:10px;font-size:12px;font-weight:700;min-height:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ElvoControll — MQTT ovládanie stroja</h1>
+  <div class="sub">Skúška káblom · isté príkazy ako z cloudu</div>
+
+  <div class="card">
+    <h2>Aktuálny stav stroja</h2>
+    <div class="state-row">
+      <div id="dot" class="dot"></div>
+      <div>
+        <div id="stateText" class="state-text">Načítavam…</div>
+        <div id="stateSub" class="state-sub">—</div>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="b-on" id="bStart" onclick="sendCmd('STROJ_START')">Zapnúť stroj</button>
+      <button class="b-off" id="bStop" onclick="sendCmd('STROJ_STOP')">Vypnúť stroj</button>
+      <button class="b-auto" id="bAuto" onclick="sendCmd('STROJ_AUTO')">Režim AUTO</button>
+      <button class="b-sec" onclick="sendCmd('STROJ_STATUS')">Obnoviť stav</button>
+    </div>
+    <div id="cmdMsg" class="msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Diagnostika (stroj vs. sieť)</h2>
+    <div class="grid">
+      <div class="kv"><div class="k">Spojenie s brokerom</div><div class="v" id="dConn">—</div></div>
+      <div class="kv"><div class="k">Broker</div><div class="v" id="dBroker">—</div></div>
+      <div class="kv"><div class="k">Serial / ID</div><div class="v" id="dSerial">—</div></div>
+      <div class="kv"><div class="k">Kanál príkazov</div><div class="v" id="dTopicC">—</div></div>
+      <div class="kv"><div class="k">Kanál stavu</div><div class="v" id="dTopicS">—</div></div>
+      <div class="kv"><div class="k">Posledný príkaz (zdroj)</div><div class="v" id="dLastCmd">—</div></div>
+      <div class="kv"><div class="k">Publikovaný stav</div><div class="v" id="dLastState">—</div></div>
+      <div class="kv"><div class="k">Reconnecty / posledná chyba</div><div class="v" id="dErr">—</div></div>
+    </div>
+    <label>Log udalostí</label>
+    <div class="events" id="dEvents">—</div>
+    <div class="help" style="margin-top:14px">
+      <b>Ako čítať diagnostiku:</b> ak tlačidlá vyššie fungujú (stroj sa prepne), ale ovládanie z webu
+      (cloud) nie — problém je v <b>sieti/brokeri</b>. Ak nefungujú ani tieto lokálne príkazy — problém je
+      v <b>stroji/zapojení</b>. Posledný príkaz ukazuje zdroj: LOCAL = táto stránka, MQTT = cloud.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Konfigurácia brokera (nastaví sa raz)</h2>
+    <label>Adresa firemného servera (host)</label>
+    <input id="cHost" placeholder="napr. mqtt.elvosolar.sk alebo 1.2.3.4">
+    <label>Port</label>
+    <input id="cPort" type="number" placeholder="8883 (TLS) alebo 1883">
+    <label>Používateľ (serial zariadenia)</label>
+    <input id="cUser" placeholder="napr. CM5_452">
+    <label>Heslo zariadenia (od správcu brokera)</label>
+    <input id="cPass" type="password" placeholder="— nechaj prázdne pre zachovanie —">
+    <div class="chk"><input type="checkbox" id="cTls" checked><span>Použiť TLS (port 8883, odporúčané)</span></div>
+    <div class="btns"><button class="b-sec" id="bSave" onclick="saveConfig()">Uložiť a pripojiť</button></div>
+    <div id="cfgMsg" class="msg"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var $ = function(id){ return document.getElementById(id); };
+
+function toast(text, isErr){
+  var t = $('toast');
+  t.textContent = text;
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.style.display = 'block';
+  clearTimeout(t._h);
+  t._h = setTimeout(function(){ t.style.display = 'none'; }, 4000);
+}
+
+function stateVisual(text){
+  var dot = $('dot'), txt = $('stateText');
+  var t = String(text || '');
+  if (t === 'STATUS_BEZI') { dot.className = 'dot bezi'; txt.textContent = 'STROJ BEŽÍ'; }
+  else if (t === 'STATUS_STOJI') { dot.className = 'dot stoji'; txt.textContent = 'STROJ STOJÍ'; }
+  else if (t === 'STATUS_AUTO') { dot.className = 'dot auto'; txt.textContent = 'REŽIM AUTO'; }
+  else if (t === 'STATUS_OFFLINE') { dot.className = 'dot offline'; txt.textContent = 'OFFLINE'; }
+  else { dot.className = 'dot'; txt.textContent = t || 'NEZNÁMY'; }
+}
+
+function loadDiagnostics(){
+  fetch('/api/mqtt/diagnostics').then(function(r){ return r.json(); }).then(function(d){
+    if (d.status === 'error') { $('dConn').innerHTML = '<span class="bad">MQTT vypnuté</span>'; return; }
+    $('dConn').innerHTML = d.connected
+      ? '<span class="ok">✅ Pripojené</span>'
+      : '<span class="bad">❌ Nepripojené</span>';
+    $('dBroker').textContent = (d.broker || '— nenastavené —') + ':' + (d.port || '?') + (d.tls ? ' (TLS)' : '');
+    $('dSerial').textContent = d.serial || '—';
+    $('dTopicC').textContent = d.topic_prikazy || '—';
+    $('dTopicS').textContent = d.topic_stav || '—';
+    var src = d.last_command_source === 'LOCAL' ? 'lokálne (kábel)' : (d.last_command_source === 'MQTT' ? 'cloud (MQTT)' : '—');
+    $('dLastCmd').textContent = (d.last_command || '—') + (d.last_command ? ' · ' + src : '') + (d.last_command_time ? ' · ' + d.last_command_time : '');
+    $('dLastState').textContent = d.last_state_published || '—';
+    $('dErr').textContent = (d.reconnects || 0) + '× · ' + (d.last_error || 'bez chýb');
+    $('dEvents').textContent = (d.events || []).join('\n') || '—';
+    $('stateSub').textContent = 'Override meniča: ' + (d.state_current_override || '—');
+    if (d.last_state_published) { stateVisual(d.last_state_published); }
+    else { stateVisual(d.state_text); }
+  }).catch(function(e){
+    $('dConn').innerHTML = '<span class="bad">❌ API nedostupné</span>';
+  });
+}
+
+function sendCmd(cmd){
+  var btns = document.querySelectorAll('.btns button');
+  for (var i = 0; i < btns.length; i++) { btns[i].disabled = true; }
+  $('cmdMsg').textContent = 'Vykonávam ' + cmd + '…';
+  fetch('/api/mqtt/command', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ command: cmd })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    $('cmdMsg').textContent = (d.message || JSON.stringify(d));
+    if (d.status === 'success') { toast('✅ ' + (d.message || cmd)); } else { toast('❌ ' + (d.message || 'chyba'), true); }
+    loadDiagnostics();
+  }).catch(function(e){
+    $('cmdMsg').textContent = 'Chyba spojenia s API: ' + e;
+    toast('❌ API nedostupné', true);
+  }).finally(function(){
+    for (var i = 0; i < btns.length; i++) { btns[i].disabled = false; }
+  });
+}
+
+function loadConfig(){
+  fetch('/api/mqtt/config').then(function(r){ return r.json(); }).then(function(d){
+    if (d.status !== 'success') return;
+    $('cHost').value = d.host || '';
+    $('cPort').value = d.port || '';
+    $('cUser').value = d.username || '';
+    $('cTls').checked = !!d.tls;
+    if (d.serial) { $('cUser').placeholder = d.serial; }
+  }).catch(function(){ /* ticho */ });
+}
+
+function saveConfig(){
+  var body = {
+    host: $('cHost').value.trim(),
+    port: parseInt($('cPort').value, 10) || 0,
+    username: $('cUser').value.trim(),
+    password: $('cPass').value,
+    tls: $('cTls').checked
+  };
+  if (!body.host) { $('cfgMsg').innerHTML = '<span class="bad">Zadaj adresu brokera.</span>'; return; }
+  $('bSave').disabled = true;
+  $('cfgMsg').textContent = 'Ukladám a pripájam…';
+  fetch('/api/mqtt/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); }).then(function(d){
+    $('cfgMsg').textContent = d.message || JSON.stringify(d);
+    if (d.status === 'success') { toast('✅ Konfigurácia uložená'); $('cPass').value = ''; loadDiagnostics(); }
+    else { toast('❌ ' + (d.message || 'chyba'), true); }
+  }).catch(function(e){
+    $('cfgMsg').textContent = 'Chyba: ' + e;
+  }).finally(function(){
+    $('bSave').disabled = false;
+  });
+}
+
+loadConfig();
+loadDiagnostics();
+setInterval(loadDiagnostics, 3000);
+</script>
+</body>
+</html>

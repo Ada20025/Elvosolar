@@ -1,0 +1,21 @@
+{
+ "battery_page": {
+  "title": "Batteriespeicher - Elvosolar",
+  "hero_badge": "Energiespeicherung",
+  "hero_title": "Batteriespeichersysteme",
+  "lead_text": "Die Speicherung erzeugter elektrischer Energie ist der Schlüssel zu ihrer effizienten Nutzung. Batteriespeicher (ESS) sind ein wichtiger Pfeiler moderner erneuerbarer Energiequellen.",
+  "desc_p1": "Sie ermöglichen die zuverlässige Speicherung des von Photovoltaikmodulen tagsüber erzeugten, ungenutzten Stroms, um ihn zu Spitzenzeiten, nachts oder bei plötzlichen Netzausfällen zu nutzen (Backup-/UPS-Funktion).",
+  "desc_p2": "Unser Unternehmen bietet Planung, Bau und Service zuverlässiger Batteriespeicher für Einfamilienhäuser, Industrieanlagen, Landwirtschaft und Gewerbe.",
+  "advantages_title": "Vorteile von Batteriespeichern",
+  "advantages_desc": "Moderne Lithium-Batteriesysteme (insbesondere LiFePO4-Technologie) bieten eine hohe Lebensdauer von über 6.000 Ladezyklen und hohe Betriebssicherheit. Ein richtig ausgelegener Speicher eliminiert die Notwendigkeit, Überschüsse zu nachteiligen Bedingungen ins Netz einzuspeisen, und stabilisiert das lokale Verbrauchernetz.",
+  "benefits_card_title": "Warum in Batterien investieren?",
+  "benefits_li1": "<strong>Unabhängigkeit:</strong> Sicherung wichtiger Stromkreise bei Ausfällen des Verteilnetzes.",
+  "benefits_li2": "<strong>Kostensenkung:</strong> Maximale Nutzung der selbst erzeugten Sonnenenergie anstelle ihres Kaufs.",
+  "benefits_li3": "<strong>Intelligentes Management:</strong> Nahtlose Echtzeit-Steuerung der Energieflüsse und Lastspitzenkappung (Peak Shaving).",
+  "sidebar_title": "Anwendungsmöglichkeiten",
+  "app1_title": "/// Wohngebäude",
+  "app1_desc": "Energiespeicherung für Einfamilienhäuser mit intelligenter Steuerung.",
+  "app2_title": "/// Industrie & Gewerbe",
+  "app2_desc": "Lastspitzenkappung (Peak Shaving) und Senkung der reservierten Kapazität für Unternehmen."
+ }
+}

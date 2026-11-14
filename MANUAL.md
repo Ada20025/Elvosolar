@@ -140,19 +140,30 @@ Na doske Raspberry Pi 5 / Waveshare CM5 je aktivovaná **START / Status LED dió
 - **4x rýchle zablikanie**: Znamená úspešné prijatie dát zo striedača cez RS485, prijatie riadiaceho príkazu alebo úspešný cloud heartbeat.
 - Blikanie beží na pozadí a nemá žiadny vplyv na rýchlosť komunikácie.
 
----
 
-## 10. E-Shop s Príslušenstvom
+## 10. LED pásek SK6812 RGBW (3 pásky, GPIO 27)
 
-Priamo v aplikácii je integrovaný **ElvoSolar E-Shop** (`/eshop`), kde si môžete doobjednať:
-1. **ElvoSolar CM5 AI Riadiacu Jednotku** (199 €)
-2. **Smart Bojler Regulátor 3.5 kW** (89 €)
-3. **Shelly Pro Smart DIN Relé** (49 €)
-4. **3-fázový Modbus Elektromer s CT transformátormi** (75 €)
-5. **Elvo Wallbox EV Smart Charger 11kW/22kW** (449 €)
-6. **Teplotnú sondu PT1000 pre bojler** (19 €)
+Stavové svetlo je adresovateľný pásek **SK6812 RGBW**. Tri pásky sú zapojené **za sebou**
+(DO prvého → DIN druhého → DO druhého → DIN tretieho) a idú z jedného dátového pinu.
 
----
+**Zapojenie**
+- `DIN` prvého pásku → **GPIO 27** (pin 13 na 40-pinovom konektore)
+- `5V` páskov → samostatný 5 V zdroj (nie z CM5!), pri 3 páskoch napájanie vstreknuté aj do 2. a 3. pásku
+- `GND` páskov a `GND` CM5 musia byť **spoločné**
+- dáta sú 3,3 V → pri dlhších kábloch použiť level shifter 3,3 V → 5 V
+
+**Jednorazové povolenie v systéme** (Pi 5/CM5 nemá starú PWM cestu, používa sa kernel PIO):
+```
+# /boot/firmware/config.txt
+dtoverlay=ws2812-pio,gpio=27,num_leds=180,rgbw
+```
+Po reštarte vznikne `/dev/leds0`. Počet LED sa dá zmeniť premennými prostredia
+`SK6812_STRIPS` (3) a `SK6812_LEDS_PER_STRIP` (60) alebo priamo `SK6812_LEDS` (180).
+
+**Ovládanie z appky**: karta *Svetlo* v Prehľade — tlačidlo **baterka** rozsvieti čistú bielu
+(kanál W) ako baterka na telefóne, posuvníkom sa nastaví jas. Manuálne svetlo drží stav 15 minút,
+potom sa pásek vráti k stavovým farbám (zelená = OK, modrá = pripájanie, červená = porucha).
+
 
 ## 11. Riešenie Problémov (Troubleshooting)
 

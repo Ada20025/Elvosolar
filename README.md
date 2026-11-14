@@ -4,7 +4,7 @@ Inteligentný energetický manažment pre fotovoltiku a batérie.
 
 ## 🌐 Live
 
-- **Web:** [www.elvosolar.sk](https://www.elvosolar.sk)
+- **Web:** [www.elvosolar.sk](https://elvosolar.sk)
 - **App:** [app.elvosolar.sk](https://app.elvosolar.sk)
 
 ## 🏗️ Štruktúra

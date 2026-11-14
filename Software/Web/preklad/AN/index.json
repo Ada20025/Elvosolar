@@ -1,0 +1,34 @@
+{
+ "title": "Renewable and Optimized Energy - Elvosolar",
+ "hero": {
+  "badge": "Elvosolar, a.s.",
+  "title": "We open the doors to renewable and optimized energy",
+  "description": "The company Elvosolar, a.s. offers comprehensive services and innovative solutions for optimization of electricity consumption and in the field of energy production from renewable or waste sources.",
+  "quote": "“The primary pillars of our customers' satisfaction are our reliability, expertise, economic efficiency, and environmental friendliness.”",
+  "cta": "Read more ►"
+ },
+ "subsidies": {
+  "badge": "Financing",
+  "title": "Current subsidy calls",
+  "card1_badge": "Green for Enterprises",
+  "card1_title": "Photovoltaics for companies with subsidy up to €50k",
+  "card1_desc": "Take advantage of the opportunity to obtain a subsidy within the Green for Enterprises project. Photovoltaic power plants up to 250kW.",
+  "card2_badge": "Energy efficiency",
+  "card2_title": "Call for energy efficiency support",
+  "card2_desc": "Use renewable energy sources in your enterprise with a state subsidy. Photovoltaic power plants up to 500kW.",
+  "card3_badge": "Electricity production from RES",
+  "card3_title": "Call for installations producing electricity from RES",
+  "card3_desc": "Installations for electricity production from RES along with energy storage facilities up to 5MW."
+ },
+ "services": {
+  "badge": "Services",
+  "title": "Our Services",
+  "desc": "Sustainable efficiency, reliability, and safety of implemented solutions at any stage of the project are achievable only through high-quality and professional services offered by our team of specialists.",
+  "card1_title": "Service",
+  "card1_desc": "Comprehensive service operations delivered by a professional team.",
+  "card1_more": "More information ►",
+  "card2_title": "Turnkey solutions",
+  "card2_desc": "Design, construction, and operation of energy facilities.",
+  "card2_more": "More information ►"
+ }
+}

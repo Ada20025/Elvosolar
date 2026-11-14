@@ -1,0 +1,17 @@
+# JEDEN súbor so všetkými tajomstvami (Cloudflare, Railway, e-maily, admin)
+.env
+
+# Súkromná konfigurácia s API kľúčom — nikdy necommitovať
+_mail-config.php
+
+# Lokálne artefakty
+__pycache__/
+
+# Serverovy zachytny log nedorucenych mailov (obsahuje udaje klientov)
+_undelivered.log
+.php_mail_counter
+
+# Dopyty z formularov a heslo zmenene v administracii (udaje klientov)
+_data/*.jsonl
+_data/admin_config.php
+_data/*.log

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin.php
+Disallow: /healthz
+Disallow: /send.php
+
+Sitemap: https://www.elvosolar.sk/sitemap.xml

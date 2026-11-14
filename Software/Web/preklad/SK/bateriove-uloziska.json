@@ -1,0 +1,21 @@
+{
+ "battery_page": {
+  "title": "Batériové úložiská pre firmy a priemysel | Elvosolar",
+  "hero_badge": "Akumulácia energie",
+  "hero_title": "Batériové úložiská",
+  "lead_text": "Ukladanie vyrobenej elektrickej energie je kľúčom k jej efektívnemu využívaniu. Batériové úložiská (ESS) predstavujú dôležitý pilier moderných obnoviteľných zdrojov energie.",
+  "desc_p1": "Umožňujú spoľahlivo akumulovať nespotrebovanú elektrickú energiu vyrobenú z fotovoltických panelov počas dňa a využiť ju v čase špičiek, v noci alebo pri náhlom výpadku distribučnej siete (funkcia zálohy/UPS).",
+  "desc_p2": "Naša spoločnosť ponúka návrh, výstavbu a servis spoľahlivých batériových úložísk pre rodinné domy, priemyselné prevádzky, poľnohospodárstvo a komerčné subjekty.",
+  "advantages_title": "Výhody batériových úložísk",
+  "advantages_desc": "Moderné lítiové batériové systémy (predovšetkým technológia LiFePO4) disponujú vysokou životnosťou až cez 6 000 nabíjacích cyklov a vysokou bezpečnosťou prevádzky. Správne navrhnuté úložisko eliminuje nutnosť dodávať prebytky vyrobenej energie nevýhodne do distribučnej siete a stabilizuje lokálnu sieť odberateľa.",
+  "benefits_card_title": "Prečo investovať do batérií?",
+  "benefits_li1": "<strong>Nezávislosť:</strong> Záloha dôležitých okruhov pri výpadkoch distribučnej siete.",
+  "benefits_li2": "<strong>Zníženie nákladov:</strong> Maximálne využitie vlastnej vyrobenej solárnej energie namiesto jej nákupu.",
+  "benefits_li3": "<strong>Inteligentný manažment:</strong> Plynulé riadenie tokov energie v reálnom čase (Peak Shaving).",
+  "sidebar_title": "Možnosti aplikácie",
+  "app1_title": "/// Rezidenčné objekty",
+  "app1_desc": "Ukladanie energie pre rodinné domy s inteligentným riadením.",
+  "app2_title": "/// Priemysel & komerčný sektor",
+  "app2_desc": "Vykrývanie špičiek (peak-shaving) a znižovanie rezervovanej kapacity pre firmy."
+ }
+}

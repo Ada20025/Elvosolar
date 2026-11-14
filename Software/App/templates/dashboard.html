@@ -1346,6 +1346,29 @@
                         </div>
                     </div>
 
+                    <!-- SVETLO — SK6812 RGBW (3 pásky za sebou, DATA = GPIO 27) -->
+                    <div class="glass-card" style="margin-bottom:0;">
+                        <div class="card-header-styled">
+                            <span class="card-title-styled"><i data-lucide="flashlight"></i> Svetlo</span>
+                            <span id="ledStateBadge" style="font-size:9px;font-weight:800;letter-spacing:1px;padding:4px 8px;border-radius:6px;background:rgba(148,163,184,.12);color:var(--text-muted);">VYPNUTÉ</span>
+                        </div>
+                        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                            <button id="ledFlashlightBtn" onclick="toggleFlashlight()" aria-label="Baterka" style="width:76px;height:76px;border-radius:50%;border:1px solid var(--border-card);background:var(--bg-card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;">
+                                <i data-lucide="flashlight" style="width:30px;height:30px;"></i>
+                            </button>
+                            <div style="flex:1;min-width:190px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">
+                                    <span>Jas bielej</span>
+                                    <span id="ledBrightnessVal" class="font-mono" style="color:var(--text-primary);">100 %</span>
+                                </div>
+                                <input id="ledBrightness" type="range" min="5" max="100" step="5" value="100" oninput="onLedBrightnessInput(this.value)" style="width:100%;accent-color:var(--accent-solar);cursor:pointer;">
+                                <div style="margin-top:8px;font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+                                    <i data-lucide="info" style="width:11px;height:11px;"></i> Čistá biela (baterka) · SK6812 RGBW · 3 pásky · GPIO 27
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Combined Analytics Chart -->
                     <div class="glass-card">
                         <div class="card-header-styled">
@@ -2657,6 +2680,63 @@
             }
 
             iconEl.setAttribute('data-lucide', iconName);
+        }
+
+        // ── SVETLO / BATERKA (SK6812 RGBW) ──
+        let ledFlashlightOn = false;
+        let ledBrightness = 100;
+
+        function updateLedUi(on, pct) {
+            ledFlashlightOn = !!on;
+            ledBrightness = parseInt(pct, 10) || 0;
+            const btn = document.getElementById('ledFlashlightBtn');
+            const badge = document.getElementById('ledStateBadge');
+            const val = document.getElementById('ledBrightnessVal');
+            const range = document.getElementById('ledBrightness');
+            if (val) val.innerText = ledBrightness + ' %';
+            if (range && parseInt(range.value, 10) !== ledBrightness) range.value = ledBrightness;
+            if (btn) {
+                btn.style.background = on ? 'var(--accent-solar)' : 'var(--bg-card)';
+                btn.style.borderColor = on ? 'var(--accent-solar)' : 'var(--border-card)';
+                btn.style.color = on ? '#fff' : 'var(--text-secondary)';
+                btn.style.boxShadow = on ? '0 0 24px rgba(245,158,11,.55)' : 'none';
+            }
+            if (badge) {
+                badge.innerText = on ? 'SVIETI' : 'VYPNUTÉ';
+                badge.style.background = on ? 'rgba(245,158,11,.15)' : 'rgba(148,163,184,.12)';
+                badge.style.color = on ? 'var(--accent-solar)' : 'var(--text-muted)';
+            }
+        }
+
+        async function sendLedCommand(mode, brightness) {
+            const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
+            if (!devId) return null;
+            try {
+                const res = await fetch(`${basePath}/api/device/${devId}/led`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({mode: mode, brightness: brightness})
+                });
+                return await res.json();
+            } catch (e) { return null; }
+        }
+
+        function toggleFlashlight() {
+            const on = !ledFlashlightOn;
+            updateLedUi(on, ledBrightness);
+            sendLedCommand(on ? 'flashlight' : 'off', ledBrightness).then(d => {
+                if (!d || d.status !== 'success') {
+                    updateLedUi(!on, ledBrightness);
+                    if (typeof showToast === 'function') showToast('❌ Svetlo sa nepodarilo prepnúť');
+                } else if (typeof showToast === 'function') {
+                    showToast(on ? '🔆 Baterka zapnutá — čistá biela' : 'Svetlo vypnuté');
+                }
+            });
+        }
+
+        function onLedBrightnessInput(v) {
+            updateLedUi(ledFlashlightOn, v);
+            if (ledFlashlightOn) sendLedCommand('flashlight', parseInt(v, 10) || 0);
         }
 
         // Real-time telemetry feed

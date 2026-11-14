@@ -1,0 +1,34 @@
+{
+ "title": "Erneuerbare und optimierte Energie - Elvosolar",
+ "hero": {
+  "badge": "Elvosolar, a.s.",
+  "title": "Wir öffnen die Türen zu erneuerbarer und optimierter Energie",
+  "description": "Das Unternehmen Elvosolar, a.s. bietet umfassende Dienstleistungen und innovative Lösungen zur Optimierung des Elektrizitätsverbrauchs sowie im Bereich der Energieerzeugung aus erneuerbaren oder Abfallquellen.",
+  "quote": "„Die wesentlichen Säulen der Zufriedenheit unserer Kunden sind unsere Zuverlässigkeit, unser Fachwissen, unsere Wirtschaftlichkeit und unsere Umweltfreundlichkeit.“",
+  "cta": "Mehr lesen ►"
+ },
+ "subsidies": {
+  "badge": "Finanzierung",
+  "title": "Aktuelle Förderaufrufe",
+  "card1_badge": "Grün für Unternehmen",
+  "card1_title": "Photovoltaik für Unternehmen mit Förderung bis 50.000 €",
+  "card1_desc": "Nutzen Sie die Möglichkeit, im Rahmen des Projekts „Grün für Unternehmen“ eine Förderung zu erhalten. Photovoltaikanlagen bis 250 kW.",
+  "card2_badge": "Energieeffizienz",
+  "card2_title": "Aufruf zur Förderung der Energieeffizienz",
+  "card2_desc": "Nutzen Sie erneuerbare Energiequellen in Ihrem Unternehmen mit staatlicher Förderung. Photovoltaikanlagen bis 500 kW.",
+  "card3_badge": "Stromerzeugung aus EE",
+  "card3_title": "Aufruf für Anlagen zur Stromerzeugung aus EE",
+  "card3_desc": "Anlagen zur Stromerzeugung aus erneuerbaren Energien zusammen mit Energiespeichern bis 5 MW."
+ },
+ "services": {
+  "badge": "Dienstleistungen",
+  "title": "Unsere Dienstleistungen",
+  "desc": "Nachhaltige Effizienz, Zuverlässigkeit und Sicherheit der umgesetzten Lösungen in jeder Projektphase sind nur durch hochwertige und professionelle Dienstleistungen unseres Teams von Spezialisten erreichbar.",
+  "card1_title": "Service",
+  "card1_desc": "Umfassende Serviceleistungen durch ein professionelles Team.",
+  "card1_more": "Mehr Informationen ►",
+  "card2_title": "Schlüsselfertige Lösungen",
+  "card2_desc": "Planung, Bau und Betrieb von Energieanlagen.",
+  "card2_more": "Mehr Informationen ►"
+ }
+}

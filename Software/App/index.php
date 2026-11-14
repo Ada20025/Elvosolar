@@ -17,6 +17,8 @@ ini_set('session.gc_maxlifetime', 31536000); // 1 rok — appka sa nikdy neodhl�
 session_set_cookie_params(['lifetime' => 31536000, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax']);
 session_start();
 require_once 'config.php';
+// MQTT most (Ruka -> Mozog): klient, CSRF, audit, rate limit
+require_once __DIR__ . '/mqtt_lib.php';
 
 // === SECURITY HEADERS ===
 header('X-Frame-Options: SAMEORIGIN');
@@ -41,6 +43,10 @@ if (!function_exists('elvo_gate_creds')) {
     function elvo_gate_creds($pdo) {
         $u = getenv('ACCESS_GATE_USER'); $p = getenv('ACCESS_GATE_PASS');
         if ($u && $p) return ['user' => (string)$u, 'pass' => (string)$p, 'env' => true];
+        // DB môže byť nedostupná (výpadok MySQL, chýbajúci ovládač) — NIKDY nesmieme spadnúť na bielu obrazovku.
+        if (!($pdo instanceof PDO)) {
+            return ['user' => 'admin', 'hash' => password_hash('ELVO-ACCESS-2026', PASSWORD_DEFAULT), 'env' => false];
+        }
         try {
             $pdo->exec("CREATE TABLE IF NOT EXISTS access_gate (id TINYINT PRIMARY KEY, gate_user VARCHAR(64) NOT NULL, gate_pass_hash VARCHAR(255) NOT NULL)");
             $row = $pdo->query("SELECT gate_user, gate_pass_hash FROM access_gate WHERE id = 1")->fetch();
@@ -50,7 +56,7 @@ if (!function_exists('elvo_gate_creds')) {
                 $row = $pdo->query("SELECT gate_user, gate_pass_hash FROM access_gate WHERE id = 1")->fetch();
             }
             return ['user' => (string)$row['gate_user'], 'hash' => (string)$row['gate_pass_hash'], 'env' => false];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return ['user' => 'admin', 'hash' => password_hash('ELVO-ACCESS-2026', PASSWORD_DEFAULT), 'env' => false];
         }
     }
@@ -74,22 +80,27 @@ if (!function_exists('elvo_gate_creds')) {
         }
         // 2) Reálny účet (e-mail + heslo k účtu) — pre nainštalovanú appku / owners
         $emailNorm = strtolower(trim($gu));
-        if (strpos($emailNorm, '@') !== false) {
+        if (strpos($emailNorm, '@') !== false && ($pdo instanceof PDO)) {
             try {
                 $st = $pdo->prepare("SELECT password_hash FROM users WHERE LOWER(email) = ? LIMIT 1");
                 $st->execute([$emailNorm]);
                 $row = $st->fetch();
                 if ($row && password_verify($gp, $row['password_hash'])) return true;
-            } catch (Exception $e) { /* ignore */ }
+            } catch (Throwable $e) { /* ignore */ }
         }
         return false;
     }
     function elvo_gate_page($msg, $next) {
         $bp = $GLOBALS['base_path'] ?? '';
+        // Cloudflare Turnstile — test proti robotom. Kým nie sú kľúče, widget sa nezobrazí.
+        $elvo_ts_keys = elvo_turnstile_keys();
+        $elvo_ts_on = ($elvo_ts_keys['site'] !== '' && $elvo_ts_keys['secret'] !== '');
+        $elvo_ts_site = $elvo_ts_keys['site'];
         $msgHtml = $msg ? '<div style="margin:0 0 14px 0;padding:10px 14px;border-radius:12px;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.3);color:#fda4af;font-size:12px;font-weight:700;text-align:center;">' . htmlspecialchars($msg) . '</div>' : '';
         echo '<!DOCTYPE html><html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             . '<meta name="theme-color" content="#020617"><title>Prístup — ElvoControll</title>'
             . '<link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">'
+            . '<link rel="manifest" href="' . htmlspecialchars($bp . '/manifest.json') . '">'
             . '<style>*{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 800px at 50% -10%,#0e1a35 0%,#020617 55%);font-family:"Plus Jakarta Sans",system-ui,sans-serif;padding:16px;color:#e2e8f0}'
             . '.card{width:100%;max-width:380px;background:rgba(2,6,23,0.85);border:1px solid rgba(6,182,212,0.25);border-radius:22px;padding:30px 26px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}'
             . '.logo{display:block;margin:0 auto 14px;width:56px;height:56px;object-fit:contain}'
@@ -100,20 +111,266 @@ if (!function_exists('elvo_gate_creds')) {
             . 'input:focus{border-color:#06b6d4}'
             . 'button{width:100%;margin-top:18px;background:linear-gradient(90deg,#0891b2,#2563eb);border:0;color:#fff;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;border-radius:12px;padding:14px;cursor:pointer;transition:opacity .2s}'
             . 'button:hover{opacity:.9}'
-            . '.note{margin-top:16px;font-size:10px;color:#64748b;text-align:center;line-height:1.6}</style></head><body>'
+            . '.note{margin-top:16px;font-size:10px;color:#64748b;text-align:center;line-height:1.6}.cfwrap{margin:16px 0 2px;display:flex;justify-content:center}.cf-turnstile{width:100%}</style></head><body>'
             . '<div class="card"><img class="logo" src="/templates/ElvosolarLogo.png" alt="ElvoSolar" onerror="this.style.display=\'none\'">'
             . '<h1>ElvoControll</h1><div class="sub">Ochránený prístup</div>' . $msgHtml
             . '<form method="post" action="' . htmlspecialchars($bp . '/access') . '">'
             . '<input type="hidden" name="next" value="' . htmlspecialchars($next) . '">'
             . '<label for="guser">Prístupové meno</label><input id="guser" name="user" autocomplete="username" required>'
             . '<label for="gpass">Prístupový kód</label><input id="gpass" name="pass" type="password" autocomplete="current-password" required>'
+            . ($elvo_ts_on ? '<div class="cfwrap"><div class="cf-turnstile" data-sitekey="' . htmlspecialchars($elvo_ts_site) . '" data-theme="dark" data-size="flexible"></div></div>' : '')
             . '<button type="submit">Odomknúť prístup</button></form>'
-            . '<div class="note">Prístupový kód vám poskytne správca — alebo použite prihlasovacie údaje svojho účtu.<br>Po zadaní vás už systém viac nepýta.</div></div></body></html>';
+            . '<div class="note">Prístupový kód vám poskytne správca — alebo použite prihlasovacie údaje svojho účtu.<br>Po overení ťa systém pošle na stránku, kde si appku stiahneš.</div>'
+            . '</div>'
+            . '<script>'
+            // Registruj SW — bez neho prehliadač nevytiahne beforeinstallprompt
+            . 'if ("serviceWorker" in navigator) { navigator.serviceWorker.register("' . htmlspecialchars($bp) . '/sw.js").catch(function(){}); }'
+            . '</script>'
+            . ($elvo_ts_on ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : '')
+            . '</body></html>';
+    }
+}
+// Úplne prázdna stránka (404) — root/login bez tajného URL kľúča neukazujú nič.
+function elvo_blank_page() {
+    while (ob_get_level() > 0) { @ob_end_clean(); }
+    header('Content-Type: text/html; charset=utf-8');
+    http_response_code(404);
+    echo '<!DOCTYPE html><html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#020617"><title>404</title></head><body style="background:#020617;margin:0;min-height:100vh"></body></html>';
+}
+// ============================================================
+// === 1) MESAČNE ROTUJÚCI TAJNÝ URL KĽÚČ (jediná platná adresa)
+// === 2) CLOUDFLARE TURNSTILE — test proti robotom
+// === 3) STRÁNKA NA STIAHNUTIE APPKY (PWA)
+// ============================================================
+if (!function_exists('elvo_url_key_seed')) {
+    // Seed tajného kľúča — NIKDY sa nevypisuje von, len z neho derivujeme mesačný kľúč.
+    // Zdroj (v poradí): env ACCESS_URL_KEY | $elvo_url_key_config | url_key.php | default
+    function elvo_url_key_seed() {
+        global $elvo_url_key_config;
+        $seed = (string)(getenv('ACCESS_URL_KEY') ?: '');
+        if ($seed === '' && !empty($elvo_url_key_config)) $seed = (string)$elvo_url_key_config;
+        if ($seed === '' && is_file(__DIR__ . '/url_key.php')) {
+            $v = @include __DIR__ . '/url_key.php';
+            if (is_string($v) && trim($v) !== '') $seed = trim($v);
+        }
+        if ($seed === '') $seed = 'ELVO-APP-2026';
+        return $seed;
+    }
+    function elvo_month_key($seed, $ym) {
+        return strtoupper(substr(hash_hmac('sha256', 'elvo-url-key|' . $ym, $seed), 0, 20));
+    }
+    // Zapíše aktuálnu adresu do suboru url_key_now.php (+ históriu do url_key_history.php).
+    // Oba súboru sú PHP: cez prehliadač vyjdú prázdne (neunikne nič), vo File Managery vidíš adresu.
+    function elvo_write_key_files($curYm, $cur, $prevYm, $prev) {
+        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        $host = preg_replace('#[^a-z0-9.:\-]#', '', $host);
+        if ($host === '') $host = 'localhost';
+        $sd = str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/')));
+        $bp = ($sd === '/' || $sd === '.' || $sd === '') ? '' : rtrim($sd, '/');
+        $base = 'https://' . $host . $bp;
+        $from = date('d.m.Y', strtotime($curYm . '-01'));
+        $to = date('d.m.Y', strtotime('last day of ' . $curYm));
+        $prevTo = date('d.m.Y', strtotime('last day of ' . $prevYm));
+        $now = date('d.m.Y H:i:s');
+        $content = "<?php\n"
+            . "// ================================================================\n"
+            . "//  AKTUÁLNA TAJNÁ ADRESA APPKY — prepísaná systémom automaticky.\n"
+            . "//  Otvor tento súbor vo File Managery (v editore) a uvidíš ju tu.\n"
+            . "//  Cez prehliadač je súbor prázdny — PHP sa vykoná, neunikne nič.\n"
+            . "//\n"
+            . "//  MESIAC: " . $curYm . "  (platí " . $from . " – " . $to . ")\n"
+            . "//  ADRESA:  " . $base . "/?k=" . $cur . "\n"
+            . "//  ALEBO:   " . $base . "/" . $cur . "\n"
+            . "//\n"
+            . "//  Ešte platný minulý kľúč (" . $prevYm . ", do " . $prevTo . "): " . $prev . "\n"
+            . "//\n"
+            . "//  Posledná zmena: " . $now . "\n"
+            . "// ================================================================\n"
+            . "return '" . $cur . "';\n";
+        $file = __DIR__ . '/url_key_now.php';
+        $old = @file_get_contents($file);
+        if ($old === false || $old !== $content) @file_put_contents($file, $content, LOCK_EX);
+        $hist = __DIR__ . '/url_key_history.php';
+        $h = @file_get_contents($hist);
+        if ($h === false) $h = "<?php\n// HISTÓRIA TAJNÝCH ADRIES APPKY (najnovšie riadky dole)\n";
+        if (strpos($h, '// ' . $curYm . '  ') === false) {
+            @file_put_contents($hist, rtrim($h) . "\n// " . $curYm . "  " . $cur . "  (od " . $from . " do " . $to . ", zapísané " . $now . ")\n", LOCK_EX);
+        }
+    }
+    // Aktuálny + minulý mesačný kľúč. Minulý ešte platí počas nasledujúceho mesiaca,
+    // aby ťa vymena kľuca nikdy nezamkla von. Zároveň to zapíše aktuálnu adresu do súboru.
+    function elvo_monthly_url_keys() {
+        $seed = elvo_url_key_seed();
+        $curYm = date('Y-m');
+        $prevYm = date('Y-m', strtotime('first day of last month'));
+        $cur = elvo_month_key($seed, $curYm);
+        $prev = elvo_month_key($seed, $prevYm);
+        elvo_write_key_files($curYm, $cur, $prevYm, $prev);
+        return ['current' => $cur, 'previous' => $prev, 'month' => $curYm];
+    }
+}
+if (!function_exists('elvo_redirect_web')) {
+    // „Normálna“ adresa (hocičo bez tajného kľúča) → rovno na web elvosolar.sk.
+    // Odchádza iba presmerovanie — žiadne údaje appky, žiadne informácie neuniknú.
+    function elvo_redirect_web() {
+        while (ob_get_level() > 0) { @ob_end_clean(); }
+        global $elvo_public_site;
+        $target = !empty($elvo_public_site) ? (string)$elvo_public_site : 'https://www.elvosolar.sk/';
+        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        // Ochrana proti slučke: ak by appka bežala priamo na elvosolar.sk → tichý 404
+        if ($host !== '' && preg_match('#(^|\.)elvosolar\.sk$#', $host)) { elvo_blank_page(); exit; }
+        header('Location: ' . $target, true, 302);
+        exit;
+    }
+}
+if (!function_exists('elvo_turnstile_keys')) {
+    // Cloudflare Turnstile kľúče: env | turnstile_keys.php (File Manager) | config.php
+    function elvo_turnstile_keys() {
+        global $turnstile_site_key, $turnstile_secret_key;
+        $site = (string)(getenv('TURNSTILE_SITE_KEY') ?: '');
+        $secret = (string)(getenv('TURNSTILE_SECRET_KEY') ?: '');
+        if (($site === '' || $secret === '') && is_file(__DIR__ . '/turnstile_keys.php')) {
+            $k = @include __DIR__ . '/turnstile_keys.php';
+            if (is_array($k)) {
+                if ($site === '') $site = trim((string)($k['site_key'] ?? ''));
+                if ($secret === '') $secret = trim((string)($k['secret_key'] ?? ''));
+            }
+        }
+        if ($site === '' && !empty($turnstile_site_key)) $site = trim((string)$turnstile_site_key);
+        if ($secret === '' && !empty($turnstile_secret_key)) $secret = trim((string)$turnstile_secret_key);
+        return ['site' => $site, 'secret' => $secret];
+    }
+    function elvo_turnstile_enabled() {
+        $k = elvo_turnstile_keys();
+        return ($k['site'] !== '' && $k['secret'] !== '');
+    }
+    // true = test proti robotom prešiel (alebo ešte nie sú kľúče → preskočený)
+    function elvo_turnstile_ok() {
+        if (!elvo_turnstile_enabled()) return true;
+        $k = elvo_turnstile_keys();
+        $token = (string)($_POST['cf-turnstile-response'] ?? '');
+        if ($token === '') return false;
+        $payload = ['secret' => $k['secret'], 'response' => $token];
+        $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+        if ($ip !== '') $payload['remoteip'] = $ip;
+        $out = '';
+        // Endpoint na overenie (len na testovanie sa da prepisnut cez env, inak Cloudflare)
+        $endpoint = (string)(getenv('TURNSTILE_SITEVERIFY_URL') ?: 'https://challenges.cloudflare.com/turnstile/v0/siteverify');
+        if (function_exists('curl_init')) {
+            $ch = curl_init($endpoint);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => http_build_query($payload),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 8,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+            ]);
+            $res = curl_exec($ch);
+            if ($res !== false) $out = (string)$res;
+            curl_close($ch);
+        } elseif (ini_get('allow_url_fopen')) {
+            $ctx = stream_context_create(['http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+                'content' => http_build_query($payload),
+                'timeout' => 8,
+            ]]);
+            $r = @file_get_contents($endpoint, false, $ctx);
+            if ($r !== false) $out = (string)$r;
+        }
+        // Cloudflare sa nepodarilo osloviť (výpadok siete / chýbajúci CA bundle na serveri)
+        // alebo odpoveď nebola JSON — nenecháme ťa zamknúť von, test len zapíšeme do logu.
+        // Reálne odmietnutie ("success": false) od Cloudflare stále blokuje.
+        if ($out === '') {
+            error_log('[turnstile] siteverify nepodal odpoveď (siet/TLS) — test proti robotom preskočený');
+            return true;
+        }
+        $j = json_decode($out, true);
+        if (!is_array($j)) {
+            error_log('[turnstile] neplatná odpoveď siteverify — test proti robotom preskočený');
+            return true;
+        }
+        if (empty($j['success'])) {
+            error_log('[turnstile] Cloudflare odmietol token: ' . (string)($j['error-codes'][0] ?? 'unknown'));
+        }
+        return !empty($j['success']);
+    }
+}
+if (!function_exists('elvo_download_page')) {
+    // STRÁNKA NA STIAHNUTIE APPKY — zoberie sa IBA za bránou
+    // (tajná adresa + meno/heslo + úspešný test proti robotom od Cloudflare).
+    function elvo_download_page() {
+        $bp = $GLOBALS['base_path'] ?? '';
+        echo '<!DOCTYPE html><html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<meta name="theme-color" content="#020617"><title>Stiahnuť app — ElvoControll</title>'
+            . '<link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">'
+            . '<link rel="manifest" href="' . htmlspecialchars($bp . '/manifest.json') . '">'
+            . '<style>*{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 800px at 50% -10%,#0e1a35 0%,#020617 55%);font-family:"Plus Jakarta Sans",system-ui,sans-serif;padding:16px;color:#e2e8f0}'
+            . '.card{width:100%;max-width:400px;background:rgba(2,6,23,0.85);border:1px solid rgba(6,182,212,0.25);border-radius:22px;padding:30px 26px;box-shadow:0 20px 60px rgba(0,0,0,0.5);text-align:center}'
+            . '.logo{display:block;margin:0 auto 14px;width:56px;height:56px;object-fit:contain}'
+            . 'h1{font-size:19px;font-weight:900;letter-spacing:-0.02em;color:#f8fafc}'
+            . '.sub{font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#06b6d4;margin:4px 0 18px}'
+            . '.ok{margin:0 0 16px;padding:10px 14px;border-radius:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(52,211,153,0.3);color:#6ee7b7;font-size:11.5px;font-weight:700;line-height:1.6}'
+            . 'button{width:100%;margin-top:6px;background:linear-gradient(90deg,#059669,#10b981);border:0;color:#fff;font-size:12.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;border-radius:12px;padding:16px;cursor:pointer;transition:opacity .2s}'
+            . 'button:hover{opacity:.9}'
+            . '.help,.ios{display:none;margin-top:14px;font-size:11px;color:#94a3b8;line-height:1.7;text-align:left;background:rgba(6,182,212,0.07);border:1px solid rgba(6,182,212,0.2);border-radius:12px;padding:12px 14px}'
+            . '.help b,.ios b{color:#67e8f9}'
+            . '.link{display:inline-block;margin-top:16px;font-size:11.5px;font-weight:800;color:#06b6d4;text-decoration:none;letter-spacing:.5px}'
+            . '.note{margin-top:14px;font-size:10px;color:#64748b;line-height:1.6}</style></head><body>'
+            . '<div class="card"><img class="logo" src="/templates/ElvosolarLogo.png" alt="ElvoSolar" onerror="this.style.display=\'none\'">'
+            . '<h1>Stiahnuť aplikáciu</h1><div class="sub">ElvoControll — PWA</div>'
+            . '<div class="ok">✅ Overenie prebehlo v poriadku.<br>Appku nainštaluješ jedným kliknutím nižšie.</div>'
+            . '<button type="button" id="elvoInstallBtn">⬇️ Stiahnuť app</button>'
+            . '<div class="help" id="elvoHelp"><b>Android / Chrome (počítač):</b> v menu prehliadača (⋮) vyberte <b>„Inštalovať aplikáciu“</b> alebo <b>„Pridať na pracovnú plochu“</b>.<br><br>'
+            . '<b>iPhone / iPad:</b> zdieľajte stránku ➜ <b>Pridať na plochu</b>.</div>'
+            . '<div class="ios" id="elvoIos">Na iPhone/iPad: zdieľajte stránku ➜ <b>Pridať na plochu</b>.</div>'
+            . '<div class="note">Po inštalácii sa appka otvára sama pod svojou vlastnou adresou a funguje aj offline.<br>Prehliadač ťa už nikdy nebude pýtať tajný kľúč.</div>'
+            . '<a class="link" href="' . htmlspecialchars($bp . '/') . '">Pokračovať do appky →</a>'
+            . '</div>'
+            . '<script>'
+            . 'if("serviceWorker" in navigator){navigator.serviceWorker.register("' . htmlspecialchars($bp) . '/sw.js").catch(function(){});}'
+            . '(function(){'
+            . 'var btn=document.getElementById("elvoInstallBtn"),help=document.getElementById("elvoHelp"),ios=document.getElementById("elvoIos"),ok=document.querySelector(".ok");'
+            . 'var deferred=null,prompted=false;'
+            . 'var standalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;'
+            . 'var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;'
+            . 'if(isIOS&&ios){ios.style.display="block";}'
+            . 'function showHelp(){if(help){help.style.display="block";}}'
+            . 'function goApp(){window.location.href="' . htmlspecialchars($bp) . '/";}'
+            // AUTO: nedavame preventDefault -> Chrome si sam automaticky zobrazi
+            // instalacny banner hned pri nacitani stranky, bez nutnosti klikat.
+            // Ukladame si len udalost, aby fungovalo tlacidlo "Stiahnut app".
+            . 'window.addEventListener("beforeinstallprompt",function(e){'
+            . 'deferred=e;'
+            . '});'
+            . 'function doInstall(){'
+            . 'if(standalone){goApp();return true;}'
+            . 'if(!deferred||prompted){return false;}'
+            . 'prompted=true;'
+            . 'try{deferred.prompt();}catch(err){prompted=false;return false;}'
+            . 'try{deferred.userChoice.then(function(c){'
+            . 'if(c.outcome==="accepted"){if(btn){btn.textContent="⏳ Inštaluje sa…";}if(help){help.style.display="none";}'
+            . 'if(ok){ok.innerHTML="✅ Inštalačné okno je otvorené<br>dokončite inštaláciu a appka bude na ploche.";}}'
+            . 'else{prompted=false;}'
+            . 'deferred=null;}).catch(function(){});}catch(err){}'
+            . 'return true;}'
+            . 'if(btn){btn.addEventListener("click",function(){'
+            . 'if(standalone){goApp();return;}'
+            . 'if(prompted){return;}'
+            . 'if(!doInstall()){showHelp();}'
+            . '});}'
+            . 'window.addEventListener("appinstalled",function(){if(btn){btn.textContent="✅ Appka nainštalovaná";}'
+            . 'if(help){help.style.display="none";}if(ok){ok.innerHTML="✅ Appka nainštalovaná<br>nájdete ju ikonou na ploche zariadenia.";}});'
+            // Ak udalost nepride do 2,5 s, automaticky ukazeme navod — tlacidlo nikdy nevyzera mrtve.
+            . 'if(!standalone){setTimeout(function(){if(!deferred){showHelp();if(btn){btn.textContent="⬇️ Inštalovať app";}}},2500);}'
+            . '})();'
+            . '</script></body></html>';
     }
 }
 $elvo_uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $elvo_open = (bool)(preg_match('#^/(sw\.js|manifest\.json|favicon\.ico|healthcheck|health)$#', $elvo_uri)
-    || preg_match('#^/(templates|css|js|img)(/|$)#', $elvo_uri)
+    // Šablóny (.html) sa nikdy neposielajú priamo — sú súčasťou brány (inak uniká kód appky)
+    || (preg_match('#^/(templates|css|js|img)(/|$)#', $elvo_uri) && !preg_match('#^/templates/.+\.html?$#i', $elvo_uri))
     || preg_match('#^/api/user/(notifications|devices|me)(/|$)#', $elvo_uri)
     || preg_match('#^/api/push/(vapid|test|subscribe|unsubscribe)$#', $elvo_uri)
     || preg_match('#^/api/user/(test-email|change-password|delete-account)$#', $elvo_uri)
@@ -131,6 +388,44 @@ if (!empty($_SESSION['user_id'])) {
     $elvo_creds = elvo_gate_creds($pdo);
     if (hash_equals(elvo_gate_token($elvo_creds), (string)$_COOKIE['elvo_access'])) $elvo_gate_ok = true;
 }
+// TAJNY URL KLUC — MESACNE ROTUJUCI. Na svete je IBa jedina platna adresa
+// a ta sa kazdy mesiac zmeni (1. dna v mesiaci). Kym nepoznas aktualny kluc,
+// ta stranka ta normalne presmeruje na www.elvosolar.sk — neunikne ziadny udaj.
+//   Tvar adresy:  /?k=KLUC   ALEBO   /KLUC   (kluc ako prva cast cesty)
+//   Minuly kluc este plati cely nasledujuci mesiac (nemozes byt zamknuty von).
+//   AKTUALNA ADRESA SA ZAPISUJE DO SUBORU: url_key_now.php (otvor vo File Managery)
+$elvo_url_keys = elvo_monthly_url_keys();
+$elvo_url_key = $elvo_url_keys['current'];
+$elvo_url_candidates = array_values(array_unique([$elvo_url_keys['current'], $elvo_url_keys['previous']]));
+$elvo_url_key_ok = !empty($_SESSION['elvo_url_key']);
+if (!$elvo_url_key_ok && isset($_GET['k'])) {
+    foreach ($elvo_url_candidates as $elvo_cand) {
+        if (hash_equals($elvo_cand, (string)$_GET['k'])) {
+            $_SESSION['elvo_url_key'] = 1;
+            $elvo_url_key_ok = true;
+            break;
+        }
+    }
+}
+// „Správny tvar“ adresy:  https://domena.tld/KLUC — kluc je prva cast cesty
+if (!$elvo_url_key_ok) {
+    $elvo_segments = explode('/', trim($elvo_uri, '/'));
+    $elvo_first = (string)($elvo_segments[0] ?? '');
+    if ($elvo_first !== '' && strpos($elvo_first, '.') === false) {
+        foreach ($elvo_url_candidates as $elvo_cand) {
+            if (hash_equals($elvo_cand, $elvo_first)) {
+                $_SESSION['elvo_url_key'] = 1;
+                $elvo_url_key_ok = true;
+                if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+                    // očist adresa — kľúč neostane v histórii prehliadača ani v HTTP referreri
+                    header('Location: ' . (($GLOBALS['base_path'] ?? '') . '/'));
+                    exit;
+                }
+                break;
+            }
+        }
+    }
+}
 if (!$elvo_gate_ok && !$elvo_open) {
     $bp = $base_path ?? '';
     // API volania NIKDY nedostanu HTML gate — vzdy cisty JSON 401.
@@ -143,6 +438,10 @@ if (!$elvo_gate_ok && !$elvo_open) {
         echo json_encode(['status' => 'error', 'message' => 'Neautorizovaný — prihlás sa znova', 'gate' => true]);
         exit;
     }
+    // Bez tajneho URL kluc a bez prihlasenia/gate cookie → PRESMEROVANIE NA WEB (elvosolar.sk).
+    // Normalna adresa = ziadne info neuniknu, dostanu sa rovno na verejny web.
+    // Aplikuje sa az PO API 401, aby API volania stale dospeli JSON (nie HTML).
+    if (!$elvo_url_key_ok) { elvo_redirect_web(); exit; }
     // Validácia "next" — iba lokálna cesta
     $elvo_next = (string)($_REQUEST['next'] ?? $elvo_uri);
     if ($elvo_next === '' || $elvo_next[0] !== '/' || strpos($elvo_next, '//') === 0 || preg_match('#^[a-z]+:#i', $elvo_next)) $elvo_next = '/';
@@ -155,11 +454,17 @@ if (!$elvo_gate_ok && !$elvo_open) {
         $elvo_creds = elvo_gate_creds($pdo);
         $gu = trim((string)($_POST['user'] ?? '')); $gp = (string)($_POST['pass'] ?? '');
         $elvo_ok = elvo_gate_verify($pdo, $elvo_creds, $gu, $gp);
+        $elvo_fail_msg = 'Nesprávne prístupové údaje.';
+        // CLOUDFLARE TURNSTILE — test proti robotom až PO správnom mene/hesle
+        if ($elvo_ok && !elvo_turnstile_ok()) {
+            $elvo_ok = false;
+            $elvo_fail_msg = 'Overenie proti robotom zlyhalo — skúste to prosím znova.';
+        }
         if ($elvo_ok) {
             @unlink($lockF); @unlink($lockT);
             elvo_gate_set_cookie($elvo_creds);
-            // Vždy na appku: neprihlásený → login, prihlásený → dashboard ('/' to vyrieši)
-            header('Location: ' . ($base_path ?? '') . '/'); exit;
+            // Všetko OK (meno + heslo + test proti robotom) → stránka na stiahnutie appky
+            header('Location: ' . ($base_path ?? '') . '/stiahnut'); exit;
         }
         // Rate limit: 6 zlých pokusov → 60 s blokácia
         $n = is_file($lockF) ? (int)@file_get_contents($lockF) : 0;
@@ -167,7 +472,7 @@ if (!$elvo_gate_ok && !$elvo_open) {
         @file_put_contents($lockF, $n);
         if ($n >= 6) @file_put_contents($lockT, time());
         sleep(1);
-        elvo_gate_page('Nesprávne prístupové údaje.', $elvo_next); exit;
+        elvo_gate_page($elvo_fail_msg, $elvo_next); exit;
     }
     elvo_gate_page('', $elvo_next); exit;
 }
@@ -898,6 +1203,14 @@ if ($path === '/' || $path === '') {
     }
 }
 
+elseif ($path === '/stiahnut' || $path === '/install') {
+    // STRÁNKA NA STIAHNUTIE APPKY (PWA).
+    // Prístupná len za bránou: tajná adresa + meno/heslo + úspešný test proti robotom.
+    // Sem ťa systém pošle automaticky po prihlásení na bráne.
+    elvo_download_page();
+    exit;
+}
+
 elseif ($path === '/login') {
     // Rate limit: max 3 neuspesnych pokusov -> 30 min lockout (per email+IP)
     $attempt_key = 'login_att_' . md5(strtolower(trim($_POST['email'] ?? '')) . '|' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
@@ -926,8 +1239,11 @@ elseif ($path === '/login') {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
+            $user_role = $user['role'] ?? '';
+            // IBA admin / mechanik („worker“) sa smie prihlásiť — bežný „user“ účet neprejde.
+            $role_allowed = in_array($user_role, ['admin', 'mechanik'], true);
             
-            if ($user && password_verify($password, $user['password_hash'])) {
+            if ($user && $role_allowed && password_verify($password, $user['password_hash'])) {
                 unset($_SESSION[$attempt_key]);
                 // 2FA pri KAZDOM prihlaseni - vzdy posleme overovaci kod na email
                 {
@@ -982,7 +1298,12 @@ elseif ($path === '/login') {
                 $attempts['count']++;
                 if ($attempts['count'] >= 3) { $attempts['until'] = time() + 1800; $attempts['count'] = 0; }
                 $_SESSION[$attempt_key] = $attempts;
-                flash("Nesprávne prihlasovacie údaje.", 'error');
+                // Rozlíš: účet existuje a heslo sedí, ale nemá rolu admin/mechanik → jasná správa.
+                if ($user && password_verify($password, $user['password_hash'])) {
+                    flash("Tento účet nemá oprávnenie na prístup do aplikácie.", 'error');
+                } else {
+                    flash("Nesprávne prihlasovacie údaje.", 'error');
+                }
             }
         }
     }
@@ -1171,6 +1492,21 @@ elseif ($path === '/profile' && $method === 'GET') {
 }
 
 // =============================================================================
+// RUKA — MQTT OVLÁDANIE STROJOV (retained príkazy cez firemný broker)
+// =============================================================================
+elseif ($path === '/mqtt' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
+    $stmtRoleM = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+    $stmtRoleM->execute([$_SESSION['user_id']]);
+    $roleRowM = $stmtRoleM->fetch();
+    if (!$roleRowM || !in_array($roleRowM['role'] ?? '', ['admin', 'mechanik'], true)) {
+        header("Location: " . $base_path . "/dashboard");
+        exit;
+    }
+    render_template('mqtt_dashboard.html', ['csrf' => elvo_mqtt_csrf_token()]);
+}
+
+// =============================================================================
 // ADMIN DEVICE DETAIL (PODPORUJE: /admin_device.html, /admin/device/1, /admin_device/1)
 // =============================================================================
 elseif ((preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches) || $path === '/admin_device.html' || $path === '/admin_device') && $method === 'GET') {
@@ -1333,6 +1669,62 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
     }
 }
 
+// --- SVETLO / BATERKA (SK6812 RGBW pásek na CM5 — 3 pásky, GPIO 27) ---
+elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) {
+        send_json(['status' => 'error', 'message' => 'Neprihlásený používateľ'], 401);
+    }
+    $data = get_json_input();
+    $devId = intval($matches[1]);
+    $mode = strtolower(trim($data['mode'] ?? 'off'));
+    if (!in_array($mode, ['off', 'flashlight', 'white', 'color'], true)) { $mode = 'off'; }
+    $brightness = max(0, min(100, intval($data['brightness'] ?? 100)));
+    $channels = [];
+    foreach (['r', 'g', 'b', 'w'] as $ch) {
+        $channels[$ch] = max(0, min(255, intval($data[$ch] ?? 0)));
+    }
+    // Rovnaká logika ako set-power: príkaz ide na riadok, ktorý CM5 reálne polluje
+    $cmd_serial = trim($data['serial'] ?? '');
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM devices WHERE id = ?");
+        $stmt->execute([$devId]);
+        if (!$stmt->fetch()) {
+            send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
+        }
+        $target_id = $devId;
+        if ($cmd_serial !== '') {
+            try {
+                $stS = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? ORDER BY id DESC LIMIT 1");
+                $stS->execute([$cmd_serial]);
+                $rowS = $stS->fetch();
+                if ($rowS) { $target_id = intval($rowS['id']); }
+            } catch (Exception $eS) { /* fallback na devId */ }
+        }
+        if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
+            $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
+        }
+        $cmd_key = 'led_' . $target_id . '_' . time();
+        $cmd = json_encode(array_merge([
+            'action' => 'set_led',
+            'mode' => $mode,
+            'brightness' => $brightness,
+            'cmd_key' => $cmd_key,
+        ], $channels));
+        // Príkaz si CM5 vyzdvihne pri najbližšom poll-e (do 5 s) a rozsvieti pásek
+        $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
+        $stmtU->execute([$cmd, $target_id]);
+        send_json([
+            'status' => 'success',
+            'target_device_id' => $target_id,
+            'mode' => $mode,
+            'brightness' => $brightness,
+            'message' => $mode === 'off' ? 'Svetlo vypnuté.' : 'Svetlo zapnuté (do 5 s).'
+        ]);
+    } catch (Exception $e) {
+        send_json(['status' => 'error', 'message' => 'Chyba: ' . $e->getMessage()], 500);
+    }
+}
+
 // --- POSLEDNY VYSLEDOK PRIKAZU (setup polling — ci CM5 realne zapisal na SmartLogger) ---
 // Klúčom je SERIAL CM5 (rovnaký, pod ktorým CM5 aj ukladá výsledok) — imúnne voči devId nezhodám
 elseif (preg_match('#^/api/device/(\d+)/last-cmd-result$#', $path, $matches) && $method === 'GET') {
@@ -1437,6 +1829,57 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
 }
 
 // --- OKTE CENY API ---
+// =============================================================================
+// MQTT API — publish príkazu (retained) + čítanie stavov
+// Bezpečnosť: gate + admin/mechanik + CSRF + whitelist + audit + rate limit
+// =============================================================================
+elseif ($path === '/api/mqtt/publish' && $method === 'POST') {
+    $elvoMqttUser = elvo_mqtt_current_user($pdo);
+    if (!$elvoMqttUser) {
+        send_json(['status' => 'error', 'message' => 'Nepovolený prístup'], 403);
+    }
+    $elvoMqttCsrf = (string)($_SERVER['HTTP_X_MQTT_CSRF'] ?? ($_POST['csrf'] ?? ''));
+    if (!elvo_mqtt_csrf_verify($elvoMqttCsrf)) {
+        send_json(['status' => 'error', 'message' => 'Neplatný CSRF token — obnov stránku'], 403);
+    }
+    $elvoMqttData = get_json_input();
+    $elvoMqttSerial = trim((string)($elvoMqttData['serial'] ?? ''));
+    $elvoMqttCommand = strtoupper(trim((string)($elvoMqttData['command'] ?? '')));
+    if (!elvo_mqtt_valid_serial($elvoMqttSerial) || !elvo_mqtt_valid_command($elvoMqttCommand)) {
+        send_json(['status' => 'error', 'message' => 'Neplatný stroj alebo príkaz'], 400);
+    }
+    if (!elvo_mqtt_rate_ok($pdo, (int)$elvoMqttUser['id'], 30)) {
+        elvo_mqtt_audit($pdo, $elvoMqttUser['id'], $elvoMqttUser['username'], 'publish', $elvoMqttSerial, $elvoMqttCommand, 'RATE_LIMIT', 'limit 30/min prekroceny');
+        send_json(['status' => 'error', 'message' => 'Príliš veľa príkazov (max 30/min)'], 429);
+    }
+    $elvoMqttErr = null;
+    $elvoMqttOk = elvo_mqtt_publish_command($elvoMqttSerial, $elvoMqttCommand, $elvoMqttErr);
+    elvo_mqtt_audit($pdo, $elvoMqttUser['id'], $elvoMqttUser['username'], 'publish', $elvoMqttSerial, $elvoMqttCommand, $elvoMqttOk ? 'OK' : 'ERROR', $elvoMqttErr ?? '');
+    if (!$elvoMqttOk) {
+        send_json(['status' => 'error', 'message' => 'Broker nedostupný: ' . (string)$elvoMqttErr], 502);
+    }
+    send_json(['status' => 'success', 'serial' => $elvoMqttSerial, 'command' => $elvoMqttCommand,
+               'message' => 'Príkaz ' . $elvoMqttCommand . ' uložený do stroje/' . $elvoMqttSerial . '/prikazy (retained)']);
+}
+
+elseif ($path === '/api/mqtt/states' && $method === 'GET') {
+    $elvoMqttUser2 = elvo_mqtt_current_user($pdo);
+    if (!$elvoMqttUser2) {
+        send_json(['status' => 'error', 'message' => 'Nepovolený prístup'], 403);
+    }
+    $elvoMqttErr2 = null;
+    $elvoMqttStates = elvo_mqtt_collect_states(2, $elvoMqttErr2);
+    $elvoMqttNames = [];
+    try {
+        $stNames = $pdo->query("SELECT serial_number, name FROM devices WHERE serial_number IS NOT NULL AND serial_number != ''");
+        foreach ($stNames->fetchAll() as $rN) {
+            $elvoMqttNames[(string)$rN['serial_number']] = (string)$rN['name'];
+        }
+    } catch (Exception $e) { /* tabuľka devices nemusí existovať */ }
+    send_json(['status' => 'success', 'states' => $elvoMqttStates, 'names' => $elvoMqttNames,
+               'message' => $elvoMqttErr2 ? ('Broker hlási: ' . $elvoMqttErr2) : '']);
+}
+
 elseif ($path === '/api/okte/prices' && $method === 'GET') {
     // Po 13:00 OKTE zverejni zajtrajsie ceny -> zobraz 48h (dnes + zajtra)
     // Pred 13:00 su dostupne len dnesne -> 24h

@@ -1,0 +1,190 @@
+<?php // mqtt_dashboard.html — RUKA: ovládanie strojov cez MQTT (retained príkazy)
+// Kontext z render_template(): $csrf, $base_path ?>
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ovládanie strojov | ElvoControll</title>
+<link rel="icon" type="image/png" href="/templates/ElvosolarLogo.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:radial-gradient(1200px 800px at 50% -10%,#0e1a35 0%,#020617 55%);font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:#e2e8f0;padding:20px}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:20px;font-weight:900;letter-spacing:-.02em;color:#f8fafc}
+.sub{font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#06b6d4;margin:4px 0 18px}
+.card{background:rgba(2,6,23,.85);border:1px solid rgba(6,182,212,.25);border-radius:18px;padding:20px;margin-bottom:16px}
+.card h2{font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#67e8f9;margin-bottom:14px}
+table{width:100%;border-collapse:collapse}
+th{font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#64748b;text-align:left;padding:8px 10px;border-bottom:1px solid #1e293b}
+td{padding:12px 10px;border-bottom:1px solid #16203a;font-size:13px;font-weight:700;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:8px;vertical-align:middle;background:#64748b}
+.bezi{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.8)}
+.stoji{background:#f43f5e;box-shadow:0 0 8px rgba(244,63,94,.7)}
+.auto{background:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,.7)}
+.st-label{font-size:11px;color:#94a3b8;font-weight:700;margin-left:6px}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+button{border:0;border-radius:10px;padding:9px 14px;font-size:10.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:#fff;transition:opacity .2s;font-family:inherit}
+button:hover{opacity:.85}
+button:disabled{opacity:.4;cursor:not-allowed}
+.b-on{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.b-off{background:linear-gradient(90deg,#e11d48,#f43f5e)}
+.b-auto{background:linear-gradient(90deg,#2563eb,#3b82f6)}
+.ser{font-family:ui-monospace,monospace;color:#67e8f9}
+.empty{padding:26px 10px;text-align:center;color:#64748b;font-size:13px;font-weight:700}
+.help{font-size:12px;line-height:1.8;color:#94a3b8;border-left:3px solid #06b6d4;padding-left:12px}
+.help b{color:#e2e8f0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.legend{font-size:11px;color:#94a3b8;font-weight:700}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#052e16;border:1px solid #22c55e;color:#bbf7d0;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;display:none;max-width:90vw;z-index:9}
+.toast.err{background:#450a0a;border-color:#f43f5e;color:#fecdd3}
+a.back{color:#67e8f9;font-size:12px;font-weight:800;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row">
+    <div>
+      <h1>Ovládanie strojov</h1>
+      <div class="sub">Live · MQTT · retained príkazy</div>
+    </div>
+    <a class="back" href="<?php echo htmlspecialchars(($base_path ?? '') . '/dashboard'); ?>">← Späť na dashboard</a>
+  </div>
+
+  <div class="card">
+    <h2>Stroje v teréne</h2>
+    <div class="row">
+      <span class="legend" id="legend">Načítavam stavy…</span>
+      <button style="background:#1e293b;color:#cbd5e1" onclick="refresh()">Obnoviť</button>
+    </div>
+    <table>
+      <thead><tr><th>Stroj</th><th>Názov</th><th>Stav</th><th>Aktuálne ovládanie</th></tr></thead>
+      <tbody id="tbody">
+        <tr><td colspan="4" class="empty">Načítavam…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Ako to funguje</h2>
+    <div class="help">
+      <b>Klik na tlačidlo</b> → príkaz (napr. STROJ_STOP) sa uloží na firemný server ako <b>retained správa</b>
+      a okamžite (do ~50&nbsp;ms) doručí do zariadenia CM5 v teréne. Zariadenie fyzicky prepne stroj a pošle
+      potvrdenie do kanála stavu — <b>zelená ikona</b> = beží, <b>červená</b> = stojí, <b>sivá</b> = zariadenie
+      offline (stratilo spojenie).<br>
+      <b>Skúška overenia:</b> 1) káblom — otvor na boxe <b>http://&lt;IP-boxu&gt;/mqtt</b> a skús tie isté
+      príkazy lokálne; 2) odtiaľto (cloud). Ak lokálne funguje a z cloudu nie → problém je v sieti.
+      Ak nefunguje ani lokálne → problém je v stroji.
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var CSRF = <?php echo json_encode($csrf ?? ''); ?>;
+var BASE = <?php echo json_encode(($base_path ?? '')); ?>;
+var STATES = {};
+var NAMES = {};
+
+function $(id){ return document.getElementById(id); }
+
+function toast(text, isErr){
+  var t = $('toast');
+  t.textContent = text;
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.style.display = 'block';
+  clearTimeout(t._h);
+  t._h = setTimeout(function(){ t.style.display = 'none'; }, 4000);
+}
+
+function stateLabel(s){
+  if (s === 'STATUS_BEZI') return ['bezi', 'BEŽÍ'];
+  if (s === 'STATUS_STOJI') return ['stoji', 'STOJÍ'];
+  if (s === 'STATUS_AUTO') return ['auto', 'AUTO'];
+  if (s === 'STATUS_OFFLINE') return ['', 'OFFLINE (žiadne spojenie)'];
+  return ['', s || 'NEZNÁMY'];
+}
+
+function cmdLabel(cmd){
+  if (cmd === 'STROJ_START') return 'Zapnutý (príkaz START)';
+  if (cmd === 'STROJ_STOP') return 'Vypnutý (príkaz STOP)';
+  if (cmd === 'STROJ_AUTO') return 'Režim AUTO';
+  return '—';
+}
+
+function sendCmd(serial, cmd){
+  if (!confirm('Naozaj poslať ' + cmd + ' na stroj ' + serial + '?')) return;
+  var btns = $('tbody').querySelectorAll('button');
+  for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+  fetch(BASE + '/api/mqtt/publish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Mqtt-Csrf': CSRF },
+    body: JSON.stringify({ serial: serial, command: cmd })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.status === 'success') { toast('✅ Príkaz ' + cmd + ' odoslaný na ' + serial); }
+    else { toast('❌ ' + (d.message || 'Chyba odosielania'), true); }
+    refresh();
+  }).catch(function(e){ toast('❌ Chyba spojenia: ' + e, true); })
+  .finally(function(){
+    var b2 = $('tbody').querySelectorAll('button');
+    for (var j = 0; j < b2.length; j++) b2[j].disabled = false;
+  });
+}
+
+function render(){
+  var tb = $('tbody');
+  var serials = Object.keys(STATES).sort();
+  if (!serials.length) {
+    tb.innerHTML = '<tr><td colspan="4" class="empty">Zatiaľ žiadne stroje — stroj sa zobrazí, keď sa CM5 prvýkrát pripojí a pošle stav.</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < serials.length; i++) {
+    var s = serials[i];
+    var st = (STATES[s] && STATES[s].state) ? STATES[s].state : '';
+    var cls = stateLabel(st)[0], label = stateLabel(st)[1];
+    var name = NAMES[s] || 'Stroj ' + s;
+    var ts = (STATES[s] && STATES[s].ts) ? new Date(STATES[s].ts * 1000).toLocaleTimeString('sk-SK') : '—';
+    html += '<tr>'
+      + '<td class="ser">' + esc(s) + '</td>'
+      + '<td>' + esc(name) + '</td>'
+      + '<td><span class="dot ' + cls + '"></span>' + esc(label) + ' <span class="st-label">' + esc(ts) + '</span></td>'
+      + '<td><div class="btns">'
+      + '<button class="b-on" onclick="sendCmd(' + JSON.stringify(s).replace(/"/g, '&quot;') + ', \'STROJ_START\')">Zapnúť</button>'
+      + '<button class="b-off" onclick="sendCmd(' + JSON.stringify(s).replace(/"/g, '&quot;') + ', \'STROJ_STOP\')">Vypnúť</button>'
+      + '<button class="b-auto" onclick="sendCmd(' + JSON.stringify(s).replace(/"/g, '&quot;') + ', \'STROJ_AUTO\')">AUTO</button>'
+      + '</div></td>'
+      + '</tr>';
+  }
+  tb.innerHTML = html;
+}
+
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function refresh(){
+  fetch(BASE + '/api/mqtt/states').then(function(r){ return r.json(); }).then(function(d){
+    if (d.status !== 'success') {
+      $('legend').textContent = d.message || 'Broker nie je dostupný';
+      render();
+      return;
+    }
+    STATES = d.states || {};
+    NAMES = d.names || {};
+    var n = Object.keys(STATES).length;
+    $('legend').textContent = 'Načítaných strojov: ' + n + ' · aktualizované ' + new Date().toLocaleTimeString('sk-SK');
+    render();
+  }).catch(function(e){
+    $('legend').textContent = 'Chyba načítania stavov';
+  });
+}
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

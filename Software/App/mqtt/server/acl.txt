@@ -1,0 +1,19 @@
+# =============================================================================
+# ACL pre Mosquitto — kto smie čo
+#
+# ZARIADENIE (username = serial zariadenia, napr. CM5_452):
+#   pattern %u -> prístup IBA na svoje topic-y:
+#     stroje/CM5_452/prikazy  (read  - počúva príkazy)
+#     stroje/CM5_452/stav     (write - potvrdzuje stav)
+#   => žiadne zariadenie nepočuje príkazy pre iné zariadenia!
+#
+# WEB APP (username = webapp):
+#   publikuje príkazy do všetkých stroje/+/prikazy, číta všetky stavy.
+#   NEMÔŽE čítať príkazy ani písať stavy cudzích zariadení.
+# =============================================================================
+
+pattern readwrite stroje/%u/#
+
+user webapp
+topic write stroje/+/prikazy
+topic read stroje/+/stav

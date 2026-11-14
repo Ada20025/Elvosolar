@@ -1,0 +1,23 @@
+# Elvosolar
+
+> Elvosolar, a.s. je slovenská spoločnosť poskytujúca riešenia obnoviteľnej a optimalizovanej energie — od návrhu cez dodávku až po servis. Hlavné oblasti: fotovoltika, solárny ohrev, ORC jednotky (reverzný organický cyklus), absorpčné chladenie a batériové úložiská.
+
+Táto stránka je firemný web prezentujúci produkty, služby a referenčné projekty. Texty sú v slovenčine; jazykové verzie (EN, DE) sa prepínajú v rozhraní stránky. Na stránke nie je žiadny e-shop ani registrácia používateľov. Spoločnosť neposkytuje žiadne API a nepovoľuje komerčné preškolenie modelov z tohto obsahu bez súhlasu.
+
+## Riešenia
+
+- [Fotovoltika](https://www.elvosolar.sk/fotovoltika): Premena slnečnej energie na elektrickú — panely, meniče, optimalizácia výroby.
+- [Solárny ohrev](https://www.elvosolar.sk/solarny-ohrev): Premena slnečnej energie na tepelnú na ohrev vody a priemyselných procesov.
+- [ORC jednotky](https://www.elvosolar.sk/orc-jednotky): Elektrifikácia odpadového tepla organickým Rankinovým cyklom.
+- [Absorpčné chladenie](https://www.elvosolar.sk/absorbecne-chladenie): Premena odpadového tepla na chladenie priemyselných procesov.
+- [Batériové úložiská](https://www.elvosolar.sk/bateriove-uloziska): Ukladanie elektrickej energie na stabilizáciu výroby a spotreby.
+
+## Spoločnosť
+
+- [O nás](https://www.elvosolar.sk/o-nas): Profil spoločnosti, história a tím.
+- [Riešenia na kľúč](https://www.elvosolar.sk/riesenia-na-kluc): Komplexné dodávky projektov od analýzy po uvedenie do prevádzky.
+- [Servis](https://www.elvosolar.sk/servis): Servisné zmluvy, údržba a pohotovostné zásahy.
+- [Zelená podnikom](https://www.elvosolar.sk/zelena-podnikom): Program udržateľného podnikania s nižšími nákladmi na energiu.
+- [Projekty SAMRS](https://www.elvosolar.sk/projekty-samrs): Medzinárodné rozvojové projekty v energetike (AFG, SR).
+- [Kontakt](https://www.elvosolar.sk/kontakt): Adresa, telefón, e-mail a kontaktný formulár.
+- [Mapa webu](https://www.elvosolar.sk/mapa-webu): Úplný zoznam všetkých stránok webu.

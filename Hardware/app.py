@@ -89,6 +89,15 @@ class WifiConnectRequest(BaseModel):
     ssid: str
     password: str
 
+class LedRequest(BaseModel):
+    # mode: off | flashlight | white | color
+    mode: str = "off"
+    brightness: int = 100          # 0-100 %
+    r: int = 0
+    g: int = 0
+    b: int = 0
+    w: int = 0
+
 class InverterModelRequest(BaseModel):
     model_id: str
 
@@ -1811,6 +1820,16 @@ def cloud_sync_loop():
                 log_message(f"[CLOUD] Nastavenia aktualizovane: {list(config.keys())}")
                 result = {"status": "success", "message": "Nastavenia ulozene"}
 
+            elif action == "set_led":
+                # SVETLO Z APPKY: čistá biela (baterka) alebo farba na SK6812 RGBW páse
+                try:
+                    res = apply_led_command(config)
+                    result = {"status": "success", "cmd_key": str(config.get("cmd_key", "")),
+                              "message": f"Svetlo: {res.get('mode')} ({res.get('brightness')} %)",
+                              **res}
+                except Exception as e_led:
+                    result = {"status": "error", "message": str(e_led)[:200]}
+
             elif action == "deploy_files":
                 # ADMIN DEPLOY HW SUBOROV: stiahne balik z cloudu, zapise subory, restart app.py
                 try:
@@ -1936,6 +1955,49 @@ led.anim_boot()  # cervena - system sa spusta
 # Smart meter init
 smart_meter = get_smart_meter_service(bg_service)
 
+# =============================================================================
+# SVETLO — SK6812 RGBW pásek (3 pásky za sebou, DATA = GPIO 27)
+# =============================================================================
+def apply_led_command(cfg: dict) -> dict:
+    """Jednotné ovládanie svetla pre lokálne API aj príkazy z appky (cloud)."""
+    mode = str(cfg.get("mode", "off")).strip().lower()
+    try:
+        brightness = int(float(cfg.get("brightness", 100)))
+    except (TypeError, ValueError):
+        brightness = 100
+    brightness = max(0, min(100, brightness))
+
+    if mode in ("", "off", "vyp", "0", "false"):
+        led.off()
+        return led.status()
+    if mode == "flashlight":
+        return led.flashlight(True, brightness=brightness)
+    if mode == "white":
+        return led.set_manual("white", brightness=brightness)
+    return led.set_manual(
+        "color", brightness=brightness,
+        r=cfg.get("r", 0), g=cfg.get("g", 0), b=cfg.get("b", 0), w=cfg.get("w", 0),
+    )
+
+
+@app.get("/api/led/status")
+def api_led_status():
+    """Stav svetla: režim, jas, farba, driver, počet LED."""
+    return {"status": "success", "led": led.status()}
+
+
+@app.post("/api/led")
+def api_led_set(data: LedRequest):
+    """Manuálne svetlo: baterka (čistá biela), farba alebo vypnutie.
+    mode=flashlight|white|color|off, brightness=0-100, r/g/b/w=0-255."""
+    try:
+        st = apply_led_command(data.model_dump())
+        log_message(f"[LED] Svetlo: mode={st.get('mode')} jas={st.get('brightness')}%")
+        return {"status": "success", "led": st}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 # ─── AUTOMATICKÉ PREHĽADANIE VŠETKÝCH PORTOV PO ŠTARTE ────────────────
 def _startup_auto_discovery_loop():
     """Automaticky preskenuje a nájde všetky pripojené RS485 porty a sieťové zariadenia po štarte CM5."""
@@ -2023,6 +2085,92 @@ try:
     log_message("[SERIAL-CONFIG] USB config service spusteny")
 except Exception as _e:
     log_message(f"[SERIAL-CONFIG] Nepodarilo sa spustit: {_e}")
+
+# =============================================================================
+# MQTT KLIENT (Ovládač) — retained príkazy z cloudu + lokálna skúška káblom
+# Ruka=web (Websupport) -> Mozog=Mosquitto (firemný server) -> toto vlákno na CM5
+# Príkazy: stroje/<serial>/prikazy (retained) | Stav: stroje/<serial>/stav
+# =============================================================================
+try:
+    import mqtt_client as _mqtt_client
+    _mqtt_client.configure(
+        log_fn=log_message,
+        apply_state_fn=safe_apply_system_state,
+        get_override_fn=lambda: getattr(bg_service, "manual_override", "AUTO"),
+        led_service=led,
+    )
+    _mqtt_client.start()
+    log_message("[MQTT] MQTT klient spustený (počúva stroje/<serial>/prikazy)")
+except Exception as _e_mqtt:
+    _mqtt_client = None
+    log_message(f"[MQTT] Nepodarilo sa spustiť MQTT klienta: {_e_mqtt}")
+
+
+class MqttCommandRequest(BaseModel):
+    command: str
+
+
+class MqttConfigRequest(BaseModel):
+    host: str = ""
+    port: int = 0
+    username: str = ""
+    password: str = ""
+    tls: bool = True
+
+
+@app.get("/mqtt", response_class=HTMLResponse)
+def serve_mqtt_page():
+    """Lokálna stránka pre SKÚŠKU KÁBLOM: isté príkazy ako z cloudu + diagnostika."""
+    path_mqtt = os.path.join(BASE_DIR, "templates", "mqtt.html")
+    if os.path.exists(path_mqtt):
+        with open(path_mqtt, "r", encoding="utf-8") as f:
+            response = HTMLResponse(content=f.read())
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            return response
+    return "<h3>Chyba: mqtt.html chýba v šablónach.</h3>"
+
+
+@app.get("/api/mqtt/diagnostics")
+def api_mqtt_diagnostics():
+    """Diagnostika: pripojenie k brokeru, posledný príkaz a jeho zdroj (MQTT/LOCAL)."""
+    if _mqtt_client is None:
+        return {"status": "error", "enabled": False, "message": "MQTT klient nie je spustený (chýba paho-mqtt?)"}
+    return _mqtt_client.get_diagnostics()
+
+
+@app.post("/api/mqtt/command")
+def api_mqtt_command(data: MqttCommandRequest):
+    """LOKÁLNA SKÚŠKA KÁBLOM — ide cez TEN ISTÝ handler ako príkazy z cloudu.
+    Podporované: STROJ_START / STROJ_STOP / STROJ_AUTO / STROJ_STATUS."""
+    if _mqtt_client is None:
+        return {"status": "error", "message": "MQTT klient nie je spustený"}
+    return _mqtt_client.handle_local_command(data.command)
+
+
+@app.get("/api/mqtt/config")
+def api_mqtt_config_get():
+    if _mqtt_client is None:
+        return {"status": "error", "message": "MQTT klient nie je spustený"}
+    host, port, username, password, tls = _mqtt_client.load_config()
+    return {"status": "success", "host": host, "port": port, "username": username,
+            "password_set": bool(password), "tls": tls, "serial": _mqtt_client.get_serial()}
+
+
+@app.post("/api/mqtt/config")
+def api_mqtt_config_set(data: MqttConfigRequest):
+    """Uloží broker konfiguráciu (raz, káblom) a reštartuje MQTT klienta."""
+    if _mqtt_client is None:
+        return {"status": "error", "message": "MQTT klient nie je spustený (chýba paho-mqtt?)"}
+    try:
+        if not data.host.strip():
+            return {"status": "error", "message": "Adresa brokera je povinná"}
+        _mqtt_client.save_config(data.host.strip(), data.port or (8883 if data.tls else 1883),
+                                 data.username.strip(), data.password, data.tls)
+        _mqtt_client.restart()
+        return {"status": "success", "message": "Konfigurácia uložená, MQTT klient reštartovaný",
+                "diagnostics": _mqtt_client.get_diagnostics()}
+    except Exception as e:
+        return {"status": "error", "message": str(e)[:200]}
 
 
 

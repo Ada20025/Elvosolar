@@ -1,0 +1,18 @@
+# Čo sa neposiela do Docker image / Railway (image má ostať malý a bez tajomstiev)
+.git
+.github
+.gitignore
+.freebuff
+.cloud-attachments
+_dev
+preklad/_zdroj
+_data
+_undelivered.log
+.php_mail_counter
+_mail-config.php
+*.log
+*.md
+*.py
+__pycache__
+.env
+.env.*

@@ -10,8 +10,15 @@ APP_DIR="/home/pi/Hardware"
 if [ ! -f "$VENV_PYTHON" ]; then
     echo "[SETUP] Vytváram venv..."
     python3 -m venv /home/pi/Hardware/venv
-    $VENV_PYTHON -m pip install --quiet fastapi uvicorn pyserial pymodbus requests gpiod
+    $VENV_PYTHON -m pip install --quiet fastapi uvicorn pyserial pymodbus requests gpiod paho-mqtt
     echo "[SETUP] Závislosti nainštalované."
+fi
+
+# MQTT klient (paho-mqtt) — doinštaluj aj do staršieho existujúceho venv
+if ! $VENV_PYTHON -c "import paho.mqtt" >/dev/null 2>&1; then
+    $VENV_PYTHON -m pip install --quiet paho-mqtt \
+        && echo "[SETUP] paho-mqtt doinštalované." \
+        || echo "[SETUP] ⚠️ paho-mqtt sa nepodarilo nainštalovať (MQTT bude vypnuté)"
 fi
 
 # ============================================================

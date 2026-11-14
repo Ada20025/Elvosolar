@@ -1,0 +1,22 @@
+{
+ "contact_page": {
+  "title": "Kontakt - Elvosolar",
+  "hero_badge": "Wir sind für Sie da",
+  "hero_title": "Kontaktieren Sie uns",
+  "details_title": "Kontaktdaten",
+  "phone_label": "Tel.:",
+  "phone_value": "+421 914 332 169",
+  "email_label": "E-Mail:",
+  "email_value": "info@elvosolar.sk",
+  "address_title": "🏢 Adresse",
+  "address_company": "Elvosolar, a.s.",
+  "address_street": "Agátová 22, 841 01 Bratislava",
+  "form_title": "Unverbindliche Anfrage",
+  "form_name_placeholder": "Vor- und Nachname *",
+  "form_email_placeholder": "Ihre E-Mail *",
+  "form_phone_placeholder": "Ihre Telefonnummer *",
+  "form_message_placeholder": "Ihre Frage...",
+  "form_submit": "Nachricht senden",
+  "cta_text": "Wenn Sie von uns ein Angebot wünschen oder mehr über die angebotenen Lösungen erfahren möchten, zögern Sie nicht, uns zu kontaktieren."
+ }
+}

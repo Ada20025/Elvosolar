@@ -42,3 +42,11 @@ tetovacie subory/
 Hardware/*.db
 Hw Windows/
 
+
+# Tajny URL kluc appky (zdielany hosting - vytvori sa lokalne, NEcommitovat)
+Software/App/url_key.php
+# Mesačne rotujuca aktualna adresa + história (generuje server) — nikdy necommitovať
+Software/App/url_key_now.php
+Software/App/url_key_history.php
+# Cloudflare Turnstile kľúče
+Software/App/turnstile_keys.php

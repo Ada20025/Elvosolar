@@ -1,0 +1,34 @@
+{
+ "title": "Fotovoltika, solárny ohrev a ORC jednotky | Elvosolar",
+ "hero": {
+  "badge": "Elvosolar, a.s.",
+  "title": "Otvárame dvere obnoviteľnej a optimalizovanej energii",
+  "description": "Spoločnosť Elvosolar, a.s. ponúka komplexné služby a inovatívne riešenia v rámci optimalizácie spotreby elektrickej energie a v oblasti výroby energií z obnoviteľných alebo odpadových zdrojov.",
+  "quote": "„Základnými piliermi spokojnosti našich zákazníkov je naša spoľahlivosť, odbornosť, ekonomická efektívnosť a ohľaduplnosť k životnému prostrediu.“",
+  "cta": "Prečítajte si viac ►"
+ },
+ "subsidies": {
+  "badge": "Financovanie",
+  "title": "Aktuálne výzvy na dotácie",
+  "card1_badge": "Zelená podnikom",
+  "card1_title": "Fotovoltika pre firmy s dotáciou až 50 tis. €",
+  "card1_desc": "Využite príležitosť na získanie dotácie v rámci projektu Zelená podnikom. Fotovoltické elektrárne až do 250kW.",
+  "card2_badge": "Energetická efektívnosť",
+  "card2_title": "Výzva na podporu energetickej efektívnosti",
+  "card2_desc": "Využívajte OZE vo vašom podniku so štátnou dotáciou. Fotovoltické elektrárne až do 500kW.",
+  "card3_badge": "Výroba elektriny z OZE",
+  "card3_title": "Výzva na zariadenia na výrobu elektriny z OZE",
+  "card3_desc": "Zariadenia na výrobu elektriny z OZE spolu so zariadeniami na uskladnenie energie až do 5MW."
+ },
+ "services": {
+  "badge": "Služby",
+  "title": "Naše Služby",
+  "desc": "Udržateľná efektívnosť, spoľahlivosť a bezpečnosť implementovaných riešení v akomkoľvek štádiu projektu je dosiahnuteľná len realizáciou kvalitných a odborných služieb ponúkaných naším tímom špecialistov.",
+  "card1_title": "Servis",
+  "card1_desc": "Komplexné servisné služby realizované profesionálním tímom.",
+  "card1_more": "Viac informácií ►",
+  "card2_title": "Riešenia na kľúč",
+  "card2_desc": "Projektovanie, výstavba a prevádzka energetických zariadení.",
+  "card2_more": "Viac informácií ►"
+ }
+}
