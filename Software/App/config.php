@@ -1,63 +1,117 @@
 <?php
 // config.php — ElvoControl
-// Automaticky detekuje prostredie (Railway / AlwaysData / SQLite Lokálne) s 100% ochranou pred bielou obrazovkou
+// Prostredie: Railway (MySQL) / iný MySQL hosting / lokálne (SQLite fallback)
+//
+// Railway MySQL plugin dáva tieto premenné:
+//   MYSQL_DATABASE, MYSQL_PRIVATE_URL, MYSQL_ROOT_PASSWORD
+//   (staršie varianty: MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQLPASSWORD, MYSQL_URL)
+// Preto sa najprv skúša URL (mysql://user:heslo@host:port/db) a až potom
+// jednotlivé premenné. Žiadne heslá nie sú v kóde.
 
-// 1. Zistenie parametrov z Railway prostredia
-$railway_host = getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: '';
-$railway_db   = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: '';
-$railway_user = getenv('MYSQLUSER') ?: getenv('DB_USER') ?: '';
-$railway_pass = getenv('MYSQL_ROOT_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: getenv('MYSQL_PASSWORD') ?: getenv('DB_PASS') ?: '';
-$railway_port = getenv('MYSQLPORT') ?: getenv('DB_PORT') ?: '3306';
-
-// 2. Fallback AlwaysData parametre
-$alwaysdata_host = 'mysql-adamdz.alwaysdata.net';
-$alwaysdata_db   = 'adamdz_solar';
-$alwaysdata_user = 'adamdz_admin';
-$alwaysdata_pass = '1Adamko.';
-
-if ($railway_host && $railway_db) {
-    $db_host = $railway_host;
-    $db_name = $railway_db;
-    $db_user = $railway_user;
-    $db_pass = $railway_pass;
-    $db_port = $railway_port;
-} else {
-    $db_host = $alwaysdata_host;
-    $db_name = $alwaysdata_db;
-    $db_user = $alwaysdata_user;
-    $db_pass = $alwaysdata_pass;
-    $db_port = '3306';
+if (!function_exists('elvo_parse_db_url')) {
+    /** mysql://user:pass@host:port/dbname -> pole alebo null */
+    function elvo_parse_db_url($url) {
+        $url = trim((string)$url);
+        if ($url === '') return null;
+        $parts = @parse_url($url);
+        if (!$parts || empty($parts['host'])) return null;
+        $name = isset($parts['path']) ? ltrim($parts['path'], '/') : '';
+        if ($name === '') return null;
+        return [
+            'host' => $parts['host'],
+            'port' => isset($parts['port']) ? (string)$parts['port'] : '3306',
+            'user' => isset($parts['user']) ? rawurldecode($parts['user']) : '',
+            'pass' => isset($parts['pass']) ? rawurldecode($parts['pass']) : '',
+            'name' => $name,
+        ];
+    }
 }
 
-define('DB_HOST', $db_host);
-define('DB_NAME', $db_name);
-define('DB_USER', $db_user);
-define('DB_PASS', $db_pass);
-define('DB_PORT', $db_port);
+// 1) Priorita: URL z Railway / všeobecná DATABASE_URL
+$db_cfg = null;
+foreach (['MYSQL_URL', 'MYSQL_PRIVATE_URL', 'DATABASE_URL', 'DB_URL'] as $env_key) {
+    $parsed = elvo_parse_db_url(getenv($env_key));
+    if ($parsed) { $db_cfg = $parsed; break; }
+}
+
+// 2) Fallback: jednotlivé premenné
+if (!$db_cfg) {
+    $host = getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: '';
+    $name = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: '';
+    if ($host && $name) {
+        $db_cfg = [
+            'host' => $host,
+            'port' => getenv('MYSQLPORT') ?: getenv('DB_PORT') ?: '3306',
+            'user' => getenv('MYSQLUSER') ?: getenv('DB_USER') ?: 'root',
+            'pass' => getenv('MYSQL_ROOT_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: getenv('MYSQL_PASSWORD') ?: getenv('DB_PASS') ?: '',
+            'name' => $name,
+        ];
+    }
+}
+
+// 3) Ak je známa len DB + root heslo (Railway), doplň používateľa/heslo
+if ($db_cfg && $db_cfg['pass'] === '') {
+    $db_cfg['pass'] = getenv('MYSQL_ROOT_PASSWORD') ?: '';
+}
+if ($db_cfg && $db_cfg['user'] === '') {
+    $db_cfg['user'] = 'root';
+}
+
+$is_mysql = ($db_cfg !== null);
+
+if ($is_mysql) {
+    define('DB_HOST', $db_cfg['host']);
+    define('DB_NAME', $db_cfg['name']);
+    define('DB_USER', $db_cfg['user']);
+    define('DB_PASS', $db_cfg['pass']);
+    define('DB_PORT', $db_cfg['port']);
+} else {
+    define('DB_HOST', '');
+    define('DB_NAME', '');
+    define('DB_USER', '');
+    define('DB_PASS', '');
+    define('DB_PORT', '3306');
+}
 
 $pdo = null;
 
-// Pokus o pripojenie k MySQL (s 3-sekundovým timeoutom)
-try {
-    $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::ATTR_TIMEOUT            => 3
-    ]);
-} catch (Exception $e) {
-    error_log("[DB] MySQL pripojenie zlyhalo, prepínam na lokálny SQLite fallback: " . $e->getMessage());
-    
-    // SQLite Failover: zaručuje, že web nikdy nespadne na bielu obrazovku
+// ── MySQL pripojenie ────────────────────────────────────────────────────────
+if ($is_mysql) {
+    try {
+        $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_TIMEOUT            => 5,
+        ]);
+    } catch (Exception $e) {
+        error_log("[DB] MySQL pripojenie zlyhalo (" . DB_HOST . "/" . DB_NAME . "): " . $e->getMessage());
+        $pdo = null;
+    }
+}
+
+// ── Automatické vytvorenie tabuliek (Railway štart s prázdnou DB) ──────────
+if ($pdo) {
+    try {
+        require_once __DIR__ . '/db_bootstrap.php';
+        if (function_exists('elvo_db_bootstrap')) {
+            elvo_db_bootstrap($pdo);
+        }
+    } catch (Throwable $e) {
+        error_log("[DB] Bootstrap schémy zlyhal: " . $e->getMessage());
+    }
+}
+
+// ── SQLite fallback (lokálny vývoj / výpadok DB) ───────────────────────────
+if (!$pdo) {
     try {
         $sqlite_path = __DIR__ . '/local_app.db';
         $pdo = new PDO("sqlite:" . $sqlite_path, null, null, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
-        
-        // Vytvorenie základných tabuliek v SQLite ak neexistujú
+
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,15 +162,13 @@ try {
             );
         ");
 
-        // Seed predvoleného admin používateľa (admin / admin123)
+        // Seed predvoleného admin používateľa (admin / admin123) — len lokálne
         $chkAdmin = $pdo->query("SELECT id FROM users WHERE email = 'admin@elvosolar.sk' OR username = 'admin' LIMIT 1")->fetch();
         if (!$chkAdmin) {
             $admHash = password_hash('admin123', PASSWORD_BCRYPT);
             $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES ('admin', 'admin@elvosolar.sk', ?, 'admin', 1)")
                 ->execute([$admHash]);
             $admId = $pdo->lastInsertId();
-            
-            // Predvolené zariadenie
             $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand, model_name, status, battery_soc, fve_power_w, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, 'ElvoSolar CM5 AI Smart EMS', 'CM5-ELVO-001', 'HUAWEI', 'SmartLogger 3000 / SUN2000', 'online', 84, 3840, 'modbus_tcp', '192.168.0.10', 502, 205)")
                 ->execute([$admId]);
         }
@@ -125,12 +177,19 @@ try {
     }
 }
 
-// cm5_config tabuľka
-if (file_exists(__DIR__ . '/cm5_config_table.php') && $pdo) {
+// Jasná chyba namiesto bielej obrazovky, ak DB nie je dostupná
+if (!$pdo) {
+    http_response_code(500);
+    die('Chyba: databáza nie je dostupná. V Railway skontroluj premenné '
+        . 'MYSQL_PRIVATE_URL (alebo MYSQLHOST + MYSQL_DATABASE) v záložke Variables.');
+}
+
+// cm5_config tabuľka (permissívna schéma — rovnaká ako v db/schema.sql)
+if ($pdo && file_exists(__DIR__ . '/cm5_config_table.php')) {
     try {
         require_once __DIR__ . '/cm5_config_table.php';
         if (function_exists('ensure_cm5_config_table')) {
             ensure_cm5_config_table($pdo);
         }
-    } catch (Exception $e) { /* ignore */ }
+    } catch (Throwable $e) { /* ignore */ }
 }

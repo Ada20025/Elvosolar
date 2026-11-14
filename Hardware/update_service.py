@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import time
@@ -6,6 +7,22 @@ import subprocess
 import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Štádium updatu pre stavové LED (app.py ho číta a svieti zelenou podľa fázy)
+UPDATE_STAGE_FILE = "/tmp/elvo_update_stage.json"
+
+
+def set_update_stage(stage):
+    """check / download / install / restart — alebo None pre zmazanie."""
+    try:
+        if stage is None:
+            if os.path.exists(UPDATE_STAGE_FILE):
+                os.remove(UPDATE_STAGE_FILE)
+            return
+        with open(UPDATE_STAGE_FILE, "w", encoding="utf-8") as f:
+            json.dump({"stage": stage, "at": time.time()}, f)
+    except Exception:
+        pass
 
 # Súbory na aktualizáciu: relatívna cesta -> GitHub raw URL
 UPDATE_FILES = {
@@ -162,6 +179,7 @@ def download_file(url):
 def check_and_update():
     """Skontroluje všetky súbory a aktualizuje zmenené."""
     any_updated = False
+    set_update_stage("check")
 
     for rel_path, url in UPDATE_FILES.items():
         local_path = os.path.join(BASE_DIR, rel_path)
@@ -178,6 +196,7 @@ def check_and_update():
             continue
 
         print(f"[UPDATER] {rel_path} — NOVÁ VERZIA! Aktualizujem...")
+        set_update_stage("download")
 
         try:
             # Bezpečnostná kontrola — pre .py súbory overíme syntax
@@ -195,6 +214,7 @@ def check_and_update():
                 os.rename(local_path, backup_path)
 
             # Zápis
+            set_update_stage("install")
             with open(local_path, "wb") as f:
                 f.write(remote_data)
                 f.flush()
@@ -212,6 +232,10 @@ def check_and_update():
         except Exception as e:
             print(f"[UPDATER] ❌ Chyba zápisu {rel_path}: {e}")
 
+    if any_updated:
+        set_update_stage("restart")
+    else:
+        set_update_stage(None)
     return any_updated
 
 

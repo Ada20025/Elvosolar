@@ -8,16 +8,16 @@ if (!defined('USE_SMTP')) {
     define('USE_SMTP', true);                  // Ak nefunguje klasický mail, prepíšte na: true
 }
 if (!defined('SMTP_HOST')) {
-    define('SMTP_HOST', 'smtp-adamdz.alwaysdata.net'); // Vlastny alwaysdata SMTP (overene - funguje)
+    define('SMTP_HOST', getenv('SMTP_HOST') ?: ''); // nastav v Railway premenných (napr. smtp-adamdz.alwaysdata.net)
 }
 if (!defined('SMTP_PORT')) {
     define('SMTP_PORT', 587);                   // Port (najcastejsie 587 pre TLS, 465 pre SSL)
 }
 if (!defined('SMTP_USER')) {
-    define('SMTP_USER', getenv('SMTP_USER') ?: 'adamdz@alwaysdata.net');  // Prihlasovacie meno (overene)
+    define('SMTP_USER', getenv('SMTP_USER') ?: '');   // Prihlasovacie meno — IBA z premennej prostredia
 }
 if (!defined('SMTP_PASS')) {
-    define('SMTP_PASS', getenv('SMTP_PASS') ?: '1Adamko.');          // Heslo k e-mailu (overene)
+    define('SMTP_PASS', getenv('SMTP_PASS') ?: '');   // Heslo — NIKDY v kóde, iba z premennej prostredia
 }
 if (!defined('SMTP_ENCRYPTION')) {
     define('SMTP_ENCRYPTION', 'tls');           // Šifrovanie: 'tls', 'ssl' alebo 'none'
@@ -185,8 +185,8 @@ ELVOTPL;
             return false;
         }
 
-        // 1. REŽIM SMTP (iba ked je heslo nastavene - inac by Gmail spojenie travilo)
-        $has_pass = defined('SMTP_PASS') && trim(SMTP_PASS) !== '';
+        // 1. REŽIM SMTP (iba keď je host aj heslo nastavené - inak by spojenie viselo)
+        $has_pass = defined('SMTP_PASS') && trim(SMTP_PASS) !== '' && trim((string)SMTP_HOST) !== '';
         if (defined('USE_SMTP') && USE_SMTP === true && $has_pass) {
             $host = SMTP_HOST;
             $port = SMTP_PORT;

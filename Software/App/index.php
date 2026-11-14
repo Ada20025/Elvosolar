@@ -375,7 +375,7 @@ $elvo_open = (bool)(preg_match('#^/(sw\.js|manifest\.json|favicon\.ico|healthche
     || preg_match('#^/api/push/(vapid|test|subscribe|unsubscribe)$#', $elvo_uri)
     || preg_match('#^/api/user/(test-email|change-password|delete-account)$#', $elvo_uri)
     || preg_match('#^/api/device/\d+/(telemetry|control|rename)$#', $elvo_uri)
-    || in_array($elvo_uri, ['/api/cm5/poll', '/api/cm5/result', '/api/cm5/register', '/api/cm5/hw-files', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/user/claim-device'], true));
+    || in_array($elvo_uri, ['/api/cm5/poll', '/api/cm5/result', '/api/cm5/register', '/api/cm5/hw-files', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/user/claim-device', '/api/cron/notifications'], true));
 $elvo_gate_ok = false;
 if (!empty($_SESSION['user_id'])) {
     // Prihlásený (nainštalovaná appka) — auto priechod + ticho obnov cookie
@@ -899,8 +899,15 @@ if (!function_exists('get_user_devices')) {
                         if ($pfRow) {
                             $pf = json_decode($pfRow['prefs'], true);
                             if (is_array($pf)) {
-                                $devPrefs['notif_email'] = array_key_exists('notif_email', $pf) ? !empty($pf['notif_email']) : true;
-                                $devPrefs['notif_push'] = array_key_exists('notif_push', $pf) ? !empty($pf['notif_push']) : true;
+                                // Kanal pre chyby: both|push|email|none (novsie), inak legacy prepinace
+                                $errChan = $pf['error_channel'] ?? null;
+                                if (in_array($errChan, ['both', 'push', 'email', 'none'], true)) {
+                                    $devPrefs['notif_email'] = ($errChan === 'both' || $errChan === 'email');
+                                    $devPrefs['notif_push'] = ($errChan === 'both' || $errChan === 'push');
+                                } else {
+                                    $devPrefs['notif_email'] = array_key_exists('notif_email', $pf) ? !empty($pf['notif_email']) : true;
+                                    $devPrefs['notif_push'] = array_key_exists('notif_push', $pf) ? !empty($pf['notif_push']) : true;
+                                }
                             }
                         }
                     } catch (Exception $e) { /* default both on */ }
@@ -3273,6 +3280,146 @@ elseif (preg_match('#^/api/device/(\d+)/status$#', $path, $matches) && $method =
         $stmt->execute([$status, $dev_id]);
     } catch (Exception $e) { /* ignore */ }
     send_json(['status' => 'success']);
+}
+
+// --- CRON: NOTIFIKÁCIE (alerty + denný súhrn + záporná cena) ---
+// Railway cron: POST /api/cron/notifications s hlavičkou `X-Cron-Key: <CRON_SECRET>`
+elseif ($path === '/api/cron/notifications' && $method === 'POST') {
+    $secret = trim((string)(getenv('CRON_SECRET') ?: ''));
+    $given = trim((string)($_SERVER['HTTP_X_CRON_KEY'] ?? ($_GET['key'] ?? '')));
+    if ($secret === '' || !hash_equals($secret, $given)) {
+        send_json(['status' => 'error', 'message' => 'Neautorizované — nastav CRON_SECRET a pošli X-Cron-Key'], 403);
+    }
+    require_once __DIR__ . '/mail_helper.php';
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS notif_log (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            type VARCHAR(30) NOT NULL,
+            dedup_key VARCHAR(60) NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_notif (user_id, type, dedup_key)
+        )");
+    } catch (Exception $e) { /* ignore */ }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+    } catch (Exception $e) { /* ignore */ }
+
+    $out = ['alerts_devices' => 0, 'daily_report' => 0, 'negative_price' => 0, 'errors' => []];
+
+    // 1) ALERTY ZARIADENÍ (offline / chyba striedača / nízke SOC / teplota)
+    try {
+        $byUser = [];
+        foreach ($pdo->query("SELECT id, user_id FROM devices")->fetchAll() as $r) {
+            $byUser[intval($r['user_id'])][] = intval($r['id']);
+        }
+        foreach ($byUser as $ids) {
+            eval_device_alerts($pdo, $ids);
+            $out['alerts_devices'] += count($ids);
+        }
+    } catch (Exception $e) { $out['errors'][] = 'alerts: ' . $e->getMessage(); }
+
+    // 2) DENNÝ SÚHRN — raz za deň po 07:00
+    if (intval(date('G')) >= 7) {
+        try {
+            $users = $pdo->query("SELECT DISTINCT user_id FROM devices")->fetchAll();
+            foreach ($users as $u) {
+                $uid = intval($u['user_id']);
+                $pfStmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+                $pfStmt->execute([$uid]);
+                $pf = json_decode((string)$pfStmt->fetchColumn(), true);
+                if (is_array($pf) && isset($pf['daily_report']) && !$pf['daily_report']) continue;
+                if (elvo_notif_channel($pdo, $uid, 'daily_report') === 'none') continue;
+
+                $ins = $pdo->prepare("INSERT IGNORE INTO notif_log (user_id, type, dedup_key) VALUES (?, 'daily_report', ?)");
+                $ins->execute([$uid, date('Y-m-d')]);
+                if ($ins->rowCount() === 0) continue;   // už odoslané dnes
+
+                $devs = $pdo->prepare("SELECT id, name FROM devices WHERE user_id = ? ORDER BY id");
+                $devs->execute([$uid]);
+                $rows = [];
+                $html = '';
+                foreach ($devs->fetchAll() as $d) {
+                    $st = $pdo->prepare("SELECT COUNT(*) cnt, AVG(power_ac) avg_p, MAX(power_ac) max_p,
+                                                MIN(NULLIF(battery_soc, 0)) min_soc, MAX(battery_soc) max_soc
+                                         FROM telemetry WHERE device_id = ? AND timestamp >= NOW() - INTERVAL 1 DAY");
+                    $st->execute([$d['id']]);
+                    $t = $st->fetch() ?: [];
+                    $rows[] = ['name' => $d['name'] ?: ('Zariadenie ' . $d['id']), 'cnt' => intval($t['cnt'] ?? 0),
+                               'avg' => round(floatval($t['avg_p'] ?? 0)), 'max' => round(floatval($t['max_p'] ?? 0)),
+                               'min_soc' => $t['min_soc'] === null ? null : round(floatval($t['min_soc'])),
+                               'max_soc' => $t['max_soc'] === null ? null : round(floatval($t['max_soc']))];
+                }
+                foreach ($rows as $r) {
+                    $soc = ($r['min_soc'] !== null && $r['max_soc'] !== null) ? ($r['min_soc'] . '–' . $r['max_soc'] . ' %') : '–';
+                    $html .= '<tr><td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e2e8f0;font-size:13px;">' . htmlspecialchars($r['name']) .
+                             '</td><td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . $r['avg'] . ' W</td>' .
+                             '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . $r['max'] . ' W</td>' .
+                             '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . $soc . '</td></tr>';
+                }
+                $body = count($rows) ? ('Súhrn za 24 h pre ' . count($rows) . ' zariadení') : 'Za posledných 24 h neprišli žiadne dáta.';
+                $mailHtml = '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">' . htmlspecialchars($body) . '</p>' .
+                    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">' .
+                    '<tr><th align="left" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Zariadenie</th>' .
+                    '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Ø výkon</th>' .
+                    '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Max</th>' .
+                    '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">SOC</th></tr>' .
+                    $html . '</table>' .
+                    '<p style="margin:18px 0 0 0;font-size:11px;color:#64748b;">Súhrn sa posiela raz denne. Vypnúť sa dá v Nastaveniach → Notifikácie.</p>';
+
+                $chan = elvo_notif_channel($pdo, $uid, 'daily_report');
+                elvo_notif_send($pdo, $uid, $chan, 'daily_report', 'Denný súhrn ElvoControll', $body,
+                                'daily-' . date('Y-m-d'), '/dashboard', $mailHtml, '#10b981');
+                $out['daily_report']++;
+            }
+        } catch (Exception $e) { $out['errors'][] = 'daily: ' . $e->getMessage(); }
+    }
+
+    // 3) ZÁPORNÁ CENA NA OKTE (raz za 15-minútový blok, ktorý je záporný)
+    try {
+        $url = 'https://isot.okte.sk/api/v1/dam/results?deliveryDayFrom=' . date('Y-m-d') . '&deliveryDayTo=' . date('Y-m-d');
+        $ctx = stream_context_create([
+            'http' => ['method' => 'GET', 'header' => "Accept: application/json\r\nUser-Agent: ElvoControll/1.0\r\n", 'timeout' => 8, 'ignore_errors' => true],
+            'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+        $resp = @file_get_contents($url, false, $ctx);
+        $raw = $resp ? json_decode($resp, true) : null;
+        $items = is_array($raw) ? ($raw['results'] ?? $raw) : null;
+        if (is_array($items)) {
+            $period = intval(date('G')) * 4 + intval(floor(intval(date('i')) / 15)) + 1;   // 1..96
+            $negPrice = null;
+            foreach ($items as $it) {
+                if (intval($it['period'] ?? 0) === $period && ($it['deliveryDay'] ?? '') === date('Y-m-d')) {
+                    $negPrice = floatval($it['price'] ?? 0);
+                    break;
+                }
+            }
+            if ($negPrice !== null && $negPrice < 0) {
+                $users = $pdo->query("SELECT DISTINCT user_id FROM devices")->fetchAll();
+                foreach ($users as $u) {
+                    $uid = intval($u['user_id']);
+                    $pfStmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+                    $pfStmt->execute([$uid]);
+                    $pf = json_decode((string)$pfStmt->fetchColumn(), true);
+                    if (is_array($pf) && isset($pf['negative_price']) && !$pf['negative_price']) continue;
+                    $chan = elvo_notif_channel($pdo, $uid, 'negative_price');
+                    if ($chan === 'none') continue;
+                    $ins = $pdo->prepare("INSERT IGNORE INTO notif_log (user_id, type, dedup_key) VALUES (?, 'negative_price', ?)");
+                    $ins->execute([$uid, date('Y-m-d') . '-' . $period]);
+                    if ($ins->rowCount() === 0) continue;
+                    $title = 'Záporná cena elektriny';
+                    $body = 'Aktuálna cena na OKTE je ' . number_format($negPrice, 2, ',', ' ') . ' €/MWh — dobrý čas na nabíjanie.';
+                    $mailHtml = '<p style="margin:0 0 12px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">' . htmlspecialchars($body) . '</p>' .
+                        '<p style="margin:0;font-size:12px;color:#64748b;">Cena za 15-minútový blok (' . date('H:i') . ').</p>';
+                    elvo_notif_send($pdo, $uid, $chan, 'negative_price', $title, $body,
+                                    'neg-price', '/dashboard', $mailHtml, '#10b981');
+                    $out['negative_price']++;
+                }
+            }
+        }
+    } catch (Exception $e) { $out['errors'][] = 'negative_price: ' . $e->getMessage(); }
+
+    send_json(['status' => 'success', 'result' => $out]);
 }
 
 // --- 404 HANDLER ---

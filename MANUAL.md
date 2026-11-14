@@ -141,28 +141,51 @@ Na doske Raspberry Pi 5 / Waveshare CM5 je aktivovaná **START / Status LED dió
 - Blikanie beží na pozadí a nemá žiadny vplyv na rýchlosť komunikácie.
 
 
-## 10. LED pásek SK6812 RGBW (3 pásky, GPIO 27)
+## 10. Stavové LED SK6812 RGBW (3 LED, GPIO 27)
 
-Stavové svetlo je adresovateľný pásek **SK6812 RGBW**. Tri pásky sú zapojené **za sebou**
-(DO prvého → DIN druhého → DO druhého → DIN tretieho) a idú z jedného dátového pinu.
+Stavové svetlo tvoria **3 LED** vystrihnuté z pásku **SK6812 RGBW** (z 60-LED pásku sa použijú 3),
+zapojené za sebou (DO prvej → DIN druhej → DO druhej → DIN tretej) na jednom dátovom pine.
 
 **Zapojenie**
-- `DIN` prvého pásku → **GPIO 27** (pin 13 na 40-pinovom konektore)
-- `5V` páskov → samostatný 5 V zdroj (nie z CM5!), pri 3 páskoch napájanie vstreknuté aj do 2. a 3. pásku
-- `GND` páskov a `GND` CM5 musia byť **spoločné**
+- `DIN` prvej LED → **GPIO 27** (pin 13 na 40-pinovom konektore)
+- `5V` → samostatný 5 V zdroj (nie z CM5!), 3 LED odoberú max ~0,2 A
+- `GND` LED a `GND` CM5 musia byť **spoločné**
 - dáta sú 3,3 V → pri dlhších kábloch použiť level shifter 3,3 V → 5 V
 
 **Jednorazové povolenie v systéme** (Pi 5/CM5 nemá starú PWM cestu, používa sa kernel PIO):
 ```
 # /boot/firmware/config.txt
-dtoverlay=ws2812-pio,gpio=27,num_leds=180,rgbw
+dtoverlay=ws2812-pio,gpio=27,num_leds=3,rgbw
 ```
-Po reštarte vznikne `/dev/leds0`. Počet LED sa dá zmeniť premennými prostredia
-`SK6812_STRIPS` (3) a `SK6812_LEDS_PER_STRIP` (60) alebo priamo `SK6812_LEDS` (180).
+Po reštarte vznikne `/dev/leds0`. Počet LED sa dá zmeniť premennou `SK6812_LEDS` (predvolene 3).
+Dátový pin a jas: `SK6812_PIN` (predvolene 27) a `SK6812_BRIGHTNESS` (100 = plný jas).
 
 **Ovládanie z appky**: karta *Svetlo* v Prehľade — tlačidlo **baterka** rozsvieti čistú bielu
-(kanál W) ako baterka na telefóne, posuvníkom sa nastaví jas. Manuálne svetlo drží stav 15 minút,
-potom sa pásek vráti k stavovým farbám (zelená = OK, modrá = pripájanie, červená = porucha).
+(kanál W) ako baterka na telefóne, posuvníkom sa nastaví jas. Baterka svieti, kým ju v appke nevypneš,
+po vypnutí sa LED vrátia k stavovej signalizácii.
+
+**Slovník svetla** — každý stav má vlastnú farbu aj vzor:
+
+| Farba | Vzor | Význam |
+|---|---|---|
+| Zelená | ticho | všetko OK, komunikácia beží |
+| Modrá | pomaly dýcha | štart systému |
+| Tmavomodrá | dýcha | pripájanie zbernice / cloudu |
+| Azúrová | 2× blik | setup — čaká na nastavenie |
+| Azúrová | rýchlo bliká | WiFi AP hotspot aktívny |
+| Modrozelená | pulz | komunikácia s cloudom |
+| Fialová | behá po 3 LED | hľadanie zariadení na zbernici |
+| Jantárová | dýcha | varovanie: teplota ≥ 65 °C alebo SOC ≤ 10 % |
+| Červená | 3× blik | striedač neodpovedá (Modbus timeout) |
+| Červeno-oranžová | 5× rýchlo | príkaz nevykonaný — test/overenie zlyhalo |
+| Červená | stále svieti | porucha striedača (fault) |
+| Purpurová | 4× blik | výpadok WiFi / internetu |
+| Zelená | 1× / 2× / 3× blik | update: kontrola / sťahovanie / inštalácia |
+| Zelená | rýchly pulz | reštart po update |
+| Biela | ticho | baterka z appky (čistá biela) |
+
+Úspešný príkaz z appky = krátke zelené potvrdenie, neúspešný = červeno-oranžové blikanie 20 s
+(až potom sa LED vrátia k stavu systému).
 
 
 ## 11. Riešenie Problémov (Troubleshooting)

@@ -1929,6 +1929,17 @@ def cloud_sync_loop():
                 except Exception as e_rp:
                     result = {"status": "error", "message": str(e_rp)[:200]}
 
+            # ── SIGNALIZÁCIA VÝSLEDKU NA 3 LED ────────────────────────
+            # úspech = zelená OK, chyba (neodpovedal / nevykonal) = červeno-oranžová 5×
+            try:
+                if str(result.get("status", "")).lower() == "success":
+                    led.flash_ok()
+                else:
+                    led.signal_error("cmd_error", hold_seconds=20)
+                    log_message(f"[LED] CHYBA príkazu -> červená signalizácia: {result.get('message', '')}")
+            except Exception:
+                pass
+
             try:
                 for _retry in range(3):
                     try:
@@ -1982,8 +1993,14 @@ def apply_led_command(cfg: dict) -> dict:
 
 @app.get("/api/led/status")
 def api_led_status():
-    """Stav svetla: režim, jas, farba, driver, počet LED."""
+    """Stav svetla: stav, farba, význam, jas, driver, počet LED."""
     return {"status": "success", "led": led.status()}
+
+
+@app.get("/api/led/legend")
+def api_led_legend():
+    """Slovník svietenia — čo ktorá farba/vzor znamená (pre appku a diagnostiku)."""
+    return {"status": "success", "legend": led.legend()}
 
 
 @app.post("/api/led")
@@ -2077,6 +2094,90 @@ def _delayed_cloud_start():
 cloud_thread = threading.Thread(target=_delayed_cloud_start, daemon=True)
 cloud_thread.start()
 log_message("[CLOUD SYNC] Background thread (3s delay, 5s poll)")
+
+# ─── STAV SVETLA (3 LED) PODĽA REÁLNEHO STAVU SYSTÉMU ─────────────────────
+UPDATE_STAGE_FILE = "/tmp/elvo_update_stage.json"
+LED_BUS_TIMEOUT_S = 90
+
+
+def _read_update_stage():
+    """Aktuálne štádium updatu — zapisuje ho update_service.py."""
+    try:
+        if not os.path.exists(UPDATE_STAGE_FILE):
+            return None
+        with open(UPDATE_STAGE_FILE, "r", encoding="utf-8") as f:
+            info = json.load(f)
+        if time.time() - float(info.get("at", 0)) > 300:
+            return None
+        stage = str(info.get("stage", "")).strip().lower()
+        return stage if stage in ("check", "download", "install", "restart") else None
+    except Exception:
+        return None
+
+
+def _count_devices():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM devices")
+        n = cursor.fetchone()[0]
+        conn.close()
+        return int(n or 0)
+    except Exception:
+        return 0
+
+
+def resolve_led_state():
+    """Prevod stavu systému na stav LED. Poradie v kóde = priorita."""
+    if led.is_manual():
+        return None
+    stage = _read_update_stage()
+    if stage:
+        return "update_" + stage
+    errors = getattr(bg_service, "active_errors", {}) or {}
+    if errors.get("INTERNET"):
+        return "net_error"
+    live = getattr(bg_service, "live_data", {}) or {}
+    for dat in live.values():
+        msg = str(dat.get("status_msg", "")).lower()
+        if "fault" in msg or "poruch" in msg:
+            return "inverter_fault"
+    for dat in live.values():
+        temp = dat.get("temp") or 0
+        soc = dat.get("battery_soc") or 0
+        if temp >= 65 or (0 < soc <= 10):
+            return "warn"
+    last_ok = 0.0
+    try:
+        verified = getattr(bg_service, "read_verified", {}) or {}
+        if verified:
+            last_ok = max(float(v) for v in verified.values())
+    except Exception:
+        pass
+    if last_ok and (time.time() - last_ok) > LED_BUS_TIMEOUT_S:
+        return "bus_error"
+    if _count_devices() == 0:
+        return "setup"
+    if not live and not last_ok:
+        return "connecting"
+    return "ok"
+
+
+def _led_state_monitor_loop():
+    """Každé 3 s obnoví správny stav svetla (ak nesvieti manuálna baterka)."""
+    time.sleep(6)
+    while True:
+        try:
+            state = resolve_led_state()
+            if state:
+                led.set_state(state)
+        except Exception:
+            pass
+        time.sleep(3)
+
+
+threading.Thread(target=_led_state_monitor_loop, daemon=True).start()
+log_message("[LED] Monitor stavu spustený — 3 LED (farba + vzor = stav systému)")
 
 # Serial Config Service - cita JSON config z USB kabla (setup bez WiFi)
 try:
