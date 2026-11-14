@@ -77,6 +77,9 @@ Kompletná MySQL schéma (všetky tabuľky: používatelia, zariadenia, telemetr
 alerty, notifikácie, push, CM5 príkazy, MQTT audit, prihlásenia) je v
 [`Software/App/db/schema.sql`](Software/App/db/schema.sql).
 Postup importu a premenné prostredia: [`Software/App/db/README.md`](Software/App/db/README.md).
+Rýchly štart bez deployu: vlož [`railway_setup.sql`](Software/App/db/railway_setup.sql)
+do query poľa v Railway MySQL — vytvorí tabuľky aj dočasné demo zariadenia
+(`demo@elvosolar.sk` / `demo123`, zariadenia `DEMO-CM5-001` a `DEMO-CM5-002`).
 
 ---
 

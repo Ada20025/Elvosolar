@@ -26,6 +26,26 @@ V Railway MySQL obrazovke „You have no tables" je po prvom otvorení appky nor
 že ešte svieti — tabuľky vzniknú pri prvom requeste (alebo cez `php db/init.php`).
 Skript je idempotentný (`IF NOT EXISTS`), existujúce dáta nemazá.
 
+**Najrýchlejší štart bez deployu:** v MySQL službe → *Data* → do query poľa vlož celý
+obsah [`railway_setup.sql`](railway_setup.sql) a spusti. Vytvorí tabuľky **aj demo zariadenia**.
+
+## 1b. Demo zariadenia (dočasne)
+
+Pri prvom vytvorení tabuliek sa vloží demo účet a 2 zariadenia, aby appka nebola prázdna:
+
+| | |
+|---|---|
+| E-mail | `demo@elvosolar.sk` |
+| Heslo | `demo123` |
+| Zariadenia | `ElvoControll Demo` (DEMO-CM5-001), `Demo Striedač (Huawei)` (DEMO-CM5-002) |
+
+Demo sa vkladá **iba do úplne prázdnej DB** (nič neprepíše). Vypnutie: `SEED_DEMO=0`.
+Zmazanie (keď už nechceš):
+```sql
+DELETE d FROM devices d JOIN users u ON u.id = d.user_id WHERE u.email = 'demo@elvosolar.sk';
+DELETE FROM users WHERE email = 'demo@elvosolar.sk';
+```
+
 ## 2. Web Push notifikácie
 
 - Netreba nič nastavovať — VAPID pár si aplikácia vygeneruje pri prvom
