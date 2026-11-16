@@ -108,6 +108,14 @@ Jeden endpoint robí celú údržbu, spúšťaj ho každých 10 minút:
 | Telemetria | denná agregácia do `telemetry_daily` + mazanie raw dát starších ako 90 dní |
 | Mesačný report | 1. deň v mesiaci po 07:00 — výroba v kWh za predošlý mesiac |
 
+### Mesačný report (A4 → PDF)
+
+- V appke: **`/report?month=YYYY-MM`** (odkaz je aj v Profil → Mesačný report a v mesačnom maily).
+- Stránka je pripravená na tlač: **Ctrl+P → Uložiť ako PDF** (tlačidlo „Uložiť ako PDF“ je priamo na nej).
+- Dáta: denný agregát `telemetry_daily` + hodinové SOC z `telemetry`; cena pre odhad úspory sa berie z `REPORT_PRICE_EUR` (default `0.18`).
+- Odkaz v maily používa `APP_URL`; ak nie je nastavená, zoberie sa doména z requestu.
+- PDF sa generuje cez tlač prehliadača — server nemá PDF knižnicu (Dompdf by sa musel doinštalovať cez Composer).
+
 ## Bezpečnosť prístupu a Cloudflare Turnstile
 
 Aplikácia má štyri vrstvy, každá musí prejsť:

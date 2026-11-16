@@ -1102,6 +1102,153 @@ if (!function_exists('get_user_devices')) {
     }
 }
 
+// --- MESAČNÝ REPORT: príprava reálnych dát pre tlačovú A4 (templates/report.html) ---
+if (!function_exists('elvo_report_data')) {
+    function elvo_report_month_label($month) {
+        $names = [1 => 'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
+                  'Júl', 'August', 'September', 'Október', 'November', 'December'];
+        $parts = explode('-', (string)$month);
+        $mi = (int)($parts[1] ?? 1);
+        return ($names[$mi] ?? $month) . ' ' . (int)($parts[0] ?? 0);
+    }
+
+    /**
+     * Dáta pre mesačný report. Zdroj: telemetry_daily (denný agregát) a telemetry (SOC po hodinách).
+     * $all_devices = true pre admina/mechanika (vidí všetky zariadenia).
+     */
+    function elvo_report_data($pdo, $user_id, $month, $all_devices = false) {
+        $price = (float)(getenv('REPORT_PRICE_EUR') ?: 0.18);
+        $start = $month . '-01';
+        $daysInMonth = (int)date('t', strtotime($start));
+        $end = date('Y-m-t', strtotime($start));
+
+        $rep = [
+            'month' => $month, 'label' => elvo_report_month_label($month),
+            'owner' => '', 'devices' => [], 'daily' => array_fill(0, $daysInMonth, 0),
+            'soc_curve' => [], 'kwh' => 0, 'avg_day' => 0, 'max_power' => 0,
+            'saving' => 0, 'price' => $price, 'availability' => 0, 'soc_avg' => 0,
+            'soc_min' => 0, 'soc_max' => 0, 'days_with_data' => 0,
+            'days_in_month' => $daysInMonth, 'peak_day' => 0, 'has_data' => false,
+        ];
+
+        try {
+            $u = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+            $u->execute([$user_id]);
+            $rep['owner'] = (string)($u->fetchColumn() ?: '');
+        } catch (Throwable $e) { /* bez mena */ }
+
+        $devices = [];
+        try {
+            if ($all_devices) {
+                $devices = $pdo->query("SELECT * FROM devices ORDER BY id")->fetchAll();
+            } else {
+                $st = $pdo->prepare("SELECT * FROM devices WHERE user_id = ? ORDER BY id");
+                $st->execute([$user_id]);
+                $devices = $st->fetchAll();
+            }
+        } catch (Throwable $e) { /* žiadne zariadenia */ }
+
+        $ids = array_map(static fn($d) => (int)$d['id'], $devices);
+        $in = $ids ? implode(',', array_fill(0, count($ids), '?')) : '';
+
+        // Súhrn za mesiac z denného agregátu
+        $byDevice = [];
+        if ($ids) {
+            try {
+                $q = $pdo->prepare("SELECT device_id, SUM(kwh) kwh, AVG(avg_power) avg_power, MAX(max_power) max_power,
+                                            MIN(NULLIF(min_soc, 0)) min_soc, MAX(max_soc) max_soc, SUM(samples) samples
+                                     FROM telemetry_daily WHERE device_id IN ($in) AND day BETWEEN ? AND ?
+                                     GROUP BY device_id");
+                $q->execute(array_merge($ids, [$start, $end]));
+                foreach ($q->fetchAll() as $row) { $byDevice[(int)$row['device_id']] = $row; }
+            } catch (Throwable $e) { /* agregát ešte neexistuje */ }
+        }
+
+        $totalKwh = 0.0; $maxPower = 0.0; $socMin = null; $socMax = null;
+        foreach ($devices as $d) {
+            $agg = $byDevice[(int)$d['id']] ?? null;
+            $kwh = (float)($agg['kwh'] ?? 0);
+            $samples = (int)($agg['samples'] ?? 0);
+            $totalKwh += $kwh;
+            if ($agg) $maxPower = max($maxPower, (float)($agg['max_power'] ?? 0));
+            if ($agg && $agg['min_soc'] !== null) {
+                $v = (float)$agg['min_soc'];
+                $socMin = $socMin === null ? $v : min($socMin, $v);
+            }
+            if ($agg && $agg['max_soc'] !== null) {
+                $v = (float)$agg['max_soc'];
+                $socMax = $socMax === null ? $v : max($socMax, $v);
+            }
+            $rep['devices'][] = [
+                'id' => (int)$d['id'],
+                'name' => (string)($d['name'] ?? ''),
+                'serial' => (string)($d['serial_number'] ?? ''),
+                'model' => trim((string)($d['brand'] ?? '') . ' ' . (string)($d['model_name'] ?? '')),
+                'kwh' => $kwh,
+                'avg_power' => (float)($agg['avg_power'] ?? 0),
+                'min_soc' => (float)($agg['min_soc'] ?? 0),
+                'max_soc' => (float)($agg['max_soc'] ?? 0),
+                'samples' => $samples,
+            ];
+        }
+
+        // Denná séria (súčet cez zariadenia)
+        $daysWithData = 0;
+        if ($ids) {
+            try {
+                $q = $pdo->prepare("SELECT DAY(day) d, SUM(kwh) kwh, SUM(samples) samples
+                                     FROM telemetry_daily WHERE device_id IN ($in) AND day BETWEEN ? AND ?
+                                     GROUP BY DAY(day)");
+                $q->execute(array_merge($ids, [$start, $end]));
+                foreach ($q->fetchAll() as $row) {
+                    $idx = (int)$row['d'] - 1;
+                    if ($idx >= 0 && $idx < $daysInMonth) $rep['daily'][$idx] = round((float)$row['kwh'], 1);
+                    if ((int)$row['samples'] > 0) $daysWithData++;
+                }
+            } catch (Throwable $e) { /* ignore */ }
+        }
+
+        // Priemerné SOC po hodinách (krivka)
+        if ($ids) {
+            try {
+                $q = $pdo->prepare("SELECT HOUR(timestamp) h, AVG(NULLIF(battery_soc, 0)) soc
+                                     FROM telemetry WHERE device_id IN ($in) AND timestamp BETWEEN ? AND ?
+                                     GROUP BY HOUR(timestamp) ORDER BY h");
+                $q->execute(array_merge($ids, [$start . ' 00:00:00', $end . ' 23:59:59']));
+                $curve = array_fill(0, 24, null);
+                foreach ($q->fetchAll() as $row) { $curve[(int)$row['h']] = (float)$row['soc']; }
+                $filled = array_values(array_filter($curve, static fn($v) => $v !== null));
+                if ($filled) {
+                    $last = null;
+                    for ($i = 0; $i < 24; $i++) {
+                        if ($curve[$i] === null) $curve[$i] = $last ?? $filled[0];
+                        $last = $curve[$i];
+                    }
+                    $rep['soc_curve'] = array_map(static fn($v) => round($v, 1), $curve);
+                }
+            } catch (Throwable $e) { /* ignore */ }
+        }
+
+        $peak = 0;
+        foreach ($rep['daily'] as $i => $v) { if ($v > ($rep['daily'][$peak] ?? 0)) $peak = $i; }
+
+        $socValues = array_filter($rep['soc_curve']);
+        $rep['kwh'] = round($totalKwh, 1);
+        $rep['avg_day'] = $daysInMonth > 0 ? round($totalKwh / $daysInMonth, 1) : 0;
+        $rep['max_power'] = round($maxPower / 1000, 2);
+        $rep['saving'] = round($totalKwh * $price, 2);
+        $rep['days_with_data'] = $daysWithData;
+        $rep['availability'] = $daysInMonth > 0 ? round($daysWithData / $daysInMonth * 100, 1) : 0;
+        $rep['peak_day'] = $rep['daily'][$peak] > 0 ? $peak + 1 : 0;
+        $rep['soc_min'] = $socMin === null ? 0 : $socMin;
+        $rep['soc_max'] = $socMax === null ? 0 : $socMax;
+        $rep['soc_avg'] = $socValues ? array_sum($socValues) / count($socValues) : 0;
+        $rep['has_data'] = $totalKwh > 0 || $daysWithData > 0;
+
+        return $rep;
+    }
+}
+
 // --- NOTIFIKACNE KANALY (both|push|email|none) — citanie z user_prefs + odoslanie podla kanala ---
 if (!function_exists('elvo_notif_channels')) {
     /** Vrati kanal pre dany typ notifikacie: both|push|email|none */
@@ -1654,6 +1801,24 @@ elseif ($path === '/dashboard' && $method === 'GET') {
         exit;
     }
     render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices, 'is_admin' => $is_admin]);
+}
+
+// Mesačný report — tlačová A4 verzia (Ctrl+P → Uložiť ako PDF)
+elseif ($path === '/report' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
+    $report_month = (string)($_GET['month'] ?? date('Y-m', strtotime('first day of last month')));
+    if (!preg_match('/^\d{4}-\d{2}$/', $report_month)) {
+        $report_month = date('Y-m', strtotime('first day of last month'));
+    }
+    $repRole = 'user';
+    try {
+        $stR = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $stR->execute([$_SESSION['user_id']]);
+        $repRole = (string)($stR->fetchColumn() ?: 'user');
+    } catch (Throwable $e) { /* ostane user */ }
+    $repData = elvo_report_data($pdo, (int)$_SESSION['user_id'], $report_month,
+                                in_array($repRole, ['admin', 'mechanik'], true));
+    render_template('report.html', ['rep' => $repData, 'base_path' => $base_path]);
 }
 
 elseif ($path === '/profile' && $method === 'GET') {
@@ -3631,6 +3796,15 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
             $monthKey = date('Y-m', strtotime('first day of last month'));
             $monthStart = $monthKey . '-01';
             $monthEnd = date('Y-m-t', strtotime($monthStart));
+            $daysInMonth = (int)date('t', strtotime($monthStart));
+
+            // Adresa appky pre odkaz na PDF report v maily (APP_URL alebo z requestu)
+            $appBase = rtrim((string)(getenv('APP_URL') ?: ''), '/');
+            if ($appBase === '') {
+                $repScheme = (!empty($_SERVER['HTTPS']) || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')) ? 'https' : 'http';
+                $appBase = $repScheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . rtrim((string)($GLOBALS['base_path'] ?? ''), '/');
+            }
+
             $users = $pdo->query("SELECT DISTINCT user_id FROM devices")->fetchAll();
             foreach ($users as $u) {
                 $uid = intval($u['user_id']);
@@ -3642,7 +3816,7 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
 
                 $ins = $pdo->prepare("INSERT IGNORE INTO notif_log (user_id, type, dedup_key) VALUES (?, 'monthly_report', ?)");
                 $ins->execute([$uid, $monthKey]);
-                if ($ins->rowCount() === 0) continue;
+                if ($ins->rowCount() === 0) continue;   // už odoslané tento mesiac
 
                 $q = $pdo->prepare("SELECT d.name, SUM(t.kwh) kwh, AVG(t.avg_power) avg_p, MAX(t.max_power) max_p,
                                            MIN(NULLIF(t.min_soc, 0)) min_soc, MAX(t.max_soc) max_soc, SUM(t.samples) samples
@@ -3652,35 +3826,60 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
                 $q->execute([$uid, $monthStart, $monthEnd]);
                 $rows = $q->fetchAll();
 
-                $html = '';
                 $totalKwh = 0.0;
+                $devRows = '';
                 foreach ($rows as $r) {
-                    $kwh = floatval($r['kwh'] ?? 0);
+                    $kwh = (float)($r['kwh'] ?? 0);
                     $totalKwh += $kwh;
-                    $soc = ($r['min_soc'] !== null && floatval($r['min_soc']) > 0)
-                        ? (round(floatval($r['min_soc'])) . '–' . round(floatval($r['max_soc'])) . ' %') : '–';
-                    $html .= '<tr>'
-                        . '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e2e8f0;font-size:13px;">' . htmlspecialchars($r['name'] ?: 'Zariadenie') . '</td>'
-                        . '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . number_format($kwh, 1, ',', ' ') . ' kWh</td>'
-                        . '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . round(floatval($r['avg_p'] ?? 0)) . ' W</td>'
-                        . '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . $soc . '</td>'
+                    $devRows .= '<tr>'
+                        . '<td style="padding:9px 10px;border-bottom:1px solid #efe9db;font-size:13px;color:#0b3b2e;font-weight:600;">'
+                        . htmlspecialchars($r['name'] ?: 'Zariadenie') . '</td>'
+                        . '<td align="right" style="padding:9px 10px;border-bottom:1px solid #efe9db;font-size:13px;color:#3f5348;white-space:nowrap;">'
+                        . number_format($kwh, 1, ',', ' ') . ' kWh</td>'
                         . '</tr>';
                 }
-
                 if (!$rows) {
-                    $body = 'Za mesiac ' . $monthKey . ' nie sú žiadne dáta.';
-                    $mailHtml = '<p style="margin:0;font-size:14px;color:#cbd5e1;">' . htmlspecialchars($body) . '</p>';
-                } else {
-                    $body = 'Za ' . $monthKey . ': ' . number_format($totalKwh, 1, ',', ' ') . ' kWh z ' . count($rows) . ' zariadení';
-                    $mailHtml = '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">' . htmlspecialchars($body) . '</p>'
-                        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">'
-                        . '<tr><th align="left" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Zariadenie</th>'
-                        . '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Výroba</th>'
-                        . '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Ø výkon</th>'
-                        . '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">SOC</th></tr>'
-                        . $html . '</table>'
-                        . '<p style="margin:18px 0 0 0;font-size:11px;color:#64748b;">Mesačný report sa posiela 1. deň v mesiaci. Vypnúť sa dá v Nastaveniach → Notifikácie.</p>';
+                    $devRows = '<tr><td style="padding:12px 10px;font-size:12px;color:#9aa8a0;">Za toto obdobie nie sú v databáze žiadne merania.</td></tr>';
                 }
+
+                $avgPerDay = $daysInMonth > 0 ? $totalKwh / $daysInMonth : 0;
+                $body = 'Za ' . $monthKey . ': ' . number_format($totalKwh, 1, ',', ' ') . ' kWh z ' . count($rows) . ' zariadení';
+                $repLink = $appBase . '/report?month=' . $monthKey;
+
+                $mailHtml =
+                    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0b3b2e;border-radius:18px 18px 0 0;">'
+                    . '<tr><td style="padding:22px 24px 20px 24px;">'
+                    . '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#a9c98c;font-weight:700;">ElvoControll · mesačný report</div>'
+                    . '<div style="font-size:22px;font-weight:800;color:#ffffff;margin-top:6px;">' . htmlspecialchars(elvo_report_month_label($monthKey)) . '</div>'
+                    . '<div style="font-size:34px;font-weight:800;color:#d6f56a;letter-spacing:-1px;margin-top:14px;line-height:1;">'
+                    . number_format($totalKwh, 1, ',', ' ')
+                    . '<span style="font-size:12px;color:#9dc27e;margin-left:5px;letter-spacing:0;">kWh</span></div>'
+                    . '<div style="font-size:11px;color:#a9c98c;margin-top:6px;">celková výroba za mesiac</div>'
+                    . '</td></tr></table>'
+                    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#ffffff;border:1px solid #efe9db;border-top:none;">'
+                    . '<tr>'
+                    . '<td align="center" style="padding:14px 6px;border-right:1px solid #f2eee2;">'
+                    . '<div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9aa8a0;font-weight:700;">Ø denne</div>'
+                    . '<div style="font-size:15px;font-weight:800;color:#0b3b2e;margin-top:5px;">' . number_format($avgPerDay, 1, ',', ' ') . ' kWh</div>'
+                    . '</td>'
+                    . '<td align="center" style="padding:14px 6px;border-right:1px solid #f2eee2;">'
+                    . '<div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9aa8a0;font-weight:700;">Zariadenia</div>'
+                    . '<div style="font-size:15px;font-weight:800;color:#0b3b2e;margin-top:5px;">' . count($rows) . '</div>'
+                    . '</td>'
+                    . '<td align="center" style="padding:14px 6px;">'
+                    . '<div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9aa8a0;font-weight:700;">Obdobie</div>'
+                    . '<div style="font-size:15px;font-weight:800;color:#0b3b2e;margin-top:5px;">' . htmlspecialchars($monthKey) . '</div>'
+                    . '</td>'
+                    . '</tr></table>'
+                    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#ffffff;border:1px solid #efe9db;border-top:none;border-radius:0 0 18px 18px;">'
+                    . '<tr><td style="padding:16px 18px 4px 18px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#9aa8a0;font-weight:700;">Výroba po zariadeniach</td></tr>'
+                    . '<tr><td style="padding:0 8px 4px 8px;">'
+                    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">' . $devRows . '</table>'
+                    . '</td></tr>'
+                    . '<tr><td align="center" style="padding:18px 18px 20px 18px;">'
+                    . '<a href="' . htmlspecialchars($repLink) . '" style="display:inline-block;padding:13px 26px;background:#0b3b2e;color:#d6f56a;text-decoration:none;font-weight:800;font-size:13px;border-radius:999px;letter-spacing:0.4px;">Otvoriť report a uložiť PDF</a>'
+                    . '<div style="font-size:10px;color:#9aa8a0;margin-top:10px;">Report sa otvorí v appke, kde ho jedným kliknutím uložíš ako PDF.</div>'
+                    . '</td></tr></table>';
 
                 $chan = elvo_notif_channel($pdo, $uid, 'monthly_report');
                 elvo_notif_send($pdo, $uid, $chan, 'monthly_report', 'Mesačný report ' . $monthKey, $body,
@@ -3689,7 +3888,6 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
             }
         } catch (Exception $e) { $out['errors'][] = 'monthly: ' . $e->getMessage(); }
     }
-
     send_json(['status' => 'success', 'result' => $out]);
 }
 
