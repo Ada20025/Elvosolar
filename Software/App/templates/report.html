@@ -1,60 +1,22 @@
 <?php
 /**
- * Mesačný report — tlačová A4 verzia (Ctrl+P → Uložiť ako PDF).
- * Dáta pripravuje elvo_report_data() v index.php, tu sa len vykresľujú.
+ * Mesačný / ročný report — tlačové A4 strany (Ctrl+P → Uložiť ako PDF).
+ * Dáta pripravuje index.php: $pages = pole strán, každá má rovnakú štruktúru.
+ *   kind, label, badge, meta, kwh, avg_day, max_power, saving, price,
+ *   bars[], bars_label, axis[], peak_idx, soc_avg, soc_min, soc_max,
+ *   days_with_data, soc_curve[], table_title, table_rows[], total_row, has_data
  */
-$rep = $rep ?? [];
-$monthLabel   = $rep['label'] ?? '';
-$monthKey     = $rep['month'] ?? '';
-$owner        = $rep['owner'] ?? '';
-$devices      = $rep['devices'] ?? [];
-$daily        = $rep['daily'] ?? [];
-$socCurve     = $rep['soc_curve'] ?? [];
-$kwh          = (float)($rep['kwh'] ?? 0);
-$avgDay       = (float)($rep['avg_day'] ?? 0);
-$maxPower     = (float)($rep['max_power'] ?? 0);
-$saving       = (float)($rep['saving'] ?? 0);
-$price        = (float)($rep['price'] ?? 0.18);
-$availability = (float)($rep['availability'] ?? 0);
-$socAvg       = (int)round((float)($rep['soc_avg'] ?? 0));
-$socMin       = (int)round((float)($rep['soc_min'] ?? 0));
-$socMax       = (int)round((float)($rep['soc_max'] ?? 0));
-$daysWithData = (int)($rep['days_with_data'] ?? 0);
-$daysInMonth  = (int)($rep['days_in_month'] ?? 30);
-$peakDay      = (int)($rep['peak_day'] ?? 0);
-$sumAvgPower  = 0.0;
-foreach ($devices as $d) { $sumAvgPower += (float)($d['avg_power'] ?? 0); }
-$hasData      = !empty($rep['has_data']);
-$base         = $base_path ?? '';
-
+$pages = $pages ?? [];
+$base  = $base_path ?? '';
 $n = static function ($v, $d = 1) {
     return number_format((float)$v, $d, ',', ' ');
 };
-
-// Stĺpce grafu — výška v % z najvyššej dennej výroby
-$maxDaily = 0.0;
-foreach ($daily as $v) { $maxDaily = max($maxDaily, (float)$v); }
-if ($maxDaily <= 0) $maxDaily = 1.0;
-
-// Krivka SOC — body pre SVG (0–100 %)
-$pts = [];
-if ($socCurve) {
-    $count = max(count($socCurve) - 1, 1);
-    foreach (array_values($socCurve) as $i => $v) {
-        $x = round($i * 320 / $count, 1);
-        $y = round(72 - (max(0, min(100, (float)$v)) / 100) * 72, 1);
-        $pts[] = $x . ',' . $y;
-    }
-}
-$socLine = implode(' L', $pts);
-$socArea = $pts ? ('M' . $socLine . ' L320,72 L0,72 Z') : '';
-$donutOffset = round(314 - (314 * max(0, min(100, $socAvg)) / 100), 1);
 ?><!DOCTYPE html>
 <html lang="sk">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mesačný report <?php echo htmlspecialchars($monthLabel); ?> | ElvoControll</title>
+<title><?php echo htmlspecialchars($doc_title ?? 'Report'); ?> | ElvoControll</title>
 <style>
     @page { size: A4; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -74,18 +36,19 @@ $donutOffset = round(314 - (314 * max(0, min(100, $socAvg)) / 100), 1);
     }
     .toolbar a { background: #fff; color: #0b3b2e; border: 1px solid #d8d2c4; }
     .page {
-        width: 210mm; min-height: 297mm; margin: 0 auto; background: #faf7f0;
+        width: 210mm; min-height: 297mm; margin: 0 auto 24px auto; background: #faf7f0;
         box-shadow: 0 18px 50px rgba(20,30,25,0.35);
         padding: 11mm 12mm 10mm 12mm;
         display: flex; flex-direction: column; position: relative; overflow: hidden;
     }
-    .cover { position: relative; height: 66mm; border-radius: 7mm; overflow: hidden; background: #123; }
-    .cover img.ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .cover { position: relative; height: 66mm; border-radius: 7mm; overflow: hidden; background: #0b3b2e; }
+    .cover img.ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 52% 42%; }
     .cover .veil { position: absolute; inset: 0;
-        background: linear-gradient(180deg, rgba(6,40,32,0.12) 0%, rgba(6,40,32,0.55) 55%, rgba(6,40,32,0.94) 100%); }
+        background: linear-gradient(180deg, rgba(6,40,32,0.10) 0%, rgba(6,40,32,0.55) 55%, rgba(6,40,32,0.94) 100%); }
     .cover .top { position: absolute; top: 7mm; left: 8mm; right: 8mm; display: flex; justify-content: space-between; align-items: flex-start; }
-    .cover .logo-chip { background: rgba(255,255,255,0.92); border-radius: 3mm; padding: 2.2mm 3.4mm; }
+    .cover .logo-chip { background: #ffffff; border-radius: 3mm; padding: 2.2mm 3.4mm; }
     .cover .logo-chip img { height: 7mm; display: block; }
+    .cover .logo-chip .fallback { display: none; font-weight: 800; font-size: 11px; color: #0b3b2e; letter-spacing: 0.3px; }
     .cover .badge { font-size: 7px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;
         color: #0b3b2e; background: #d6f56a; padding: 2mm 3mm; border-radius: 999px; }
     .cover .title { position: absolute; left: 8mm; right: 8mm; bottom: 19mm; color: #fff; }
@@ -145,6 +108,14 @@ $donutOffset = round(314 - (314 * max(0, min(100, $socAvg)) / 100), 1);
     .pill.ok { background: #e8f7d8; color: #4c7a10; }
     .pill.warn { background: #fdf0d4; color: #a06a00; }
 
+    .mtable { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4mm 3mm; }
+    .mtable > div { display: flex; justify-content: space-between; align-items: baseline;
+        background: #fff; border: 0.3mm solid #f0ebde; border-radius: 2.4mm; padding: 2.2mm 3mm; font-size: 8.6px; color: #4b6058; }
+    .mtable > div b { color: #0b3b2e; font-weight: 700; }
+    .mtable-total { display: flex; justify-content: space-between; align-items: baseline;
+        background: #0b3b2e; color: #fff; border-radius: 2.4mm; padding: 3mm; margin-top: 1.6mm; font-size: 9px; font-weight: 700; }
+    .mtable-total b { color: #d6f56a; }
+
     .empty { padding: 16mm 6mm; text-align: center; background: #fff; border-radius: 5mm; color: #7c8a81; font-size: 10px; }
 
     .foot { margin-top: auto; padding-top: 4mm; border-top: 0.3mm solid #e6e0d3;
@@ -157,7 +128,8 @@ $donutOffset = round(314 - (314 * max(0, min(100, $socAvg)) / 100), 1);
     @media print {
         html, body { background: #fff; padding: 0; }
         .toolbar { display: none !important; }
-        .page { box-shadow: none; margin: 0; width: 210mm; min-height: 297mm; }
+        .page { box-shadow: none; margin: 0; width: 210mm; min-height: 297mm; page-break-after: always; }
+        .page:last-child { page-break-after: auto; }
     }
     @media (max-width: 760px) {
         .page { width: 100%; padding: 14px; }
@@ -175,70 +147,92 @@ $donutOffset = round(314 - (314 * max(0, min(100, $socAvg)) / 100), 1);
     <button type="button" onclick="window.print()">💾 Uložiť ako PDF</button>
 </div>
 
+<?php foreach ($pages as $pi => $p):
+    $bars   = $p['bars'] ?? [];
+    $maxBar = 0.0;
+    foreach ($bars as $v) { $maxBar = max($maxBar, (float)$v); }
+    if ($maxBar <= 0) $maxBar = 1.0;
+    $peak   = $p['peak_idx'] ?? null;
+    $curve  = $p['soc_curve'] ?? [];
+    $pts    = [];
+    if ($curve) {
+        $cnt = max(count($curve) - 1, 1);
+        foreach (array_values($curve) as $i => $v) {
+            $pts[] = round($i * 320 / $cnt, 1) . ',' . round(72 - (max(0, min(100, (float)$v)) / 100) * 72, 1);
+        }
+    }
+    $socLine = implode(' L', $pts);
+    $socArea = $pts ? ('M' . $socLine . ' L320,72 L0,72 Z') : '';
+    $socAvg  = (int)round((float)($p['soc_avg'] ?? 0));
+    $offset  = round(314 - (314 * max(0, min(100, $socAvg)) / 100), 1);
+    $axis    = $p['axis'] ?? [];
+?>
 <div class="page">
 
     <div class="cover">
-        <img class="ph" src="<?php echo htmlspecialchars($base); ?>/templates/Fotovoltika1.jpg" alt="">
+        <img class="ph" src="<?php echo htmlspecialchars($base); ?>/templates/instalace.jpg" alt="">
         <div class="veil"></div>
         <div class="top">
-            <div class="logo-chip"><img src="<?php echo htmlspecialchars($base); ?>/templates/ElvosolarLogo1.png" alt="ElvoSolar"></div>
-            <div class="badge">Report <?php echo htmlspecialchars(str_replace('-', ' / ', $monthKey)); ?></div>
+            <div class="logo-chip">
+                <img src="<?php echo htmlspecialchars($base); ?>/templates/ElvosolarLogo1.png" alt="ElvoSolar"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                <span class="fallback">elvosolar</span>
+            </div>
+            <div class="badge"><?php echo htmlspecialchars($p['badge'] ?? ''); ?></div>
         </div>
         <div class="title">
-            <div class="k">ElvoControll · mesačný prehľad</div>
-            <h1><?php echo htmlspecialchars($monthLabel); ?></h1>
-            <div class="meta">
-                <?php echo htmlspecialchars($owner); ?> ·
-                <?php echo count($devices); ?> <?php echo count($devices) === 1 ? 'zariadenie' : (count($devices) < 5 ? 'zariadenia' : 'zariadení'); ?> ·
-                <?php echo $daysWithData; ?> dní s dátami
-            </div>
+            <div class="k">ElvoControll · <?php echo htmlspecialchars($p['kind'] === 'year' ? 'ročný prehľad' : 'mesačný prehľad'); ?></div>
+            <h1><?php echo htmlspecialchars($p['label'] ?? ''); ?></h1>
+            <div class="meta"><?php echo htmlspecialchars($p['meta'] ?? ''); ?></div>
         </div>
     </div>
 
     <div class="cards">
         <div class="card accent">
             <div class="lbl">Výroba spolu</div>
-            <div class="val"><?php echo $n($kwh); ?><small>kWh</small></div>
-            <div class="sub"><?php echo $hasData ? 'za celý mesiac' : 'žiadne dáta za mesiac'; ?></div>
+            <div class="val"><?php echo $n($p['kwh'] ?? 0); ?><small>kWh</small></div>
+            <div class="sub"><?php echo !empty($p['has_data']) ? 'za celé obdobie' : 'žiadne dáta'; ?></div>
         </div>
         <div class="card">
             <div class="lbl">Ø denne</div>
-            <div class="val"><?php echo $n($avgDay); ?><small>kWh</small></div>
-            <div class="sub"><?php echo $daysInMonth; ?> dní</div>
+            <div class="val"><?php echo $n($p['avg_day'] ?? 0); ?><small>kWh</small></div>
+            <div class="sub"><?php echo (int)($p['days_in_month'] ?? 30); ?> dní</div>
         </div>
         <div class="card">
             <div class="lbl">Max výkon</div>
-            <div class="val"><?php echo $n($maxPower, 2); ?><small>kW</small></div>
-            <div class="sub"><?php echo $peakDay ? $peakDay . '. deň v mesiaci' : '—'; ?></div>
+            <div class="val"><?php echo $n($p['max_power'] ?? 0, 2); ?><small>kW</small></div>
+            <div class="sub"><?php echo !empty($p['peak_label']) ? htmlspecialchars($p['peak_label']) : '—'; ?></div>
         </div>
         <div class="card">
             <div class="lbl">Odhad úspory</div>
-            <div class="val"><?php echo $n($saving, 0); ?><small>€</small></div>
-            <div class="sub"><?php echo $n($price, 2); ?> €/kWh</div>
+            <div class="val"><?php echo $n($p['saving'] ?? 0, 0); ?><small>€</small></div>
+            <div class="sub"><?php echo $n($p['price'] ?? 0.18, 2); ?> €/kWh</div>
         </div>
     </div>
 
     <div class="body-wrap">
 
         <div class="head">
-            <h2>Denná výroba <b>/ <?php echo $daysInMonth; ?> dní</b></h2>
-            <div class="hint">kWh<?php echo $peakDay ? ' · najvyšší deň ' . $peakDay . '.' : ''; ?></div>
+            <h2>Výroba <b>/ <?php echo htmlspecialchars($p['bars_label'] ?? ''); ?></b></h2>
+            <div class="hint"><?php echo !empty($p['peak_label']) ? 'najvyšší ' . htmlspecialchars($p['peak_label']) : ''; ?></div>
         </div>
-        <?php if (!$hasData): ?>
-            <div class="empty">Za obdobie <?php echo htmlspecialchars($monthLabel); ?> nie sú v databáze žiadne merania.<br>
-                Report sa naplní, len čo CM5 začne posielať telemetriu.</div>
+        <?php if (empty($p['has_data'])): ?>
+            <div class="empty">Za obdobie <?php echo htmlspecialchars($p['label'] ?? ''); ?> nie sú v databáze žiadne merania.<br>
+                Strana sa naplní, len čo CM3/CM5 začne posielať telemetriu.</div>
         <?php else: ?>
             <div class="bars">
-                <?php foreach ($daily as $i => $v):
-                    $pct = $maxDaily > 0 ? round(((float)$v / $maxDaily) * 100) : 0;
-                    $cls = ($peakDay === $i + 1 && $v > 0) ? 'hi' : ($pct >= 55 ? 'm' : '');
+                <?php foreach ($bars as $i => $v):
+                    $pct = round(((float)$v / $maxBar) * 100);
+                    $cls = ($peak !== null && (int)$peak === (int)$i && $v > 0) ? 'hi' : ($pct >= 55 ? 'm' : '');
                 ?>
                     <i class="<?php echo $cls; ?>" style="height:<?php echo max($pct, 1); ?>%"></i>
                 <?php endforeach; ?>
             </div>
-            <div class="axis">
-                <span>1.</span><span>7.</span><span>14.</span><span>21.</span><span><?php echo $daysInMonth; ?>.</span>
-            </div>
+            <?php if ($axis): ?>
+                <div class="axis">
+                    <?php foreach ($axis as $a): ?><span><?php echo htmlspecialchars($a); ?></span><?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <div class="head">
@@ -251,14 +245,14 @@ $donutOffset = round(314 - (314 * max(0, min(100, $socAvg)) / 100), 1);
                     <svg width="34mm" height="34mm" viewBox="0 0 120 120">
                         <circle cx="60" cy="60" r="50" fill="none" stroke="#e6e0d3" stroke-width="12"/>
                         <circle cx="60" cy="60" r="50" fill="none" stroke="#0b3b2e" stroke-width="12"
-                                stroke-dasharray="314" stroke-dashoffset="<?php echo $donutOffset; ?>" stroke-linecap="round"/>
+                                stroke-dasharray="314" stroke-dashoffset="<?php echo $offset; ?>" stroke-linecap="round"/>
                     </svg>
-                    <div class="center"><b><?php echo $hasData ? $socAvg . ' %' : '—'; ?></b><span>Ø SOC</span></div>
+                    <div class="center"><b><?php echo !empty($p['has_data']) ? $socAvg . ' %' : '—'; ?></b><span>Ø SOC</span></div>
                 </div>
                 <div class="donut-legend">
-                    <div><i style="background:#a8d46a"></i> max <?php echo $hasData ? $socMax . ' %' : '—'; ?></div>
-                    <div><i style="background:#0b3b2e"></i> min <?php echo $hasData ? $socMin . ' %' : '—'; ?></div>
-                    <div><i style="background:#dbeecb"></i> <?php echo $daysWithData; ?> dní s dátami</div>
+                    <div><i style="background:#a8d46a"></i> max <?php echo !empty($p['has_data']) ? (int)($p['soc_max'] ?? 0) . ' %' : '—'; ?></div>
+                    <div><i style="background:#0b3b2e"></i> min <?php echo !empty($p['has_data']) ? (int)($p['soc_min'] ?? 0) . ' %' : '—'; ?></div>
+                    <div><i style="background:#dbeecb"></i> <?php echo (int)($p['days_with_data'] ?? 0); ?> dní s dátami</div>
                 </div>
             </div>
             <div>
@@ -275,57 +269,77 @@ $donutOffset = round(314 - (314 * max(0, min(100, $socAvg)) / 100), 1);
         </div>
 
         <div class="head">
-            <h2>Zariadenia <b>/ <?php echo count($devices); ?></b></h2>
-            <div class="hint"><?php echo $n($kwh); ?> kWh spolu · dostupnosť <?php echo $n($availability, 1); ?> %</div>
+            <h2><?php echo htmlspecialchars($p['table_title'] ?? 'Zariadenia'); ?></h2>
+            <div class="hint"><?php echo htmlspecialchars($p['table_hint'] ?? ''); ?></div>
         </div>
+        <?php if (!empty($p['compact_rows'])): ?>
+            <div class="mtable">
+                <?php foreach ($p['compact_rows'] as $cr): ?>
+                    <div>
+                        <span><?php echo htmlspecialchars($cr['name'] ?? ''); ?></span>
+                        <b><?php echo $n($cr['kwh'] ?? 0, 1); ?> kWh</b>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <?php if (!empty($p['total_row'])): $t = $p['total_row']; ?>
+                <div class="mtable-total">
+                    <span><?php echo htmlspecialchars($t['name'] ?? 'Spolu'); ?></span>
+                    <b><?php echo $n($t['kwh'] ?? 0, 1); ?> kWh</b>
+                </div>
+            <?php endif; ?>
+        <?php else: ?>
         <table>
             <thead>
                 <tr>
-                    <th>Zariadenie</th>
+                    <th><?php echo htmlspecialchars($p['table_col1'] ?? 'Zariadenie'); ?></th>
                     <th class="r">Výroba</th>
                     <th class="r">Ø výkon</th>
                     <th class="r">SOC</th>
-                    <th class="r">Stav</th>
+                    <th class="r"><?php echo htmlspecialchars($p['table_col5'] ?? 'Stav'); ?></th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (!$devices): ?>
-                    <tr><td colspan="5" style="text-align:center;color:#9aa8a0;">Žiadne zariadenia</td></tr>
+                <?php if (empty($p['table_rows'])): ?>
+                    <tr><td colspan="5" style="text-align:center;color:#9aa8a0;">Žiadne záznamy</td></tr>
                 <?php endif; ?>
-                <?php foreach ($devices as $d): ?>
+                <?php foreach (($p['table_rows'] ?? []) as $row): ?>
                     <tr>
                         <td>
-                            <span class="zname"><?php echo htmlspecialchars($d['name'] ?: ('Zariadenie ' . $d['id'])); ?></span>
-                            <span class="zsn">SN: <?php echo htmlspecialchars($d['serial'] ?: '—'); ?><?php echo $d['model'] ? ' · ' . htmlspecialchars($d['model']) : ''; ?></span>
+                            <span class="zname"><?php echo htmlspecialchars($row['name'] ?? ''); ?></span>
+                            <?php if (!empty($row['sub'])): ?><span class="zsn"><?php echo htmlspecialchars($row['sub']); ?></span><?php endif; ?>
                         </td>
-                        <td class="r"><?php echo $n($d['kwh'], 1); ?> kWh</td>
-                        <td class="r"><?php echo $n($d['avg_power'] / 1000, 2); ?> kW</td>
-                        <td class="r"><?php echo $d['samples'] > 0 ? ((int)round($d['min_soc']) . '–' . (int)round($d['max_soc']) . ' %') : '—'; ?></td>
+                        <td class="r"><?php echo $n($row['kwh'] ?? 0, 1); ?> kWh</td>
+                        <td class="r"><?php echo $row['avg'] ?? '—'; ?></td>
+                        <td class="r"><?php echo $row['soc'] ?? '—'; ?></td>
                         <td class="r">
-                            <span class="pill <?php echo $d['samples'] > 0 ? 'ok' : 'warn'; ?>"><?php echo $d['samples'] > 0 ? 'Dáta' : 'Bez dát'; ?></span>
+                            <?php if (!empty($row['pill'])): ?>
+                                <span class="pill <?php echo htmlspecialchars($row['pill_class'] ?? 'ok'); ?>"><?php echo htmlspecialchars($row['pill']); ?></span>
+                            <?php else: ?>—<?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
-                <?php if ($devices): ?>
+                <?php if (!empty($p['total_row'])): $t = $p['total_row']; ?>
                 <tr class="total">
-                    <td><span class="zname">Spolu</span><span class="zsn">dostupnosť <?php echo $n($availability, 1); ?> %</span></td>
-                    <td class="r"><?php echo $n($kwh); ?> kWh</td>
-                    <td class="r"><?php echo $n($sumAvgPower / 1000, 2); ?> kW</td>
-                    <td class="r"><?php echo $hasData ? $socMin . '–' . $socMax . ' %' : '—'; ?></td>
+                    <td><span class="zname"><?php echo htmlspecialchars($t['name'] ?? 'Spolu'); ?></span><span class="zsn"><?php echo htmlspecialchars($t['sub'] ?? ''); ?></span></td>
+                    <td class="r"><?php echo $n($t['kwh'] ?? 0, 1); ?> kWh</td>
+                    <td class="r"><?php echo $t['avg'] ?? '—'; ?></td>
+                    <td class="r"><?php echo $t['soc'] ?? '—'; ?></td>
                     <td class="r">—</td>
                 </tr>
                 <?php endif; ?>
             </tbody>
         </table>
+        <?php endif; ?>
 
     </div>
 
     <div class="foot">
         <div><b>ElvoSolar s.r.o.</b> · elvosolar.sk · podpora@elvosolar.sk</div>
-        <div class="right"><span class="badge2">ELVOCONTROLL</span><span>Strana 1 / 1</span></div>
+        <div class="right"><span class="badge2">ELVOCONTROLL</span><span>Strana <?php echo $pi + 1; ?> / <?php echo count($pages); ?></span></div>
     </div>
 
 </div>
+<?php endforeach; ?>
 
 </body>
 </html>

@@ -1125,7 +1125,7 @@ if (!function_exists('elvo_report_data')) {
         $rep = [
             'month' => $month, 'label' => elvo_report_month_label($month),
             'owner' => '', 'devices' => [], 'daily' => array_fill(0, $daysInMonth, 0),
-            'soc_curve' => [], 'kwh' => 0, 'avg_day' => 0, 'max_power' => 0,
+            'soc_curve' => $yearCurve, 'kwh' => 0, 'avg_day' => 0, 'max_power' => 0,
             'saving' => 0, 'price' => $price, 'availability' => 0, 'soc_avg' => 0,
             'soc_min' => 0, 'soc_max' => 0, 'days_with_data' => 0,
             'days_in_month' => $daysInMonth, 'peak_day' => 0, 'has_data' => false,
@@ -1246,6 +1246,180 @@ if (!function_exists('elvo_report_data')) {
         $rep['has_data'] = $totalKwh > 0 || $daysWithData > 0;
 
         return $rep;
+    }
+}
+
+// --- REPORT: jedna A4 strana pre month/y, alebo 13 strán (1 prehľad roka + 12 mesiacov) ---
+if (!function_exists('elvo_report_month_page')) {
+    /** Mesačná strana reportu (dizajn v templates/report.html). */
+    function elvo_report_month_page($pdo, $user_id, $month, $all_devices = false) {
+        $r = elvo_report_data($pdo, $user_id, $month, $all_devices);
+        $rows = [];
+        $sumAvg = 0.0;
+        foreach ($r['devices'] as $d) {
+            $sumAvg += (float)$d['avg_power'];
+            $rows[] = [
+                'name' => $d['name'] ?: ('Zariadenie ' . $d['id']),
+                'sub' => 'SN: ' . ($d['serial'] ?: '—') . ($d['model'] ? ' · ' . $d['model'] : ''),
+                'kwh' => $d['kwh'],
+                'avg' => number_format($d['avg_power'] / 1000, 2, ',', ' ') . ' kW',
+                'soc' => $d['samples'] > 0
+                    ? ((int)round($d['min_soc']) . '–' . (int)round($d['max_soc']) . ' %') : '—',
+                'pill' => $d['samples'] > 0 ? 'Dáta' : 'Bez dát',
+                'pill_class' => $d['samples'] > 0 ? 'ok' : 'warn',
+            ];
+        }
+        $dim = (int)$r['days_in_month'];
+
+        return [
+            'kind' => 'month',
+            'label' => $r['label'],
+            'badge' => 'Report ' . str_replace('-', ' / ', $month),
+            'meta' => $r['owner'] . ' · ' . count($r['devices']) . ' zariadení · '
+                      . $r['days_with_data'] . ' dní s dátami · ' . $month,
+            'kwh' => $r['kwh'], 'avg_day' => $r['avg_day'], 'max_power' => $r['max_power'],
+            'saving' => $r['saving'], 'price' => $r['price'],
+            'days_in_month' => $dim, 'days_with_data' => $r['days_with_data'],
+            'bars' => $r['daily'],
+            'bars_label' => $dim . ' dní',
+            'axis' => ['1.', '7.', '14.', '21.', $dim . '.'],
+            'peak_idx' => $r['peak_day'] > 0 ? $r['peak_day'] - 1 : null,
+            'peak_label' => $r['peak_day'] > 0 ? ($r['peak_day'] . '. deň') : '',
+            'soc_avg' => $r['soc_avg'], 'soc_min' => $r['soc_min'], 'soc_max' => $r['soc_max'],
+            'soc_curve' => $r['soc_curve'],
+            'has_data' => $r['has_data'],
+            'table_title' => 'Zariadenia / ' . count($rows),
+            'table_hint' => number_format($r['kwh'], 1, ',', ' ') . ' kWh · dostupnosť '
+                             . number_format($r['availability'], 1, ',', ' ') . ' %',
+            'table_col1' => 'Zariadenie',
+            'table_col5' => 'Stav',
+            'table_rows' => $rows,
+            'total_row' => $rows ? [
+                'name' => 'Spolu',
+                'sub' => 'dostupnosť ' . number_format($r['availability'], 1, ',', ' ') . ' %',
+                'kwh' => $r['kwh'],
+                'avg' => number_format($sumAvg / 1000, 2, ',', ' ') . ' kW',
+                'soc' => $r['has_data'] ? ((int)$r['soc_min'] . '–' . (int)$r['soc_max'] . ' %') : '—',
+            ] : null,
+        ];
+    }
+
+    /**
+     * Ročný report: strana 1 = celý rok, strany 2–13 = jednotlivé mesiace.
+     * Mesiace v budúcnosti sa vynechajú (aktuálny rok ešte nebeží celý).
+     */
+    function elvo_report_year_pages($pdo, $user_id, $year, $all_devices = false) {
+        $short = [1 => 'Jan', 'Feb', 'Mar', 'Apr', 'Máj', 'Jún', 'Júl', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+        $months = [];
+        $bars = [];
+        $axis = [];
+        $rows = [];
+        $kwhTotal = 0.0;
+        $maxPower = 0.0;
+        $socMin = null; $socMax = null;
+        $socWeighted = 0.0; $socWeight = 0;
+        $daysWith = 0; $daysInYear = 0;
+        $pages = [];
+        $compactRows = [];
+        $socSum = []; $socCnt = [];
+        $owner = ''; $price = (float)(getenv('REPORT_PRICE_EUR') ?: 0.18);
+        $devCount = 0;
+
+        for ($m = 1; $m <= 12; $m++) {
+            $month = sprintf('%04d-%02d', (int)$year, $m);
+            if ($month > date('Y-m')) break;      // budúce mesiace preskoč
+            $r = elvo_report_data($pdo, $user_id, $month, $all_devices);
+            $owner = $r['owner'] ?: $owner;
+            $devCount = max($devCount, count($r['devices']));
+            $daysInYear += (int)$r['days_in_month'];
+
+            $pages[] = elvo_report_month_page($pdo, $user_id, $month, $all_devices);
+
+            $months[] = $month;
+            $bars[] = $r['kwh'];
+            $axis[] = $short[(int)$m];
+            $kwhTotal += $r['kwh'];
+            $maxPower = max($maxPower, (float)$r['max_power']);
+            if ($r['soc_min'] > 0) $socMin = $socMin === null ? $r['soc_min'] : min($socMin, $r['soc_min']);
+            if ($r['soc_max'] > 0) $socMax = $socMax === null ? $r['soc_max'] : max($socMax, $r['soc_max']);
+            if ($r['soc_avg'] > 0) { $socWeighted += $r['soc_avg'] * max((int)$r['days_with_data'], 1); $socWeight += max((int)$r['days_with_data'], 1); }
+            $daysWith += (int)$r['days_with_data'];
+
+            $compactRows[] = ['name' => it_ucwords_safe($r['label']), 'kwh' => $r['kwh']];
+            if (!empty($r['soc_curve'])) {
+                foreach ($r['soc_curve'] as $hIdx => $socVal) {
+                    $socSum[$hIdx] = ($socSum[$hIdx] ?? 0) + (float)$socVal;
+                    $socCnt[$hIdx] = ($socCnt[$hIdx] ?? 0) + 1;
+                }
+            }
+
+            $rows[] = [
+                'name' => it_ucwords_safe($r['label']),
+                'sub' => 'Ø ' . number_format($r['avg_day'], 1, ',', ' ') . ' kWh/deň · '
+                         . $r['days_with_data'] . ' dní s dátami',
+                'kwh' => $r['kwh'],
+                'avg' => number_format($r['max_power'], 2, ',', ' ') . ' kW',
+                'soc' => ($r['soc_min'] > 0 || $r['soc_max'] > 0)
+                    ? ((int)$r['soc_min'] . '–' . (int)$r['soc_max'] . ' %') : '—',
+                'pill' => $r['days_with_data'] > 0 ? 'Dáta' : 'Bez dát',
+                'pill_class' => $r['days_with_data'] > 0 ? 'ok' : 'warn',
+            ];
+        }
+
+        // Ročná krivka SOC = priemer hodinových kriviek jednotlivých mesiacov
+        $yearCurve = [];
+        for ($h = 0; $h < 24; $h++) {
+            if (!empty($socCnt[$h])) $yearCurve[$h] = round($socSum[$h] / $socCnt[$h], 1);
+        }
+
+        $peakIdx = null; $peakVal = 0.0;
+        foreach ($bars as $i => $v) { if ($v > $peakVal) { $peakVal = $v; $peakIdx = $i; } }
+
+        $yearPage = [
+            'kind' => 'year',
+            'label' => 'Rok ' . (int)$year,
+            'badge' => 'Report ' . (int)$year . ' · 13 strán',
+            'meta' => $owner . ' · ' . $devCount . ' zariadení · ' . count($months) . ' mesiacov · '
+                      . $daysWith . ' dní s dátami',
+            'kwh' => round($kwhTotal, 1),
+            'avg_day' => $daysInYear > 0 ? round($kwhTotal / $daysInYear, 1) : 0,
+            'max_power' => round($maxPower, 2),
+            'saving' => round($kwhTotal * $price, 2),
+            'price' => $price,
+            'days_in_month' => max($daysInYear, 1),
+            'days_with_data' => $daysWith,
+            'bars' => $bars,
+            'bars_label' => count($months) . ' mesiacov',
+            'axis' => $axis,
+            'peak_idx' => $peakIdx,
+            'peak_label' => $peakIdx !== null ? (it_ucwords_safe(elvo_report_month_label($months[$peakIdx]))) : '',
+            'soc_avg' => $socWeight > 0 ? round($socWeighted / $socWeight, 1) : 0,
+            'soc_min' => $socMin ?? 0,
+            'soc_max' => $socMax ?? 0,
+            'soc_curve' => [],
+            'has_data' => $kwhTotal > 0,
+            'table_title' => 'Mesiace / ' . count($rows),
+            'compact_rows' => $compactRows,
+            'table_hint' => number_format($kwhTotal, 1, ',', ' ') . ' kWh za rok',
+            'table_col1' => 'Mesiac',
+            'table_col5' => 'Dáta',
+            'table_rows' => $rows,
+            'total_row' => $rows ? [
+                'name' => 'Spolu za rok',
+                'sub' => count($months) . ' mesiacov · ' . $daysWith . ' dní s dátami',
+                'kwh' => round($kwhTotal, 1),
+                'avg' => number_format($maxPower, 2, ',', ' ') . ' kW',
+                'soc' => ($socMin !== null ? ((int)$socMin . '–' . (int)$socMax . ' %') : '—'),
+            ] : null,
+        ];
+
+        return array_merge([$yearPage], $pages);
+    }
+
+    /** Názov mesiaca s veľkým prvým písmenom (bez mbstring závislosti). */
+    function it_ucwords_safe($s) {
+        $s = (string)$s;
+        return $s === '' ? '' : (strtoupper(substr($s, 0, 1)) . substr($s, 1));
     }
 }
 
@@ -1816,9 +1990,22 @@ elseif ($path === '/report' && $method === 'GET') {
         $stR->execute([$_SESSION['user_id']]);
         $repRole = (string)($stR->fetchColumn() ?: 'user');
     } catch (Throwable $e) { /* ostane user */ }
-    $repData = elvo_report_data($pdo, (int)$_SESSION['user_id'], $report_month,
-                                in_array($repRole, ['admin', 'mechanik'], true));
-    render_template('report.html', ['rep' => $repData, 'base_path' => $base_path]);
+    $repAll = in_array($repRole, ['admin', 'mechanik'], true);
+
+    // ?year=YYYY → 13 strán (1 prehľad roka + 12 mesiacov), inak 1 mesiac
+    $report_year = (string)($_GET['year'] ?? '');
+    if (preg_match('/^\d{4}$/', $report_year)) {
+        $repPages = elvo_report_year_pages($pdo, (int)$_SESSION['user_id'], (int)$report_year, $repAll);
+        $repTitle = 'Ročný report ' . (int)$report_year;
+    } else {
+        $repPages = [elvo_report_month_page($pdo, (int)$_SESSION['user_id'], $report_month, $repAll)];
+        $repTitle = 'Mesačný report ' . elvo_report_month_label($report_month);
+    }
+    render_template('report.html', [
+        'pages' => $repPages,
+        'doc_title' => $repTitle,
+        'base_path' => $base_path,
+    ]);
 }
 
 elseif ($path === '/profile' && $method === 'GET') {
@@ -3888,6 +4075,66 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
             }
         } catch (Exception $e) { $out['errors'][] = 'monthly: ' . $e->getMessage(); }
     }
+    // 7) ROČNÝ REPORT — 1. január po 07:00, 13 strán (prehľad + 12 mesiacov)
+    if (intval(date('n')) === 1 && intval(date('j')) === 1 && intval(date('G')) >= 7) {
+        try {
+            $yearKey = (int)date('Y') - 1;
+            $appBaseY = rtrim((string)(getenv('APP_URL') ?: ''), '/');
+            if ($appBaseY === '') {
+                $schemeY = (!empty($_SERVER['HTTPS']) || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')) ? 'https' : 'http';
+                $appBaseY = $schemeY . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . rtrim((string)($GLOBALS['base_path'] ?? ''), '/');
+            }
+
+            $usersY = $pdo->query("SELECT DISTINCT user_id FROM devices")->fetchAll();
+            foreach ($usersY as $uY) {
+                $uidY = intval($uY['user_id']);
+                $pfY = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+                $pfY->execute([$uidY]);
+                $prefsY = json_decode((string)$pfY->fetchColumn(), true);
+                if (is_array($prefsY) && isset($prefsY['monthly_report']) && !$prefsY['monthly_report']) continue;
+                if (elvo_notif_channel($pdo, $uidY, 'monthly_report') === 'none') continue;
+
+                $insY = $pdo->prepare("INSERT IGNORE INTO notif_log (user_id, type, dedup_key) VALUES (?, 'yearly_report', ?)");
+                $insY->execute([$uidY, (string)$yearKey]);
+                if ($insY->rowCount() === 0) continue;
+
+                $qY = $pdo->prepare("SELECT SUM(t.kwh) kwh, MAX(t.max_power) max_p, SUM(t.samples) samples
+                                     FROM telemetry_daily t JOIN devices d ON d.id = t.device_id
+                                     WHERE d.user_id = ? AND YEAR(t.day) = ?");
+                $qY->execute([$uidY, $yearKey]);
+                $sumY = $qY->fetch() ?: [];
+                $kwhY = (float)($sumY['kwh'] ?? 0);
+                $priceY = (float)(getenv('REPORT_PRICE_EUR') ?: 0.18);
+                $linkY = $appBaseY . '/report?year=' . $yearKey;
+
+                $bodyY = 'Rok ' . $yearKey . ': ' . number_format($kwhY, 1, ',', ' ') . ' kWh — 13-stranový report je pripravený';
+                $mailY =
+                    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0b3b2e;border-radius:18px;">'
+                    . '<tr><td style="padding:26px 24px;">'
+                    . '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#a9c98c;font-weight:700;">ElvoControll · ročný report</div>'
+                    . '<div style="font-size:24px;font-weight:800;color:#ffffff;margin-top:6px;">Rok ' . $yearKey . '</div>'
+                    . '<div style="font-size:36px;font-weight:800;color:#d6f56a;letter-spacing:-1px;margin-top:16px;line-height:1;">'
+                    . number_format($kwhY, 1, ',', ' ')
+                    . '<span style="font-size:12px;color:#9dc27e;margin-left:5px;letter-spacing:0;">kWh</span></div>'
+                    . '<div style="font-size:11px;color:#a9c98c;margin-top:6px;">celková výroba za rok · '
+                    . number_format($kwhY * $priceY, 0, ',', ' ') . ' € odhad úspory</div>'
+                    . '</td></tr></table>'
+                    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#ffffff;border:1px solid #efe9db;border-radius:18px;margin-top:12px;">'
+                    . '<tr><td style="padding:18px;">'
+                    . '<div style="font-size:12px;color:#3f5348;line-height:1.7;">Report má <strong>13 strán</strong>: prvá je prehľad celého roka a potom každý mesiac na vlastnej strane. Otvoríš ho v appke a uložíš ako PDF jedným tlačidlom.</div>'
+                    . '</td></tr>'
+                    . '<tr><td align="center" style="padding:0 18px 20px 18px;">'
+                    . '<a href="' . htmlspecialchars($linkY) . '" style="display:inline-block;padding:13px 26px;background:#0b3b2e;color:#d6f56a;text-decoration:none;font-weight:800;font-size:13px;border-radius:999px;">Otvoriť ročný report</a>'
+                    . '</td></tr></table>';
+
+                $chanY = elvo_notif_channel($pdo, $uidY, 'monthly_report');
+                elvo_notif_send($pdo, $uidY, $chanY, 'yearly_report', 'Ročný report ' . $yearKey, $bodyY,
+                                'yearly-' . $yearKey, '/report?year=' . $yearKey, $mailY, '#10b981');
+                $out['yearly_report'] = ($out['yearly_report'] ?? 0) + 1;
+            }
+        } catch (Exception $e) { $out['errors'][] = 'yearly: ' . $e->getMessage(); }
+    }
+
     send_json(['status' => 'success', 'result' => $out]);
 }
 

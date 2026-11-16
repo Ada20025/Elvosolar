@@ -107,10 +107,13 @@ Jeden endpoint robí celú údržbu, spúšťaj ho každých 10 minút:
 | Záporná cena | OKTE blok so zápornou cenou |
 | Telemetria | denná agregácia do `telemetry_daily` + mazanie raw dát starších ako 90 dní |
 | Mesačný report | 1. deň v mesiaci po 07:00 — výroba v kWh za predošlý mesiac |
+| Ročný report | 1. januára po 07:00 — 13-stranový report za predošlý rok |
 
 ### Mesačný report (A4 → PDF)
 
-- V appke: **`/report?month=YYYY-MM`** (odkaz je aj v Profil → Mesačný report a v mesačnom maily).
+- Mesačne: **`/report?month=YYYY-MM`** — 1 strana (odkaz je v Profil → Mesačný report a v mesačnom maily).
+- Ročne: **`/report?year=YYYY`** — **13 strán**: 1. strana prehľad celého roka, potom každý mesiac na vlastnej strane.
+  Ročný report sa posiela **1. januára** (cron) s odkazom; dá sa otvoriť aj ručne kedykoľvek.
 - Stránka je pripravená na tlač: **Ctrl+P → Uložiť ako PDF** (tlačidlo „Uložiť ako PDF“ je priamo na nej).
 - Dáta: denný agregát `telemetry_daily` + hodinové SOC z `telemetry`; cena pre odhad úspory sa berie z `REPORT_PRICE_EUR` (default `0.18`).
 - Odkaz v maily používa `APP_URL`; ak nie je nastavená, zoberie sa doména z requestu.
