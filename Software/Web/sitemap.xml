@@ -1,16 +1,134 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.elvosolar.sk/</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://www.elvosolar.sk/o-nas</loc><lastmod>2026-11-07</lastmod><changefreq>yearly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.elvosolar.sk/riesenia-na-kluc</loc><lastmod>2026-11-07</lastmod><changefreq>yearly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://www.elvosolar.sk/servis</loc><lastmod>2026-11-07</lastmod><changefreq>yearly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://www.elvosolar.sk/zelena-podnikom</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.elvosolar.sk/projekty-samrs</loc><lastmod>2026-11-07</lastmod><changefreq>yearly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.elvosolar.sk/kontakt</loc><lastmod>2026-11-07</lastmod><changefreq>yearly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://www.elvosolar.sk/fotovoltika</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://www.elvosolar.sk/solarny-ohrev</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://www.elvosolar.sk/orc-jednotky</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://www.elvosolar.sk/absorbecne-chladenie</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://www.elvosolar.sk/bateriove-uloziska</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://www.elvosolar.sk/mapa-webu</loc><lastmod>2026-11-07</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://www.elvosolar.sk/</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/o-nas</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/o-nas"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/o-nas"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/o-nas"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/o-nas"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/riesenia-na-kluc</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/riesenia-na-kluc"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/riesenia-na-kluc"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/riesenia-na-kluc"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/riesenia-na-kluc"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/servis</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/servis"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/servis"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/servis"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/servis"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/zelena-podnikom</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/zelena-podnikom"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/zelena-podnikom"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/zelena-podnikom"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/zelena-podnikom"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/projekty-samrs</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/projekty-samrs"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/projekty-samrs"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/projekty-samrs"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/projekty-samrs"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/kontakt</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/kontakt"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/kontakt"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/kontakt"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/kontakt"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/fotovoltika</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/fotovoltika"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/fotovoltika"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/fotovoltika"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/fotovoltika"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/solarny-ohrev</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/solarny-ohrev"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/solarny-ohrev"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/solarny-ohrev"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/solarny-ohrev"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/orc-jednotky</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/orc-jednotky"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/orc-jednotky"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/orc-jednotky"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/orc-jednotky"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/absorbecne-chladenie</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/absorbecne-chladenie"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/absorbecne-chladenie"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/absorbecne-chladenie"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/absorbecne-chladenie"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/bateriove-uloziska</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/bateriove-uloziska"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/bateriove-uloziska"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/bateriove-uloziska"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/bateriove-uloziska"/>
+  </url>
+  <url>
+    <loc>https://www.elvosolar.sk/mapa-webu</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="sk" href="https://www.elvosolar.sk/mapa-webu"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elvosolar.sk/mapa-webu"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elvosolar.sk/mapa-webu"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.elvosolar.sk/mapa-webu"/>
+  </url>
 </urlset>
