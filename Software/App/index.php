@@ -209,6 +209,43 @@ if (!function_exists('elvo_url_key_seed')) {
         return ['current' => $cur, 'previous' => $prev, 'month' => $curYm];
     }
 }
+// ============================================================
+// === ZAPAMÄTANÉ ZARIADENIE (device cookie)
+// ============================================================
+// Kto raz otvorí tajnú adresu a prejde bránou, tomu sa uloží podpísaný
+// cookie na 10 rokov → ten istý prehliadač/PWA už NIKDY nič nepýta
+// (ani kľúč, ani meno/heslo). Token je podpísaný tajným kľúčom appky,
+// takže sa nedá vyrobiť ručne; je náhodný pre každé zariadenie.
+if (!function_exists('elvo_device_ok')) {
+    function elvo_device_secret() {
+        return elvo_url_key_seed();
+    }
+    function elvo_device_sign($id) {
+        return hash_hmac('sha256', 'elvo-device-v1|' . $id, elvo_device_secret());
+    }
+    function elvo_device_ok() {
+        $token = (string)($_COOKIE['elvo_dev'] ?? '');
+        if (!preg_match('/^([a-f0-9]{32})\.([a-f0-9]{64})$/', $token, $m)) return false;
+        return hash_equals(elvo_device_sign($m[1]), $m[2]);
+    }
+    function elvo_device_remember() {
+        if (elvo_device_ok()) return;
+        try {
+            $id = bin2hex(random_bytes(16));
+        } catch (Throwable $e) {
+            $id = bin2hex(openssl_random_pseudo_bytes(16));
+        }
+        $token = $id . '.' . elvo_device_sign($id);
+        setcookie('elvo_dev', $token, [
+            'expires'  => time() + 315360000, // 10 rokov
+            'path'     => '/',
+            'secure'   => !empty($_SERVER['HTTPS']),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        $_COOKIE['elvo_dev'] = $token; // platí hneď aj v tomto requeste
+    }
+}
 if (!function_exists('elvo_redirect_web')) {
     // „Normálna“ adresa (hocičo bez tajného kľúča) → rovno na web elvosolar.sk.
     // Odchádza iba presmerovanie — žiadne údaje appky, žiadne informácie neuniknú.
@@ -388,6 +425,12 @@ if (!empty($_SESSION['user_id'])) {
     $elvo_creds = elvo_gate_creds($pdo);
     if (hash_equals(elvo_gate_token($elvo_creds), (string)$_COOKIE['elvo_access'])) $elvo_gate_ok = true;
 }
+// Zapamätané zariadenie — raz zadaný kľúč aj brána, potom už nič nepýtať.
+if (!$elvo_gate_ok && elvo_device_ok()) {
+    $elvo_creds = elvo_gate_creds($pdo);
+    elvo_gate_set_cookie($elvo_creds);
+    $elvo_gate_ok = true;
+}
 // TAJNY URL KLUC — MESACNE ROTUJUCI. Na svete je IBa jedina platna adresa
 // a ta sa kazdy mesiac zmeni (1. dna v mesiaci). Kym nepoznas aktualny kluc,
 // ta stranka ta normalne presmeruje na www.elvosolar.sk — neunikne ziadny udaj.
@@ -397,12 +440,14 @@ if (!empty($_SESSION['user_id'])) {
 $elvo_url_keys = elvo_monthly_url_keys();
 $elvo_url_key = $elvo_url_keys['current'];
 $elvo_url_candidates = array_values(array_unique([$elvo_url_keys['current'], $elvo_url_keys['previous']]));
-$elvo_url_key_ok = !empty($_SESSION['elvo_url_key']);
+$elvo_url_key_ok = !empty($_SESSION['elvo_url_key']) || elvo_device_ok();
+if ($elvo_url_key_ok && empty($_SESSION['elvo_url_key'])) $_SESSION['elvo_url_key'] = 1;
 if (!$elvo_url_key_ok && isset($_GET['k'])) {
     foreach ($elvo_url_candidates as $elvo_cand) {
         if (hash_equals($elvo_cand, (string)$_GET['k'])) {
             $_SESSION['elvo_url_key'] = 1;
             $elvo_url_key_ok = true;
+            elvo_device_remember();
             break;
         }
     }
@@ -416,6 +461,7 @@ if (!$elvo_url_key_ok) {
             if (hash_equals($elvo_cand, $elvo_first)) {
                 $_SESSION['elvo_url_key'] = 1;
                 $elvo_url_key_ok = true;
+                elvo_device_remember();
                 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
                     // očist adresa — kľúč neostane v histórii prehliadača ani v HTTP referreri
                     header('Location: ' . (($GLOBALS['base_path'] ?? '') . '/'));
@@ -463,6 +509,7 @@ if (!$elvo_gate_ok && !$elvo_open) {
         if ($elvo_ok) {
             @unlink($lockF); @unlink($lockT);
             elvo_gate_set_cookie($elvo_creds);
+            elvo_device_remember();
             // Všetko OK (meno + heslo + test proti robotom) → stránka na stiahnutie appky
             header('Location: ' . ($base_path ?? '') . '/stiahnut'); exit;
         }
@@ -711,6 +758,7 @@ if ($path === '/access' && $method === 'POST') {
     if ($elvo_ok) {
         @unlink($lockF); @unlink($lockT);
         elvo_gate_set_cookie($elvo_creds);
+        elvo_device_remember();
         header('Location: ' . ($base_path ?? '') . '/'); exit;
     }
     $n = is_file($lockF) ? (int)@file_get_contents($lockF) : 0;
