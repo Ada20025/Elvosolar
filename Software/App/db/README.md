@@ -37,9 +37,21 @@ Pri prvom vytvorení tabuliek sa vloží demo účet a 2 zariadenia, aby appka n
 |---|---|
 | E-mail | `demo@elvosolar.sk` |
 | Heslo | `demo123` |
+| Rola | `admin` (vidí a spravuje všetky zariadenia) |
 | Zariadenia | `ElvoControll Demo` (DEMO-CM5-001), `Demo Striedač (Huawei)` (DEMO-CM5-002) |
 
 Demo sa vkladá **iba do úplne prázdnej DB** (nič neprepíše). Vypnutie: `SEED_DEMO=0`.
+
+### Admin účet
+
+- Prvý účet vytvorený cez `/register` v prázdnej DB dostane rolu **admin**.
+- Existujúci účet sa dá povýšiť bez SQL cez premennú `ADMIN_EMAILS` (Railway → Variables),
+napr. `ADMIN_EMAILS=adam@elvosolar.sk,druhy@firma.sk` — pri najbližšom prihlásení sa rola prepíše na `admin`.
+- Alebo priamo v MySQL:
+  ```sql
+  UPDATE users SET role = 'admin' WHERE email = 'adam@elvosolar.sk';
+  ```
+- Ak v DB nie je žiadny admin, prvý účet, ktorý sa prihlási so správnym heslom, sa adminom stane automaticky.
 Zmazanie (keď už nechceš):
 ```sql
 DELETE d FROM devices d JOIN users u ON u.id = d.user_id WHERE u.email = 'demo@elvosolar.sk';

@@ -84,7 +84,8 @@ if (!function_exists('elvo_db_bootstrap')) {
             if ((int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() > 0) return false;
 
             $hash = password_hash('demo123', PASSWORD_BCRYPT);
-            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'user', 1)")
+            // Demo účet je ADMIN, aby sa s ním dalo hneď prihlásiť a spravovať zariadenia.
+            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'admin', 1)")
                 ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $hash]);
             $uid = (int)$pdo->lastInsertId();
 

@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS notif_log (
 -- =============================================================================
 
 INSERT IGNORE INTO users (username, email, password_hash, role, email_verified)
-VALUES ('Demo ElvoSolar', 'demo@elvosolar.sk', '$2y$10$Bhc9wn9NiooWrJprXwOmEOj5hJ48EJGgFPs1iLWTvysS1h0Met5WK', 'user', 1);
+VALUES ('Demo ElvoSolar', 'demo@elvosolar.sk', '$2y$10$Bhc9wn9NiooWrJprXwOmEOj5hJ48EJGgFPs1iLWTvysS1h0Met5WK', 'admin', 1);
 
 INSERT INTO devices (user_id, name, serial_number, sub_type, status, connection_type,
                      smartlogger_ip, smartlogger_port, modbus_slave_id, battery_soc,

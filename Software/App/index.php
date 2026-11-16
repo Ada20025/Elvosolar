@@ -142,6 +142,43 @@ function elvo_blank_page() {
 // === 2) CLOUDFLARE TURNSTILE — test proti robotom
 // === 3) STRÁNKA NA STIAHNUTIE APPKY (PWA)
 // ============================================================
+// ============================================================
+// === ROLE ÚČTU
+// ============================================================
+// Majiteľ (a ktokolvek ďalší) sa dá povýšiť na admina aj cez premennú
+// ADMIN_EMAILS="mail1@x.sk,mail2@x.sk" — platí hneď pri prihlásení,
+// takže existujúci účet v DB sa nemusí prepisovať ručne v SQL.
+if (!function_exists('elvo_promote_admin_if_listed')) {
+    function elvo_promote_admin_if_listed($pdo, $user) {
+        if (!is_array($user) || empty($user['email'])) return $user;
+        $list = array_filter(array_map('trim', explode(',', strtolower((string)(getenv('ADMIN_EMAILS') ?: '')))));
+        if (!$list) return $user;
+        if (!in_array(strtolower(trim((string)$user['email'])), $list, true)) return $user;
+        if (($user['role'] ?? '') !== 'admin') {
+            try {
+                $pdo->prepare("UPDATE users SET role = 'admin' WHERE id = ?")->execute([$user['id']]);
+                $user['role'] = 'admin';
+                error_log('[ROLE] ' . $user['email'] . ' povýšený na admina (ADMIN_EMAILS)');
+            } catch (Throwable $e) { /* ostane pôvodná rola */ }
+        }
+        return $user;
+    }
+    // Ak v databáze NEEXISTUJE žiadny admin (napr. import starších dát alebo
+    // zmazaný admin), prvý účet, ktorý sa úspešne prihlási s heslom, sa stane
+    // adminom — inak by sa k admin funkciám nedalo dostať vôbec.
+    function elvo_ensure_some_admin($pdo, $user) {
+        if (!is_array($user) || empty($user['id'])) return $user;
+        try {
+            $admins = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
+            if ($admins > 0) return $user;
+            $pdo->prepare("UPDATE users SET role = 'admin' WHERE id = ?")->execute([$user['id']]);
+            $user['role'] = 'admin';
+            error_log('[ROLE] v DB nebol žiadny admin → účet ' . ($user['email'] ?? ('#' . $user['id'])) . ' povýšený na admina');
+        } catch (Throwable $e) { /* nič sa nedeje */ }
+        return $user;
+    }
+}
+
 if (!function_exists('elvo_url_key_seed')) {
     // Seed tajného kľúča — NIKDY sa nevypisuje von, len z neho derivujeme mesačný kľúč.
     // Zdroj (v poradí): env ACCESS_URL_KEY | $elvo_url_key_config | url_key.php | default
@@ -701,7 +738,7 @@ if (isset($pdo) && !$migrations_done) {
         $demoCheck = $pdo->query("SELECT id FROM users WHERE email = 'demo@elvosolar.sk' LIMIT 1")->fetch();
         if (!$demoCheck) {
             $demoHash = password_hash('demo123', PASSWORD_BCRYPT);
-            $pdo->prepare("INSERT INTO users (username, email, password_hash, email_verified) VALUES (?, ?, ?, 1)")
+            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'admin', 1)")
                  ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $demoHash]);
             $demoUserId = $pdo->lastInsertId();
             // Demo zariadenie - OFFLINE s nulovymi datami (ziadne fake hodnoty)
@@ -1294,11 +1331,17 @@ elseif ($path === '/login') {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
+            // ADMIN_EMAILS z prostredia môže povýšiť účet na admina ešte pred kontrolou role
+            $user = elvo_promote_admin_if_listed($pdo, $user);
             $user_role = $user['role'] ?? '';
-            // IBA admin / mechanik („worker“) sa smie prihlásiť — bežný „user“ účet neprejde.
-            $role_allowed = in_array($user_role, ['admin', 'mechanik'], true);
+            // Prihlásiť sa môže admin, mechanik aj bežný používateľ (vidí len svoje zariadenia).
+            // Blokované sú len neznáme/zablokované roly.
+            $role_allowed = in_array($user_role, ['admin', 'mechanik', 'user'], true);
             
             if ($user && $role_allowed && password_verify($password, $user['password_hash'])) {
+                // Až po overení hesla: ak v DB nie je žiaden admin, tento účet sa ním stane
+                $user = elvo_ensure_some_admin($pdo, $user);
+                $user_role = $user['role'] ?? $user_role;
                 unset($_SESSION[$attempt_key]);
                 // 2FA pri KAZDOM prihlaseni - vzdy posleme overovaci kod na email
                 {
@@ -1307,6 +1350,7 @@ elseif ($path === '/login') {
                         'user_id' => $user['id'],
                         'username' => $user['username'],
                         'email' => $email,
+                        'role' => $user_role,
                         'code_hash' => password_hash($code, PASSWORD_DEFAULT),
                         'expires' => time() + 600,
                         'attempts' => 0,
@@ -1355,7 +1399,7 @@ elseif ($path === '/login') {
                 $_SESSION[$attempt_key] = $attempts;
                 // Rozlíš: účet existuje a heslo sedí, ale nemá rolu admin/mechanik → jasná správa.
                 if ($user && password_verify($password, $user['password_hash'])) {
-                    flash("Tento účet nemá oprávnenie na prístup do aplikácie.", 'error');
+                    flash("Tento účet je zablokovaný (rola „" . htmlspecialchars($user_role) . "„). Kontaktujte správcu.", 'error');
                 } else {
                     flash("Nesprávne prihlasovacie údaje.", 'error');
                 }
@@ -1423,6 +1467,8 @@ elseif ($path === '/verify-login') {
             session_regenerate_id(true);
             $_SESSION['user_id'] = $pl['user_id'];
             $_SESSION['username'] = $pl['username'];
+            $_SESSION['email'] = $pl['email'] ?? '';
+            $_SESSION['role'] = $pl['role'] ?? '';
             $_SESSION['last_activity'] = time();
             $_SESSION['stay_logged_in'] = !empty($pl['stay']);
             unset($_SESSION['pending_login']);
@@ -1480,13 +1526,19 @@ elseif ($path === '/register') {
         $hashed = password_hash($password, PASSWORD_BCRYPT);
         
         try {
-            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
-            $stmt->execute([$username, $email, $hashed]);
+            // Prvý vytvorený účet v prázdnej databáze je majiteľ → admin.
+            $role = 'user';
+            try {
+                if ((int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() === 0) $role = 'admin';
+            } catch (Throwable $e) { /* ostane user */ }
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$username, $email, $hashed, $role]);
             // AUTO-LOGIN: pouzivatela rovno prihlasime - nemusi sa 2x prihlasovat
             session_regenerate_id(true);
             $_SESSION['user_id'] = $pdo->lastInsertId();
             $_SESSION['username'] = $username;
             $_SESSION['email'] = $email;
+            $_SESSION['role'] = $role;
             $_SESSION['last_activity'] = time();
             flash('Účet vytvorený. Vitajte, ' . htmlspecialchars($username) . '!', 'success');
             // Vitajte email
