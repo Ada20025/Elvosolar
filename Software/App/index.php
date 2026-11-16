@@ -162,9 +162,21 @@ function elvo_blank_page() {
 // ADMIN_EMAILS="mail1@x.sk,mail2@x.sk" — platí hneď pri prihlásení,
 // takže existujúci účet v DB sa nemusí prepisovať ručne v SQL.
 if (!function_exists('elvo_promote_admin_if_listed')) {
+    /**
+     * Ktoré e-maily sú admini. Predvolene LEN admin@elvosolar.sk — žiadny iný
+     * účet (napr. súkromný gmail) sa adminom nestane sám od seba.
+     * Ďalších adminov pridávej cez premennú ADMIN_EMAILS (čiarkou oddelené).
+     */
+    function elvo_admin_emails() {
+        $raw = trim((string)(getenv('ADMIN_EMAILS') ?: ''));
+        $list = $raw === '' ? [] : array_filter(array_map('trim', explode(',', strtolower($raw))));
+        if (!$list) $list = ['admin@elvosolar.sk'];
+        return array_values(array_unique($list));
+    }
+
     function elvo_promote_admin_if_listed($pdo, $user) {
         if (!is_array($user) || empty($user['email'])) return $user;
-        $list = array_filter(array_map('trim', explode(',', strtolower((string)(getenv('ADMIN_EMAILS') ?: '')))));
+        $list = elvo_admin_emails();
         if (!$list) return $user;
         if (!in_array(strtolower(trim((string)$user['email'])), $list, true)) return $user;
         if (($user['role'] ?? '') !== 'admin') {
@@ -176,17 +188,21 @@ if (!function_exists('elvo_promote_admin_if_listed')) {
         }
         return $user;
     }
-    // Ak v databáze NEEXISTUJE žiadny admin (napr. import starších dát alebo
-    // zmazaný admin), prvý účet, ktorý sa úspešne prihlási s heslom, sa stane
-    // adminom — inak by sa k admin funkciám nedalo dostať vôbec.
+    // Ak v databáze NEEXISTUJE žiadny admin, adminom sa stane LEN účet z
+    // ADMIN_EMAILS (predvolene admin@elvosolar.sk). Náhodný účet, ktorý sa
+    // prihlási, sa adminom NIKDY nestane — inak sa admin práva dostanú
+    // komukoľvek so súkromným e-mailom.
     function elvo_ensure_some_admin($pdo, $user) {
         if (!is_array($user) || empty($user['id'])) return $user;
+        if (($user['role'] ?? '') === 'admin') return $user;
+        $email = strtolower(trim((string)($user['email'] ?? '')));
+        if ($email === '' || !in_array($email, elvo_admin_emails(), true)) return $user;
         try {
             $admins = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
             if ($admins > 0) return $user;
             $pdo->prepare("UPDATE users SET role = 'admin' WHERE id = ?")->execute([$user['id']]);
             $user['role'] = 'admin';
-            error_log('[ROLE] v DB nebol žiadny admin → účet ' . ($user['email'] ?? ('#' . $user['id'])) . ' povýšený na admina');
+            error_log('[ROLE] v DB nebol žiadny admin → adminom sa stal povolený účet ' . $email);
         } catch (Throwable $e) { /* nič sa nedeje */ }
         return $user;
     }
@@ -763,6 +779,25 @@ if (isset($pdo) && !$migrations_done) {
         } else {
             // Zablokuje demo účet, ktorý už v DB je (napr. z predošlého seedu)
             $pdo->exec("UPDATE users SET role = 'blocked' WHERE LOWER(email) = 'demo@elvosolar.sk' AND role <> 'blocked'");
+        }
+    } catch (Exception $e) { /* ignore */ }
+
+    // === ADMINI: adminom má byť len admin@elvosolar.sk (alebo ADMIN_EMAILS) ===
+    // Ak už existuje admin s povoleným e-mailom, ostatným sa admin práva odoberú
+    // (klesnú na 'user'). Mechanikom sa nič nemení, ich rola je samostatná.
+    try {
+        $pinned = elvo_admin_emails();
+        if ($pinned) {
+            $in = implode(',', array_fill(0, count($pinned), '?'));
+            $chk = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'admin' AND LOWER(email) IN ($in)");
+            $chk->execute($pinned);
+            if ((int)$chk->fetchColumn() > 0) {
+                $dem = $pdo->prepare("UPDATE users SET role = 'user' WHERE role = 'admin' AND LOWER(email) NOT IN ($in)");
+                $dem->execute($pinned);
+                if ($dem->rowCount() > 0) {
+                    error_log('[ROLE] ' . $dem->rowCount() . ' adminom odobrané práva — admin je len ' . implode(', ', $pinned));
+                }
+            }
         }
     } catch (Exception $e) { /* ignore */ }
 
@@ -1353,15 +1388,17 @@ elseif ($path === '/login') {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
-            // ADMIN_EMAILS z prostredia môže povýšiť účet na admina ešte pred kontrolou role
-            $user = elvo_promote_admin_if_listed($pdo, $user);
             $user_role = $user['role'] ?? '';
             // Prihlásiť sa môže admin, mechanik aj bežný používateľ (vidí len svoje zariadenia).
             // Blokované sú len neznáme/zablokované roly.
             $role_allowed = in_array($user_role, ['admin', 'mechanik', 'user'], true);
             
             if ($user && $role_allowed && password_verify($password, $user['password_hash'])) {
-                // Až po overení hesla: ak v DB nie je žiaden admin, tento účet sa ním stane
+                // Až PO overení hesla: povolený e-mail (ADMIN_EMAILS, predvolene
+                // admin@elvosolar.sk) sa stane adminom. Predtým sa rola menila
+                // aj pri zlom hesle — stačilo zadať cudzí e-mail.
+                $user = elvo_promote_admin_if_listed($pdo, $user);
+                // Ak v DB nie je žiaden admin, adminom sa stane LEN povolený e-mail
                 $user = elvo_ensure_some_admin($pdo, $user);
                 $user_role = $user['role'] ?? $user_role;
                 unset($_SESSION[$attempt_key]);
@@ -1548,11 +1585,9 @@ elseif ($path === '/register') {
         $hashed = password_hash($password, PASSWORD_BCRYPT);
         
         try {
-            // Prvý vytvorený účet v prázdnej databáze je majiteľ → admin.
-            $role = 'user';
-            try {
-                if ((int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() === 0) $role = 'admin';
-            } catch (Throwable $e) { /* ostane user */ }
+            // Admin práva dostane LEN e-mail z ADMIN_EMAILS (predvolene
+            // admin@elvosolar.sk). Súkromný e-mail ostane bežný používateľ.
+            $role = in_array(strtolower($email), elvo_admin_emails(), true) ? 'admin' : 'user';
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)");
             $stmt->execute([$username, $email, $hashed, $role]);
             // AUTO-LOGIN: pouzivatela rovno prihlasime - nemusi sa 2x prihlasovat

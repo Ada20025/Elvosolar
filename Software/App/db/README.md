@@ -45,7 +45,8 @@ a dve zariadenia. Do produkcie ho nespúšťaj.
 
 ### Admin účet
 
-- Prvý účet vytvorený cez `/register` v prázdnej DB dostane rolu **admin**.
+- **Adminom je len `admin@elvosolar.sk`** (predvolená hodnota `ADMIN_EMAILS`). Účet registrovaný s iným e-mailom dostane rolu `user` — súkromný gmail sa adminom nestane ani pri prvom prihlásení.
+- Ďalší admin sa pridá cez `ADMIN_EMAILS` v Railway Variables (čiarkou oddelené e-maily). Ak existuje admin s povoleným e-mailom, ostatným sa rola `admin` automaticky odoberie (klesne na `user`); rola `mechanik` zostáva nedotknutá.
 - Existujúci účet sa dá povýšiť bez SQL cez premennú `ADMIN_EMAILS` (Railway → Variables),
 napr. `ADMIN_EMAILS=adam@elvosolar.sk,druhy@firma.sk` — pri najbližšom prihlásení sa rola prepíše na `admin`.
 - Alebo priamo v MySQL:

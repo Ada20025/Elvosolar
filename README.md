@@ -80,7 +80,7 @@ alerty, notifikácie, push, CM5 príkazy, MQTT audit, prihlásenia) je v
 Postup importu a premenné prostredia: [`Software/App/db/README.md`](Software/App/db/README.md).
 Rýchly štart bez deployu: vlož [`railway_setup.sql`](Software/App/db/railway_setup.sql) do query poľa
 v Railway MySQL — vytvorí tabuľky. **Žiadny demo účet sa nezakladá** — do appky sa dostane len
-tvoj admin (prvý účet z `/register`, cez `ADMIN_EMAILS`, alebo `create_admin.php` z CLI).
+tvoj admin — predvolene účet `admin@elvosolar.sk` (cez `ADMIN_EMAILS` alebo `create_admin.php` z CLI).
 Testovacie dáta sú voliteľné v [`db/demo.sql`](Software/App/db/demo.sql), demo účet tam má rolu `user`.
 ## ✅ Kontrola po nasadení
 
@@ -132,7 +132,7 @@ Alternatíva bez Railway: súbor `Software/App/turnstile_keys.php` vráti `['sit
 |---|---|
 | `ACCESS_URL_KEY` | Bez nej sa mesačný kľúč počíta z predvoleného semena `ELVO-APP-2026`, teda je **predvídateľný**. Nastav vlastné dlhé tajomstvo. |
 | `ACCESS_GATE_USER` / `ACCESS_GATE_PASS` | Bez nich platí `admin` / `ELVO-ACCESS-2026`. |
-| `ADMIN_EMAILS` | Ktoré účty sú admini (inak sa admin určí pri prihlasovaní). |
+| `ADMIN_EMAILS` | Ktoré účty sú admini. Predvolene **len `admin@elvosolar.sk`** — iný účet (napr. súkromný gmail) sa adminom nestane. |
 | `SEED_DEMO` | Demo účet `demo@elvosolar.sk` / `demo123` je **predvolene vypnutý** a existujúci demo účet appka zablokuje. `SEED_DEMO=1` ho v prázdnej DB zapne (rola `user`). |
 | `APP_DEBUG` | Nechaj prázdne; `1` zobrazí chyby PHP aj s cestami a SQL. |
 
