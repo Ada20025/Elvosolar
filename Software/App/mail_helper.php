@@ -99,8 +99,13 @@ if (!function_exists('send_elvo_email')) {
                 // LUXUSNA tmava sablona — foto pozadie (VML pre Outlook), sklenené panely, gradient.
         // Nowdoc <<<'ELVOTPL' = ziadne PHP escapovanie (predchadzajuce \" rozbijali background-image).
         $year = date('Y');
-        $img_url = 'https://adamdz.alwaysdata.net/templates/Fotovoltika1.jpg';
-        $logo_url = 'https://adamdz.alwaysdata.net/templates/ElvosolarLogo1.png';
+        // Obrázky v maily musia byť na verejne dostupnej adrese bez prihlásenia
+        // (mailový klient ich sťahuje z internetu). Predtým tu bol mŕtvy host
+        // adamdz.alwaysdata.net, preto sa logo v mailoch nenačítalo.
+        // Overené: oba odkazy nižšie vracajú 200 + správny Content-Type.
+        // Prepísať sa dá premennými MAIL_LOGO_URL / MAIL_BG_IMAGE.
+        $logo_url = (string)(getenv('MAIL_LOGO_URL') ?: 'https://raw.githubusercontent.com/dzurkoadam1-la/Hardware/main/Software/App/templates/ElvosolarLogo1.png');
+        $img_url  = (string)(getenv('MAIL_BG_IMAGE') ?: 'https://raw.githubusercontent.com/dzurkoadam1-la/Hardware/main/Software/Web/Png/Fotovoltika1.jpg');
 
         $tmpl = <<<'ELVOTPL'
 <!DOCTYPE html>

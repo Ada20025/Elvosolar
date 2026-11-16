@@ -3155,6 +3155,8 @@ elseif ($path === '/api/push/subscribe' && $method === 'POST') {
         )");
         try { $pdo->exec("ALTER TABLE push_subs ADD COLUMN ua VARCHAR(200) DEFAULT ''"); } catch (Exception $e) { /* uz existuje */ }
         $uid = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0;
+        // Bez prihlásenia by subscription skončila pod user_id = 0 a push by nikdy nechodil.
+        if ($uid <= 0) { send_json(['status' => 'error', 'error' => 'not_logged_in'], 401); }
         $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200);
         $pdo->prepare("INSERT INTO push_subs (user_id, endpoint, sub_json, ua) VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), sub_json = VALUES(sub_json), ua = VALUES(ua)")

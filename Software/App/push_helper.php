@@ -161,8 +161,14 @@ if (!function_exists('elvo_push_b64url_enc')) {
                 }
             }
             if ($code >= 200 && $code < 300) return true;
-            if ($code === 404 || $code === 410) return 'expired';
-            error_log('[WEBPUSH] HTTP ' . $code . ': ' . substr((string)$resp, 0, 150));
+            // 404/410 = mŕtva subscription; 400/401/403 = neplatná VAPID autorizácia
+            // (typicky po obnove DB, keď sa vygeneroval nový kľúčový pár). V oboch
+            // prípadoch subscription zmažeme — appka si pri ďalšom otvorení vytvorí novú.
+            if (in_array($code, [400, 401, 403, 404, 410], true)) {
+                error_log('[WEBPUSH] HTTP ' . $code . ' (subscription sa obnoví pri ďalšom otvorení appky): ' . substr((string)$resp, 0, 200));
+                return 'expired';
+            }
+            error_log('[WEBPUSH] HTTP ' . $code . ': ' . substr((string)$resp, 0, 200));
             return false;
         } catch (Exception $e) {
             error_log('[WEBPUSH] send: ' . $e->getMessage());
