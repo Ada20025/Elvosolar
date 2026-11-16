@@ -1612,6 +1612,12 @@ elseif ($path === '/dashboard' && $method === 'GET') {
     $stmtRole->execute([$_SESSION['user_id']]);
     $roleRowD = $stmtRole->fetch();
     $is_admin = ($roleRowD && in_array($roleRowD['role'] ?? '', ['admin', 'mechanik']));
+    // Bez zariadenia sa dashboard NIKDY nezobrazí — používateľ vidí obrazovku „no device“.
+    // Zariadenie priraďuje admin/mechanik, nie používateľ, preto tu nie je žiadne pridávanie.
+    if (!$is_admin && count($devices) === 0) {
+        render_template('no_devices.html');
+        exit;
+    }
     render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices, 'is_admin' => $is_admin]);
 }
 
