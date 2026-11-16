@@ -178,41 +178,15 @@ CREATE TABLE IF NOT EXISTS notif_log (
     UNIQUE KEY uq_notif (user_id, type, dedup_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ── Voliteľný demo účet (odkomentuj, ak ho chceš) ───────────────────────────
--- Hash nižšie je bcrypt pre heslo "demo123".
--- INSERT IGNORE INTO users (username, email, password_hash, email_verified)
--- VALUES ('Demo ElvoSolar', 'demo@elvosolar.sk',
---         '$2y$10$e0NRvQ0d0m0Q0m0Q0m0Q0uJ8m5q1J0GQ1p3gKq0Xy7bYyq7S1q1K', 1);
-
 -- =============================================================================
---  DEMO DÁTA — dočasne, aby appka hneď po nasadení niečo ukázala
---  Účet: demo@elvosolar.sk / demo123   (heslo sa dá zmeniť po prihlásení)
---  Zmazanie: viď koniec súboru.
+--  ŽIADNE DEMO ÚČTY
+--  Tento súbor zámerne nezakladá demo účet demo@elvosolar.sk / demo123 —
+--  do appky sa dostane len skutočný admin (prvý účet z /register alebo
+--  cez ADMIN_EMAILS, prípadne create_admin.php z CLI).
+--  Ak demo účet z predošlého seedu v DB ostal, zablokuje ho appka sama
+--  (rola 'blocked'), prípadne ho zmaž takto:
+--    UPDATE users SET role = 'blocked' WHERE email = 'demo@elvosolar.sk';
+--    DELETE d FROM devices d JOIN users u ON u.id = d.user_id WHERE u.email = 'demo@elvosolar.sk';
+--    DELETE FROM users WHERE email = 'demo@elvosolar.sk';
+--  Voliteľné demo dáta nájdeš v db/demo.sql (len na testovanie).
 -- =============================================================================
-
-INSERT IGNORE INTO users (username, email, password_hash, role, email_verified)
-VALUES ('Demo ElvoSolar', 'demo@elvosolar.sk', '$2y$10$Bhc9wn9NiooWrJprXwOmEOj5hJ48EJGgFPs1iLWTvysS1h0Met5WK', 'admin', 1);
-
-INSERT INTO devices (user_id, name, serial_number, sub_type, status, connection_type,
-                     smartlogger_ip, smartlogger_port, modbus_slave_id, battery_soc,
-                     power_ac, temp, active_model_id, meter_control_mode)
-SELECT u.id, 'ElvoControll Demo', 'DEMO-CM5-001', 'smartlogger', 'offline', 'modbus_tcp',
-       '192.168.0.10', 502, 205, 0, 0, 25, 'AI', 'SMART'
-FROM users u
-WHERE u.email = 'demo@elvosolar.sk'
-  AND NOT EXISTS (SELECT 1 FROM devices d WHERE d.serial_number = 'DEMO-CM5-001');
-
-INSERT INTO devices (user_id, name, serial_number, sub_type, status, connection_type,
-                     smartlogger_ip, smartlogger_port, modbus_slave_id, battery_soc,
-                     power_ac, temp, active_model_id, meter_control_mode)
-SELECT u.id, 'Demo Striedač (Huawei)', 'DEMO-CM5-002', 'hybrid', 'offline', 'modbus_rtu',
-       '', 502, 1, 50, 0, 30, 'AI', 'SMART'
-FROM users u
-WHERE u.email = 'demo@elvosolar.sk'
-  AND NOT EXISTS (SELECT 1 FROM devices d WHERE d.serial_number = 'DEMO-CM5-002');
-
--- -----------------------------------------------------------------------------
---  Zmazanie demo dát (keď ich už nechceš):
---  DELETE d FROM devices d JOIN users u ON u.id = d.user_id WHERE u.email = 'demo@elvosolar.sk';
---  DELETE FROM users WHERE email = 'demo@elvosolar.sk';
--- -----------------------------------------------------------------------------

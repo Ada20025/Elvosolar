@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS notif_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ── Voliteľný demo účet (odkomentuj, ak ho chceš) ───────────────────────────
+-- Demo účet sa nezakladá (voliteľné testovacie dáta: db/demo.sql).
 -- Hash nižšie je bcrypt pre heslo "demo123".
 -- INSERT IGNORE INTO users (username, email, password_hash, email_verified)
 -- VALUES ('Demo ElvoSolar', 'demo@elvosolar.sk',

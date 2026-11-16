@@ -27,20 +27,21 @@ V Railway MySQL obrazovke „You have no tables" je po prvom otvorení appky nor
 Skript je idempotentný (`IF NOT EXISTS`), existujúce dáta nemazá.
 
 **Najrýchlejší štart bez deployu:** v MySQL službe → *Data* → do query poľa vlož celý
-obsah [`railway_setup.sql`](railway_setup.sql) a spusti. Vytvorí tabuľky **aj demo zariadenia**.
+obsah [`railway_setup.sql`](railway_setup.sql) a spusti. Vytvorí **len tabuľky** — žiadny demo účet.
 
-## 1b. Demo zariadenia (dočasne)
+## 1b. Demo účet — PREDVOLENE VYPNUTÝ
 
-Pri prvom vytvorení tabuliek sa vloží demo účet a 2 zariadenia, aby appka nebola prázdna:
+Verzia z predošlých dní zakladala `demo@elvosolar.sk` / `demo123` s rolou **admin**.
+To je vypnuté:
 
-| | |
-|---|---|
-| E-mail | `demo@elvosolar.sk` |
-| Heslo | `demo123` |
-| Rola | `admin` (vidí a spravuje všetky zariadenia) |
-| Zariadenia | `ElvoControll Demo` (DEMO-CM5-001), `Demo Striedač (Huawei)` (DEMO-CM5-002) |
+- appka demo účet **nezakladá** a existujúci demo účet **zablokuje** (rola `blocked`,
+  prihlásenie odmietne), ak nie je výslovne `SEED_DEMO=1`,
+- aj so `SEED_DEMO=1` má demo účet rolu `user`, nikdy admin,
+- do appky sa tak dostane len tvoj admin účet — prvý z `/register`, povýšený cez
+  `ADMIN_EMAILS`, cez `create_admin.php` (CLI) alebo SQL nižšie v sekcii „Admin účet“.
 
-Demo sa vkladá **iba do úplne prázdnej DB** (nič neprepíše). Vypnutie: `SEED_DEMO=0`.
+Ak chceš testovacie dáta, spusti [`demo.sql`](demo.sql) — založí demo účet s rolou `user`
+a dve zariadenia. Do produkcie ho nespúšťaj.
 
 ### Admin účet
 
@@ -52,8 +53,15 @@ napr. `ADMIN_EMAILS=adam@elvosolar.sk,druhy@firma.sk` — pri najbližšom prihl
   UPDATE users SET role = 'admin' WHERE email = 'adam@elvosolar.sk';
   ```
 - Ak v DB nie je žiadny admin, prvý účet, ktorý sa prihlási so správnym heslom, sa adminom stane automaticky.
-Zmazanie (keď už nechceš):
+
+### Zablokovanie / zmazanie demo účtu
+
+Appka ho zablokuje sama pri prvom requeste po nasadení. Ručne (Railway → *Data*):
 ```sql
+-- zablokovať prihlasovanie (odporúčané, nič sa nezmaže)
+UPDATE users SET role = 'blocked' WHERE email = 'demo@elvosolar.sk';
+
+-- alebo úplne zmazať aj s demo zariadeniami
 DELETE d FROM devices d JOIN users u ON u.id = d.user_id WHERE u.email = 'demo@elvosolar.sk';
 DELETE FROM users WHERE email = 'demo@elvosolar.sk';
 ```

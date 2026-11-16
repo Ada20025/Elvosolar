@@ -74,18 +74,19 @@ if (!function_exists('elvo_db_bootstrap')) {
     }
 
     /**
-     * Dočasné demo dáta — vložia sa IBA do úplne prázdnej databázy.
-     * Účet: demo@elvosolar.sk / demo123
-     * Vypnutie: premenná prostredia SEED_DEMO=0.
+     * Dočasné demo dáta — vložia sa IBA do úplne prázdnej databázy a IBA ak
+     * sa výslovne zapnú premennou SEED_DEMO=1. Predvolene sú VYPNUTÉ, aby sa
+     * do appky nedostal nikto cez demo123.
+     * Účet: demo@elvosolar.sk / demo123 (rola 'user', nie admin).
      */
     function elvo_db_seed_demo($pdo) {
-        if (getenv('SEED_DEMO') === '0') return false;
+        if (getenv('SEED_DEMO') !== '1') return false;
         try {
             if ((int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() > 0) return false;
 
             $hash = password_hash('demo123', PASSWORD_BCRYPT);
-            // Demo účet je ADMIN, aby sa s ním dalo hneď prihlásiť a spravovať zariadenia.
-            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'admin', 1)")
+            // Demo účet je bežný používateľ — admin práva má len skutočný admin.
+            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'user', 1)")
                 ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $hash]);
             $uid = (int)$pdo->lastInsertId();
 

@@ -745,18 +745,24 @@ if (isset($pdo) && !$migrations_done) {
     } catch (Exception $eDedup) { /* ignore */ }
 }
 
-// === DEMO USER SEED ===
+// === DEMO ÚČET JE PREDVOLENE VYPNUTÝ ===
+// demo@elvosolar.sk / demo123 už NIE je admin a vôbec sa neprihlasuje (rola 'blocked').
+// Demo sa založí len vtedy, ak sa výslovne nastaví SEED_DEMO=1 — a aj vtedy ako bežný používateľ.
 if (isset($pdo) && !$migrations_done) {
     try {
-        $demoCheck = $pdo->query("SELECT id FROM users WHERE email = 'demo@elvosolar.sk' LIMIT 1")->fetch();
-        if (!$demoCheck) {
-            $demoHash = password_hash('demo123', PASSWORD_BCRYPT);
-            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'admin', 1)")
-                 ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $demoHash]);
-            $demoUserId = $pdo->lastInsertId();
-            // Demo zariadenie - OFFLINE s nulovymi datami (ziadne fake hodnoty)
-            $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status, min_power_pct, max_power_pct, active_model_id, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline', 0, 100, 'AI', 'modbus_tcp', '192.168.0.10', 502, 205)")
-                 ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'huawei', 'smartlogger', 'smartlogger3000a', 'smartlogger']);
+        if (getenv('SEED_DEMO') === '1') {
+            $demoCheck = $pdo->query("SELECT id FROM users WHERE email = 'demo@elvosolar.sk' LIMIT 1")->fetch();
+            if (!$demoCheck) {
+                $demoHash = password_hash('demo123', PASSWORD_BCRYPT);
+                $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'user', 1)")
+                     ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $demoHash]);
+                $demoUserId = $pdo->lastInsertId();
+                $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status, min_power_pct, max_power_pct, active_model_id, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline', 0, 100, 'AI', 'modbus_tcp', '192.168.0.10', 502, 205)")
+                     ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'huawei', 'smartlogger', 'smartlogger3000a', 'smartlogger']);
+            }
+        } else {
+            // Zablokuje demo účet, ktorý už v DB je (napr. z predošlého seedu)
+            $pdo->exec("UPDATE users SET role = 'blocked' WHERE LOWER(email) = 'demo@elvosolar.sk' AND role <> 'blocked'");
         }
     } catch (Exception $e) { /* ignore */ }
 
