@@ -123,10 +123,6 @@ Alternatíva bez Railway: súbor `Software/App/turnstile_keys.php` vráti `['sit
 - Zálohy MySQL (Railway → Backups) — bez nich sa nedá obnoviť stav po havárii.
 - Akýkoľvek systém sa dá prelomiť; žiadne „100 %“ neexistuje. Toto je štandardná úroveň zabezpečenia pre jednu firmu, nie bankový štandard.
 
-Rýchly štart bez deployu: vlož [`railway_setup.sql`](Software/App/db/railway_setup.sql)
-do query poľa v Railway MySQL — vytvorí tabuľky aj dočasné demo zariadenia
-(`demo@elvosolar.sk` / `demo123`, zariadenia `DEMO-CM5-001` a `DEMO-CM5-002`).
-
 ---
 
 *2011–2026 ElvoControl. Všetky práva vyhradené.*
