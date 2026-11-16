@@ -383,6 +383,11 @@
                     <input type="checkbox" id="stay_logged_in" name="stay_logged_in" value="1" style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;">
                     <label for="stay_logged_in" style="font-size:12px;font-weight:600;color:#64748b;cursor:pointer;">Zostať prihlásený (90 dní)</label>
                 </div>
+                <?php if (!empty($ts_site ?? '')): ?>
+                <!-- Cloudflare Turnstile: políčko „nie som robot“ (zobrazí sa len ak sú nastavené kľúče) -->
+                <div class="cf-turnstile" data-sitekey="<?php echo htmlspecialchars($ts_site); ?>" data-theme="dark" data-size="flexible" style="margin:0 0 14px 0;"></div>
+                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                <?php endif; ?>
                 <button type="submit" class="submit-btn">Prihlásiť sa</button>
             </form>
 

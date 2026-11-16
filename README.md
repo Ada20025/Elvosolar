@@ -78,6 +78,51 @@ Kompletná MySQL schéma (všetky tabuľky: používatelia, zariadenia, telemetr
 alerty, notifikácie, push, CM5 príkazy, MQTT audit, prihlásenia) je v
 [`Software/App/db/schema.sql`](Software/App/db/schema.sql).
 Postup importu a premenné prostredia: [`Software/App/db/README.md`](Software/App/db/README.md).
+Rýchly štart bez deployu: vlož [`railway_setup.sql`](Software/App/db/railway_setup.sql) do query poľa
+v Railway MySQL — vytvorí tabuľky aj dočasné demo zariadenia (`demo@elvosolar.sk` / `demo123`,
+zariadenia `DEMO-CM5-001` a `DEMO-CM5-002`).
+## Bezpečnosť prístupu a Cloudflare Turnstile
+
+Aplikácia má štyri vrstvy, každá musí prejsť:
+1. **Tajná mesačne rotujúca adresa** — `/<KĽÚČ>` alebo `/?k=KĽÚČ`; bez nej appka presmeruje na `www.elvosolar.sk`.
+2. **Brána** (meno/heslo) — `ACCESS_GATE_USER` / `ACCESS_GATE_PASS`, inak tabuľka `access_gate`.
+3. **Prihlásenie účtu** + **2FA kód e-mailom** (ak mail neodíde, kód sa zobrazí na obrazovke).
+4. **Zapamätané zariadenie** — podpísaný cookie `elvo_dev` na 10 rokov, ďalej už nič nepýta.
+
+### Cloudflare Turnstile („nie som robot“)
+Políčko sa zobrazí automaticky, len čo sú nastavené kľúče — netreba meniť kód:
+1. Cloudflare dashboard → **Turnstile** → *Add site* → doména appky (napr. `*.up.railway.app`).
+2. Skopíruj **Site Key** a **Secret Key**.
+3. Railway → služba s aplikáciou → **Variables**:
+   - `TURNSTILE_SITE_KEY` = Site Key
+   - `TURNSTILE_SECRET_KEY` = Secret Key
+4. Redeploy. Políčko sa objaví na bráne aj na prihlasovacom formulári; server každý token overí cez `siteverify`.
+
+Alternatíva bez Railway: súbor `Software/App/turnstile_keys.php` vráti `['site_key' => '…', 'secret_key' => '…']`.
+
+### Premenné, ktoré treba nastaviť (bez nich je appka zraniteľnejšia)
+| Premenná | Prečo |
+|---|---|
+| `ACCESS_URL_KEY` | Bez nej sa mesačný kľúč počíta z predvoleného semena `ELVO-APP-2026`, teda je **predvídateľný**. Nastav vlastné dlhé tajomstvo. |
+| `ACCESS_GATE_USER` / `ACCESS_GATE_PASS` | Bez nich platí `admin` / `ELVO-ACCESS-2026`. |
+| `ADMIN_EMAILS` | Ktoré účty sú admini (inak sa admin určí pri prihlasovaní). |
+| `SEED_DEMO=0` | Vypne demo účet `demo@elvosolar.sk` / `demo123` (admin) v prázdnej DB. |
+| `APP_DEBUG` | Nechaj prázdne; `1` zobrazí chyby PHP aj s cestami a SQL. |
+
+### Čo je v kóde vynútené
+- SQL len cez pripravené dotazy (`prepare`/`execute`) — žiadne vkladanie `$_GET`/`$_POST` do SQL.
+- Žiadne `eval`, `shell_exec` ani nahrávanie súborov vo webovej časti.
+- Cookies `HttpOnly` + `SameSite=Lax` + `Secure` (detekcia HTTPS cez `X-Forwarded-Proto`).
+- HSTS, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, `COOP`.
+- `display_errors` vypnuté v produkcii; chyby idú len do logu.
+- Rate limit na bráne (6 pokusov / 60 s) aj na prihlásení (3 pokusy / 30 min, blokácia zariadenia po 3 zlých 2FA kódoch).
+- API vracia 401 JSON (nie HTML), admin endpointy kontrolujú rolu zo session.
+
+### Čo ostáva na tebe
+- Nastaviť `ACCESS_URL_KEY`, `ACCESS_GATE_PASS` a vypnúť demo, keď ho už nepotrebuješ.
+- Zálohy MySQL (Railway → Backups) — bez nich sa nedá obnoviť stav po havárii.
+- Akýkoľvek systém sa dá prelomiť; žiadne „100 %“ neexistuje. Toto je štandardná úroveň zabezpečenia pre jednu firmu, nie bankový štandard.
+
 Rýchly štart bez deployu: vlož [`railway_setup.sql`](Software/App/db/railway_setup.sql)
 do query poľa v Railway MySQL — vytvorí tabuľky aj dočasné demo zariadenia
 (`demo@elvosolar.sk` / `demo123`, zariadenia `DEMO-CM5-001` a `DEMO-CM5-002`).

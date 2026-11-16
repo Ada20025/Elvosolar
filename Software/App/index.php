@@ -1,8 +1,17 @@
 <?php
 ob_start();
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// Chyby sa v produkcii NIKDY nezobrazujú používateľovi (obsahujú cesty, SQL, názvy tabuliek).
+// Zapnúť sa dajú len premennou APP_DEBUG=1 v Railway.
+$elvo_debug = (getenv('APP_DEBUG') === '1');
+ini_set('display_errors', $elvo_debug ? '1' : '0');
+ini_set('display_startup_errors', $elvo_debug ? '1' : '0');
+ini_set('log_errors', '1');
 error_reporting(E_ALL);
+
+// HTTPS detekcia — na Railway je TLS ukončený na proxy, takže $_SERVER['HTTPS'] je prázdne
+$elvo_https = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+    || (strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https')
+    || ((string)($_SERVER['SERVER_PORT'] ?? '') === '443');
 
 // RYCHLOST: gzip kompresia - dashboard HTML 219 kB -> ~30 kB (menej prenosu = rychlejsie nacitanie)
 if (!empty($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false
@@ -14,7 +23,7 @@ if (!empty($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENC
 header('Content-Type: text/html; charset=utf-8');
 date_default_timezone_set('Europe/Bratislava');
 ini_set('session.gc_maxlifetime', 31536000); // 1 rok — appka sa nikdy neodhlási
-session_set_cookie_params(['lifetime' => 31536000, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax']);
+session_set_cookie_params(['lifetime' => 31536000, 'path' => '/', 'secure' => $elvo_https, 'httponly' => true, 'samesite' => 'Lax']);
 session_start();
 require_once 'config.php';
 // MQTT most (Ruka -> Mozog): klient, CSRF, audit, rate limit
@@ -24,6 +33,10 @@ require_once __DIR__ . '/mqtt_lib.php';
 header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()');
+header('X-Permitted-Cross-Domain-Policies: none');
+header('Cross-Origin-Opener-Policy: same-origin');
+if ($elvo_https) header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 // HTML stranky nikdy necachovat (vzdy cerstvy dashboard)
 if (!preg_match('#\.(png|jpg|svg|ico|css|js|json|woff2?)$#', $request_uri ?? '')) {
     header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -67,7 +80,7 @@ if (!function_exists('elvo_gate_creds')) {
     function elvo_gate_set_cookie($creds) {
         setcookie('elvo_access', elvo_gate_token($creds), [
             'expires' => time() + 31536000, 'path' => '/',
-            'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax'
+            'secure' => !empty($GLOBALS['elvo_https']), 'httponly' => true, 'samesite' => 'Lax'
         ]);
     }
     // Over prístup: buď prístupové údaje správcu, ALEBO prihlasovacie údaje skutočného účtu (e-mail + heslo)
@@ -276,7 +289,7 @@ if (!function_exists('elvo_device_ok')) {
         setcookie('elvo_dev', $token, [
             'expires'  => time() + 315360000, // 10 rokov
             'path'     => '/',
-            'secure'   => !empty($_SERVER['HTTPS']),
+            'secure'   => !empty($GLOBALS['elvo_https']),
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
@@ -1307,7 +1320,16 @@ elseif ($path === '/login') {
     // Rate limit: max 3 neuspesnych pokusov -> 30 min lockout (per email+IP)
     $attempt_key = 'login_att_' . md5(strtolower(trim($_POST['email'] ?? '')) . '|' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
     $attempts = $_SESSION[$attempt_key] ?? ['count' => 0, 'until' => 0];
+    // Cloudflare Turnstile — políčko sa zobrazí, len keď sú nastavené kľúče
+    // (TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY v Railway Variables).
+    $elvo_ts_site = elvo_turnstile_enabled() ? (elvo_turnstile_keys()['site'] ?? '') : '';
     if ($method === 'POST') {
+        // Prihlasovací formulár chránime proti robotom rovnako ako bránu.
+        if (elvo_turnstile_enabled() && !elvo_turnstile_ok()) {
+            flash('Overenie proti robotom zlyhalo — obnov stránku a skús znova.', 'error');
+            render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site]);
+            exit;
+        }
         // 2FA blokada (3 zle kody -> 30 min): blokuje cele prihlasenie z tohto zariadenia
         $dev_hash_chk = hash('sha256', (trim($_POST['device_id'] ?? '') ?: ('ua:' . ($_SERVER['HTTP_USER_AGENT'] ?? '-'))));
         try {
@@ -1316,7 +1338,7 @@ elseif ($path === '/login') {
             $bt = $tq->fetchColumn();
             if ($bt && strtotime($bt) > time()) {
                 flash('Zariadenie je dočasne blokované (3× zlý overovací kód). Skúste o ' . date('H:i:s', strtotime($bt)) . '.', 'error');
-                render_template('prihlasenie.html', ['flash' => get_flash_messages()]);
+                render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site]);
                 exit;
             }
         } catch (Exception $e) { /* tabulka este neexistuje */ }
@@ -1406,7 +1428,7 @@ elseif ($path === '/login') {
             }
         }
     }
-    render_template('prihlasenie.html', ['flash' => get_flash_messages()]);
+    render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site]);
 }
 
 // --- OVERENIE PRIHLASENIA EMAIL KODOM (nove zariadenie) ---
