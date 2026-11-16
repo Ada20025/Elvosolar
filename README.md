@@ -82,6 +82,32 @@ Rýchly štart bez deployu: vlož [`railway_setup.sql`](Software/App/db/railway_
 v Railway MySQL — vytvorí tabuľky. **Žiadny demo účet sa nezakladá** — do appky sa dostane len
 tvoj admin (prvý účet z `/register`, cez `ADMIN_EMAILS`, alebo `create_admin.php` z CLI).
 Testovacie dáta sú voliteľné v [`db/demo.sql`](Software/App/db/demo.sql), demo účet tam má rolu `user`.
+## ✅ Kontrola po nasadení
+
+Appka má mať vlastnú doménu (Railway → *Settings → Networking → Generate Domain*).
+Po redeployi over jednu vec jedným príkazom:
+
+```bash
+./scripts/smoke.sh https://tvoja-domena.up.railway.app <KLUC> <GATE_USER> <GATE_PASS>
+```
+
+Skript kontroluje `/healthcheck`, platnosť tajného kľúča, bránu, `/login` a že API
+bez session vráti JSON 401. Každý push na `main` navyše prejde CI (PHP lint,
+Python compile, kontrola JS v šablónach) — viď `.github/workflows/ci.yml`.
+
+### Cron (`POST /api/cron/notifications`, hlavička `X-Cron-Key: <CRON_SECRET>`)
+
+Jeden endpoint robí celú údržbu, spúšťaj ho každých 10 minút:
+
+| Krok | Čo robí |
+|---|---|
+| Alerty zariadení | offline > 15 min, chyba striedača, nízke SOC, vysoká teplota — push + mail |
+| Stav zariadení | `devices.status` prepne na `offline`/`online` podľa `last_seen` |
+| Denný súhrn | raz denne po 07:00 |
+| Záporná cena | OKTE blok so zápornou cenou |
+| Telemetria | denná agregácia do `telemetry_daily` + mazanie raw dát starších ako 90 dní |
+| Mesačný report | 1. deň v mesiaci po 07:00 — výroba v kWh za predošlý mesiac |
+
 ## Bezpečnosť prístupu a Cloudflare Turnstile
 
 Aplikácia má štyri vrstvy, každá musí prejsť:

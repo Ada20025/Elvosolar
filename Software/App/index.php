@@ -3435,7 +3435,9 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_prefs (user_id INT PRIMARY KEY, prefs TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
     } catch (Exception $e) { /* ignore */ }
 
-    $out = ['alerts_devices' => 0, 'daily_report' => 0, 'negative_price' => 0, 'errors' => []];
+    $out = ['alerts_devices' => 0, 'daily_report' => 0, 'negative_price' => 0,
+            'monthly_report' => 0, 'devices_offline' => 0, 'devices_online' => 0,
+            'telemetry_pruned' => 0, 'errors' => []];
 
     // 1) ALERTY ZARIADENÍ (offline / chyba striedača / nízke SOC / teplota)
     try {
@@ -3548,6 +3550,110 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
             }
         }
     } catch (Exception $e) { $out['errors'][] = 'negative_price: ' . $e->getMessage(); }
+
+    // 4) STAV ZARIADENÍ — offline/online podľa poslednej telemetrie (>15 min = offline)
+    //    Dashboard tak neukazuje "online" zariadenie, ktoré už dávno mlčí.
+    try {
+        $offline = $pdo->exec("UPDATE devices SET status = 'offline'
+            WHERE last_seen IS NOT NULL AND last_seen < NOW() - INTERVAL 15 MINUTE AND status <> 'offline'");
+        $online = $pdo->exec("UPDATE devices SET status = 'online'
+            WHERE last_seen IS NOT NULL AND last_seen >= NOW() - INTERVAL 15 MINUTE AND status = 'offline'");
+        $out['devices_offline'] = max(0, (int)$offline);
+        $out['devices_online'] = max(0, (int)$online);
+    } catch (Exception $e) { $out['errors'][] = 'status: ' . $e->getMessage(); }
+
+    // 5) TELEMETRIA — denná agregácia + retencia. Bez toho tabuľka rastie donekonečna
+    //    a dashboard sa po čase spomalí. Agregát drží históriu, raw dáta sa mažú po 90 dňoch.
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS telemetry_daily (
+            device_id INT NOT NULL,
+            day DATE NOT NULL,
+            samples INT DEFAULT 0,
+            avg_power FLOAT DEFAULT 0,
+            max_power FLOAT DEFAULT 0,
+            min_soc FLOAT DEFAULT 0,
+            max_soc FLOAT DEFAULT 0,
+            kwh FLOAT DEFAULT 0,
+            PRIMARY KEY (device_id, day)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("INSERT INTO telemetry_daily (device_id, day, samples, avg_power, max_power, min_soc, max_soc, kwh)
+            SELECT device_id, DATE(timestamp) AS d, COUNT(*), AVG(power_ac), MAX(power_ac),
+                   MIN(NULLIF(battery_soc, 0)), MAX(battery_soc),
+                   AVG(power_ac) / 1000 * (TIMESTAMPDIFF(SECOND, MIN(timestamp), MAX(timestamp)) / 3600)
+            FROM telemetry
+            WHERE timestamp >= CURDATE() - INTERVAL 2 DAY
+            GROUP BY device_id, DATE(timestamp)
+            ON DUPLICATE KEY UPDATE samples = VALUES(samples), avg_power = VALUES(avg_power),
+                max_power = VALUES(max_power), min_soc = VALUES(min_soc),
+                max_soc = VALUES(max_soc), kwh = VALUES(kwh)");
+        $pruned = $pdo->exec("DELETE FROM telemetry WHERE timestamp < NOW() - INTERVAL 90 DAY");
+        $out['telemetry_pruned'] = max(0, (int)$pruned);
+    } catch (Exception $e) { $out['errors'][] = 'telemetry: ' . $e->getMessage(); }
+
+    // 6) MESAČNÝ REPORT — 1. deň v mesiaci po 07:00 za predošlý mesiac
+    if (intval(date('j')) === 1 && intval(date('G')) >= 7) {
+        try {
+            $monthKey = date('Y-m', strtotime('first day of last month'));
+            $monthStart = $monthKey . '-01';
+            $monthEnd = date('Y-m-t', strtotime($monthStart));
+            $users = $pdo->query("SELECT DISTINCT user_id FROM devices")->fetchAll();
+            foreach ($users as $u) {
+                $uid = intval($u['user_id']);
+                $pfStmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
+                $pfStmt->execute([$uid]);
+                $pf = json_decode((string)$pfStmt->fetchColumn(), true);
+                if (is_array($pf) && isset($pf['monthly_report']) && !$pf['monthly_report']) continue;
+                if (elvo_notif_channel($pdo, $uid, 'monthly_report') === 'none') continue;
+
+                $ins = $pdo->prepare("INSERT IGNORE INTO notif_log (user_id, type, dedup_key) VALUES (?, 'monthly_report', ?)");
+                $ins->execute([$uid, $monthKey]);
+                if ($ins->rowCount() === 0) continue;
+
+                $q = $pdo->prepare("SELECT d.name, SUM(t.kwh) kwh, AVG(t.avg_power) avg_p, MAX(t.max_power) max_p,
+                                           MIN(NULLIF(t.min_soc, 0)) min_soc, MAX(t.max_soc) max_soc, SUM(t.samples) samples
+                                    FROM telemetry_daily t JOIN devices d ON d.id = t.device_id
+                                    WHERE d.user_id = ? AND t.day BETWEEN ? AND ?
+                                    GROUP BY d.id, d.name ORDER BY d.id");
+                $q->execute([$uid, $monthStart, $monthEnd]);
+                $rows = $q->fetchAll();
+
+                $html = '';
+                $totalKwh = 0.0;
+                foreach ($rows as $r) {
+                    $kwh = floatval($r['kwh'] ?? 0);
+                    $totalKwh += $kwh;
+                    $soc = ($r['min_soc'] !== null && floatval($r['min_soc']) > 0)
+                        ? (round(floatval($r['min_soc'])) . '–' . round(floatval($r['max_soc'])) . ' %') : '–';
+                    $html .= '<tr>'
+                        . '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e2e8f0;font-size:13px;">' . htmlspecialchars($r['name'] ?: 'Zariadenie') . '</td>'
+                        . '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . number_format($kwh, 1, ',', ' ') . ' kWh</td>'
+                        . '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . round(floatval($r['avg_p'] ?? 0)) . ' W</td>'
+                        . '<td style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;text-align:right;">' . $soc . '</td>'
+                        . '</tr>';
+                }
+
+                if (!$rows) {
+                    $body = 'Za mesiac ' . $monthKey . ' nie sú žiadne dáta.';
+                    $mailHtml = '<p style="margin:0;font-size:14px;color:#cbd5e1;">' . htmlspecialchars($body) . '</p>';
+                } else {
+                    $body = 'Za ' . $monthKey . ': ' . number_format($totalKwh, 1, ',', ' ') . ' kWh z ' . count($rows) . ' zariadení';
+                    $mailHtml = '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">' . htmlspecialchars($body) . '</p>'
+                        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">'
+                        . '<tr><th align="left" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Zariadenie</th>'
+                        . '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Výroba</th>'
+                        . '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Ø výkon</th>'
+                        . '<th align="right" style="padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;">SOC</th></tr>'
+                        . $html . '</table>'
+                        . '<p style="margin:18px 0 0 0;font-size:11px;color:#64748b;">Mesačný report sa posiela 1. deň v mesiaci. Vypnúť sa dá v Nastaveniach → Notifikácie.</p>';
+                }
+
+                $chan = elvo_notif_channel($pdo, $uid, 'monthly_report');
+                elvo_notif_send($pdo, $uid, $chan, 'monthly_report', 'Mesačný report ' . $monthKey, $body,
+                                'monthly-' . $monthKey, '/dashboard', $mailHtml, '#10b981');
+                $out['monthly_report']++;
+            }
+        } catch (Exception $e) { $out['errors'][] = 'monthly: ' . $e->getMessage(); }
+    }
 
     send_json(['status' => 'success', 'result' => $out]);
 }

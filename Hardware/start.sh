@@ -103,6 +103,16 @@ pgrep -f "update_service.py" >/dev/null || \
     $VENV_PYTHON $APP_DIR/update_service.py 2>/dev/null &
 
 # ============================================================
+# ROLLBACK PO NEÚSPEŠNOM UPDATE
+# Ak predošlý update nenabehol (app.py sa nepotvrdil do 180 s), vrátime
+# súbory z .bak. CM5 tak nikdy nezostane mŕtvy na pokazenom update.
+# ============================================================
+if [ -f /tmp/elvo_update_pending.json ]; then
+    echo "[UPDATE] Neúplný update — kontrolujem, či treba rollback..."
+    $VENV_PYTHON $APP_DIR/update_service.py --rollback-stale 2>&1 || true
+fi
+
+# ============================================================
 # HLAVNY WEB SERVER - popredie (systemd ho stráži a reštartuje)
 # ============================================================
 echo "[APLIKÁCIA] >>> Spúšťam app.py <<<"

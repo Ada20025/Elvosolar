@@ -70,6 +70,19 @@ CREATE TABLE IF NOT EXISTS telemetry (
     INDEX idx_tel_time (timestamp)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ── Denné agregáty telemetrie (drží históriu, keď sa raw dáta po 90 dňoch zmažú)
+CREATE TABLE IF NOT EXISTS telemetry_daily (
+    device_id INT NOT NULL,
+    day DATE NOT NULL,
+    samples INT DEFAULT 0,
+    avg_power FLOAT DEFAULT 0,
+    max_power FLOAT DEFAULT 0,
+    min_soc FLOAT DEFAULT 0,
+    max_soc FLOAT DEFAULT 0,
+    kwh FLOAT DEFAULT 0,
+    PRIMARY KEY (device_id, day)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ── Alerty zariadení (offline, nízke SOC, teplota, chyba striedača) ─────────
 CREATE TABLE IF NOT EXISTS device_alerts (
     id INT AUTO_INCREMENT PRIMARY KEY,

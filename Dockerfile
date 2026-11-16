@@ -10,4 +10,6 @@ COPY Software/App/ /app/
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "PHP_CLI_SERVER_WORKERS=8 php -d display_errors=1 -d error_reporting=E_ALL -d opcache.enable=1 -d opcache.enable_cli=1 -d opcache.memory_consumption=128 -d opcache.validate_timestamps=0 -d realpath_cache_size=4096k -d realpath_cache_ttl=600 -S 0.0.0.0:${PORT:-8080} index.php"]
+# display_errors je VYPNUTÉ (produkcia) — chyby idú len do logu. Pri ladení
+# nastav v Railway premennú APP_DEBUG=1; index.php si vtedy zapne výpis sám.
+CMD ["sh", "-c", "PHP_CLI_SERVER_WORKERS=8 php -d display_errors=0 -d log_errors=1 -d error_log=/dev/stderr -d error_reporting=E_ALL -d opcache.enable=1 -d opcache.enable_cli=1 -d opcache.memory_consumption=128 -d opcache.validate_timestamps=0 -d realpath_cache_size=4096k -d realpath_cache_ttl=600 -S 0.0.0.0:${PORT:-8080} index.php"]

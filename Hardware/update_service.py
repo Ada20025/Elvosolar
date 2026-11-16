@@ -1,8 +1,8 @@
+import hashlib
 import json
 import os
 import sys
 import time
-import hashlib
 import subprocess
 import urllib.request
 
@@ -10,6 +10,12 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Štádium updatu pre stavové LED (app.py ho číta a svieti zelenou podľa fázy)
 UPDATE_STAGE_FILE = "/tmp/elvo_update_stage.json"
+
+# Značka "update prebehol, ale ešte nie je potvrdené, že appka naozaj nabehla".
+# Ak app.py po reštarte nenabehne, start.sh zavolá --rollback-stale a vráti
+# predošlé súbory z .bak — CM5 tak nezostane mŕtvy.
+PENDING_FILE = "/tmp/elvo_update_pending.json"
+PENDING_MAX_AGE = 180  # sekundy — po tomto čase bez potvrdenia sa rollbackne
 
 
 def set_update_stage(stage):
@@ -25,24 +31,26 @@ def set_update_stage(stage):
         pass
 
 # Súbory na aktualizáciu: relatívna cesta -> GitHub raw URL
+# POZOR: zdrojom je repo, do ktorého sa naozaj pushuje (dzurkoadam1-la/Hardware).
+RAW_BASE = "https://raw.githubusercontent.com/dzurkoadam1-la/Hardware/main/Hardware/"
 UPDATE_FILES = {
-    "app.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/app.py",
-    "network_scan.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/network_scan.py",
-    "modbus_slave_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/modbus_slave_service.py",
-    "modbus_scan.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/modbus_scan.py",
-    "models_engine.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/models_engine.py",
-    "third_party_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/third_party_service.py",
-    "ble_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/ble_service.py",
-    "Config.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/Config.py",
-    "solar_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/solar_service.py",
-    "system_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/system_service.py",
-    "database.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/database.py",
-    "ai_engine.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/ai_engine.py",
-    "led_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/led_service.py",
-    "smart_meter_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/smart_meter_service.py",
-    "update_service.py": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/update_service.py",
-    "start.sh": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/start.sh",
-    "templates/setup.html": "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/templates/setup.html",
+    "app.py": RAW_BASE + "app.py",
+    "network_scan.py": RAW_BASE + "network_scan.py",
+    "modbus_slave_service.py": RAW_BASE + "modbus_slave_service.py",
+    "modbus_scan.py": RAW_BASE + "modbus_scan.py",
+    "models_engine.py": RAW_BASE + "models_engine.py",
+    "third_party_service.py": RAW_BASE + "third_party_service.py",
+    "ble_service.py": RAW_BASE + "ble_service.py",
+    "Config.py": RAW_BASE + "Config.py",
+    "solar_service.py": RAW_BASE + "solar_service.py",
+    "system_service.py": RAW_BASE + "system_service.py",
+    "database.py": RAW_BASE + "database.py",
+    "ai_engine.py": RAW_BASE + "ai_engine.py",
+    "led_service.py": RAW_BASE + "led_service.py",
+    "smart_meter_service.py": RAW_BASE + "smart_meter_service.py",
+    "update_service.py": RAW_BASE + "update_service.py",
+    "start.sh": RAW_BASE + "start.sh",
+    "templates/setup.html": RAW_BASE + "templates/setup.html",
 }
 
 CHECK_INTERVAL = 3600  # 1 hodina
@@ -146,23 +154,23 @@ def clean_pycache():
         print(f"[UPDATER] [CACHE] Zmazanych {removed} __pycache__ adresarov")
 
 
-def md5_file(filepath):
-    """Vypočíta MD5 hash súboru."""
+def sha256_file(filepath):
+    """SHA-256 hash súboru (MD5 je na overenie integrity slabé)."""
     if not os.path.exists(filepath):
         return ""
-    h = hashlib.md5()
+    h = hashlib.sha256()
     try:
         with open(filepath, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
+            for chunk in iter(lambda: f.read(65536), b""):
                 h.update(chunk)
         return h.hexdigest()
     except Exception:
         return ""
 
 
-def md5_data(data):
-    """Vypočíta MD5 hash dát."""
-    return hashlib.md5(data).hexdigest()
+def sha256_data(data):
+    """SHA-256 hash dát."""
+    return hashlib.sha256(data).hexdigest()
 
 
 def download_file(url):
@@ -176,20 +184,82 @@ def download_file(url):
         return None
 
 
+def write_pending(backups):
+    """Zapíše zoznam záloh, ktoré treba vrátiť, ak appka po update nenabehne."""
+    try:
+        with open(PENDING_FILE, "w", encoding="utf-8") as f:
+            json.dump({"at": time.time(), "backups": backups}, f)
+    except Exception as e:
+        print(f"[UPDATER] ⚠️ Nepodarilo sa zapísať pending marker: {e}")
+
+
+def read_pending():
+    try:
+        if not os.path.exists(PENDING_FILE):
+            return None
+        with open(PENDING_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def confirm_update():
+    """App.py zavolá po úspešnom štarte — update je potvrdený, netreba rollback."""
+    if os.path.exists(PENDING_FILE):
+        try:
+            os.remove(PENDING_FILE)
+            print("[UPDATER] ✅ Update potvrdený — nová verzia beží")
+        except Exception:
+            pass
+
+
+def rollback_stale():
+    """Ak update nebol do PENDING_MAX_AGE potvrdený, vráť .bak súbory späť."""
+    pending = read_pending()
+    if not pending:
+        return False
+    age = time.time() - float(pending.get("at") or 0)
+    if age < PENDING_MAX_AGE:
+        return False
+    return rollback_now(pending.get("backups") or [], reason="appka po update nenabehla")
+
+
+def rollback_now(backups, reason=""):
+    restored = 0
+    for item in backups:
+        src = item.get("backup")
+        dst = item.get("path")
+        if not dst or not src or not os.path.exists(src):
+            continue
+        try:
+            os.replace(src, dst)
+            restored += 1
+        except Exception as e:
+            print(f"[UPDATER] ❌ Rollback zlyhal pre {dst}: {e}")
+    try:
+        if os.path.exists(PENDING_FILE):
+            os.remove(PENDING_FILE)
+    except Exception:
+        pass
+    print(f"[UPDATER] ↩️ ROLLBACK ({reason}) — vrátených {restored} súborov")
+    return restored > 0
+
+
 def check_and_update():
     """Skontroluje všetky súbory a aktualizuje zmenené."""
     any_updated = False
+    backups = []
     set_update_stage("check")
 
     for rel_path, url in UPDATE_FILES.items():
         local_path = os.path.join(BASE_DIR, rel_path)
-        local_hash = md5_file(local_path)
+        local_hash = sha256_file(local_path)
 
         remote_data = download_file(url)
         if remote_data is None:
             continue
 
-        remote_hash = md5_data(remote_data)
+        remote_hash = sha256_data(remote_data)
 
         if local_hash == remote_hash:
             print(f"[UPDATER] {rel_path} — OK (hash zhodný)")
@@ -202,6 +272,10 @@ def check_and_update():
             # Bezpečnostná kontrola — pre .py súbory overíme syntax
             if rel_path.endswith(".py"):
                 compile(remote_data.decode("utf-8"), local_path, "exec")
+            if rel_path.endswith(".sh"):
+                first = remote_data.split(b"\n", 1)[0]
+                if not first.startswith(b"#!"):
+                    raise ValueError("shell skript nemá shebang")
 
             # Vytvor priečinok ak neexistuje
             os.makedirs(os.path.dirname(local_path) if os.path.dirname(local_path) else BASE_DIR, exist_ok=True)
@@ -213,26 +287,44 @@ def check_and_update():
                     os.remove(backup_path)
                 os.rename(local_path, backup_path)
 
-            # Zápis
+            # Zápis — najprv do dočasného súboru, potom atomický presun.
+            # Výpadok napájania tak nikdy nenechá v app.py polovičný súbor.
             set_update_stage("install")
-            with open(local_path, "wb") as f:
+            tmp_path = local_path + ".new"
+            with open(tmp_path, "wb") as f:
                 f.write(remote_data)
                 f.flush()
                 os.fsync(f.fileno())
+            if sha256_file(tmp_path) != remote_hash:
+                raise IOError("hash po zápise nesedí")
+            os.replace(tmp_path, local_path)
+
+            if os.path.exists(backup_path):
+                backups.append({"path": local_path, "backup": backup_path})
 
             print(f"[UPDATER] ✅ {rel_path} úspešne aktualizovaný!")
             any_updated = True
 
         except SyntaxError as e:
             print(f"[UPDATER] ❌ CHYBA SYNTAXE v {rel_path}: {e} — súbor NEBOL prepísaný!")
-            # Obnov z backupu
             backup_path = local_path + ".bak"
-            if os.path.exists(backup_path):
+            if os.path.exists(backup_path) and not os.path.exists(local_path):
                 os.rename(backup_path, local_path)
         except Exception as e:
             print(f"[UPDATER] ❌ Chyba zápisu {rel_path}: {e}")
+            backup_path = local_path + ".bak"
+            if os.path.exists(backup_path) and not os.path.exists(local_path):
+                os.rename(backup_path, local_path)
+            if os.path.exists(local_path + ".new"):
+                try:
+                    os.remove(local_path + ".new")
+                except Exception:
+                    pass
 
     if any_updated:
+        # Zapíšeme marker PRED reštartom: keď app nenabehne do 180 s,
+        # start.sh vráti .bak súbory a CM5 pobeží na starej verzii.
+        write_pending(backups)
         set_update_stage("restart")
     else:
         set_update_stage(None)
@@ -242,7 +334,7 @@ def check_and_update():
 def main():
     print("[UPDATER] ElvoSolar Auto-Update Service spustený.")
     print(f"[UPDATER] Kontrola každých {CHECK_INTERVAL // 3600} hodín.")
-    print(f"[UPDATER] Zdroj: github.com/Ada20025/Elvosolar")
+    print(f"[UPDATER] Zdroj: {RAW_BASE}")
 
     while True:
         try:
@@ -251,7 +343,7 @@ def main():
 
             if changed:
                 print("\n[UPDATER] 🔄 Súbory boli aktualizované.")
-                # 1) Migracia DB - doplni nove stlpce, EXISTUJUCE DATA OSTATU
+                # 1) Migracia DB - doplni nove stlpce, EXISTUJUCE DATA OSTATNU
                 migrate_database()
                 # 2) Zmaz __pycache__ aby sa nacital cerstvy kod
                 clean_pycache()
@@ -269,4 +361,17 @@ def main():
 
 
 if __name__ == "__main__":
+    arg = sys.argv[1] if len(sys.argv) > 1 else ""
+    if arg == "--confirm":
+        confirm_update()
+        sys.exit(0)
+    elif arg == "--rollback-stale":
+        # Volá start.sh pred spustením app.py. Ak predošlý update nenabehol,
+        # vráti staré súbory — appka sa tak nikdy nezacyklí v páde.
+        rollback_stale()
+        sys.exit(0)
+    elif arg == "--rollback":
+        pending = read_pending() or {}
+        rollback_now(pending.get("backups") or [], reason="ručný rollback")
+        sys.exit(0)
     main()

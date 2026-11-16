@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql
+
+      - name: Kontrola syntaxe PHP
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            out=$(php -l "$f" 2>&1 | tail -1)
+            case "$out" in
+              *"No syntax errors"*) ;;
+              *) echo "CHYBA: $f -> $out"; fail=1 ;;
+            esac
+          done < <(git ls-files '*.php')
+          exit $fail
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Kontrola syntaxe Pythonu (Hardware)
+        run: python -m compileall -q Hardware
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Kontrola JS v šablónach appky
+        run: |
+          python - <<'PY'
+          import io, os, re, subprocess, sys
+          bad = 0
+          for path in sorted(__import__('glob').glob('Software/App/templates/*.html')):
+              src = io.open(path, encoding='utf-8', errors='replace').read()
+              for i, block in enumerate(re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', src, re.S)):
+                  block = re.sub(r'<\?php.*?\?>', '', block, flags=re.S)
+                  block = re.sub(r'<\?=.*?\?>', '', block, flags=re.S)
+                  if not block.strip():
+                      continue
+                  tmp = f'_chk_{i}.js'
+                  io.open(tmp, 'w', encoding='utf-8').write(block)
+                  r = subprocess.run(['node', '--check', tmp], capture_output=True, text=True)
+                  os.remove(tmp)
+                  if r.returncode:
+                      bad = 1
+                      print(f'CHYBA JS: {path}: {r.stderr.splitlines()[0] if r.stderr else ""}')
+          sys.exit(bad)
+          PY

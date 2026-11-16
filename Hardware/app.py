@@ -2468,5 +2468,119 @@ def mark_notifications_read(data: dict = None):
     return {"status": "success"}
 
 
+# =============================================================================
+# DIAGNOSTIKA — krok za krokom, prečo sa zariadenie nepripája
+# =============================================================================
+@app.get("/api/system/diagnostics")
+def api_system_diagnostics():
+    """Vráti zoznam krokov so stavom, aby bolo vidieť, kde spojenie viazne."""
+    steps = []
+
+    def add(name, ok, detail, fix=""):
+        steps.append({"step": name, "ok": bool(ok), "detail": detail, "fix": fix})
+
+    dev = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, serial_number, sub_type, smartlogger_ip, smartlogger_port,\n"
+                    "       modbus_slave_id, last_seen, status FROM devices ORDER BY id LIMIT 1")
+        row = cur.fetchone()
+        if row:
+            cols = [c[0] for c in cur.description]
+            dev = dict(zip(cols, row))
+        conn.close()
+        if dev:
+            add("Zariadenie v databáze", True,
+                f"{dev.get('name') or 'Zariadenie'} (SN {dev.get('serial_number') or '—'}); stav: {dev.get('status') or 'neznámy'}")
+        else:
+            add("Zariadenie v databáze", False, "Lokálna databáza neobsahuje žiadne zariadenie",
+                "Dokonči setup káblom (USB-C) a vyber model striedača.")
+    except Exception as e:
+        add("Zariadenie v databáze", False, f"Chyba databázy: {e}",
+            "Reštartuj službu: sudo systemctl restart elvo")
+
+    ip = str((dev or {}).get("smartlogger_ip") or "")
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT value FROM system_settings WHERE key = 'smartlogger_ip'")
+        row = cur.fetchone()
+        conn.close()
+        if not ip and row:
+            ip = str(row[0] or "")
+    except Exception:
+        pass
+
+    try:
+        port = int((dev or {}).get("smartlogger_port") or 502)
+    except Exception:
+        port = 502
+    try:
+        slave = int((dev or {}).get("modbus_slave_id") or 1)
+    except Exception:
+        slave = 1
+
+    # 2) Sieťová dostupnosť striedača / SmartLoggera
+    if not ip:
+        add("Sieť", False, "IP adresa SmartLoggera nie je nastavená",
+            "V Nastaveniach zadaj IP striedača a ulož.")
+    else:
+        try:
+            sock = socket.create_connection((ip, port), timeout=2)
+            sock.close()
+            add("Sieť", True, f"{ip}:{port} odpovedá")
+        except Exception as e:
+            add("Sieť", False, f"{ip}:{port} neodpovedá ({e})",
+                "Skontroluj kábel, IP adresu a či je v SmartLoggeri zapnutý Modbus TCP.")
+
+    # 3) Modbus čítanie (SOC z registra 40515)
+    if ip:
+        try:
+            regs = _modbus_tcp_read(ip, port, slave, 40515, 1)
+            if regs:
+                add("Modbus", True, f"Čítanie OK — SOC {regs[0] / 10.0:.1f} %")
+            else:
+                add("Modbus", False, "Striedač nevrátil žiadne registre",
+                    "Over slave ID / unit ID a register 40515 pre tvoj model.")
+        except Exception as e:
+            add("Modbus", False, f"Čítanie zlyhalo: {e}",
+                "Over slave ID a mapu registrov pre daný model striedača.")
+
+    # 4) Posledná telemetria v lokálnej DB
+    if dev:
+        try:
+            last = dev.get("last_seen")
+            add("Lokálna telemetria", bool(last),
+                f"Posledné dáta: {last}" if last else "V DB nie je záznam o poslednom meraní",
+                "" if last else "Spusti meranie alebo počkaj na najbližší cyklus.")
+        except Exception as e:
+            add("Lokálna telemetria", False, f"Chyba: {e}")
+
+    # 5) Cloud
+    try:
+        r = requests.get(f"{CLOUD_SERVER_URL}/healthcheck", timeout=5, verify=False)
+        add("Cloud", r.status_code == 200,
+            f"{CLOUD_SERVER_URL} → HTTP {r.status_code}",
+            "" if r.status_code == 200 else "Cloud neodpovedá — skontroluj internet a adresu servera.")
+    except Exception as e:
+        add("Cloud", False, f"Nedostupný: {e}", "Skontroluj internetové pripojenie (WiFi/LAN).")
+
+    ok_count = sum(1 for s in steps if s["ok"])
+    return {
+        "status": "success",
+        "ok": ok_count == len(steps),
+        "summary": f"{ok_count}/{len(steps)} krokov v poriadku",
+        "steps": steps,
+        "timestamp": datetime.datetime.now().isoformat()
+    }
+
+
 if __name__ == "__main__":
+    # Potvrdenie updatu: ak appka nabehla, updater už nemá robiť rollback.
+    try:
+        import update_service
+        update_service.confirm_update()
+    except Exception as _eu:
+        print(f"[UPDATE] Potvrdenie updatu zlyhalo: {_eu}")
     uvicorn.run(app, host="0.0.0.0", port=WEB_PORT)

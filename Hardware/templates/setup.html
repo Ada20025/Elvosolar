@@ -425,6 +425,10 @@
                                     <span>📡 ODOSLAŤ MODBUS REQUEST & OVERIŤ SPOJENIE</span>
                                 </button>
                                 <div id="verifyResult" class="hidden text-xs rounded-xl p-3 border transition-all"></div>
+                                <button type="button" onclick="runDiagnostics()" id="btnDiagnostics" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs py-3 rounded-xl transition border border-slate-700 flex items-center justify-center gap-2">
+                                    <span>🩺 PREČO SA NEPRIPÁJA? (KROK ZA KROKOM)</span>
+                                </button>
+                                <div id="diagResult" class="hidden text-[11px] rounded-xl p-3 border border-slate-700 bg-slate-950/70 space-y-2"></div>
                             </div>
                         </div>
 
@@ -765,6 +769,35 @@
                 tcpInputs.classList.remove('hidden');
                 rtuInputs.classList.remove('hidden');
             }
+        }
+
+        // Diagnostika pripojenia — ukáže presne, v ktorom kroku to viazne
+        async function runDiagnostics() {
+            const btn = document.getElementById('btnDiagnostics');
+            const box = document.getElementById('diagResult');
+            if (!btn || !box) return;
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳ Testujem…</span>';
+            box.classList.remove('hidden');
+            box.innerHTML = '<div class="text-slate-400">Prebieha diagnostika…</div>';
+            try {
+                const res = await fetch('/api/system/diagnostics', { signal: AbortSignal.timeout(20000) });
+                const data = await res.json();
+                box.innerHTML = (data.steps || []).map(function (s) {
+                    return '<div class="flex gap-2 items-start">' +
+                        '<span class="' + (s.ok ? 'text-emerald-400' : 'text-rose-400') + ' font-bold">' + (s.ok ? '✓' : '✕') + '</span>' +
+                        '<div><div class="font-bold ' + (s.ok ? 'text-emerald-300' : 'text-rose-300') + '">' + s.step + '</div>' +
+                        '<div class="text-slate-400">' + (s.detail || '') + '</div>' +
+                        (s.fix ? '<div class="text-amber-300 mt-0.5">→ ' + s.fix + '</div>' : '') +
+                        '</div></div>';
+                }).join('') +
+                    '<div class="pt-1 font-bold ' + (data.ok ? 'text-emerald-400' : 'text-amber-400') + '">' + (data.summary || '') + '</div>';
+            } catch (e) {
+                box.innerHTML = '<div class="text-rose-400">Diagnostika zlyhala: ' + e + '</div>';
+            }
+            btn.disabled = false;
+            btn.innerHTML = orig;
         }
 
         async function testSmartLoggerConnection() {
