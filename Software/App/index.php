@@ -1672,6 +1672,67 @@ elseif ($path === '/stiahnut' || $path === '/install') {
     exit;
 }
 
+// --- PRIHLASENIE CEZ GOOGLE / APPLE / MICROSOFT ---------------------------------
+elseif (preg_match('#^/auth/(google|apple|microsoft)(/callback)?$#', $path, $mOauth)) {
+    require_once __DIR__ . '/oauth_helper.php';
+    $oauthProv = $mOauth[1];
+    $oauthAbs  = elvo_oauth_absolute_base();
+    $oauthCb   = $oauthAbs . '/auth/' . $oauthProv . '/callback';
+
+    if (!elvo_oauth_enabled($oauthProv)) {
+        flash('Prihlásenie cez ' . ucfirst($oauthProv) . ' nie je nastavené. Použite e-mail a heslo.', 'error');
+        header('Location: ' . $base_path . '/login');
+        exit;
+    }
+
+    // 1) Štart: pošleme používateľa k poskytovateľovi
+    if (empty($mOauth[2])) {
+        $oauthState = bin2hex(random_bytes(16));
+        $oauthNonce = bin2hex(random_bytes(16));
+        elvo_oauth_state_save($pdo, $oauthState, $oauthProv, $oauthNonce, $oauthCb);
+        header('Location: ' . elvo_oauth_authorize_url($oauthProv, $oauthCb, $oauthState, $oauthNonce));
+        exit;
+    }
+
+    // 2) Návrat od poskytovateľa (Google/Microsoft = GET, Apple = POST)
+    $oauthCode  = (string)($_REQUEST['code'] ?? '');
+    $oauthErr   = (string)($_REQUEST['error'] ?? '');
+    $stateRow   = elvo_oauth_state_take($pdo, (string)($_REQUEST['state'] ?? ''));
+
+    if ($oauthErr !== '') {
+        flash('Prihlásenie bolo zrušené (' . htmlspecialchars($oauthErr) . ').', 'error');
+        header('Location: ' . $base_path . '/login');
+        exit;
+    }
+    if (!$stateRow || ($stateRow['provider'] ?? '') !== $oauthProv || $oauthCode === '') {
+        flash('Prihlásenie zlyhalo — skúste to znova.', 'error');
+        header('Location: ' . $base_path . '/login');
+        exit;
+    }
+
+    $oauthTokens   = elvo_oauth_exchange($oauthProv, $oauthCode, (string)$stateRow['redirect_uri']);
+    $oauthIdentity = $oauthTokens ? elvo_oauth_identity($oauthProv, $oauthTokens, (string)$stateRow['nonce']) : null;
+
+    if (!$oauthIdentity || empty($oauthIdentity['email']) || empty($oauthIdentity['email_verified'])) {
+        flash('Z poskytovateľa sa nepodarilo získať overený e-mail. Skúste iný spôsob prihlásenia.', 'error');
+        header('Location: ' . $base_path . '/login');
+        exit;
+    }
+
+    $oauthUser = elvo_oauth_user($pdo, (string)$oauthIdentity['email'], (string)($oauthIdentity['name'] ?? ''), $oauthProv);
+    if (!$oauthUser) {
+        flash('Účet sa nepodarilo pripraviť. Skúste to znova.', 'error');
+        header('Location: ' . $base_path . '/login');
+        exit;
+    }
+
+    elvo_oauth_login($pdo, $oauthUser, $oauthProv);
+    try { elvo_promote_admin_if_listed($pdo, $oauthUser); } catch (Throwable $e) { /* best effort */ }
+    flash('Vitajte, ' . htmlspecialchars((string)$oauthUser['username']) . '! (prihlásenie cez ' . ucfirst($oauthProv) . ')', 'success');
+    header('Location: ' . $base_path . '/');
+    exit;
+}
+
 elseif ($path === '/login') {
     // Rate limit: max 3 neuspesnych pokusov -> 30 min lockout (per email+IP)
     $attempt_key = 'login_att_' . md5(strtolower(trim($_POST['email'] ?? '')) . '|' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
@@ -1683,7 +1744,8 @@ elseif ($path === '/login') {
         // Prihlasovací formulár chránime proti robotom rovnako ako bránu.
         if (elvo_turnstile_enabled() && !elvo_turnstile_ok()) {
             flash('Overenie proti robotom zlyhalo — obnov stránku a skús znova.', 'error');
-            render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site]);
+            require_once __DIR__ . '/oauth_helper.php';
+            render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site, 'oauth' => elvo_oauth_available()]);
             exit;
         }
         // 2FA blokada (3 zle kody -> 30 min): blokuje cele prihlasenie z tohto zariadenia
@@ -1694,7 +1756,7 @@ elseif ($path === '/login') {
             $bt = $tq->fetchColumn();
             if ($bt && strtotime($bt) > time()) {
                 flash('Zariadenie je dočasne blokované (3× zlý overovací kód). Skúste o ' . date('H:i:s', strtotime($bt)) . '.', 'error');
-                render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site]);
+                render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site, 'oauth' => (function_exists('elvo_oauth_available') ? elvo_oauth_available() : [])]);
                 exit;
             }
         } catch (Exception $e) { /* tabulka este neexistuje */ }
@@ -1786,7 +1848,7 @@ elseif ($path === '/login') {
             }
         }
     }
-    render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site]);
+    render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site, 'oauth' => (function_exists('elvo_oauth_available') ? elvo_oauth_available() : [])]);
 }
 
 // --- OVERENIE PRIHLASENIA EMAIL KODOM (nove zariadenie) ---

@@ -109,7 +109,36 @@ Jeden endpoint robí celú údržbu, spúšťaj ho každých 10 minút:
 | Mesačný report | 1. deň v mesiaci po 07:00 — výroba v kWh za predošlý mesiac |
 | Ročný report | 1. januára po 07:00 — 13-stranový report za predošlý rok |
 
-### Mesačný report (A4 → PDF)
+#
+## Prihlásenie cez Google / Apple / Microsoft
+
+Na prihlasovacej stránke pribudli tlačidlá **Pokračovať cez Google / Apple / Microsoft**.
+Zobrazia sa len vtedy, keď je daný poskytovateľ nastavený v premenných prostredia —
+bez kľúčov sa appka správa ako doteraz (e-mail + heslo + overovací kód).
+
+| Poskytovateľ | Premenné prostredia |
+|---|---|
+| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+| Microsoft | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, nepovinné `MICROSOFT_TENANT` (default `common`) |
+| Apple | `APPLE_CLIENT_ID` (Service ID), `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` (obsah `.p8`) |
+
+Callback URL, ktorú treba pridať v konzole poskytovateľa (musí sedieť presne):
+
+```
+https://<tvoja-domena>/auth/google/callback
+https://<tvoja-domena>/auth/apple/callback
+https://<tvoja-domena>/auth/microsoft/callback
+```
+
+Voliteľne `APP_URL=https://<domena>` — používa sa na zostavenie callback URL, ak nie je nastavené, vezme sa host z požiadavky.
+
+Ako to funguje: účet sa nájde podľa **overeného e-mailu**; ak neexistuje, založí sa
+(bez použiteľného hesla — prihlásenie je cez poskytovateľa, heslo sa dá nastaviť cez
+„Zabudli ste heslo?"). Admin práva sa prideľujú rovnako ako pri registrácii, teda len
+e-mailom z `ADMIN_EMAILS`. Apple posiela odpoveď ako POST, preto sa `state` ukladá do
+tabuľky `oauth_states` (vytvorí sa sama) a nie do session.
+
+## Mesačný report (A4 → PDF)
 
 - Mesačne: **`/report?month=YYYY-MM`** — 1 strana (odkaz je v Profil → Mesačný report a v mesačnom maily).
 - Ročne: **`/report?year=YYYY`** — **13 strán**: 1. strana prehľad celého roka, potom každý mesiac na vlastnej strane.
