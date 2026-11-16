@@ -160,8 +160,8 @@ dtoverlay=ws2812-pio,gpio=27,num_leds=3,rgbw
 Po reštarte vznikne `/dev/leds0`. Počet LED sa dá zmeniť premennou `SK6812_LEDS` (predvolene 3).
 Dátový pin a jas: `SK6812_PIN` (predvolene 27) a `SK6812_BRIGHTNESS` (100 = plný jas).
 
-**Ovládanie z appky**: karta *Svetlo* v Prehľade — tlačidlo **baterka** rozsvieti čistú bielu
-(kanál W) ako baterka na telefóne, posuvníkom sa nastaví jas. Baterka svieti, kým ju v appke nevypneš,
+**Ovládanie z appky**: okrúhle tlačidlo **baterka** v pravom dolnom rohu Prehľadu rozsvieti
+čistú bielu (kanál W) ako baterka na telefóne; po zapnutí sa nad ním zobrazí posuvník jasu. Baterka svieti, kým ju v appke nevypneš,
 po vypnutí sa LED vrátia k stavovej signalizácii.
 
 **Slovník svetla** — každý stav má vlastnú farbu aj vzor:

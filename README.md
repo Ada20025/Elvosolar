@@ -34,8 +34,9 @@ Riadiaca jednotka: **Waveshare CM5** (Raspberry Pi CM5)
 
 Aplikácia je dostupná ako Progressive Web App — nainštalujte z prehliadača na plochu.
 
-Z LED svetla je v aplikácii **iba baterka**: karta *Svetlo* v Prehľade rozsvieti
-čistú bielu (kanál W) ako baterka na telefóne, jas sa nastavuje posuvníkom.
+Z LED svetla je v aplikácii **iba baterka**: okrúhle tlačidlo v **pravom dolnom rohu**
+Prehľadu rozsvieti čistú bielu (kanál W) ako baterka na telefóne; po zapnutí sa nad ním
+objaví posuvník jasu.
 Farba a vzor 3 stavových LED sú signalizácia zariadenia — do appky sa neposielajú.
 Ďalej appka obsahuje **notifikácie** (push + e-mail, nastavenie v profile).
 
