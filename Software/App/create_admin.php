@@ -1,31 +1,49 @@
 <?php
 // create_admin.php — ElvoControl
-// Vytvorí admin účet. Spusti raz a potom vymaž!
+// Vytvorí (alebo povýši) admin účet. IBA z príkazového riadku:
+//
+//   ADMIN_EMAIL=admin@elvosolar.sk ADMIN_PASS='silne-heslo' php create_admin.php
+//
+// Z prehliadača sa nespustí (403) — pôvodná verzia mazala všetkých adminov
+// a zakladala účet admin/admin123, čo bol otvorený zadný vchod.
 
-// Načítaj config
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit("Tento skript je len pre CLI.\n");
+}
+
 require_once __DIR__ . '/config.php';
 
-$admin_user = 'admin';
-$admin_pass = 'admin123';
-$admin_email = 'admin@elvosolar.sk';
+$email = trim((string)(getenv('ADMIN_EMAIL') ?: ''));
+$pass  = (string)(getenv('ADMIN_PASS') ?: '');
+$name  = trim((string)(getenv('ADMIN_NAME') ?: 'Admin'));
 
-$hashed = password_hash($admin_pass, PASSWORD_BCRYPT);
+if ($email === '' || $pass === '') {
+    fwrite(STDERR, "Použitie: ADMIN_EMAIL=... ADMIN_PASS=... php create_admin.php\n");
+    exit(1);
+}
+if (strlen($pass) < 8) {
+    fwrite(STDERR, "Heslo musí mať aspoň 8 znakov.\n");
+    exit(1);
+}
 
 try {
-    // Vymaž starého admina
-    $pdo->exec("DELETE FROM users WHERE role = 'admin' OR username = 'admin'");
-    
-    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, 'admin')");
-    $stmt->execute([$admin_user, $admin_email, $hashed]);
-    
-    echo "<div style='font-family: Arial; padding: 30px; background: #0f172a; color: #f8fafc; border-radius: 16px; max-width: 500px; margin: 40px auto;'>";
-    echo "<h2 style='color: #10b981;'>🟢 Admin úspešne vytvorený!</h2>";
-    echo "<p>Email: <strong>$admin_email</strong></p>";
-    echo "<p>Heslo: <strong>$admin_pass</strong></p>";
-    echo "<p style='color: #f43f5e;'>⚠️ Vymaž tento súbor!</p>";
-    echo "<p><a href='/login' style='color: #3b82f6;'>Prihlásiť sa →</a></p>";
-    echo "</div>";
-} catch (PDOException $e) {
-    echo "❌ Chyba: " . $e->getMessage();
+    $st = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1");
+    $st->execute([strtolower($email)]);
+    $id = $st->fetchColumn();
+    $hash = password_hash($pass, PASSWORD_BCRYPT);
+
+    if ($id) {
+        $pdo->prepare("UPDATE users SET password_hash = ?, role = 'admin', email_verified = 1 WHERE id = ?")
+            ->execute([$hash, $id]);
+        echo "✅ Existujúci účet {$email} je admin a má nové heslo.\n";
+    } else {
+        $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'admin', 1)")
+            ->execute([$name, $email, $hash]);
+        echo "✅ Admin {$email} vytvorený.\n";
+    }
+    echo "Prihlás sa na /login (2FA kód príde e-mailom, prípadne sa zobrazí na obrazovke).\n";
+} catch (Throwable $e) {
+    fwrite(STDERR, "❌ Chyba: " . $e->getMessage() . "\n");
+    exit(1);
 }
-?>

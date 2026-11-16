@@ -432,7 +432,7 @@ $device_db = [
                     '4' => ['meno' => 'HYD 15KTL-3PH', 'on' => 4160, 'off' => 4160, 'val_on' => 100, 'val_off' => 0, 'baud' => 9600, 'reg_soc' => 528, 'reg_p_ac' => 1157],
                     '5' => ['meno' => 'HYD 20KTL-3PH', 'on' => 4160, 'off' => 4160, 'val_on' => 100, 'val_off' => 0, 'baud' => 9600, 'reg_soc' => 528, 'reg_p_ac' => 1157],
                 ]
-            }
+            ]
         ]
     ],
     '8' => [
