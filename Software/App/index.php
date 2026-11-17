@@ -2008,7 +2008,21 @@ elseif ($path === '/dashboard' && $method === 'GET') {
         render_template('no_devices.html');
         exit;
     }
-    render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices, 'is_admin' => $is_admin]);
+    // Stav socialneho prihlasenia — dashboard po prvom vstupe ukaze, co chyba.
+    $oauth_status = [];
+    $oauth_map = [
+        'google'    => ['label' => 'Google',    'vars' => ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']],
+        'apple'     => ['label' => 'Apple',     'vars' => ['APPLE_CLIENT_ID', 'APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY']],
+        'microsoft' => ['label' => 'Microsoft', 'vars' => ['MICROSOFT_CLIENT_ID', 'MICROSOFT_CLIENT_SECRET']],
+    ];
+    foreach ($oauth_map as $oKey => $oMeta) {
+        $oMissing = [];
+        foreach ($oMeta['vars'] as $oVar) {
+            if (trim((string)getenv($oVar)) === '') { $oMissing[] = $oVar; }
+        }
+        $oauth_status[$oKey] = ['label' => $oMeta['label'], 'ok' => empty($oMissing), 'missing' => $oMissing];
+    }
+    render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices, 'is_admin' => $is_admin, 'oauth_status' => $oauth_status]);
 }
 
 // Mesačný report — tlačová A4 verzia (Ctrl+P → Uložiť ako PDF)
