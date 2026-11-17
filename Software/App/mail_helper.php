@@ -333,3 +333,119 @@ ELVOTPL;
         return $result;
     }
 }
+
+// ==========================================================
+// --- SAMOSTATNE LAYOUTY JEDNOTLIVYCH TYPOV E-MAILOV ---
+// Kazdy typ spravy ma vlastnu strukturu (nie jednu spolocnu sablonu):
+//   * overovaci kod ....... tmavy "terminalovy" panel s velkym kodom + meta o zariadeni
+//   * nove zariadenie ..... oranzovy vystrazny panel + tabulka udajov + CTA
+//   * privitanie .......... krok-za-krokom onboarding s cislovanymi krokmi
+// Vsetky vracaju HTML, ktory sa vklada do spolocneho rámčeka send_elvo_email().
+// ==========================================================
+
+if (!function_exists('elvo_mail_meta_rows')) {
+    /** Zoznam "stitek -> hodnota" (meta udaje). Kazdy riadok oddeleny linkou. */
+    function elvo_mail_meta_rows($rows, $label_color = '#94a3b8') {
+        $out = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 0 0;border-collapse:collapse;">';
+        $i = 0;
+        foreach ($rows as $label => $value) {
+            $border = ($i > 0) ? 'border-top:1px solid rgba(255,255,255,0.07);' : '';
+            $out .= '<tr>'
+                 . '<td style="padding:10px 0;' . $border . 'width:38%;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:' . $label_color . ';font-family:Consolas,\'Courier New\',monospace;">' . $label . '</td>'
+                 . '<td style="padding:10px 0;' . $border . 'font-size:12px;color:#e2e8f0;line-height:1.6;">' . $value . '</td>'
+                 . '</tr>';
+            $i++;
+        }
+        return $out . '</table>';
+    }
+}
+
+if (!function_exists('elvo_mail_tpl_code')) {
+    /** Overovaci kod / 2FA: jeden velky kod, okolo neho udaje o zariadeni a moznost zablokovat prihlasenie. */
+    function elvo_mail_tpl_code($code, $unsub_url = '', $heading = '') {
+        $ua = htmlspecialchars(substr($_SERVER['HTTP_USER_AGENT'] ?? 'Neznáme zariadenie', 0, 70));
+        $ip = htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-');
+
+        $html  = '<div style="display:inline-block;padding:5px 13px;border-radius:999px;background-color:rgba(99,102,241,0.14);border:1px solid rgba(129,140,248,0.35);font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#a5b4fc;font-family:Consolas,\'Courier New\',monospace;">2FA &middot; Overenie prihlásenia</div>';
+        if ($heading !== '') {
+            $html .= '<p style="margin:14px 0 0 0;font-size:13px;line-height:1.7;color:#94a3b8;">' . htmlspecialchars($heading) . '</p>';
+        }
+        $html .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 0 0;"><tr>'
+               . '<td align="center" style="padding:26px 16px;border-radius:20px;border:1px dashed rgba(52,211,153,0.45);background-color:#07130f;background-image:linear-gradient(135deg,rgba(16,185,129,0.10) 0%,rgba(4,8,18,0.92) 100%);">'
+               . '<div style="font-size:9px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#6ee7b7;font-family:Consolas,\'Courier New\',monospace;">Váš jednorazový kód</div>'
+               . '<div style="margin-top:14px;font-size:42px;line-height:1.05;font-weight:700;letter-spacing:12px;color:#f8fafc;font-family:Consolas,\'Courier New\',monospace;padding-left:12px;">' . htmlspecialchars($code) . '</div>'
+               . '<div style="margin-top:14px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;">Platí 10 minút &middot; jednorazový</div>'
+               . '</td></tr></table>'
+               . elvo_mail_meta_rows([
+                    'Zariadenie' => $ua,
+                    'IP adresa' => $ip,
+                    'Čas' => date('d.m.Y H:i'),
+                 ])
+               . '<p style="margin:18px 0 0 0;font-size:12px;line-height:1.7;color:#94a3b8;">Kód zadajte na overovacej stránke. Nikomu ho neposielajte &mdash; ani zamestnancovi Elvosolaru.</p>';
+
+        if ($unsub_url !== '') {
+            $html .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0 0;"><tr><td align="center">'
+                   . '<a href="' . htmlspecialchars($unsub_url) . '" style="display:inline-block;padding:12px 26px;border-radius:10px;background-color:rgba(244,63,94,0.16);border:1px solid rgba(244,63,94,0.45);color:#fda4af;text-decoration:none;font-size:12px;font-weight:800;">To nie som ja &mdash; zablokovať prihlásenie</a>'
+                   . '</td></tr></table>'
+                   . '<p style="margin:10px 0 0 0;font-size:11px;line-height:1.6;color:#64748b;text-align:center;">Kliknutím prihlásenie z tohto zariadenia odmietnete.</p>';
+        }
+        return $html;
+    }
+}
+
+if (!function_exists('elvo_mail_tpl_new_device')) {
+    /** Nove zariadenie: vystrazny panel, tabulka udajov a vyzva skontrolovat ucet. */
+    function elvo_mail_tpl_new_device($device, $ip, $when = '', $account = '', $action_url = '/profile') {
+        if ($when === '') { $when = date('d.m.Y H:i'); }
+        $rows = [
+            'Zariadenie' => htmlspecialchars($device),
+            'IP adresa' => htmlspecialchars($ip),
+            'Čas' => htmlspecialchars($when),
+        ];
+        if ($account !== '') { $rows['Účet'] = htmlspecialchars($account); }
+
+        return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+             . '<td style="padding:20px 22px;border-radius:18px;background-color:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.40);">'
+             . '<div style="font-size:9px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#fbbf24;font-family:Consolas,\'Courier New\',monospace;">&#9888; Bezpečnostné upozornenie</div>'
+             . '<div style="margin:10px 0 6px 0;font-size:21px;font-weight:900;color:#ffffff;line-height:1.25;">Nové zariadenie v účte</div>'
+             . '<div style="font-size:13px;line-height:1.65;color:#cbd5e1;">Do vášho účtu ElvoControll sa prihlásilo zariadenie, ktoré sme u vás ešte nevideli.</div>'
+             . '</td></tr></table>'
+             . elvo_mail_meta_rows($rows, '#fbbf24')
+             . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0 0;"><tr><td align="center">'
+             . '<a href="' . htmlspecialchars($action_url) . '" style="display:inline-block;padding:13px 30px;border-radius:12px;background-color:#f59e0b;color:#1a1204;text-decoration:none;font-size:13px;font-weight:900;">Skontrolovať prihlásenia</a>'
+             . '</td></tr></table>'
+             . '<p style="margin:14px 0 0 0;font-size:12px;line-height:1.7;color:#fda4af;">Ak ste to neboli vy, okamžite si zmeňte heslo v Profile a odhláste toto zariadenie.</p>';
+    }
+}
+
+if (!function_exists('elvo_mail_tpl_welcome')) {
+    /** Privitanie: onboarding v troch krokoch, zelena CTA. Uplne iny layout ako 2FA. */
+    function elvo_mail_tpl_welcome($username, $login_url) {
+        $steps = [
+            ['Prihláste sa', 'E-mailom a heslom, ktoré ste si zvolili pri registrácii.'],
+            ['Pridajte zariadenie', 'Striedač alebo SmartLogger cez sprievodcu v aplikácii.'],
+            ['Sledujte úsporu', 'Výroba, batéria a spotový trh na jednom dashboarde.'],
+        ];
+        $html  = '<div style="font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#34d399;font-family:Consolas,\'Courier New\',monospace;">Účet aktivovaný</div>'
+               . '<div style="margin:8px 0 0 0;font-size:24px;font-weight:900;color:#ffffff;line-height:1.25;">Vitajte, ' . htmlspecialchars($username) . '</div>'
+               . '<p style="margin:10px 0 0 0;font-size:13px;line-height:1.7;color:#94a3b8;">Váš účet v systéme ElvoControll je pripravený. Toto sú prvé tri kroky:</p>';
+
+        foreach ($steps as $i => $step) {
+            $html .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;"><tr>'
+                   . '<td width="34" valign="top" style="width:34px;">'
+                   . '<div style="width:26px;height:26px;border-radius:50%;background-color:rgba(16,185,129,0.16);border:1px solid rgba(52,211,153,0.40);color:#34d399;font-size:12px;font-weight:900;line-height:24px;text-align:center;font-family:Consolas,\'Courier New\',monospace;">' . ($i + 1) . '</div>'
+                   . '</td>'
+                   . '<td valign="top" style="padding-left:10px;">'
+                   . '<div style="font-size:13px;font-weight:800;color:#f1f5f9;">' . $step[0] . '</div>'
+                   . '<div style="margin-top:2px;font-size:12px;line-height:1.6;color:#94a3b8;">' . $step[1] . '</div>'
+                   . '</td></tr></table>';
+        }
+
+        $html .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 0 0;"><tr><td align="center">'
+               . '<a href="' . htmlspecialchars($login_url) . '" style="display:inline-block;padding:14px 34px;border-radius:12px;background-color:#10b981;color:#04241a;text-decoration:none;font-size:13px;font-weight:900;">Otvoriť ElvoControll</a>'
+               . '</td></tr></table>'
+               . '<p style="margin:16px 0 0 0;font-size:11px;line-height:1.7;color:#64748b;text-align:center;">Tip: aplikáciu si pridáte na plochu telefónu cez &bdquo;Pridať na plochu&ldquo; v prehliadači.</p>';
+
+        return $html;
+    }
+}

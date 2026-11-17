@@ -1807,23 +1807,7 @@ elseif ($path === '/login') {
                         $_SESSION['pending_login']['unsub_token'] = hash('sha256', $unsub_token);
                         $unsub_url = $base_path . '/device-logout?token=' . $unsub_token . '&login=1';
                         $mail_sent = send_elvo_email($email, 'Overovací kód: ' . $code . ' | ElvoControll', 'Prihlásenie do vášho účtu',
-                        '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Niektoré zariadenie sa prihlasuje do vášho účtu ElvoControll. Všetko potrebujete je v tomto jednom emaile:</p>' .
-                        '<div style="margin:0 0 20px 0;padding:22px 24px;background:rgba(16,185,129,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:16px;text-align:center;">' .
-                        '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;">Váš overovací kód</div>' .
-                        '<div style="font-size:38px;font-weight:800;letter-spacing:12px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
-                        '</div>' .
-                        '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 20px 0;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.08);">' .
-                        '<tr><td style="padding:14px 18px;font-size:13px;color:#e2e8f0;">' .
-                        '<div style="margin-bottom:6px;">🖥️ <strong>Zariadenie:</strong> ' . htmlspecialchars(substr($_SERVER['HTTP_USER_AGENT'] ?? 'Neznáme zariadenie', 0, 60)) . '</div>' .
-                        '<div style="margin-bottom:6px;">🌐 <strong>IP adresa:</strong> ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . '</div>' .
-                        '<div>🕐 <strong>Čas prihlásenia:</strong> ' . date('d.m.Y H:i') . '</div>' .
-                        '</td></tr></table>' .
-                        '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;"><tr><td align="center">' .
-                        '<a href="' . $unsub_url . '" style="display:inline-block;padding:12px 28px;background:#f43f5e;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;border-radius:10px;">Odhásiť toto zariadenie</a>' .
-                        '</td></tr></table>' .
-                        '<p style="margin:0 0 8px 0;font-size:11px;color:#64748b;text-align:center;">Kliknutím zablokujete prihlásenie z tohto zariadenia.</p>' .
-                        '<p style="margin:12px 0 0 0;font-size:12px;color:#64748b;">Ak ste to neboli vy, nikdy tento kód nikomu neposielajte a okamžite si zmeňte heslo.</p>',
-                        '#6366f1');
+                            elvo_mail_tpl_code($code, $unsub_url), '#6366f1');
                     }
                     // FALLBACK bez mailu: ak sa mail NEPODAL odoslat (ziadny RESEND_API_KEY/SMTP),
                     // kod sa zobrazi hore na obrazovke - inak by sa user nemohol nikdy prihlasit.
@@ -1895,13 +1879,8 @@ elseif ($path === '/verify-login') {
                     $ip = $_SERVER['REMOTE_ADDR'] ?? '-';
                     $chan = elvo_notif_channel($pdo, $pl['user_id'], 'new_device');
                     $pushBody = 'Nové zariadenie sa prihlásilo do vášho účtu (' . $uaShort . ', IP ' . $ip . '). Ak ste to neboli vy, okamžite si zmeňte heslo.';
-                    $mailHtml = '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Nové zariadenie sa úspešne prihlásilo do vášho účtu ElvoControll:</p>' .
-                        '<div style="margin:0 0 20px 0;padding:20px 24px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:16px;">' .
-                        '<div style="font-size:10px;color:#fbbf24;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:8px;">Nové prihlásenie</div>' .
-                        '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;">🖥️ ' . htmlspecialchars($uaShort) . '</div>' .
-                        '<div style="font-size:12px;color:#94a3b8;">🌐 IP: ' . htmlspecialchars($ip) . ' · 🕐 ' . date('d.m.Y H:i') . '</div>' .
-                        '</div>' .
-                        '<p style="margin:0;font-size:12px;color:#64748b;">Ak ste to neboli vy, okamžite si zmeňte heslo v Profile aplikácie.</p>';
+                    require_once __DIR__ . '/mail_helper.php';
+                    $mailHtml = elvo_mail_tpl_new_device($uaShort, $ip, date('d.m.Y H:i'), ($pl['email'] ?? ''), $base_path . '/profile');
                     elvo_notif_send($pdo, $pl['user_id'], $chan, 'new_device',
                         '\u{1F4BB} Nové prihlásenie do účtu', $pushBody, 'new-login', '/profile', $mailHtml, '#f59e0b');
                 } catch (Exception $eN) { /* notifikacia best-effort */ }
@@ -1944,13 +1923,7 @@ elseif ($path === '/verify-login/resend' && $method === 'GET') {
                 $_SESSION['pending_login']['unsub_token'] = hash('sha256', $unsub_token2);
                 $unsub_url2 = $base_path . '/device-logout?token=' . $unsub_token2 . '&login=1';
                 $mail_sent2 = send_elvo_email($_SESSION['pending_login']['email'], 'Nový kód: ' . $code . ' | ElvoControll', 'Nový overovací kód',
-                '<p style="margin:0 0 16px 0;font-size:14px;color:#cbd5e1;line-height:1.7;">Požiadali ste o nový overovací kód. Starý kód prestal platiť.</p>' .
-                '<div style="margin:0 0 20px 0;padding:22px 24px;background:rgba(16,185,129,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:16px;text-align:center;">' .
-                '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;">Váš nový kód</div>' .
-                '<div style="font-size:38px;font-weight:800;letter-spacing:12px;color:#34d399;font-family:monospace;">' . $code . '</div>' .
-                '</div>' .
-                    '<p style="margin:0;font-size:12px;color:#64748b;">Platnosť: 10 minút &middot; IP: ' . htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '-') . ' &middot; ' . date('d.m.Y H:i') . '. Ak ste o kód nežiadali, zmeňte si heslo.</p>',
-                    '#6366f1');
+                    elvo_mail_tpl_code($code, '', 'Požiadali ste o nový kód. Starý prestal platiť.'), '#6366f1');
             } catch (Exception $me) { $mail_sent2 = false; }
         }
         // kod sa nezobrazuje na obrazovke (bezpecnost) - len mail
@@ -1985,9 +1958,7 @@ elseif ($path === '/register') {
             require_once __DIR__ . '/mail_helper.php';
             try {
                 send_elvo_email($email, 'Vitajte v ElvoControll!', 'Účet úspešne vytvorený',
-                    '<h2 style="margin:0 0 12px 0;font-size:20px;color:#0f172a;">Dobrý deň, ' . htmlspecialchars($username) . '!</h2>' .
-                    '<p style="margin:0 0 16px 0;font-size:14px;color:#475569;line-height:1.6;">Váš účet v systéme ElvoControll bol úspešne vytvorený. Prihláste sa a pripojte svoje prvé zariadenie.</p>' .
-                    '<a href="https://' . ($_SERVER['SERVER_NAME'] ?? 'elvosolar-production.up.railway.app') . '/login" style="display:inline-block;padding:12px 24px;background:#10b981;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Prihlásiť sa</a>',
+                    elvo_mail_tpl_welcome($username, 'https://' . ($_SERVER['SERVER_NAME'] ?? 'elvosolar-production.up.railway.app') . '/login'),
                     '#10b981');
             } catch (Exception $me) { /* mail nie je kritický */ }
             header("Location: " . $base_path . "/dashboard");

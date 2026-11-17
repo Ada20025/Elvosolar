@@ -1080,6 +1080,37 @@
         }
 
         .hidden { display: none !important; }
+
+        /* Baterka (LED svietidlo) — horný pravý roh hlavičky, hneď vedľa ozubeného kolieska.
+           Ukotvená v hlavičke (nie v sekcii), takže sa neposúva so scrollovaním
+           a neprekrýva OKTE kartu. Panel sa otvára smerom DOLE. */
+        .led-dock {
+            position: absolute;
+            right: 78px;
+            top: 14px;
+            z-index: 150;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .led-dock #ledFlashlightBtn {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+        }
+        .led-dock #ledFlashlightBtn i { width: 18px !important; height: 18px !important; }
+        .led-dock #ledPanel {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            z-index: 160;
+            max-width: calc(100vw - 36px);
+        }
+        @media (max-width: 768px) {
+            .led-dock { right: 58px; top: 10px; }
+            .led-dock #ledFlashlightBtn { width: 34px; height: 34px; }
+        }
     
         /* Mobile-friendly gear modal */
         @media (max-width: 640px) {
@@ -1178,6 +1209,20 @@
 
     <!-- Header -->
     <header class="header">
+        <!-- BATERKA — horný pravý roh hlavičky (vedľa nastavení) -->
+        <div id="ledDock" class="led-dock">
+            <button id="ledFlashlightBtn" onclick="toggleFlashlight()" aria-label="Baterka" title="Baterka — čistá biela" style="border:1px solid var(--border-card);background:var(--bg-card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:0 6px 18px rgba(0,0,0,.35);">
+                <i data-lucide="flashlight"></i>
+            </button>
+            <div id="ledPanel" style="display:none;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:12px 14px;min-width:200px;box-shadow:0 14px 34px rgba(0,0,0,.5);">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">
+                    <span>Jas bielej</span>
+                    <span id="ledBrightnessVal" class="font-mono" style="color:var(--text-primary);">100 %</span>
+                </div>
+                <input id="ledBrightness" type="range" min="5" max="100" step="5" value="100" oninput="onLedBrightnessInput(this.value)" style="width:100%;accent-color:var(--accent-solar);cursor:pointer;">
+                <div id="ledStateBadge" style="margin-top:8px;font-size:9px;font-weight:800;letter-spacing:1px;padding:4px 8px;border-radius:6px;background:rgba(148,163,184,.12);color:var(--text-muted);text-align:center;">VYPNUTÉ</div>
+            </div>
+        </div>
         <div class="header-inner" style="grid-template-columns: auto 1fr auto; height: 64px;">
             
             <!-- Logo -->
@@ -1348,20 +1393,7 @@
                         </div>
                     </div>
 
-                    <!-- BATERKA — plávajúce tlačidlo v pravom dolnom rohu -->
-                    <div id="ledDock" style="position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:150;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none;">
-                        <div id="ledPanel" style="display:none;pointer-events:auto;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:12px 14px;min-width:200px;box-shadow:0 14px 34px rgba(0,0,0,.5);">
-                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">
-                                <span>Jas bielej</span>
-                                <span id="ledBrightnessVal" class="font-mono" style="color:var(--text-primary);">100 %</span>
-                            </div>
-                            <input id="ledBrightness" type="range" min="5" max="100" step="5" value="100" oninput="onLedBrightnessInput(this.value)" style="width:100%;accent-color:var(--accent-solar);cursor:pointer;">
-                            <div id="ledStateBadge" style="margin-top:8px;font-size:9px;font-weight:800;letter-spacing:1px;padding:4px 8px;border-radius:6px;background:rgba(148,163,184,.12);color:var(--text-muted);text-align:center;">VYPNUTÉ</div>
-                        </div>
-                        <button id="ledFlashlightBtn" onclick="toggleFlashlight()" aria-label="Baterka" title="Baterka — čistá biela" style="pointer-events:auto;width:58px;height:58px;border-radius:50%;border:1px solid var(--border-card);background:var(--bg-card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:0 10px 26px rgba(0,0,0,.45);">
-                            <i data-lucide="flashlight" style="width:26px;height:26px;"></i>
-                        </button>
-                    </div>
+                    <!-- BATERKA je v hlavičke (horný pravý roh) — viď #ledDock vyššie -->
 
                     <!-- Combined Analytics Chart -->
                     <div class="glass-card">
