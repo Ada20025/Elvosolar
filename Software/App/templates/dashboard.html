@@ -1358,36 +1358,6 @@
 
         <!-- Tab 1: DASHBOARD VIEW -->
         <section id="sectionDashboard" class="view-section active">
-
-            <!-- SOCIALNE PRIHLASENIE — karta sa ukaze po prvom vstupe, potom sa pamata zavretie -->
-            <div class="glass-card" id="socialLoginCard" style="display:none;">
-                <div class="card-header-styled">
-                    <span class="card-title-styled"><i data-lucide="shield-check"></i> Prihlásenie cez Google / Apple / Microsoft</span>
-                    <button onclick="dismissSocialCard()" aria-label="Skryť" style="background:none;border:1px solid var(--border-card);border-radius:10px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer;">
-                        <i data-lucide="x" style="width:14px;height:14px;"></i>
-                    </button>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;" id="socialLoginGrid">
-                    <?php foreach (($oauth_status ?? []) as $sKey => $sInfo): ?>
-                    <div style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:14px;border:1px solid <?php echo !empty($sInfo['ok']) ? 'rgba(16,185,129,0.28)' : 'var(--border-card)'; ?>;background:<?php echo !empty($sInfo['ok']) ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)'; ?>;">
-                        <span style="font-size:12px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
-                            <span style="width:7px;height:7px;border-radius:50%;background:<?php echo !empty($sInfo['ok']) ? 'var(--accent-battery)' : 'var(--text-muted)'; ?>;"></span>
-                            <?php echo htmlspecialchars($sInfo['label']); ?>
-                        </span>
-                        <?php if (!empty($sInfo['ok'])): ?>
-                            <span style="font-size:10px;font-weight:700;color:var(--accent-battery);">Aktívne — tlačidlo sa zobrazuje</span>
-                        <?php else: ?>
-                            <span style="font-size:10px;font-weight:700;color:var(--accent-solar);">Chýba: <?php echo htmlspecialchars(implode(', ', $sInfo['missing'])); ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                <p style="margin:14px 0 0 0;font-size:11px;line-height:1.7;color:var(--text-muted);">
-                    Kľúče patria do premenných prostredia (Railway → Variables), nikdy do kódu.
-                    Callback adresa pre každého poskytovateľa je <span class="font-mono" style="color:var(--text-secondary);"><?php echo htmlspecialchars((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'vasa-domena')); ?>/auth/&lt;google|apple|microsoft&gt;/callback</span>.
-                </p>
-            </div>
-
             <div class="dashboard-grid">
                 <div style="display:flex;flex-direction:column;gap:24px;">
 
@@ -2805,20 +2775,6 @@
                 return await res.json();
             } catch (e) { return null; }
         }
-
-        // Karta socialneho prihlasenia: ukaze sa pri prvom vstupe, po zavreti sa uz nevracia.
-        function dismissSocialCard() {
-            const card = document.getElementById('socialLoginCard');
-            if (card) card.style.display = 'none';
-            try { localStorage.setItem('elvo_social_card_done', '1'); } catch (e) {}
-        }
-        document.addEventListener('DOMContentLoaded', function () {
-            const card = document.getElementById('socialLoginCard');
-            if (!card) return;
-            let done = null;
-            try { done = localStorage.getItem('elvo_social_card_done'); } catch (e) {}
-            if (!done) card.style.display = 'block';
-        });
 
         function toggleFlashlight() {
             const on = !ledFlashlightOn;
@@ -4356,6 +4312,8 @@
         hi = document.getElementById('tourHighlight');
         card = document.getElementById('tourCard');
         overlay.classList.remove('hidden');
+        // `step` startuje na -1; bez tohto by STEPS[-1] bol undefined a karta by ostala prazdna.
+        if (step < 0) step = 0;
         render();
     }
     function render() {
