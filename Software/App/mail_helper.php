@@ -426,9 +426,10 @@ if (!function_exists('elvo_mail_tpl_welcome')) {
             ['Pridajte zariadenie', 'Striedač alebo SmartLogger cez sprievodcu v aplikácii.'],
             ['Sledujte úsporu', 'Výroba, batéria a spotový trh na jednom dashboarde.'],
         ];
+        // JEDNO privitanie: stitok "Ucet aktivovany" + jediny pozdrav (ziadne duplicitne nadpisy).
         $html  = '<div style="font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#34d399;font-family:Consolas,\'Courier New\',monospace;">Účet aktivovaný</div>'
-               . '<div style="margin:8px 0 0 0;font-size:24px;font-weight:900;color:#ffffff;line-height:1.25;">Vitajte, ' . htmlspecialchars($username) . '</div>'
-               . '<p style="margin:10px 0 0 0;font-size:13px;line-height:1.7;color:#94a3b8;">Váš účet v systéme ElvoControll je pripravený. Toto sú prvé tri kroky:</p>';
+               . '<p style="margin:12px 0 0 0;font-size:16px;font-weight:700;line-height:1.6;color:#e2e8f0;">Dobrý deň, ' . htmlspecialchars($username) . ' — váš účet v ElvoControll je pripravený.</p>'
+               . '<p style="margin:8px 0 0 0;font-size:13px;line-height:1.7;color:#94a3b8;">Toto sú prvé tri kroky:</p>';
 
         foreach ($steps as $i => $step) {
             $html .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;"><tr>'

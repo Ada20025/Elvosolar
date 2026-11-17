@@ -112,7 +112,9 @@ Jeden endpoint robí celú údržbu, spúšťaj ho každých 10 minút:
 #
 ## Prihlásenie cez Google / Apple / Microsoft
 
-Na prihlasovacej stránke pribudli tlačidlá **Pokračovať cez Google / Apple / Microsoft**.
+Na prihlasovacej **aj registračnej** stránke sú tlačidlá **Pokračovať cez Google / Apple / Microsoft**.
+Privítací e-mail má jeden layout (jeden pozdrav, tri kroky) a v appke existuje len jeden onboarding
+tour (`elvo_tour_done`) — starý modálny onboarding bol odstránený.
 Zobrazia sa len vtedy, keď je daný poskytovateľ nastavený v premenných prostredia —
 bez kľúčov sa appka správa ako doteraz (e-mail + heslo + overovací kód).
 

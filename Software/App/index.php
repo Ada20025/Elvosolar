@@ -1967,7 +1967,8 @@ elseif ($path === '/register') {
             flash('Meno alebo e-mail už existuje.', 'error');
         }
     }
-    render_template('registracia.html', ['flash' => get_flash_messages()]);
+    if (!function_exists('elvo_oauth_available')) { require_once __DIR__ . '/oauth_helper.php'; }
+    render_template('registracia.html', ['flash' => get_flash_messages(), 'oauth' => (function_exists('elvo_oauth_available') ? elvo_oauth_available() : []), 'base_path' => $base_path]);
 }
 
 elseif ($path === '/logout') {
