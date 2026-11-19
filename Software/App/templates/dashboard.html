@@ -3200,6 +3200,14 @@
                 }
                 if (deviceBatPct !== null) setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
 
+                // Svetlo: posledný príkaz z DB má prednosť — rovnaký stav na mobile aj PC.
+                // null = zariadenie ešte nedostalo žiadny príkaz, vtedy platí lokálna pamäť.
+                if (data.led_on !== null && data.led_on !== undefined) {
+                    const srvBrightness = num(data.led_brightness);
+                    updateLedUi(data.led_on === true || Number(data.led_on) === 1,
+                        srvBrightness !== null ? srvBrightness : ledBrightness);
+                }
+
                 // Zvyrazni aktivny rezim prevadzky (Zap/Vyp/SmartAI) podla DB
                 // - inak tlacidla ukazuju posledne kliknute, nie realny stav zariadenia
                 const mcm = (data.meter_control_mode || 'SMART').toUpperCase();

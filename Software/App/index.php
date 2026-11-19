@@ -1465,6 +1465,35 @@ if (!function_exists('elvo_notif_channels')) {
     }
 }
 
+// Jednoduchy key/value store (system_settings) — použiva sa aj na posledny stav svetla.
+if (!function_exists('elvo_set_setting')) {
+    function elvo_set_setting($pdo, $key, $value) {
+        if (!$pdo) return false;
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)");
+            if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+                $pdo->prepare("INSERT OR REPLACE INTO system_settings (`key`, `value`) VALUES (?, ?)")->execute([$key, $value]);
+            } else {
+                $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")->execute([$key, $value]);
+            }
+            return true;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+    function elvo_get_setting($pdo, $key) {
+        if (!$pdo) return null;
+        try {
+            $st = $pdo->prepare("SELECT `value` FROM system_settings WHERE `key` = ? LIMIT 1");
+            $st->execute([$key]);
+            $v = $st->fetchColumn();
+            return $v === false ? null : $v;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+}
+
 // CM5 -> cloud: volitelny zdielany token (env CM5_API_TOKEN).
 // Ked nie je nastaveny, spravanie sa nemeni (stare boxy funguju dalej).
 if (!function_exists('elvo_cm5_token_ok')) {
@@ -2334,6 +2363,12 @@ elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 
         // Príkaz si CM5 vyzdvihne pri najbližšom poll-e (do 5 s) a rozsvieti pásek
         $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
         $stmtU->execute([$cmd, $target_id]);
+        // Zapamätaj si posledný príkaz — dashboard ho ukáže aj po reloade / na inom zariadení
+        elvo_set_setting($pdo, 'led_state_' . $target_id, json_encode([
+            'on' => $mode !== 'off',
+            'brightness' => $brightness,
+            'at' => date('c'),
+        ]));
         send_json([
             'status' => 'success',
             'target_device_id' => $target_id,
@@ -2405,6 +2440,10 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         }
     } catch (Exception $eH) { /* stara schema bez timestamp - ignore */ }
     
+    // Posledný známy stav svetla pre toto zariadenie (uložený pri POST /led)
+    $ledStateRaw = elvo_get_setting($pdo, 'led_state_' . intval($device_id));
+    $ledState = $ledStateRaw !== null ? json_decode($ledStateRaw, true) : null;
+
     send_json([
         // REALNE DATA IBA - ziadne fake fallbacky (3840/84 boli fake)
         'total_live_power' => $latest ? (float)$latest['power_ac'] : 0,
@@ -2430,6 +2469,9 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'smartlogger_ip' => $device['smartlogger_ip'] ?? '',
         'is_online' => (($device['status'] ?? '') === 'online') || ($latest && (float)$latest['power_ac'] > 0),
         'has_smart_meter' => (bool)($device['has_smart_meter'] ?? false),
+        // Stav svetla z DB — rovnaký na mobile aj PC (null = ešte nebol žiadny príkaz)
+        'led_on' => is_array($ledState) ? (bool)($ledState['on'] ?? false) : null,
+        'led_brightness' => is_array($ledState) && isset($ledState['brightness']) ? intval($ledState['brightness']) : null,
         // Stav komunikacie: zariadenie odpovedalo v poslednych 15 minutach?
         'last_telemetry_at' => $latest ? $latest['timestamp'] : null,
         'comm_ok' => (function() use ($latest) { if (!$latest) return false; $d = time() - strtotime($latest['timestamp']); return $d >= 0 && $d < 900; })(),
