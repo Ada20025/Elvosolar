@@ -1391,7 +1391,7 @@
                     <div class="metrics-grid-4">
                         <div class="metric-card" style="--line-color: var(--accent-solar);">
                             <span class="metric-label-styled"><i data-lucide="sun" style="width:12px;height:12px;color:var(--accent-solar);"></i> Výkon FVE</span>
-                            <span class="metric-value-styled text-solar" id="dashLivePower">–</span>
+                            <span class="metric-value-styled text-solar" id="dashLivePower">0 W</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashPowerBar" class="metric-bar-fill"></div>
                             </div>
@@ -1399,7 +1399,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-battery);">
                             <span class="metric-label-styled"><i data-lucide="battery-charging" style="width:12px;height:12px;color:var(--accent-battery);"></i> Kapacita Batérie</span>
-                            <span class="metric-value-styled text-battery" id="dashBatterySoc">–</span>
+                            <span class="metric-value-styled text-battery" id="dashBatterySoc">0%</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashBatteryBar" class="metric-bar-fill"></div>
                             </div>
@@ -1407,7 +1407,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-grid);">
                             <span class="metric-label-styled"><i data-lucide="activity" style="width:12px;height:12px;color:var(--accent-grid);"></i> Odber zo Siete <i data-lucide="info" style="width:10px;height:10px;color:var(--text-muted);cursor:help;" title="Odber zo siete. Pre presný údaj pripoj Smart Meter."></i></span>
-                            <span class="metric-value-styled text-grid" id="dashConsumption">–</span>
+                            <span class="metric-value-styled text-grid" id="dashConsumption">0 W</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashConsumptionBar" class="metric-bar-fill"></div>
                             </div>
@@ -1415,7 +1415,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-saved);">
                             <span class="metric-label-styled"><i data-lucide="banknote" style="width:12px;height:12px;color:var(--accent-saved);"></i> Celková Úspora</span>
-                            <span class="metric-value-styled text-saved" id="dashTotalSaved">–</span>
+                            <span class="metric-value-styled text-saved" id="dashTotalSaved">0.00 €</span>
                         </div>
                     </div>
 
@@ -1453,22 +1453,22 @@
                             <span class="okte-badge">AKTUALIZOVANÉ</span>
                         </div>
                         <div style="display:flex;align-items:baseline;gap:6px;">
-                            <span id="okteSpotPrice" class="font-mono" style="font-size:32px;font-weight:900;color:var(--text-primary);">–</span>
+                            <span id="okteSpotPrice" class="font-mono" style="font-size:32px;font-weight:900;color:var(--text-primary);">0.00</span>
                             <span style="font-size:12px;color:var(--text-secondary);font-weight:700;">€/MWh</span>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;font-size:11px;">
                             <div style="display:flex;flex-direction:column;">
                                 <span style="color:var(--text-muted);font-size:9px;text-transform:uppercase;">Minimum</span>
-                                <span class="font-mono" id="okteMinPrice" style="color:var(--accent-battery);font-weight:700;">– €</span>
+                                <span class="font-mono" id="okteMinPrice" style="color:var(--accent-battery);font-weight:700;">0.00 €/MWh</span>
                             </div>
                             <div style="display:flex;flex-direction:column;text-align:right;">
                                 <span style="color:var(--text-muted);font-size:9px;text-transform:uppercase;">Maximum</span>
-                                <span class="font-mono" id="okteMaxPrice" style="color:var(--accent-warn);font-weight:700;">– €</span>
+                                <span class="font-mono" id="okteMaxPrice" style="color:var(--accent-warn);font-weight:700;">0.00 €/MWh</span>
                             </div>
                         </div>
                         <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;font-size:10px;display:flex;justify-content:space-between;">
                             <span style="color:var(--text-muted);">Priemer</span>
-                            <span class="font-mono" id="okteAvgPrice" style="color:var(--accent-solar);font-weight:700;">– €</span>
+                            <span class="font-mono" id="okteAvgPrice" style="color:var(--accent-solar);font-weight:700;">0.00 €/MWh</span>
                         </div>
                     </div>
 
@@ -1482,13 +1482,13 @@
                                 <span class="okte-badge">AKTUALIZOVANÉ</span>
                             </div>
                             <div style="display:flex;align-items:baseline;gap:6px;">
-                                <span id="okteSpotPriceM" class="font-mono" style="font-size:28px;font-weight:900;color:var(--text-primary);">–</span>
+                                <span id="okteSpotPriceM" class="font-mono" style="font-size:28px;font-weight:900;color:var(--text-primary);">0.00</span>
                                 <span style="font-size:12px;color:var(--text-secondary);font-weight:700;">€/MWh</span>
                             </div>
                             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;font-size:10px;">
-                                <div style="display:flex;flex-direction:column;"><span style="color:var(--text-muted);font-size:8px;text-transform:uppercase;">Min</span><span class="font-mono" id="okteMinPriceM" style="color:var(--accent-battery);font-weight:700;">– €</span></div>
-                                <div style="display:flex;flex-direction:column;text-align:center;"><span style="color:var(--text-muted);font-size:8px;text-transform:uppercase;">Avg</span><span class="font-mono" id="okteAvgPriceM" style="color:var(--accent-solar);font-weight:700;">– €</span></div>
-                                <div style="display:flex;flex-direction:column;text-align:right;"><span style="color:var(--text-muted);font-size:8px;text-transform:uppercase;">Max</span><span class="font-mono" id="okteMaxPriceM" style="color:var(--accent-warn);font-weight:700;">– €</span></div>
+                                <div style="display:flex;flex-direction:column;"><span style="color:var(--text-muted);font-size:8px;text-transform:uppercase;">Min</span><span class="font-mono" id="okteMinPriceM" style="color:var(--accent-battery);font-weight:700;">0.00 €/MWh</span></div>
+                                <div style="display:flex;flex-direction:column;text-align:center;"><span style="color:var(--text-muted);font-size:8px;text-transform:uppercase;">Avg</span><span class="font-mono" id="okteAvgPriceM" style="color:var(--accent-solar);font-weight:700;">0.00 €/MWh</span></div>
+                                <div style="display:flex;flex-direction:column;text-align:right;"><span style="color:var(--text-muted);font-size:8px;text-transform:uppercase;">Max</span><span class="font-mono" id="okteMaxPriceM" style="color:var(--accent-warn);font-weight:700;">0.00 €/MWh</span></div>
                             </div>
                         </div>
                     </div>
@@ -1512,7 +1512,7 @@
                             </div>
                             <div style="display:flex;flex-direction:column;gap:2px;text-align:right;">
                                 <span>Výroba:</span>
-                                <strong class="font-mono" style="color:var(--accent-battery);" id="dailyProduction">-- kWh</strong>
+                                <strong class="font-mono" style="color:var(--accent-battery);" id="dailyProduction">0.0 kWh</strong>
                             </div>
                         </div>
                     </div>
@@ -2274,7 +2274,7 @@
             const power = data.total_live_power || 0;
             const soc = data.avg_live_soc || 0;
             // Zobraz hodnoty vždy, keď CM5 poslal telemetriu (rovnaké čísla hore aj dole).
-            // '–' IBA keď CM5 nikdy neposlal dáta. Stav komunikácie (čerstvosť) je zvlášť.
+            // Nula, keď CM5 nič neposlal — žiadne vymyslené čísla navyše.
             const hasReal = data.has_real_data === true;
             // Pouzi realny status z DB (is_online) alebo fallback na power/soc
             const isOnline = data.is_online === true || (data.is_online === undefined && (power > 0 || soc > 0));
@@ -2429,9 +2429,9 @@
                         </div>
                     </div>
                     <div id="invD1" class="inverter-details-box info-open">
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? Math.round(power) + ' W' : '–'}</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${hasReal ? 'var(--accent-battery)' : '#64748b'};">${hasReal ? Math.round(soc) + '%' : '–'}</strong></div>
-                                                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${totalKwh !== null ? '' : 'color:#64748b;'}">${totalKwh !== null ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? Math.round(power) + ' W' : '0 W'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${hasReal ? 'var(--accent-battery)' : '#64748b'};">${hasReal ? Math.round(soc) + '%' : '0%'}</strong></div>
+                                                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${totalKwh !== null ? '' : 'color:#64748b;'}">${(totalKwh !== null ? totalKwh : 0).toFixed(1)} kWh</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${data.fw_version ? 'var(--text-primary)' : '#64748b'};">${escHtml(data.fw_version || '–')}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav zariadenia:</span><strong class="font-mono" style="font-size:10px;color:${stateColor};">${escHtml(stateText)}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav komunikácie:</span><strong class="font-mono" style="color:${commColor};font-size:10px;">${commText}</strong></div>
@@ -2446,11 +2446,11 @@
                 busStatus.textContent = commOk ? (connTcp ? 'MODBUS TCP OK' : 'RS485 OK') : 'NO COMM';
                 busStatus.style.color = commOk ? 'var(--accent-battery)' : '#ef4444';
             }
-            const realLatency = (commOk && data.latency_ms !== undefined && data.latency_ms !== null) ? (data.latency_ms + ' ms') : '–';
+            const realLatency = (commOk && data.latency_ms !== undefined && data.latency_ms !== null) ? (data.latency_ms + ' ms') : '0 ms';
             if (busLatency) busLatency.textContent = realLatency;
             // Jednotny zdroj: rovnaky prah (hasReal = CM5 poslal telemetriu) ako v detailoch karty,
-            // inak by horné KPI ukazovali čísla a tento riadok '–' (alebo naopak)
-            if (dailyProd) dailyProd.textContent = totalKwh !== null ? (totalKwh.toFixed(1) + ' kWh') : '–';
+            // inak by horné KPI ukazovali čísla a tento riadok inú hodnotu (alebo naopak)
+            if (dailyProd) dailyProd.textContent = (totalKwh !== null ? totalKwh : 0).toFixed(1) + ' kWh';
             // Skry citacky (Latencia/Vyroba) ked je zariadenie offline
             const footerStats = document.getElementById('busFooterStats');
             if (footerStats) footerStats.style.display = isOnline ? 'grid' : 'none';
@@ -2891,22 +2891,22 @@
                 const elSoc = document.getElementById('dashBatterySoc');
                 const elCons = document.getElementById('dashConsumption');
                 const elSaved = document.getElementById('dashTotalSaved');
-                // IBA pravdive data: ked CM5 nic neposlal, ukazeme '–' (nie vymyslenu nulu)
+                // Ked CM5 nic neposlal, ukazeme nulu (ziadne vymyslene hodnoty)
                 const hasReal = data.has_real_data === true;
                 const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
                 const powerW = num(data.total_live_power);
                 const socPct = num(data.avg_live_soc);
                 const savedEur = num(data.total_saved_eur);
-                if (elPower) elPower.innerText = (hasReal && powerW !== null) ? `${Math.round(powerW)} W` : '–';
-                if (elSoc) elSoc.innerText = (hasReal && socPct !== null) ? `${Math.round(socPct)}%` : '–';
+                if (elPower) elPower.innerText = (hasReal && powerW !== null) ? `${Math.round(powerW)} W` : '0 W';
+                if (elSoc) elSoc.innerText = (hasReal && socPct !== null) ? `${Math.round(socPct)}%` : '0%';
                 // Odber zo siete: presne udaje z meteru/bilancie - bez odhadov
                 if (elCons) {
                     const cons = num(data.consumption);
                     const hasMeter = data.has_smart_meter === true;
                     if (cons !== null && (hasMeter || cons > 0)) { elCons.innerText = `${Math.round(cons)} W`; }
-                    else { elCons.innerText = '–'; }
+                    else { elCons.innerText = '0 W'; }
                 }
-                if (elSaved) elSaved.innerText = (savedEur !== null && hasReal) ? `${savedEur.toFixed(2)} €` : '–';
+                if (elSaved) elSaved.innerText = (savedEur !== null && hasReal) ? `${savedEur.toFixed(2)} €` : '0.00 €';
 
                 const deviceBatPct = hasReal && num(data.device_battery_pct) !== null ? Math.round(data.device_battery_pct) : null;
 
@@ -2914,7 +2914,7 @@
                 const socGauge = document.getElementById('gaugeSocVal');
                 const socArc = document.getElementById('gaugeSocArc');
                 if (socGauge && socArc) {
-                    socGauge.textContent = (hasReal && socPct !== null) ? `${Math.round(socPct)}%` : '–';
+                    socGauge.textContent = (hasReal && socPct !== null) ? `${Math.round(socPct)}%` : '0%';
                     socArc.setAttribute('stroke-dashoffset', hasReal && socPct !== null ? 264 - (264 * socPct / 100) : 264);
                 }
                 const tempGauge = document.getElementById('gaugeTempVal');
@@ -2925,7 +2925,7 @@
                         tempGauge.textContent = `${Math.round(temp)}°C`;
                         tempArc.setAttribute('stroke-dashoffset', 264 - (264 * Math.min(temp, 80) / 80));
                     } else {
-                        tempGauge.textContent = '–';
+                        tempGauge.textContent = '0°C';
                         tempArc.setAttribute('stroke-dashoffset', 264);
                     }
                 }
@@ -2934,7 +2934,7 @@
                 const tempArcEl = document.getElementById('tempArc');
                 if (tempValEl && tempArcEl) {
                     const t = data.inverter_temp || 0;
-                    tempValEl.textContent = t > 0 ? Math.round(t) : '--';
+                    tempValEl.textContent = t > 0 ? Math.round(t) : '0';
                     tempArcEl.setAttribute('stroke-dashoffset', 264 - (264 * Math.min(t, 80) / 80));
                 }
                 if (deviceBatPct !== null) setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
@@ -3029,7 +3029,7 @@
                     if (m.okte_price !== undefined && m.okte_price !== null && m.okte_price > 0) {
                         const sp = document.getElementById('okteSpotPrice');
                         // Prepis IBA ak OKTE API nic nedal ( Este vzdy realna cena ma prioritu)
-                        if (sp && (sp.innerText === '–' || sp.innerText === '-' || sp.innerText === '')) {
+                        if (sp && (sp.innerText === '0.00' || sp.innerText === '–' || sp.innerText === '-' || sp.innerText === '')) {
                             sp.innerText = parseFloat(m.okte_price).toFixed(2);
                         }
                     }
