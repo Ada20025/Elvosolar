@@ -1133,6 +1133,97 @@
             .led-dock #ledFlashlightBtn { width: 34px; height: 34px; }
             .led-dock #ledPanel { top: calc(100% + 12px); }
         }
+        /* === BATERKA (SVETLO) — PREMIUM DIALOG === */
+        #ledModal { overflow-y: auto; align-items: flex-start; }
+        #ledModal .led-card {
+            position: relative;
+            overflow: hidden auto;
+            width: 100%;
+            max-width: 400px;
+            max-height: calc(100vh - 56px);
+            background: linear-gradient(165deg, #0e1526 0%, #0b1120 55%, #0d1424 100%);
+            border: 1px solid rgba(245,158,11,0.30);
+            border-radius: 24px;
+            padding: 22px 20px 18px;
+            box-shadow: 0 30px 90px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.06);
+            text-align: center;
+            --led-power: 0;
+        }
+        #ledModal .led-close {
+            position: absolute; top: 12px; right: 12px;
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+            color: #94a3b8; cursor: pointer; z-index: 3; transition: all .2s;
+        }
+        #ledModal .led-close:hover { background: rgba(255,255,255,.1); color: #e2e8f0; }
+        #ledModal .led-aura {
+            position: absolute; top: -150px; left: 50%;
+            width: 360px; height: 360px; margin-left: -180px;
+            border-radius: 50%; pointer-events: none;
+            background: radial-gradient(circle, rgba(250,204,21,.55) 0%, rgba(245,158,11,.22) 42%, transparent 70%);
+            opacity: 0; transform: scale(.8);
+            transition: opacity .4s, transform .4s;
+            filter: blur(8px);
+        }
+        #ledModal .led-card.is-on .led-aura { opacity: var(--led-power); transform: scale(1); }
+        #ledModal .led-lens {
+            position: relative; z-index: 2;
+            width: 104px; height: 104px; margin: 4px auto 14px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background:
+                radial-gradient(circle at 50% 36%, rgba(255,255,255,.9), rgba(255,255,255,0) 46%),
+                radial-gradient(circle at 50% 50%, #fffdf5 0%, #fde68a calc(14% + var(--led-power) * 46%), #f59e0b 64%, #78350f 88%, #1c1206 100%);
+            box-shadow: inset 0 0 0 7px rgba(9,14,26,.92), inset 0 0 0 9px rgba(245,158,11,.35), 0 0 26px rgba(245,158,11,.18);
+            transition: box-shadow .35s;
+        }
+        #ledModal .led-card.is-on .led-lens { box-shadow: inset 0 0 0 7px rgba(9,14,26,.92), inset 0 0 0 9px rgba(245,158,11,.55), 0 0 64px rgba(245,158,11,.7); }
+        #ledModal .led-lens::after {
+            content: ""; position: absolute; inset: 16px; border-radius: 50%;
+            background: radial-gradient(circle at 50% 44%, rgba(255,255,255,.6), transparent 64%);
+            opacity: .15; transition: opacity .35s;
+        }
+        #ledModal .led-card.is-on .led-lens::after { opacity: .85; }
+        #ledModal .led-lens i, #ledModal .led-lens svg {
+            position: relative; z-index: 2;
+            width: 38px !important; height: 38px !important;
+            color: #3b2506 !important;
+            opacity: .55;
+            transition: opacity .35s, color .35s;
+        }
+        #ledModal .led-card.is-on .led-lens i, #ledModal .led-card.is-on .led-lens svg {
+            color: #fff !important;
+            opacity: 1;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,.9));
+        }
+        #ledModal .led-title { font-size: 17px; font-weight: 900; color: #f8fafc; letter-spacing: .2px; margin: 0 0 5px; }
+        #ledModal .led-sub { font-size: 11.5px; line-height: 1.55; color: #94a3b8; margin: 0 auto 14px; max-width: 310px; }
+        #ledModal .led-brightness-box {
+            background: rgba(255,255,255,.035);
+            border: 1px solid rgba(255,255,255,.07);
+            border-radius: 15px; padding: 12px 14px 8px; margin-bottom: 12px;
+        }
+        #ledModal .led-brightness-head { display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:800; color:#cbd5e1; margin-bottom:10px; }
+        #ledModal #ledBrightness {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 10px; border-radius: 8px; cursor: pointer; outline: none;
+            background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 var(--led-fill, 100%), rgba(255,255,255,.09) var(--led-fill, 100%));
+        }
+        #ledModal #ledBrightness::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #fff, #fde68a 60%, #f59e0b);
+            border: 3px solid #0b1120; box-shadow: 0 0 16px rgba(245,158,11,.75); cursor: pointer;
+        }
+        #ledModal #ledBrightness::-moz-range-thumb { width:22px;height:22px;border-radius:50%;background:#fde68a;border:3px solid #0b1120;box-shadow:0 0 16px rgba(245,158,11,.75); }
+        #ledModal .led-ticks { display:flex; justify-content:space-between; font-size:8.5px; font-weight:700; color:#64748b; margin-top:6px; font-family:'JetBrains Mono',monospace; }
+        #ledModal #ledStateBadge { display:inline-flex; align-items:center; justify-content:center; gap:6px; margin: 0 0 12px; font-size:9.5px; font-weight:900; letter-spacing:1.4px; padding:6px 14px; border-radius:999px; transition: all .3s; }
+        #ledModal .led-actions { display:flex; flex-direction:column; gap:9px; }
+        #ledModal #ledModalActionBtn { width:100%; padding:14px; border-radius:15px; border:none; color:#fff; font-size:13px; font-weight:900; cursor:pointer; font-family:'Plus Jakarta Sans'; transition: all .25s; }
+        #ledModal .led-cancel { width:100%; padding:13px; border-radius:15px; border:1px solid rgba(255,255,255,.12); background:transparent; color:#94a3b8; font-size:12px; font-weight:800; cursor:pointer; font-family:'Plus Jakarta Sans'; transition: all .2s; }
+        #ledModal .led-cancel:hover { background:rgba(255,255,255,.05); color:#e2e8f0; }
+        #ledModal .led-hint { font-size:9.5px; color:#64748b; margin-top:10px; }
+
         #deviceSelectDropdownBtn { min-width: 0; max-width: 100%; overflow: hidden; }
         .header-center .station-dropdown-container { min-width: 0; max-width: 100%; }
         #singleDeviceLabel {
@@ -2860,7 +2951,13 @@
                     ? '0 10px 30px rgba(239,68,68,.35)'
                     : '0 10px 30px rgba(245,158,11,.35)';
             }
-            if (icon) icon.style.background = on ? 'rgba(245,158,11,.26)' : 'rgba(245,158,11,.12)';
+            const card = document.getElementById('ledModalCard');
+            if (card) {
+                card.classList.toggle('is-on', on);
+                card.style.setProperty('--led-power', String(on ? Math.max(0.15, ledBrightness / 100) : 0));
+            }
+            const range = document.getElementById('ledBrightness');
+            if (range) range.style.setProperty('--led-fill', ledBrightness + '%');
         }
 
         function confirmLedAction() {
@@ -4406,20 +4503,28 @@
 
 <!-- ============ BATERKA — POTVRDENIE CEZ CELU OBRAZOVKU ============ -->
 <div id="ledModal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(2,4,10,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;">
-    <div style="width:100%;max-width:420px;background:linear-gradient(160deg,#0d1424,#111a2e);border:1px solid rgba(245,158,11,0.35);border-radius:24px;padding:26px 22px;box-shadow:0 30px 80px rgba(0,0,0,0.7);text-align:center;">
-        <div id="ledModalIcon" style="width:84px;height:84px;margin:0 auto 16px auto;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(245,158,11,0.12);border:2px solid rgba(245,158,11,0.35);transition:all .3s;">
-            <i data-lucide="flashlight" style="width:38px;height:38px;color:var(--accent-solar);"></i>
+    <div id="ledModalCard" class="led-card">
+        <div class="led-aura"></div>
+        <button class="led-close" onclick="closeLedModal()" aria-label="Zavrieť"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        <div id="ledModalIcon" class="led-lens">
+            <i data-lucide="flashlight"></i>
         </div>
-        <h3 style="font-size:18px;font-weight:900;color:#f9fafb;margin:0 0 8px 0;">Reálna baterka</h3>
-        <p id="ledModalText" style="font-size:12.5px;color:#9ca3af;line-height:1.6;margin:0 0 18px 0;">Naozaj chcete zapnúť reálnu baterku na tomto zariadení?</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:800;color:var(--text-secondary);margin-bottom:8px;">
-            <span>Jas svetla</span>
-            <span id="ledBrightnessVal" class="font-mono" style="color:var(--text-primary);">100 %</span>
+        <h3 class="led-title">Reálna baterka</h3>
+        <p id="ledModalText" class="led-sub">Naozaj chcete zapnúť reálnu baterku na tomto zariadení?</p>
+        <div class="led-brightness-box">
+            <div class="led-brightness-head">
+                <span>Jas svetla</span>
+                <span id="ledBrightnessVal" class="font-mono" style="color:#fde68a;">100 %</span>
+            </div>
+            <input id="ledBrightness" type="range" min="5" max="100" step="5" value="100" oninput="onLedBrightnessInput(this.value)">
+            <div class="led-ticks"><span>5 %</span><span>50 %</span><span>100 %</span></div>
         </div>
-        <input id="ledBrightness" type="range" min="5" max="100" step="5" value="100" oninput="onLedBrightnessInput(this.value)" style="width:100%;accent-color:var(--accent-solar);cursor:pointer;">
-        <div id="ledStateBadge" style="margin:14px 0 18px 0;font-size:10px;font-weight:800;letter-spacing:1px;padding:6px 8px;border-radius:8px;background:rgba(148,163,184,.12);color:var(--text-muted);text-align:center;">VYPNUTÉ</div>
-        <button id="ledModalActionBtn" onclick="confirmLedAction()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:13px;font-weight:900;cursor:pointer;font-family:'Plus Jakarta Sans';margin-bottom:10px;">ZAPNÚŤ BATERKU</button>
-        <button onclick="closeLedModal()" style="width:100%;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#9ca3af;font-size:12px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans';">Zavrieť</button>
+        <div id="ledStateBadge">VYPNUTÉ</div>
+        <div class="led-actions">
+            <button id="ledModalActionBtn" onclick="confirmLedAction()">ZAPNÚŤ BATERKU</button>
+            <button class="led-cancel" onclick="closeLedModal()">Zavrieť</button>
+        </div>
+        <div class="led-hint">Svetlo svieti na pripojenom CM5 zariadení.</div>
     </div>
 </div>
 
