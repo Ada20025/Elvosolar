@@ -1391,7 +1391,7 @@
                     <div class="metrics-grid-4">
                         <div class="metric-card" style="--line-color: var(--accent-solar);">
                             <span class="metric-label-styled"><i data-lucide="sun" style="width:12px;height:12px;color:var(--accent-solar);"></i> Výkon FVE</span>
-                            <span class="metric-value-styled text-solar" id="dashLivePower">0 W</span>
+                            <span class="metric-value-styled text-solar" id="dashLivePower">–</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashPowerBar" class="metric-bar-fill"></div>
                             </div>
@@ -1399,7 +1399,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-battery);">
                             <span class="metric-label-styled"><i data-lucide="battery-charging" style="width:12px;height:12px;color:var(--accent-battery);"></i> Kapacita Batérie</span>
-                            <span class="metric-value-styled text-battery" id="dashBatterySoc">0%</span>
+                            <span class="metric-value-styled text-battery" id="dashBatterySoc">–</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashBatteryBar" class="metric-bar-fill"></div>
                             </div>
@@ -1415,7 +1415,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-saved);">
                             <span class="metric-label-styled"><i data-lucide="banknote" style="width:12px;height:12px;color:var(--accent-saved);"></i> Celková Úspora</span>
-                            <span class="metric-value-styled text-saved" id="dashTotalSaved">0.00 €</span>
+                            <span class="metric-value-styled text-saved" id="dashTotalSaved">–</span>
                         </div>
                     </div>
 
@@ -2466,15 +2466,17 @@
             const freq = data.freq || 50;
             const totalKwh = data.total_kwh || 0;
             const totalSaved = data.total_saved_eur || 0;
+            const hasReal = data.has_real_data === true;
             const isOnline = power > 0 || soc > 0;
             const override = data.manual_override || 'AUTO';
 
             nameEl.textContent = deviceName || 'Moje zariadenie';
             if (infoEl) {
+                // Iba to, co zariadenie naozaj poslalo — ziadne 0 W / 0 % SOC navyse
                 const parts = [];
                 if (brandName) parts.push(brandName);
-                if (isOnline) parts.push(Math.round(power) + 'W');
-                parts.push(Math.round(soc) + '% SOC');
+                if (hasReal && isOnline) parts.push(Math.round(power) + 'W');
+                if (hasReal && (soc > 0 || isOnline)) parts.push(Math.round(soc) + '% SOC');
                 infoEl.textContent = parts.join(' · ');
             }
 
@@ -2882,32 +2884,43 @@
                 const elSoc = document.getElementById('dashBatterySoc');
                 const elCons = document.getElementById('dashConsumption');
                 const elSaved = document.getElementById('dashTotalSaved');
-                if (elPower) elPower.innerText = `${Math.round(data.total_live_power || 0)} W`;
-                if (elSoc) elSoc.innerText = `${Math.round(data.avg_live_soc || 0)}%`;
+                // IBA pravdive data: ked CM5 nic neposlal, ukazeme '–' (nie vymyslenu nulu)
+                const hasReal = data.has_real_data === true;
+                const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
+                const powerW = num(data.total_live_power);
+                const socPct = num(data.avg_live_soc);
+                const savedEur = num(data.total_saved_eur);
+                if (elPower) elPower.innerText = (hasReal && powerW !== null) ? `${Math.round(powerW)} W` : '–';
+                if (elSoc) elSoc.innerText = (hasReal && socPct !== null) ? `${Math.round(socPct)}%` : '–';
                 // Odber zo siete: presne udaje z meteru/bilancie - bez odhadov
                 if (elCons) {
-                    const cons = Math.round(data.consumption || 0);
+                    const cons = num(data.consumption);
                     const hasMeter = data.has_smart_meter === true;
-                    if (hasMeter || cons > 0) { elCons.innerText = `${cons} W`; }
+                    if (cons !== null && (hasMeter || cons > 0)) { elCons.innerText = `${Math.round(cons)} W`; }
                     else { elCons.innerText = '–'; }
                 }
-                if (elSaved) elSaved.innerText = `${(parseFloat(data.total_saved_eur) || 0).toFixed(2)} €`;
+                if (elSaved) elSaved.innerText = (savedEur !== null && hasReal) ? `${savedEur.toFixed(2)} €` : '–';
 
-                const deviceBatPct = data.device_battery_pct !== undefined ? Math.round(data.device_battery_pct) : (Math.round(data.avg_live_soc) || 0);
+                const deviceBatPct = hasReal && num(data.device_battery_pct) !== null ? Math.round(data.device_battery_pct) : null;
 
                 // Update holiday gauges
                 const socGauge = document.getElementById('gaugeSocVal');
                 const socArc = document.getElementById('gaugeSocArc');
                 if (socGauge && socArc) {
-                    socGauge.textContent = `${Math.round(data.avg_live_soc || 0)}%`;
-                    socArc.setAttribute('stroke-dashoffset', 264 - (264 * (data.avg_live_soc || 0) / 100));
+                    socGauge.textContent = (hasReal && socPct !== null) ? `${Math.round(socPct)}%` : '–';
+                    socArc.setAttribute('stroke-dashoffset', hasReal && socPct !== null ? 264 - (264 * socPct / 100) : 264);
                 }
                 const tempGauge = document.getElementById('gaugeTempVal');
                 const tempArc = document.getElementById('gaugeTempArc');
                 if (tempGauge && tempArc) {
-                    const temp = data.inverter_temp || 32;
-                    tempGauge.textContent = `${Math.round(temp)}°C`;
-                    tempArc.setAttribute('stroke-dashoffset', 264 - (264 * Math.min(temp, 80) / 80));
+                    const temp = num(data.inverter_temp);
+                    if (hasReal && temp !== null && temp > 0) {
+                        tempGauge.textContent = `${Math.round(temp)}°C`;
+                        tempArc.setAttribute('stroke-dashoffset', 264 - (264 * Math.min(temp, 80) / 80));
+                    } else {
+                        tempGauge.textContent = '–';
+                        tempArc.setAttribute('stroke-dashoffset', 264);
+                    }
                 }
                 // Update Relé tab temperature gauge
                 const tempValEl = document.getElementById('tempVal');
@@ -2917,7 +2930,7 @@
                     tempValEl.textContent = t > 0 ? Math.round(t) : '--';
                     tempArcEl.setAttribute('stroke-dashoffset', 264 - (264 * Math.min(t, 80) / 80));
                 }
-                setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
+                if (deviceBatPct !== null) setBatteryIconMarkup('deviceBatteryIcon', deviceBatPct, false);
 
                 // Zvyrazni aktivny rezim prevadzky (Zap/Vyp/SmartAI) podla DB
                 // - inak tlacidla ukazuju posledne kliknute, nie realny stav zariadenia
@@ -2947,8 +2960,10 @@
                     if (wifiBarsEl) {
                         wifiBarsEl.classList.remove('hidden');
                         wifiBarsEl.className = 'wifi-signal-bars';
-                        const wifiSignalPct = data.wifi_signal !== undefined ? Math.round(data.wifi_signal) : 84;
-                        if (wifiSignalPct >= 75) wifiBarsEl.classList.add('strength-4');
+                        // Ziaden vymysleny signal: bez cisla z CM5 sa bary vobec nezobrazia
+                        const wifiSignalPct = num(data.wifi_signal);
+                        if (wifiSignalPct === null) { wifiBarsEl.classList.add('hidden'); }
+                        else if (wifiSignalPct >= 75) wifiBarsEl.classList.add('strength-4');
                         else if (wifiSignalPct >= 50) wifiBarsEl.classList.add('strength-3');
                         else if (wifiSignalPct >= 25) wifiBarsEl.classList.add('strength-2');
                         else if (wifiSignalPct > 0) wifiBarsEl.classList.add('strength-1');
@@ -2967,9 +2982,12 @@
                 // Farebné stavy + info sa menia HNEĎ podľa čerstvej telemetrie (bez duplicitného requestu)
                 if (typeof applyDeviceStatus === 'function') applyDeviceStatus(data.comm_ok === true);
 
-                document.getElementById('dashBatteryBar').style.width = `${Math.round(data.avg_live_soc)}%`;
-                document.getElementById('dashPowerBar').style.width = `${Math.min(100, Math.round(data.total_live_power / 60))}%`;
-                document.getElementById('dashConsumptionBar').style.width = `${Math.min(100, Math.round((data.consumption || 0) / 60))}%`;
+                const batteryBarEl = document.getElementById('dashBatteryBar');
+                if (batteryBarEl) batteryBarEl.style.width = (hasReal && socPct !== null) ? `${Math.max(0, Math.min(100, Math.round(socPct)))}%` : '0%';
+                const powerBarEl = document.getElementById('dashPowerBar');
+                if (powerBarEl) powerBarEl.style.width = (hasReal && powerW !== null) ? `${Math.min(100, Math.round(powerW / 60))}%` : '0%';
+                const consBarEl = document.getElementById('dashConsumptionBar');
+                if (consBarEl) consBarEl.style.width = (num(data.consumption) !== null) ? `${Math.min(100, Math.round(Number(data.consumption) / 60))}%` : '0%';
 
                 // Grid status (powerSourceStatus removed from UI)
 
