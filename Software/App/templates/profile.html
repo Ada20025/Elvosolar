@@ -247,6 +247,7 @@
     <nav style="position:sticky;top:0;z-index:100;background:rgba(2,4,10,0.85);backdrop-filter:blur(25px);border-bottom:1px solid var(--border-card);padding:0 24px;">
         <div style="max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;height:64px;">
             <div style="display:flex;align-items:center;gap:16px;">
+                <a href="/dashboard" title="ElvoControll" style="display:flex;align-items:center;flex-shrink:0;"><img src="/templates/ElvosolarLogo.png" alt="ElvoControll" style="height:30px;width:auto;border-radius:8px;"></a>
                 <a href="/dashboard" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-muted);font-size:12px;font-weight:700;transition:color 0.2s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">
                     <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
                     Dashboard
@@ -316,13 +317,14 @@
                         <span class="card-title"><i data-lucide="bell-ring" style="width:14px;height:14px;color:#38bdf8;"></i> Spôsob doručenia</span>
                     </div>
                     <p style="font-size:10px;color:var(--text-muted);margin:0 0 12px 0;">Vyber, ako ti majú chodiť upozornenia — emailom, notifikáciou do zariadenia, obojím, alebo ničím.</p>
+                    <p id="pushStateInfo" style="font-size:10px;color:var(--text-muted);margin:0 0 10px 0;"></p>
                     <div style="display:flex;flex-direction:column;gap:10px;">
                         <div class="notif-item">
                             <div>
                                 <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">📧 Email</span>
                                 <span style="font-size:10px;color:var(--text-muted);">Upozornenia prídu na tvoj e-mail</span>
                             </div>
-                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifEmail')"><div class="toggle-knob"></div></div>
+                            <div class="toggle-track on" id="trackNotifEmail" onclick="toggleNotif(this, 'notifEmail')"><div class="toggle-knob"></div></div>
                             <input type="checkbox" id="notifEmail" checked style="display:none;">
                         </div>
                         <div class="notif-item">
@@ -330,8 +332,8 @@
                                 <span style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;">🔔 Notifikácie do zariadenia (Push)</span>
                                 <span style="font-size:10px;color:var(--text-muted);">Systémové notifikácie — chodia aj keď je appka zatvorená</span>
                             </div>
-                            <div class="toggle-track on" onclick="toggleNotif(this, 'notifPush')"><div class="toggle-knob"></div></div>
-                            <input type="checkbox" id="notifPush" checked style="display:none;">
+                            <div class="toggle-track off" id="trackNotifPush" onclick="toggleNotif(this, 'notifPush')"><div class="toggle-knob"></div></div>
+                            <input type="checkbox" id="notifPush" style="display:none;">
                         </div>
                     </div>
                     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
@@ -530,6 +532,8 @@
                         const tr = document.getElementById('track' + cbId.replace('notif', 'Notif'));
                         if (tr) tr.className = 'toggle-track ' + (cb.checked ? 'on' : 'off');
                     }
+                    // Push toggle musi ukazovat REALNY stav tohto zariadenia, nie ulozenu preferenciu
+                    await reflectPushState();
                     // Kanaly (select): zmeni aj viditelnost toggle-track podla kanala
                     const chMap = { chNewDevice: 'new_device_channel', chError: 'error_channel', chDaily: 'daily_report_channel', chNegPrice: 'negative_price_channel' };
                     for (const [selId, key] of Object.entries(chMap)) {
@@ -603,9 +607,64 @@
             const cb = document.getElementById(checkboxId);
             cb.checked = !cb.checked;
             el.className = 'toggle-track ' + (cb.checked ? 'on' : 'off');
-            if (cb.checked && checkboxId === 'notifPush') {
-                enablePushOnToggle(el);
+            if (checkboxId === 'notifPush') {
+                if (cb.checked) enablePushOnToggle(el);
+                else disablePushOnToggle(el);
             }
+        }
+
+        // Vypne push: odhlasi subscription v prehliadaci aj na serveri
+        async function disablePushOnToggle(el) {
+            const cb = document.getElementById('notifPush');
+            try {
+                if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.getRegistration();
+                    const sub = reg && await reg.pushManager.getSubscription();
+                    if (sub) {
+                        await safeJson('/api/push/unsubscribe', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ endpoint: sub.endpoint })
+                        }, true);
+                        await sub.unsubscribe();
+                    }
+                }
+                localStorage.removeItem('elvo_push_endpoint');
+                cb.checked = false;
+                el.className = 'toggle-track off';
+                updatePushStateInfo(false);
+                showVrcko('🔕 Push notifikácie sú na tomto zariadení vypnuté', 'info');
+            } catch (e) {
+                console.log('[PUSH] off err:', e.message);
+            }
+        }
+
+        // Prepni toggle podla skutocneho stavu push (prihlaseny subscription + povolenie)
+        async function reflectPushState() {
+            const cb = document.getElementById('notifPush');
+            const tr = document.getElementById('trackNotifPush');
+            if (!cb || !tr) return;
+            let active = false;
+            try {
+                if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.getRegistration();
+                    const sub = reg && await reg.pushManager.getSubscription();
+                    active = !!sub;
+                }
+            } catch (e) { active = false; }
+            cb.checked = active;
+            tr.className = 'toggle-track ' + (active ? 'on' : 'off');
+            updatePushStateInfo(active);
+        }
+
+        function updatePushStateInfo(active) {
+            const el = document.getElementById('pushStateInfo');
+            if (!el) return;
+            el.textContent = active
+                ? '✅ Push je na tomto zariadení aktívny'
+                : ('Notification' in window && Notification.permission === 'denied')
+                    ? '⚠ Notifikácie sú v prehliadači zablokované — povoľ ich v nastaveniach stránky'
+                    : 'Push na tomto zariadení ešte nie je zapnutý';
         }
 
         // Zapne push: poziada o povolenie (az na klik — Chrome to vyzaduje) a ulozi subscription na server
@@ -629,6 +688,8 @@
                     cb.checked = false; el.className = 'toggle-track off'; return;
                 }
                 el.className = 'toggle-track on';
+                cb.checked = true;
+                updatePushStateInfo(true);
                 const reg = await navigator.serviceWorker.register('/sw.js');
                 await navigator.serviceWorker.ready;
                 const vk = await safeJson('/api/push/vapid', null, true);
@@ -646,6 +707,7 @@
                 console.log('[PUSH] toggle err:', e.message);
                 showVrcko('Push sa nepodarilo zapnúť: ' + e.message, 'error');
                 cb.checked = false; el.className = 'toggle-track off';
+                updatePushStateInfo(false);
             }
         }
 
@@ -843,7 +905,7 @@
         loadProfile();
         loadDevices();
         loadUserNotifications();
-        registerPushOnProfile();
+        registerPushOnProfile().then(function () { reflectPushState(); });
         if (window.lucide) lucide.createIcons();
     </script>
 </body>

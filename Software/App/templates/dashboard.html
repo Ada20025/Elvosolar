@@ -1225,9 +1225,9 @@
         /* Smooth scroll for all modals */
         .modal-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-        /* PWA standalone: skry logo v headeri (app ikona ho nahrádza) */
+        /* PWA standalone: logo ostava viditelne aj v nainstalovanej appke */
         @media all and (display-mode: standalone) {
-            #headerLogoBox { display: none !important; }
+            #headerLogoBox { display: flex !important; }
         }
     </style>
 </head>
