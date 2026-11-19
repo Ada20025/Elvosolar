@@ -1255,117 +1255,79 @@
             color: #94a3b8; cursor: pointer; z-index: 3; transition: all .2s;
         }
         #ledModal .led-close:hover { background: rgba(255,255,255,.1); color: #e2e8f0; }
-        /* Scéna: kreslená baterka (vľavo) + svetelný lúč (vpravo) */
+        /* Svetlo: prémiový kruhový ovládač — prstenec jasu + žiara, žiadna ilustrácia */
         #ledModal .led-stage {
             position: relative;
             display: flex;
             align-items: center;
-            height: 156px;
-            margin: 0 -6px 8px;
-            padding-left: 26px;
+            justify-content: center;
+            height: 184px;
+            margin: 4px 0 10px;
         }
-        #ledModal .led-aura {
-            position: absolute; left: 195px; top: 50%;
-            width: 300px; height: 300px; margin: -150px 0 0 -150px;
+        #ledModal .led-halo {
+            position: absolute; left: 50%; top: 50%;
+            width: 280px; height: 280px; margin: -140px 0 0 -140px;
             border-radius: 50%; pointer-events: none;
-            background: radial-gradient(circle, rgba(255,236,170,.5) 0%, rgba(245,158,11,.18) 45%, transparent 72%);
-            opacity: calc(var(--led-power) * .9);
-            transform: scale(calc(.75 + var(--led-power) * .25));
-            transition: opacity .4s, transform .4s;
-            filter: blur(6px);
-        }
-        #ledModal .led-beam {
-            position: absolute; left: 190px; top: 50%;
-            width: 200px; height: 120px; margin-top: -60px;
-            transform-origin: 0 50%;
-            transform: rotate(-7deg) scaleX(calc(.6 + var(--led-power) * .4));
-            background: linear-gradient(90deg, rgba(255,247,214,.9) 0%, rgba(253,230,138,.5) 34%, rgba(245,158,11,.16) 68%, rgba(245,158,11,0) 100%);
-            clip-path: polygon(0 37%, 100% 0, 100% 100%, 0 63%);
-            filter: blur(6px);
+            background: radial-gradient(circle, rgba(255,240,190,.55) 0%, rgba(245,158,11,.2) 44%, transparent 72%);
             opacity: calc(var(--led-power) * .95);
-            transition: opacity .4s, transform .4s;
-            pointer-events: none;
+            transform: scale(calc(.82 + var(--led-power) * .18));
+            transition: opacity .45s, transform .45s;
+            filter: blur(10px);
         }
-        #ledModal .led-torch {
+        #ledModal .led-ring {
+            position: absolute;
+            width: 172px; height: 172px;
+            transform: rotate(-90deg);
+        }
+        #ledModal .led-ring circle { fill: none; stroke-width: 5; }
+        #ledModal .led-ring-track { stroke: rgba(148,163,184,.14); }
+        #ledModal .led-ring-arc {
+            stroke: #f59e0b; stroke-linecap: round;
+            stroke-dasharray: 389.6; stroke-dashoffset: 0;
+            opacity: .3;
+            filter: drop-shadow(0 0 6px rgba(245,158,11,.7));
+            transition: stroke-dashoffset .45s cubic-bezier(.16,1,.3,1), opacity .35s;
+        }
+        #ledModal .led-card.is-on .led-ring-arc { opacity: 1; }
+        #ledModal .led-orb {
             position: relative; z-index: 2;
-            display: flex; align-items: center;
-            transform: rotate(-7deg);
-            filter: drop-shadow(0 16px 22px rgba(0,0,0,.55));
-            transition: transform .4s;
+            width: 132px; height: 132px; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 1px;
+            background:
+                radial-gradient(circle at 50% 18%, rgba(255,255,255,.10), transparent 62%),
+                linear-gradient(165deg, rgba(26,36,54,.98), rgba(9,14,26,.99));
+            border: 1px solid rgba(148,163,184,.2);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px rgba(0,0,0,.55);
+            transition: background .45s, border-color .45s, box-shadow .45s;
         }
-        #ledModal .led-card.is-on .led-torch { transform: rotate(-9deg) translateY(-2px); }
-        #ledModal .led-torch span { display: block; }
-        #ledModal .led-tail {
-            width: 13px; height: 30px;
-            border-radius: 5px 2px 2px 5px;
-            background: linear-gradient(90deg, #0b1120, #475569 70%, #1e293b);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+        #ledModal .led-card.is-on .led-orb {
+            border-color: rgba(245,158,11,.5);
+            background:
+                radial-gradient(circle at 50% 20%, #fff 0%, #fde68a 34%, #f59e0b 66%, #b45309 90%),
+                linear-gradient(165deg, rgba(41,30,10,.9), rgba(20,14,4,.95));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 0 48px rgba(245,158,11,.45), 0 18px 40px rgba(0,0,0,.45);
         }
-        #ledModal .led-barrel {
-            position: relative;
-            width: 80px; height: 40px;
-            background: linear-gradient(180deg, #64748b 0%, #1e293b 32%, #0b1120 58%, #334155 100%);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 8px rgba(0,0,0,.7);
+        #ledModal .led-orb-icon {
+            width: 17px !important; height: 17px !important;
+            color: #94a3b8 !important;
+            opacity: .75;
+            transition: color .4s, opacity .4s;
         }
-        #ledModal .led-barrel::after {
-            content: ''; position: absolute; inset: 0 10px;
-            background: repeating-linear-gradient(90deg, rgba(255,255,255,.12) 0 3px, transparent 3px 11px);
-            opacity: .85;
+        #ledModal .led-card.is-on .led-orb-icon { color: #7c2d12 !important; opacity: .85; }
+        #ledModal .led-orb-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 22px; font-weight: 900; letter-spacing: -1px;
+            color: var(--text-primary);
+            transition: color .4s;
         }
-        #ledModal .led-band {
-            width: 11px; height: 46px;
-            border-radius: 2px;
-            background: linear-gradient(180deg, #94a3b8, #334155 45%, #0b1120 100%);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+        #ledModal .led-card.is-on .led-orb-val { color: #451a03; }
+        #ledModal .led-orb-unit {
+            font-size: 8px; font-weight: 800; letter-spacing: 1.6px;
+            text-transform: uppercase; color: var(--text-muted);
+            transition: color .4s;
         }
-        #ledModal .led-head {
-            position: relative;
-            width: 34px; height: 58px;
-            margin-left: -1px;
-            background: linear-gradient(180deg, #94a3b8 0%, #334155 34%, #0f172a 62%, #64748b 100%);
-            clip-path: polygon(8% 22%, 100% 0, 100% 100%, 8% 78%);
-        }
-        #ledModal .led-bezel {
-            width: 9px; height: 66px;
-            margin-left: -1px;
-            border-radius: 3px;
-            background: linear-gradient(180deg, #fcd34d, #b45309 55%, #78350f);
-            opacity: calc(.28 + var(--led-power) * .72);
-            box-shadow: 0 0 calc(2px + var(--led-power) * 20px) rgba(245,158,11,.6);
-            transition: opacity .4s, box-shadow .4s;
-        }
-        #ledModal .led-lens {
-            position: relative; z-index: 3;
-            width: 56px; height: 56px; margin-left: -3px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle at 38% 32%, #fffdf5 0%, #fde68a 30%, #f59e0b 58%, #92400e 82%, #2a1a05 100%);
-            box-shadow: inset 0 0 0 3px rgba(9,14,26,.85), 0 0 0 2px rgba(148,163,184,.22), 0 0 10px rgba(245,158,11,.06);
-            filter: saturate(.32) brightness(.62);
-            transition: box-shadow .4s, filter .4s;
-        }
-        #ledModal .led-card.is-on .led-lens {
-            box-shadow: inset 0 0 0 3px rgba(9,14,26,.85), 0 0 0 2px rgba(245,158,11,.65), 0 0 46px rgba(245,158,11,.7);
-            filter: saturate(1.05) brightness(1.08);
-        }
-        #ledModal .led-lens::after {
-            content: ''; position: absolute; inset: 7px; border-radius: 50%;
-            background: radial-gradient(circle at 50% 42%, rgba(255,255,255,.8), transparent 66%);
-            opacity: .12; transition: opacity .4s;
-        }
-        #ledModal .led-card.is-on .led-lens::after { opacity: .8; }
-        #ledModal .led-lens i, #ledModal .led-lens svg {
-            position: relative; z-index: 2;
-            width: 26px !important; height: 26px !important;
-            color: #1e293b !important;
-            opacity: .5;
-            transition: opacity .4s, color .4s;
-        }
-        #ledModal .led-card.is-on .led-lens i, #ledModal .led-card.is-on .led-lens svg {
-            color: #7c2d12 !important;
-            opacity: .9;
-            filter: drop-shadow(0 0 6px rgba(255,255,255,.8));
-        }
+        #ledModal .led-card.is-on .led-orb-unit { color: rgba(69,26,3,.6); }
         #ledModal .led-title { font-size: 17px; font-weight: 900; color: #f8fafc; letter-spacing: .2px; margin: 0 0 5px; }
         #ledModal .led-sub { font-size: 11.5px; line-height: 1.55; color: #94a3b8; margin: 0 auto 14px; max-width: 310px; }
         #ledModal .led-brightness-box {
@@ -1392,9 +1354,9 @@
         #ledModal .led-card.is-on #ledStateBadge::before { animation: ledDot 1.7s ease-in-out infinite; }
         @keyframes ledDot { 0%, 100% { opacity:1; } 50% { opacity:.25; } }
         @media (max-width: 420px) {
-            #ledModal .led-stage { transform: scale(.9); transform-origin: left center; height: 142px; }
-            #ledModal .led-aura { left: 175px; }
-            #ledModal .led-beam { left: 171px; }
+            #ledModal .led-stage { height: 168px; }
+            #ledModal .led-ring { width: 158px; height: 158px; }
+            #ledModal .led-orb { width: 122px; height: 122px; }
         }
         #ledModal .led-actions { display:flex; flex-direction:column; gap:9px; }
         #ledModal #ledModalActionBtn { width:100%; padding:14px; border-radius:15px; border:none; color:#fff; font-size:13px; font-weight:900; cursor:pointer; font-family:'Plus Jakarta Sans'; transition: all .25s; }
@@ -3140,6 +3102,12 @@
             }
             const range = document.getElementById('ledBrightness');
             if (range) range.style.setProperty('--led-fill', ledBrightness + '%');
+            // Prstenec okolo žiarovky ukazuje nastavený jas (0–100 %)
+            const arc = document.getElementById('ledRingArc');
+            if (arc) {
+                const pct = Math.max(0, Math.min(100, ledBrightness));
+                arc.style.strokeDashoffset = String(389.6 * (1 - pct / 100));
+            }
         }
 
         function confirmLedAction() {
@@ -4697,17 +4665,15 @@
     <div id="ledModalCard" class="led-card">
         <button class="led-close" onclick="closeLedModal()" aria-label="Zavrieť"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
         <div class="led-stage">
-            <div class="led-aura"></div>
-            <div class="led-beam"></div>
-            <div class="led-torch">
-                <span class="led-tail"></span>
-                <span class="led-barrel"></span>
-                <span class="led-band"></span>
-                <span class="led-head"></span>
-                <span class="led-bezel"></span>
-                <div id="ledModalIcon" class="led-lens">
-                    <i data-lucide="flashlight"></i>
-                </div>
+            <div class="led-halo"></div>
+            <svg class="led-ring" viewBox="0 0 140 140" aria-hidden="true">
+                <circle class="led-ring-track" cx="70" cy="70" r="62"></circle>
+                <circle class="led-ring-arc" id="ledRingArc" cx="70" cy="70" r="62"></circle>
+            </svg>
+            <div id="ledModalIcon" class="led-orb">
+                <i data-lucide="sun" class="led-orb-icon"></i>
+                <span class="led-orb-val"><span id="ledBrightnessVal">100 %</span></span>
+                <span class="led-orb-unit">jas</span>
             </div>
         </div>
         <h3 class="led-title">Reálna baterka</h3>
@@ -4715,7 +4681,7 @@
         <div class="led-brightness-box">
             <div class="led-brightness-head">
                 <span>Jas svetla</span>
-                <span id="ledBrightnessVal" class="font-mono" style="color:#fde68a;">100 %</span>
+                <span style="color:#64748b;font-size:9px;font-weight:700;letter-spacing:.3px;">5–100 %</span>
             </div>
             <input id="ledBrightness" type="range" min="5" max="100" step="5" value="100" oninput="onLedBrightnessInput(this.value)">
             <div class="led-ticks"><span>5 %</span><span>50 %</span><span>100 %</span></div>
