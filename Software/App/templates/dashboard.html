@@ -2962,6 +2962,26 @@
         let ledFlashlightOn = false;
         let ledBrightness = 100;
 
+        // Posledný príkaz si pamätáme — po obnovení stránky ikona svieti, kým ju nevypneme
+        function ledStateKey() {
+            const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
+            return 'elvo_led_' + (devId || 'default');
+        }
+        function saveLedState() {
+            try {
+                localStorage.setItem(ledStateKey(), JSON.stringify({ on: ledFlashlightOn, brightness: ledBrightness }));
+            } catch (e) {}
+        }
+        function restoreLedState() {
+            try {
+                const raw = localStorage.getItem(ledStateKey());
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                if (!saved || typeof saved !== 'object') return;
+                updateLedUi(saved.on === true, parseInt(saved.brightness, 10) || 100);
+            } catch (e) {}
+        }
+
         function updateLedUi(on, pct) {
             ledFlashlightOn = !!on;
             ledBrightness = parseInt(pct, 10) || 0;
@@ -2984,6 +3004,7 @@
             }
             // Dialog sa vždy zosynchronizuje so stavom (text, farba, tlačidlo)
             renderLedModal();
+            saveLedState();
         }
 
         async function sendLedCommand(mode, brightness) {
@@ -3044,6 +3065,13 @@
             document.body.style.width = '';
             document.body.style.overflow = '';
             window.scrollTo(0, ledModalScrollY);
+        }
+
+        // Po načítaní stránky obnov posledný známy stav svetla
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreLedState);
+        } else {
+            restoreLedState();
         }
 
         function renderLedModal() {
