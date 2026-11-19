@@ -1232,13 +1232,17 @@
             .led-dock #ledPanel { top: calc(100% + 12px); }
         }
         /* === BATERKA (SVETLO) — PREMIUM DIALOG === */
-        #ledModal { overflow-y: auto; align-items: flex-start; }
+        #ledModal { overflow: hidden; align-items: center; }
+        /* Na veľmi nízkych obrazovkách (napr. telefón na šírku) nech sa dá doscrollovať */
+        @media (max-height: 560px) {
+            #ledModal { overflow-y: auto; align-items: flex-start; }
+        }
         #ledModal .led-card {
             position: relative;
-            overflow: hidden auto;
+            overflow: visible;
             width: 100%;
             max-width: 400px;
-            max-height: calc(100vh - 56px);
+            max-height: none;
             background: #0b1120;
             border: 1px solid rgba(255,255,255,.07);
             border-radius: 20px;
@@ -1492,7 +1496,7 @@
             <!-- Right: baterka + nastavenia -->
             <div class="header-actions">
                 <div id="ledDock" class="led-dock">
-                    <button id="ledFlashlightBtn" onclick="openLedModal()" aria-label="Baterka" title="Baterka — reálne svetlo" style="border:1px solid var(--border-card);background:var(--bg-card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:0 6px 18px rgba(0,0,0,.35);">
+                    <button id="ledFlashlightBtn" onclick="openLedModal()" aria-label="Baterka" title="Baterka — svetlo" style="border:1px solid var(--border-card);background:var(--bg-card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:0 6px 18px rgba(0,0,0,.35);">
                         <i data-lucide="flashlight"></i>
                     </button>
                 </div>
@@ -3013,11 +3017,19 @@
             if (ledFlashlightOn) sendLedCommand('flashlight', parseInt(v, 10) || 0);
         }
 
-        // ── DIALOG: reálna baterka (celá obrazovka) + jas ──
+        // ── DIALOG: baterka (celá obrazovka) + jas ──
+        let ledModalScrollY = 0;
         function openLedModal() {
             const m = document.getElementById('ledModal');
             if (!m) return;
+            ledModalScrollY = window.scrollY || window.pageYOffset || 0;
             m.style.display = 'flex';
+            // Pozadie zamkneme cez position:fixed — inak sa stránka posunie a objaví sa scrollbar
+            document.body.style.position = 'fixed';
+            document.body.style.top = (-ledModalScrollY) + 'px';
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.width = '100%';
             document.body.style.overflow = 'hidden';
             renderLedModal();
         }
@@ -3025,7 +3037,13 @@
         function closeLedModal() {
             const m = document.getElementById('ledModal');
             if (m) m.style.display = 'none';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.width = '';
             document.body.style.overflow = '';
+            window.scrollTo(0, ledModalScrollY);
         }
 
         function renderLedModal() {
@@ -3034,8 +3052,8 @@
             const btn = document.getElementById('ledModalActionBtn');
             const icon = document.getElementById('ledModalIcon');
             if (text) text.innerText = on
-                ? 'Reálna baterka práve svieti. Jas môžete upraviť posúvačom nižšie.'
-                : 'Naozaj chcete zapnúť reálnu baterku na tomto zariadení?';
+                ? 'Baterka práve svieti. Jas môžete upraviť posúvačom nižšie.'
+                : 'Naozaj chcete zapnúť baterku na tomto zariadení?';
             if (btn) {
                 btn.innerText = on ? 'VYPNÚŤ BATERKU' : 'ZAPNÚŤ BATERKU';
                 // Striedmy, moderny vzhlad: plna jantárová pri zapnutí, tichý outline pri vypnutí
@@ -3061,7 +3079,7 @@
                     updateLedUi(!on, ledBrightness);
                     if (typeof showToast === 'function') showToast('❌ Svetlo sa nepodarilo prepnúť');
                 } else if (typeof showToast === 'function') {
-                    showToast(on ? '🔆 Reálna baterka zapnutá — čistá biela' : 'Svetlo vypnuté');
+                    showToast(on ? '🔆 Baterka zapnutá — čistá biela' : 'Svetlo vypnuté');
                 }
             });
         }
@@ -4610,11 +4628,11 @@
         <div class="led-head">
             <div id="ledModalIcon" class="led-icon"><i data-lucide="flashlight"></i></div>
             <div class="led-head-text">
-                <h3 class="led-title">Reálna baterka</h3>
+                <h3 class="led-title">Baterka</h3>
                 <div id="ledStateBadge">VYPNUTÉ</div>
             </div>
         </div>
-        <p id="ledModalText" class="led-sub">Naozaj chcete zapnúť reálnu baterku na tomto zariadení?</p>
+        <p id="ledModalText" class="led-sub">Naozaj chcete zapnúť baterku na tomto zariadení?</p>
         <div class="led-brightness-box">
             <div class="led-brightness-head">
                 <span>Jas svetla</span>
