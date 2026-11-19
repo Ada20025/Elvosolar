@@ -165,7 +165,12 @@ if (!$pdo) {
         // Seed predvoleného admin používateľa — len lokálny SQLite fallback.
         // Heslo sa berie z ADMIN_PASS (v Railway si ho nastav!), inak admin123.
         // Vypnutie: SEED_DEMO=0.
-        $admPass = (string)(getenv('ADMIN_PASS') ?: 'admin123');
+        $admPass = (string)(getenv('ADMIN_PASS') ?: '');
+        if ($admPass === '') {
+            // Ziadne zname default heslo — nahodne, zapisane iba do serveroveho logu
+            $admPass = bin2hex(random_bytes(12));
+            error_log('[DB] SEED admin heslo (nastav ADMIN_PASS): ' . $admPass);
+        }
         $chkAdmin = $pdo->query("SELECT id FROM users WHERE email = 'admin@elvosolar.sk' OR username = 'admin' LIMIT 1")->fetch();
         if (!$chkAdmin && getenv('SEED_DEMO') !== '0') {
             $admHash = password_hash($admPass, PASSWORD_BCRYPT);

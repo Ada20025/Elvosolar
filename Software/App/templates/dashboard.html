@@ -2147,6 +2147,12 @@
         // Build: v7 - Removed proxy override, added null checks
         // Helper: safe getElementById that returns null instead of crashing
         function safeEl(id) { return document.getElementById(id) || null; }
+        // Escapovanie textu pred vlozenim do innerHTML (mena zariadeni su od pouzivatela)
+        function escHtml(v) {
+            return String(v === null || v === undefined ? '' : v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
         if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e) {} }
 
         const metaEl = document.getElementById('php-metadata');
@@ -2328,7 +2334,8 @@
             }
             // Hlavicka karty (ZARIADENIA titulok) tiez cervena ked no-comm
             const busHdr = busStatus ? busStatus.closest('.bus-header') : null;
-            const totalKwh = data.total_kwh || 0;
+            const totalKwhRaw = data.total_kwh;
+            const totalKwh = (totalKwhRaw === null || totalKwhRaw === undefined || totalKwhRaw === '' || isNaN(Number(totalKwhRaw))) ? null : Number(totalKwhRaw);
 
             // === ZOZNAM PRIPOJENYCH ZARIADENI (striedace/SmartLoggery nahlásené CM5) ===
             const connected = Array.isArray(data.connected_devices) ? data.connected_devices : [];
@@ -2373,10 +2380,10 @@
                             <div style="display:flex;align-items:center;gap:10px;">
                                 <span class="pulse-dot ${dotClass(cLvl)}"></span>
                                 <div style="display:flex;flex-direction:column;">
-                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${cType}${cBrand ? ' · ' + cBrand : ''}</span>
+                                    <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${cType}${cBrand ? ' · ' + escHtml(cBrand) : ''}</span>
                                     <span style="font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
                                         <i data-lucide="${cIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
-                                        ${cName} · ID ${cSid}
+                                        ${escHtml(cName)} · ID ${escHtml(cSid)}
                                     </span>
                                 </div>
                             </div>
@@ -2390,8 +2397,8 @@
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono">${Math.round(cd.power_ac || 0)} W</strong></div>
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(cd.battery_soc || 0)}%</strong></div>
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Slave ID:</span><strong class="font-mono">${cSid}</strong></div>
-                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${cd.fw_version ? 'var(--text-primary)' : '#64748b'};">${cd.fw_version || '–'}</strong></div>
-                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav zariadenia:</span><strong class="font-mono" style="font-size:10px;color:${cStatusColor};">${cStatusText}</strong></div>
+                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${cd.fw_version ? 'var(--text-primary)' : '#64748b'};">${escHtml(cd.fw_version || '–')}</strong></div>
+                            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav zariadenia:</span><strong class="font-mono" style="font-size:10px;color:${cStatusColor};">${escHtml(cStatusText)}</strong></div>
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav komunikácie:</span><strong class="font-mono" style="color:${cOk ? 'var(--accent-battery)' : '#ef4444'};font-size:10px;">${cOk ? 'Odpovedá' : 'Nereaguje'}</strong></div>
                         </div>
                     </div>`;
@@ -2410,10 +2417,10 @@
                         <div style="display:flex;align-items:center;gap:10px;">
                             <span class="pulse-dot ${dotClass(cardLevel)}"></span>
                             <div style="display:flex;flex-direction:column;">
-                                <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceType}${brandName ? ' · ' + brandName : ''}</span>
+                                <span style="font-size:12px;font-weight:800;color:var(--text-primary);">${deviceType}${brandName ? ' · ' + escHtml(brandName) : ''}</span>
                                 <span style="font-size:9px;color:${stateColor};display:flex;align-items:center;gap:4px;">
                                     <i data-lucide="${deviceIcon}" style="width:9px;height:9px;color:var(--accent-solar);"></i>
-                                    ${stateText}
+                                    ${escHtml(stateText)}
                                 </span>
                             </div>
                         </div>
@@ -2424,9 +2431,9 @@
                     <div id="invD1" class="inverter-details-box info-open">
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? Math.round(power) + ' W' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${hasReal ? 'var(--accent-battery)' : '#64748b'};">${hasReal ? Math.round(soc) + '%' : '–'}</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${data.fw_version ? 'var(--text-primary)' : '#64748b'};">${data.fw_version || '–'}</strong></div>
-                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav zariadenia:</span><strong class="font-mono" style="font-size:10px;color:${stateColor};">${stateText}</strong></div>
+                                                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${totalKwh !== null ? '' : 'color:#64748b;'}">${totalKwh !== null ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Firmware:</span><strong class="font-mono" style="font-size:10px;color:${data.fw_version ? 'var(--text-primary)' : '#64748b'};">${escHtml(data.fw_version || '–')}</strong></div>
+                        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav zariadenia:</span><strong class="font-mono" style="font-size:10px;color:${stateColor};">${escHtml(stateText)}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Stav komunikácie:</span><strong class="font-mono" style="color:${commColor};font-size:10px;">${commText}</strong></div>
                     </div>
                 </div>
@@ -2443,7 +2450,7 @@
             if (busLatency) busLatency.textContent = realLatency;
             // Jednotny zdroj: rovnaky prah (hasReal = CM5 poslal telemetriu) ako v detailoch karty,
             // inak by horné KPI ukazovali čísla a tento riadok '–' (alebo naopak)
-            if (dailyProd) dailyProd.textContent = hasReal ? (totalKwh.toFixed(1) + ' kWh') : '–';
+            if (dailyProd) dailyProd.textContent = totalKwh !== null ? (totalKwh.toFixed(1) + ' kWh') : '–';
             // Skry citacky (Latencia/Vyroba) ked je zariadenie offline
             const footerStats = document.getElementById('busFooterStats');
             if (footerStats) footerStats.style.display = isOnline ? 'grid' : 'none';
@@ -3464,10 +3471,10 @@
             selectRelay(newRelay.id);
             try {
                 const devId = metaEl.getAttribute('data-device-id');
-                fetch(`${basePath}/api/device/${devId}/relay/add`, {
+                fetch(`${basePath}/api/device/${devId}/relay`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({name: name, type: selectedAddRelayType, conn_type: connType, temp: rt.defaultTemp})
+                    body: JSON.stringify({relay_id: newRelay.id, name: name, type: selectedAddRelayType, conn_type: connType, temp: rt.defaultTemp})
                 });
             } catch(e) {}
         }

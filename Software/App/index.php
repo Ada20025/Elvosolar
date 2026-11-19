@@ -1465,6 +1465,53 @@ if (!function_exists('elvo_notif_channels')) {
     }
 }
 
+// CM5 -> cloud: volitelny zdielany token (env CM5_API_TOKEN).
+// Ked nie je nastaveny, spravanie sa nemeni (stare boxy funguju dalej).
+if (!function_exists('elvo_cm5_token_ok')) {
+    function elvo_cm5_token_ok() {
+        $expected = (string)(getenv('CM5_API_TOKEN') ?: '');
+        if ($expected === '') return true;
+        $given = (string)($_SERVER['HTTP_X_CM5_TOKEN'] ?? '');
+        if ($given === '') {
+            $raw = file_get_contents('php://input');
+            $j = json_decode((string)$raw, true);
+            if (is_array($j) && isset($j['token'])) $given = (string)$j['token'];
+        }
+        return $given !== '' && hash_equals($expected, $given);
+    }
+}
+
+// =============================================================================
+// BEZPECNOST: kazde /api/device/{id}/... vyzaduje prihlasenie a vlastnictvo.
+// Predtym boli telemetria, meter, relays, holiday-mode a power-limits verejne
+// (hocikto mohol citat data aj menit limity cudzieho zariadenia podla ID).
+// =============================================================================
+if (preg_match('#^/api/device/(\d+)(?:/|$)#', $path, $mDevGuard)) {
+    $guardDevId = (int)$mDevGuard[1];
+    if (empty($_SESSION['user_id'])) {
+        send_json(['status' => 'error', 'message' => 'Neprihlásený používateľ'], 401);
+    }
+    try {
+        $gSt = $pdo->prepare("SELECT d.user_id AS owner_id, u.role AS role FROM devices d LEFT JOIN users u ON u.id = ? WHERE d.id = ? LIMIT 1");
+        $gSt->execute([(int)$_SESSION['user_id'], $guardDevId]);
+        $gRow = $gSt->fetch();
+        if (!$gRow) {
+            send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
+        }
+        $gRole  = (string)($gRow['role'] ?? '');
+        $gOwner = $gRow['owner_id'];
+        $gPriv  = in_array($gRole, ['admin', 'mechanik'], true);
+        $gMine  = ($gOwner !== null && (int)$gOwner === (int)$_SESSION['user_id']);
+        // Zatial nepriradene zariadenie (user_id NULL) potrebuje setup — pustime prihlaseneho
+        $gUnclaimed = ($gOwner === null);
+        if (!$gPriv && !$gMine && !$gUnclaimed) {
+            send_json(['status' => 'error', 'message' => 'Nemáte prístup k tomuto zariadeniu'], 403);
+        }
+    } catch (Exception $eG) {
+        send_json(['status' => 'error', 'message' => 'Chyba overenia prístupu'], 500);
+    }
+}
+
 // Spracovanie statických súborov
 if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
     $clean_path = ltrim($path, '/');
@@ -1476,8 +1523,13 @@ if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
         __DIR__ . '/App/templates/' . $clean_path,
         __DIR__ . '/templates/' . $clean_path,
     ];
+    $static_base = realpath(__DIR__);
     foreach ($possible_paths as $static_file) {
-        if (file_exists($static_file)) {
+        if (!file_exists($static_file)) continue;
+        // Path traversal ochrana: subor MUSI lezat v aplikacii, nie mimo nej
+        $static_real = realpath($static_file);
+        if ($static_real === false || $static_base === false || strpos($static_real, $static_base) !== 0) continue;
+        {
             $mime_types = [
                 'json' => 'application/json', 'js' => 'application/javascript', 'css' => 'text/css',
                 'svg' => 'image/svg+xml', 'ico' => 'image/x-icon', 'woff' => 'font/woff',
@@ -1518,8 +1570,12 @@ if (preg_match('#\.(png|jpg|jpeg|gif)$#i', $path)) {
         __DIR__ . '/App/templates/' . $clean_path,
         __DIR__ . '/templates/' . $clean_path,
     ];
+    $img_base = realpath(__DIR__);
     foreach ($possible_img_paths as $img_path) {
-        if (file_exists($img_path)) {
+        if (!file_exists($img_path)) continue;
+        $img_real = realpath($img_path);
+        if ($img_real === false || $img_base === false || strpos($img_real, $img_base) !== 0) continue;
+        {
             $ext = strtolower(pathinfo($img_path, PATHINFO_EXTENSION));
             $mime_types = ['png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif'];
             header('Cache-Control: public, max-age=2592000, immutable');
@@ -2072,6 +2128,15 @@ elseif ((preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches)
     }
     
     // Zistí ID zariadenia buď z URL cesty alebo z GET parametra ?id=...
+    // Admin/mechanik rozhranie — bezny pouzivatel tu nema co robit
+    $stRoleAd = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+    $stRoleAd->execute([$_SESSION['user_id']]);
+    $roleAd = (string)($stRoleAd->fetchColumn() ?: '');
+    if (!in_array($roleAd, ['admin', 'mechanik'], true)) {
+        header("Location: " . $base_path . "/dashboard");
+        exit;
+    }
+
     $dev_id = isset($matches[1]) ? intval($matches[1]) : intval($_GET['id'] ?? 1);
     
     // Načítanie zariadenia z databázy
@@ -2344,7 +2409,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         // REALNE DATA IBA - ziadne fake fallbacky (3840/84 boli fake)
         'total_live_power' => $latest ? (float)$latest['power_ac'] : 0,
         'avg_live_soc' => $latest ? (float)$latest['battery_soc'] : 0,
-        'total_kwh' => (float)($device['total_kwh'] ?? 0),
+        // null = zariadenie vyrobu nikdy nenahlasilo (klient zobrazi '–', nie falošnu nulu)
+        'total_kwh' => (isset($device['total_kwh']) && $device['total_kwh'] !== '' && $device['total_kwh'] !== null) ? (float)$device['total_kwh'] : null,
         'total_saved_eur' => (float)($device['total_saved_eur'] ?? 0),
         'temp' => $latest ? (float)$latest['temp'] : 0,
         'inverter_temp' => $latest ? (float)$latest['temp'] : 0,
@@ -2469,6 +2535,7 @@ elseif ($path === '/api/okte/prices' && $method === 'GET') {
 
 // --- CM5 POLL PRE PRÍKAZY (Pre Raspberry Pi agenta) ---
 elseif ($path === '/api/cm5/poll' && $method === 'POST') {
+    if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');
     if ($serial === '') { send_json(['status' => 'no_pending']); }
@@ -2533,6 +2600,7 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
 
 // --- CM5 RESULT (CM5 ohlási výsledok vykonaného príkazu — ok/chyba + readback) ---
 elseif ($path === '/api/cm5/result' && $method === 'POST') {
+    if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');
     if ($serial === '') { send_json(['status' => 'no_serial']); }
@@ -2583,6 +2651,7 @@ elseif ($path === '/api/cm5/result' && $method === 'POST') {
 
 // --- CM5 REPORT IP (keepalive) ---
 elseif ($path === '/api/report-ip' && $method === 'POST') {
+    if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
     $data = get_json_input();
     $ip = trim($data['ip'] ?? '');
     $serial = trim($data['serial'] ?? '');
@@ -2598,6 +2667,7 @@ elseif ($path === '/api/report-ip' && $method === 'POST') {
 
 // --- CLOUD SYNC TELEMETRIA (CM5 posiela realne data) ---
 elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
+    if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
     $data = get_json_input();
     // CM5 posiela 'serial_number' v telemetry payload - akceptuj OBA kluce (ziadny CM5-DEFAULT fallback!)
     $serial = trim($data['serial'] ?? $data['serial_number'] ?? '');
@@ -2775,6 +2845,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
 
         // ===== CM5: stiahnutie HW suborov (poll nachystany balik) =====
         elseif ($path === '/api/cm5/hw-files' && $method === 'GET') {
+            if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
             $serial = trim($_GET['serial'] ?? '');
             if ($serial === '') send_json(['status' => 'error', 'message' => 'Chýba serial'], 400);
             try {
@@ -2792,6 +2863,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
         }
 
 elseif ($path === '/api/cm5/register' && $method === 'POST') {
+    if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
     $data = get_json_input();
     $serial = trim($data['serial'] ?? '');
     if ($serial) {
