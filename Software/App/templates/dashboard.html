@@ -1216,6 +1216,8 @@
         }
         .led-dock #ledFlashlightBtn i,
         .led-dock #ledFlashlightBtn svg { width: 18px !important; height: 18px !important; }
+        .led-dock #ledFlashlightBtn:hover { transform: translateY(-1px); border-color: rgba(245,158,11,.45); }
+        .led-dock #ledFlashlightBtn:active { transform: translateY(0) scale(.96); }
         .led-dock #ledPanel {
             position: absolute;
             top: calc(100% + 15px);
@@ -1253,45 +1255,116 @@
             color: #94a3b8; cursor: pointer; z-index: 3; transition: all .2s;
         }
         #ledModal .led-close:hover { background: rgba(255,255,255,.1); color: #e2e8f0; }
-        #ledModal .led-aura {
-            position: absolute; top: -150px; left: 50%;
-            width: 360px; height: 360px; margin-left: -180px;
-            border-radius: 50%; pointer-events: none;
-            background: radial-gradient(circle, rgba(250,204,21,.55) 0%, rgba(245,158,11,.22) 42%, transparent 70%);
-            opacity: 0; transform: scale(.8);
-            transition: opacity .4s, transform .4s;
-            filter: blur(8px);
+        /* Scéna: kreslená baterka (vľavo) + svetelný lúč (vpravo) */
+        #ledModal .led-stage {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 156px;
+            margin: 0 -6px 8px;
+            padding-left: 26px;
         }
-        #ledModal .led-card.is-on .led-aura { opacity: var(--led-power); transform: scale(1); }
-        #ledModal .led-lens {
+        #ledModal .led-aura {
+            position: absolute; left: 195px; top: 50%;
+            width: 300px; height: 300px; margin: -150px 0 0 -150px;
+            border-radius: 50%; pointer-events: none;
+            background: radial-gradient(circle, rgba(255,236,170,.5) 0%, rgba(245,158,11,.18) 45%, transparent 72%);
+            opacity: calc(var(--led-power) * .9);
+            transform: scale(calc(.75 + var(--led-power) * .25));
+            transition: opacity .4s, transform .4s;
+            filter: blur(6px);
+        }
+        #ledModal .led-beam {
+            position: absolute; left: 190px; top: 50%;
+            width: 200px; height: 120px; margin-top: -60px;
+            transform-origin: 0 50%;
+            transform: rotate(-7deg) scaleX(calc(.6 + var(--led-power) * .4));
+            background: linear-gradient(90deg, rgba(255,247,214,.9) 0%, rgba(253,230,138,.5) 34%, rgba(245,158,11,.16) 68%, rgba(245,158,11,0) 100%);
+            clip-path: polygon(0 37%, 100% 0, 100% 100%, 0 63%);
+            filter: blur(6px);
+            opacity: calc(var(--led-power) * .95);
+            transition: opacity .4s, transform .4s;
+            pointer-events: none;
+        }
+        #ledModal .led-torch {
             position: relative; z-index: 2;
-            width: 104px; height: 104px; margin: 4px auto 14px;
+            display: flex; align-items: center;
+            transform: rotate(-7deg);
+            filter: drop-shadow(0 16px 22px rgba(0,0,0,.55));
+            transition: transform .4s;
+        }
+        #ledModal .led-card.is-on .led-torch { transform: rotate(-9deg) translateY(-2px); }
+        #ledModal .led-torch span { display: block; }
+        #ledModal .led-tail {
+            width: 13px; height: 30px;
+            border-radius: 5px 2px 2px 5px;
+            background: linear-gradient(90deg, #0b1120, #475569 70%, #1e293b);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+        }
+        #ledModal .led-barrel {
+            position: relative;
+            width: 80px; height: 40px;
+            background: linear-gradient(180deg, #64748b 0%, #1e293b 32%, #0b1120 58%, #334155 100%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 8px rgba(0,0,0,.7);
+        }
+        #ledModal .led-barrel::after {
+            content: ''; position: absolute; inset: 0 10px;
+            background: repeating-linear-gradient(90deg, rgba(255,255,255,.12) 0 3px, transparent 3px 11px);
+            opacity: .85;
+        }
+        #ledModal .led-band {
+            width: 11px; height: 46px;
+            border-radius: 2px;
+            background: linear-gradient(180deg, #94a3b8, #334155 45%, #0b1120 100%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+        }
+        #ledModal .led-head {
+            position: relative;
+            width: 34px; height: 58px;
+            margin-left: -1px;
+            background: linear-gradient(180deg, #94a3b8 0%, #334155 34%, #0f172a 62%, #64748b 100%);
+            clip-path: polygon(8% 22%, 100% 0, 100% 100%, 8% 78%);
+        }
+        #ledModal .led-bezel {
+            width: 9px; height: 66px;
+            margin-left: -1px;
+            border-radius: 3px;
+            background: linear-gradient(180deg, #fcd34d, #b45309 55%, #78350f);
+            opacity: calc(.28 + var(--led-power) * .72);
+            box-shadow: 0 0 calc(2px + var(--led-power) * 20px) rgba(245,158,11,.6);
+            transition: opacity .4s, box-shadow .4s;
+        }
+        #ledModal .led-lens {
+            position: relative; z-index: 3;
+            width: 56px; height: 56px; margin-left: -3px;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            background:
-                radial-gradient(circle at 50% 36%, rgba(255,255,255,.9), rgba(255,255,255,0) 46%),
-                radial-gradient(circle at 50% 50%, #fffdf5 0%, #fde68a calc(14% + var(--led-power) * 46%), #f59e0b 64%, #78350f 88%, #1c1206 100%);
-            box-shadow: inset 0 0 0 7px rgba(9,14,26,.92), inset 0 0 0 9px rgba(245,158,11,.35), 0 0 26px rgba(245,158,11,.18);
-            transition: box-shadow .35s;
+            background: radial-gradient(circle at 38% 32%, #fffdf5 0%, #fde68a 30%, #f59e0b 58%, #92400e 82%, #2a1a05 100%);
+            box-shadow: inset 0 0 0 3px rgba(9,14,26,.85), 0 0 0 2px rgba(148,163,184,.22), 0 0 10px rgba(245,158,11,.06);
+            filter: saturate(.32) brightness(.62);
+            transition: box-shadow .4s, filter .4s;
         }
-        #ledModal .led-card.is-on .led-lens { box-shadow: inset 0 0 0 7px rgba(9,14,26,.92), inset 0 0 0 9px rgba(245,158,11,.55), 0 0 64px rgba(245,158,11,.7); }
+        #ledModal .led-card.is-on .led-lens {
+            box-shadow: inset 0 0 0 3px rgba(9,14,26,.85), 0 0 0 2px rgba(245,158,11,.65), 0 0 46px rgba(245,158,11,.7);
+            filter: saturate(1.05) brightness(1.08);
+        }
         #ledModal .led-lens::after {
-            content: ""; position: absolute; inset: 16px; border-radius: 50%;
-            background: radial-gradient(circle at 50% 44%, rgba(255,255,255,.6), transparent 64%);
-            opacity: .15; transition: opacity .35s;
+            content: ''; position: absolute; inset: 7px; border-radius: 50%;
+            background: radial-gradient(circle at 50% 42%, rgba(255,255,255,.8), transparent 66%);
+            opacity: .12; transition: opacity .4s;
         }
-        #ledModal .led-card.is-on .led-lens::after { opacity: .85; }
+        #ledModal .led-card.is-on .led-lens::after { opacity: .8; }
         #ledModal .led-lens i, #ledModal .led-lens svg {
             position: relative; z-index: 2;
-            width: 38px !important; height: 38px !important;
-            color: #3b2506 !important;
-            opacity: .55;
-            transition: opacity .35s, color .35s;
+            width: 26px !important; height: 26px !important;
+            color: #1e293b !important;
+            opacity: .5;
+            transition: opacity .4s, color .4s;
         }
         #ledModal .led-card.is-on .led-lens i, #ledModal .led-card.is-on .led-lens svg {
-            color: #fff !important;
-            opacity: 1;
-            filter: drop-shadow(0 0 10px rgba(255,255,255,.9));
+            color: #7c2d12 !important;
+            opacity: .9;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,.8));
         }
         #ledModal .led-title { font-size: 17px; font-weight: 900; color: #f8fafc; letter-spacing: .2px; margin: 0 0 5px; }
         #ledModal .led-sub { font-size: 11.5px; line-height: 1.55; color: #94a3b8; margin: 0 auto 14px; max-width: 310px; }
@@ -1313,7 +1386,16 @@
         }
         #ledModal #ledBrightness::-moz-range-thumb { width:22px;height:22px;border-radius:50%;background:#fde68a;border:3px solid #0b1120;box-shadow:0 0 16px rgba(245,158,11,.75); }
         #ledModal .led-ticks { display:flex; justify-content:space-between; font-size:8.5px; font-weight:700; color:#64748b; margin-top:6px; font-family:'JetBrains Mono',monospace; }
-        #ledModal #ledStateBadge { display:inline-flex; align-items:center; justify-content:center; gap:6px; margin: 0 0 12px; font-size:9.5px; font-weight:900; letter-spacing:1.4px; padding:6px 14px; border-radius:999px; transition: all .3s; }
+        #ledModal #ledStateBadge { display:inline-flex; align-items:center; justify-content:center; gap:7px; margin: 0 0 12px; font-size:9.5px; font-weight:900; letter-spacing:1.4px; padding:7px 15px; border-radius:999px; border:1px solid transparent; transition: all .3s; }
+        #ledModal #ledStateBadge::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; box-shadow:0 0 8px currentColor; }
+        #ledModal .led-card.is-on #ledStateBadge { border-color: rgba(245,158,11,.35); }
+        #ledModal .led-card.is-on #ledStateBadge::before { animation: ledDot 1.7s ease-in-out infinite; }
+        @keyframes ledDot { 0%, 100% { opacity:1; } 50% { opacity:.25; } }
+        @media (max-width: 420px) {
+            #ledModal .led-stage { transform: scale(.9); transform-origin: left center; height: 142px; }
+            #ledModal .led-aura { left: 175px; }
+            #ledModal .led-beam { left: 171px; }
+        }
         #ledModal .led-actions { display:flex; flex-direction:column; gap:9px; }
         #ledModal #ledModalActionBtn { width:100%; padding:14px; border-radius:15px; border:none; color:#fff; font-size:13px; font-weight:900; cursor:pointer; font-family:'Plus Jakarta Sans'; transition: all .25s; }
         #ledModal .led-cancel { width:100%; padding:13px; border-radius:15px; border:1px solid rgba(255,255,255,.12); background:transparent; color:#94a3b8; font-size:12px; font-weight:800; cursor:pointer; font-family:'Plus Jakarta Sans'; transition: all .2s; }
@@ -4613,10 +4695,20 @@
 <!-- ============ BATERKA — POTVRDENIE CEZ CELU OBRAZOVKU ============ -->
 <div id="ledModal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(2,4,10,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;">
     <div id="ledModalCard" class="led-card">
-        <div class="led-aura"></div>
         <button class="led-close" onclick="closeLedModal()" aria-label="Zavrieť"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
-        <div id="ledModalIcon" class="led-lens">
-            <i data-lucide="flashlight"></i>
+        <div class="led-stage">
+            <div class="led-aura"></div>
+            <div class="led-beam"></div>
+            <div class="led-torch">
+                <span class="led-tail"></span>
+                <span class="led-barrel"></span>
+                <span class="led-band"></span>
+                <span class="led-head"></span>
+                <span class="led-bezel"></span>
+                <div id="ledModalIcon" class="led-lens">
+                    <i data-lucide="flashlight"></i>
+                </div>
+            </div>
         </div>
         <h3 class="led-title">Reálna baterka</h3>
         <p id="ledModalText" class="led-sub">Naozaj chcete zapnúť reálnu baterku na tomto zariadení?</p>
