@@ -880,6 +880,102 @@
             transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        /* === KAPACITA BATÉRIE — názorný článkový ukazovateľ === */
+        .battery-gauge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .battery-body {
+            position: relative;
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 24px;
+            border-radius: 9px;
+            border: 2px solid rgba(16, 185, 129, 0.42);
+            background: rgba(2, 6, 23, 0.45);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55);
+            overflow: hidden;
+            transition: border-color 0.35s ease, background-color 0.35s ease;
+        }
+        .battery-body::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(90deg, transparent 0 calc(20% - 2px), rgba(2, 6, 23, 0.55) calc(20% - 2px) 20%);
+            pointer-events: none;
+        }
+        .battery-fill {
+            position: relative;
+            height: 100%;
+            width: 0;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #047857, #10b981 48%, #6ee7b7);
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease, box-shadow 0.4s ease;
+        }
+        .battery-fill::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 6px;
+            background: linear-gradient(100deg, transparent 15%, rgba(255, 255, 255, 0.45) 50%, transparent 85%);
+            background-size: 220% 100%;
+            animation: batteryShimmer 3.2s linear infinite;
+        }
+        @keyframes batteryShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -120% 0; }
+        }
+        .battery-tip {
+            flex: none;
+            width: 4px;
+            height: 11px;
+            border-radius: 0 3px 3px 0;
+            background: rgba(16, 185, 129, 0.42);
+            transition: background-color 0.35s ease;
+        }
+        .battery-caption {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 2px;
+            font-size: 8.5px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            transition: color 0.35s ease;
+        }
+        .battery-caption::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 6px currentColor;
+        }
+        .battery-card[data-level="mid"] .battery-body { border-color: rgba(245, 158, 11, 0.5); }
+        .battery-card[data-level="mid"] .battery-tip { background: rgba(245, 158, 11, 0.5); }
+        .battery-card[data-level="mid"] .battery-fill {
+            background: linear-gradient(90deg, #b45309, #f59e0b 48%, #fde68a);
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
+        .battery-card[data-level="mid"] .battery-caption { color: #f59e0b; }
+        .battery-card[data-level="low"] .battery-body { border-color: rgba(239, 68, 68, 0.55); }
+        .battery-card[data-level="low"] .battery-tip { background: rgba(239, 68, 68, 0.55); }
+        .battery-card[data-level="low"] .battery-fill {
+            background: linear-gradient(90deg, #991b1b, #ef4444 48%, #fca5a5);
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        .battery-card[data-level="low"] .battery-caption { color: #ef4444; }
+        .battery-card[data-level="low"] #dashBatterySoc { color: #f87171; }
+        .battery-card[data-level="empty"] .battery-body { border-color: rgba(148, 163, 184, 0.28); }
+        .battery-card[data-level="empty"] .battery-tip { background: rgba(148, 163, 184, 0.28); }
+        .battery-card[data-level="empty"] #dashBatterySoc { color: var(--text-muted); }
+        body.light-mode .battery-body { background: rgba(15, 23, 42, 0.06); box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.08); }
+
         /* Controls overrides */
         .control-btn-grid {
             display: grid;
@@ -1488,12 +1584,16 @@
                             </div>
                         </div>
 
-                        <div class="metric-card" style="--line-color: var(--accent-battery);">
+                        <div class="metric-card battery-card" id="batteryCard" data-level="empty" style="--line-color: var(--accent-battery);">
                             <span class="metric-label-styled"><i data-lucide="battery-charging" style="width:12px;height:12px;color:var(--accent-battery);"></i> Kapacita Batérie</span>
                             <span class="metric-value-styled text-battery" id="dashBatterySoc">0%</span>
-                            <div class="metric-indicator-bar">
-                                <div id="dashBatteryBar" class="metric-bar-fill"></div>
+                            <div class="battery-gauge" aria-hidden="true">
+                                <div class="battery-body">
+                                    <div id="dashBatteryBar" class="battery-fill"></div>
+                                </div>
+                                <div class="battery-tip"></div>
                             </div>
+                            <div class="battery-caption" id="dashBatteryCaption">Bez dát</div>
                         </div>
 
                         <div class="metric-card" style="--line-color: var(--accent-grid);">
@@ -3087,7 +3187,16 @@
                 if (typeof applyDeviceStatus === 'function') applyDeviceStatus(data.comm_ok === true);
 
                 const batteryBarEl = document.getElementById('dashBatteryBar');
-                if (batteryBarEl) batteryBarEl.style.width = (hasReal && socPct !== null) ? `${Math.max(0, Math.min(100, Math.round(socPct)))}%` : '0%';
+                const socShown = (hasReal && socPct !== null) ? Math.max(0, Math.min(100, Math.round(socPct))) : null;
+                if (batteryBarEl) batteryBarEl.style.width = (socShown !== null) ? `${socShown}%` : '0%';
+                const batteryCardEl = document.getElementById('batteryCard');
+                if (batteryCardEl) {
+                    const lvl = socShown === null ? 'empty' : (socShown < 20 ? 'low' : (socShown < 60 ? 'mid' : 'high'));
+                    batteryCardEl.dataset.level = lvl;
+                    const cap = document.getElementById('dashBatteryCaption');
+                    if (cap) cap.innerText = socShown === null ? 'Bez dát'
+                        : (lvl === 'low' ? 'Nízka kapacita' : (lvl === 'mid' ? 'Stredná kapacita' : 'Dostatočná kapacita'));
+                }
                 const powerBarEl = document.getElementById('dashPowerBar');
                 if (powerBarEl) powerBarEl.style.width = (hasReal && powerW !== null) ? `${Math.min(100, Math.round(powerW / 60))}%` : '0%';
                 const consBarEl = document.getElementById('dashConsumptionBar');
