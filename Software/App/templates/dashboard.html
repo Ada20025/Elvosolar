@@ -608,6 +608,14 @@
             border-color: var(--border-card);
         }
 
+        /* Zoznam Zariadenia je IBA informačný — detaily sú vždy viditeľné, nič sa nerozbaľuje */
+        .inverter-details-box.info-open {
+            max-height: none;
+            opacity: 1;
+            padding: 10px 12px;
+            border-color: var(--border-card);
+        }
+
         .inv-chevron {
             transition: transform 0.2s;
         }
@@ -2272,7 +2280,9 @@
 
             // === KOMUNIKÁCIA: či zariadenie reálne odpovedá (posledná telemetria do 15 min) ===
             let commOk = data.comm_ok === true;
-            const lastSec = data.last_comm_sec;
+            // Bez čísla by v texte vzniklo "NaN min" — vtedy berieme ako "žiadna odpoveď"
+            const rawLastSec = data.last_comm_sec;
+            const lastSec = (rawLastSec === null || rawLastSec === undefined || isNaN(Number(rawLastSec))) ? null : Number(rawLastSec);
             // Klientska konzistencia: odpoved musi byt v rozsahu 0-15 min (ochrana proti timezone bugom servera)
             if (commOk && (lastSec === null || lastSec < 0 || lastSec >= 900)) commOk = false;
             if (!commOk && lastSec !== null && lastSec < 0) { /* casove skew -> povazuj za fresh */ commOk = Math.abs(lastSec) < 900; }
@@ -2359,7 +2369,7 @@
                     const cStatusColor = cLvl === 'error' ? COLOR_ERR : (cLvl === 'warn' ? COLOR_WARN : COLOR_OK);
                     rowsHtml += `
                     <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;margin-bottom:8px;${cardTint(cLvl)}">
-                        <div class="inverter-status-row" onclick="toggleInverterDetails('invD${i}', 'invC${i}')">
+                        <div class="inverter-status-row" style="cursor:default;">
                             <div style="display:flex;align-items:center;gap:10px;">
                                 <span class="pulse-dot ${dotClass(cLvl)}"></span>
                                 <div style="display:flex;flex-direction:column;">
@@ -2374,10 +2384,9 @@
                                 <span class="font-mono" style="font-size:10px;font-weight:700;color:var(--text-primary);">${Math.round(cd.power_ac || 0)} W</span>
                                 <span class="font-mono" style="font-size:10px;font-weight:700;color:var(--accent-battery);">${Math.round(cd.battery_soc || 0)}%</span>
                                 <span class="font-mono" style="font-size:9px;font-weight:700;color:${cStatusColor};">${cLvl === 'error' ? 'CHYBA' : (cLvl === 'warn' ? 'POZOR' : 'OK')}</span>
-                                <i data-lucide="chevron-down" id="invC${i}" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
                             </div>
                         </div>
-                        <div id="invD${i}" class="inverter-details-box">
+                        <div id="invD${i}" class="inverter-details-box info-open">
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono">${Math.round(cd.power_ac || 0)} W</strong></div>
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:var(--accent-battery);">${Math.round(cd.battery_soc || 0)}%</strong></div>
                             <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Slave ID:</span><strong class="font-mono">${cSid}</strong></div>
@@ -2397,7 +2406,7 @@
             } else {
                 rowsHtml = `
                 <div style="display:flex;flex-direction:column;gap:4px;border-radius:14px;${cardTint(cardLevel)}">
-                    <div class="inverter-status-row" onclick="toggleInverterDetails('invD1', 'invC1')">
+                    <div class="inverter-status-row" style="cursor:default;">
                         <div style="display:flex;align-items:center;gap:10px;">
                             <span class="pulse-dot ${dotClass(cardLevel)}"></span>
                             <div style="display:flex;flex-direction:column;">
@@ -2410,10 +2419,9 @@
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
                             <span class="font-mono" style="font-size:10px;font-weight:700;color:${commOk ? 'var(--accent-battery)' : '#ef4444'};">${commOk ? 'ONLINE' : 'NO COMM'}</span>
-                            <i data-lucide="chevron-down" id="invC1" class="inv-chevron" style="width:12px;height:12px;opacity:0.5;"></i>
                         </div>
                     </div>
-                    <div id="invD1" class="inverter-details-box">
+                    <div id="invD1" class="inverter-details-box info-open">
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výkon:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? Math.round(power) + ' W' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">SOC:</span><strong class="font-mono" style="color:${hasReal ? 'var(--accent-battery)' : '#64748b'};">${hasReal ? Math.round(soc) + '%' : '–'}</strong></div>
                         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Výroba:</span><strong class="font-mono" style="${hasReal ? '' : 'color:#64748b;'}">${hasReal ? totalKwh.toFixed(1) + ' kWh' : '–'}</strong></div>
