@@ -1303,17 +1303,9 @@
             <!-- Right: baterka + nastavenia -->
             <div class="header-actions">
                 <div id="ledDock" class="led-dock">
-                    <button id="ledFlashlightBtn" onclick="toggleFlashlight()" aria-label="Baterka" title="Baterka — čistá biela" style="border:1px solid var(--border-card);background:var(--bg-card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:0 6px 18px rgba(0,0,0,.35);">
+                    <button id="ledFlashlightBtn" onclick="openLedModal()" aria-label="Baterka" title="Baterka — reálne svetlo" style="border:1px solid var(--border-card);background:var(--bg-card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;box-shadow:0 6px 18px rgba(0,0,0,.35);">
                         <i data-lucide="flashlight"></i>
                     </button>
-                    <div id="ledPanel" style="display:none;background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:12px 14px;min-width:200px;box-shadow:0 14px 34px rgba(0,0,0,.5);">
-                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">
-                            <span>Jas bielej</span>
-                            <span id="ledBrightnessVal" class="font-mono" style="color:var(--text-primary);">100 %</span>
-                        </div>
-                        <input id="ledBrightness" type="range" min="5" max="100" step="5" value="100" oninput="onLedBrightnessInput(this.value)" style="width:100%;accent-color:var(--accent-solar);cursor:pointer;">
-                        <div id="ledStateBadge" style="margin-top:8px;font-size:9px;font-weight:800;letter-spacing:1px;padding:4px 8px;border-radius:6px;background:rgba(148,163,184,.12);color:var(--text-muted);text-align:center;">VYPNUTÉ</div>
-                    </div>
                 </div>
                 <div class="user-profile-container">
                     <!-- Zvoncek odstraneny — notifikacie chodia do systemovej listy -->
@@ -2784,9 +2776,8 @@
                 badge.style.background = on ? 'rgba(245,158,11,.15)' : 'rgba(148,163,184,.12)';
                 badge.style.color = on ? 'var(--accent-solar)' : 'var(--text-muted)';
             }
-            // Jas sa zobrazí len keď baterka svieti — inak v rohu ostane iba tlačidlo
-            const panel = document.getElementById('ledPanel');
-            if (panel) panel.style.display = on ? 'block' : 'none';
+            // Dialog sa vždy zosynchronizuje so stavom (text, farba, tlačidlo)
+            renderLedModal();
         }
 
         async function sendLedCommand(mode, brightness) {
@@ -2819,6 +2810,58 @@
             updateLedUi(ledFlashlightOn, v);
             if (ledFlashlightOn) sendLedCommand('flashlight', parseInt(v, 10) || 0);
         }
+
+        // ── DIALOG: reálna baterka (celá obrazovka) + jas ──
+        function openLedModal() {
+            const m = document.getElementById('ledModal');
+            if (!m) return;
+            m.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            renderLedModal();
+        }
+
+        function closeLedModal() {
+            const m = document.getElementById('ledModal');
+            if (m) m.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function renderLedModal() {
+            const on = ledFlashlightOn;
+            const text = document.getElementById('ledModalText');
+            const btn = document.getElementById('ledModalActionBtn');
+            const icon = document.getElementById('ledModalIcon');
+            if (text) text.innerText = on
+                ? 'Reálna baterka práve svieti. Jas môžete upraviť posúvačom nižšie.'
+                : 'Naozaj chcete zapnúť reálnu baterku na tomto zariadení?';
+            if (btn) {
+                btn.innerText = on ? 'VYPNÚŤ BATERKU' : 'ZAPNÚŤ BATERKU';
+                btn.style.background = on
+                    ? 'linear-gradient(135deg,#ef4444,#b91c1c)'
+                    : 'linear-gradient(135deg,#f59e0b,#f97316)';
+                btn.style.boxShadow = on
+                    ? '0 10px 30px rgba(239,68,68,.35)'
+                    : '0 10px 30px rgba(245,158,11,.35)';
+            }
+            if (icon) icon.style.background = on ? 'rgba(245,158,11,.26)' : 'rgba(245,158,11,.12)';
+        }
+
+        function confirmLedAction() {
+            const on = !ledFlashlightOn;
+            updateLedUi(on, ledBrightness);
+            sendLedCommand(on ? 'flashlight' : 'off', ledBrightness).then(d => {
+                if (!d || d.status !== 'success') {
+                    updateLedUi(!on, ledBrightness);
+                    if (typeof showToast === 'function') showToast('❌ Svetlo sa nepodarilo prepnúť');
+                } else if (typeof showToast === 'function') {
+                    showToast(on ? '🔆 Reálna baterka zapnutá — čistá biela' : 'Svetlo vypnuté');
+                }
+            });
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeLedModal();
+        });
 
         // Real-time telemetry feed
         async function fetchTelemetry() {
@@ -4222,10 +4265,42 @@
             loadHolidayParams();
         }
 
+        // ── STAV ZARIADENIA (farba bodky v hlavičke) ──
+        let lastDeviceOnline = null;
+        function applyDeviceStatus(isOnline) {
+            const btn = document.getElementById('deviceSelectDropdownBtn');
+            if (!btn) return;
+            btn.classList.remove('device-status-online', 'device-status-warning', 'device-status-offline');
+            btn.classList.add(isOnline ? 'device-status-online' : 'device-status-offline');
+            const lbl = document.getElementById('deviceStatusLabel');
+            if (lbl) lbl.style.background = isOnline ? '#10b981' : '#ef4444';
+            // Notifikácia pri zmene stavu
+            if (lastDeviceOnline !== isOnline && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                new Notification(isOnline ? '✅ Zariadenie online' : '❌ Zariadenie offline', {
+                    body: isOnline ? 'Vaše zariadenie je opäť dostupné.' : 'Zariadenie prestalo komunikovať!',
+                    icon: '/templates/ElvosolarLogo.png',
+                    badge: '/templates/ElvosolarLogo.png'
+                });
+            }
+            lastDeviceOnline = isOnline;
+        }
+
+        async function checkDeviceStatus() {
+            const devId = metaEl ? metaEl.getAttribute('data-device-id') : null;
+            if (!devId) return;
+            try {
+                const r = await fetch(`${basePath}/api/device/${devId}/telemetry`);
+                if (!r.ok) throw new Error('status fail');
+                const d = await r.json();
+                applyDeviceStatus(d.comm_ok === true);
+            } catch(e) {
+                const btn = document.getElementById('deviceSelectDropdownBtn');
+                if (btn) { btn.classList.remove('device-status-online','device-status-warning'); btn.classList.add('device-status-offline'); }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[INIT] DOM ready, Chart.js:', typeof Chart);
-            // Populate devices list in Riadenie tab
-            populateMyDevices();
             renderRelayList();
             renderHolidayRelays();
             // Skryt relay sekciu ak neni zariadenie
@@ -4293,7 +4368,27 @@
                 }).catch(e => console.log('[PUSH] Error:', e.message));
             }
             // (stary modalny onboarding odstraneny — privitanie robi jediny sprievodca "tour" nizsie)
+        });
     </script>
+
+<!-- ============ BATERKA — POTVRDENIE CEZ CELU OBRAZOVKU ============ -->
+<div id="ledModal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(2,4,10,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;">
+    <div style="width:100%;max-width:420px;background:linear-gradient(160deg,#0d1424,#111a2e);border:1px solid rgba(245,158,11,0.35);border-radius:24px;padding:26px 22px;box-shadow:0 30px 80px rgba(0,0,0,0.7);text-align:center;">
+        <div id="ledModalIcon" style="width:84px;height:84px;margin:0 auto 16px auto;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(245,158,11,0.12);border:2px solid rgba(245,158,11,0.35);transition:all .3s;">
+            <i data-lucide="flashlight" style="width:38px;height:38px;color:var(--accent-solar);"></i>
+        </div>
+        <h3 style="font-size:18px;font-weight:900;color:#f9fafb;margin:0 0 8px 0;">Reálna baterka</h3>
+        <p id="ledModalText" style="font-size:12.5px;color:#9ca3af;line-height:1.6;margin:0 0 18px 0;">Naozaj chcete zapnúť reálnu baterku na tomto zariadení?</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:800;color:var(--text-secondary);margin-bottom:8px;">
+            <span>Jas svetla</span>
+            <span id="ledBrightnessVal" class="font-mono" style="color:var(--text-primary);">100 %</span>
+        </div>
+        <input id="ledBrightness" type="range" min="5" max="100" step="5" value="100" oninput="onLedBrightnessInput(this.value)" style="width:100%;accent-color:var(--accent-solar);cursor:pointer;">
+        <div id="ledStateBadge" style="margin:14px 0 18px 0;font-size:10px;font-weight:800;letter-spacing:1px;padding:6px 8px;border-radius:8px;background:rgba(148,163,184,.12);color:var(--text-muted);text-align:center;">VYPNUTÉ</div>
+        <button id="ledModalActionBtn" onclick="confirmLedAction()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:13px;font-weight:900;cursor:pointer;font-family:'Plus Jakarta Sans';margin-bottom:10px;">ZAPNÚŤ BATERKU</button>
+        <button onclick="closeLedModal()" style="width:100%;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#9ca3af;font-size:12px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans';">Zavrieť</button>
+    </div>
+</div>
 
 <!-- ============ ONBOARDING TOUR ============ -->
 <div id="tourOverlay" class="hidden" style="position:fixed;inset:0;z-index:9998;background:rgba(2,4,10,0.72);backdrop-filter:blur(3px);">
@@ -4395,7 +4490,7 @@
         window.addEventListener('load', drawIcons);
     })();
 </script>
-</body><div id="toastWrap" class="toast-wrap"></div>
+<div id="toastWrap" class="toast-wrap"></div>
 </body>
 </html>
 
