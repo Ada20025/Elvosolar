@@ -17,8 +17,8 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://unpkg.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script src="/templates/lucide.min.js"></script>
+    <script src="/templates/chart.umd.min.js" defer></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1099,7 +1099,8 @@
             height: 36px;
             border-radius: 12px;
         }
-        .led-dock #ledFlashlightBtn i { width: 18px !important; height: 18px !important; }
+        .led-dock #ledFlashlightBtn i,
+        .led-dock #ledFlashlightBtn svg { width: 18px !important; height: 18px !important; }
         .led-dock #ledPanel {
             position: absolute;
             top: calc(100% + 8px);
@@ -4355,6 +4356,19 @@
     if (document.readyState === 'complete') setTimeout(show, 1200);
     else window.addEventListener('load', function() { setTimeout(show, 1200); });
 })();
+</script>
+<script>
+    // Poistka: ikony sa vykreslia az ked je lucide naozaj nacitane (inak ostali prazdne stvorceky).
+    (function () {
+        function drawIcons() {
+            if (!window.lucide || typeof window.lucide.createIcons !== 'function') return;
+            if (!document.querySelector('i[data-lucide]')) return;
+            try { window.lucide.createIcons(); } catch (e) {}
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', drawIcons);
+        else drawIcons();
+        window.addEventListener('load', drawIcons);
+    })();
 </script>
 </body><div id="toastWrap" class="toast-wrap"></div>
 </body>
