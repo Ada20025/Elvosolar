@@ -1,10 +1,10 @@
 #!/bin/bash
 # ==============================================================================
-# ElvoSolar CM5 — Zastavenie všetkých služieb (Kill)
+# ElvoControll CM5 — Zastavenie všetkých služieb (Kill)
 # ==============================================================================
 
 echo "=================================================="
-echo "    ELVOSOLAR CM5 — KILL & STOP PROCESOV          "
+echo "   ELVOCONTROLL CM5 — KILL & STOP PROCESOV      "
 echo "=================================================="
 
 # 1. Zastavenie systemd služby
@@ -25,6 +25,6 @@ sudo fuser -k 502/tcp 2>/dev/null || true
 sudo fuser -k 5020/tcp 2>/dev/null || true
 
 echo "=================================================="
-echo "🛑 Všetky ElvoSolar služby boli úspešne zastavené."
+echo "🛑 Všetky ElvoControll služby boli úspešne zastavené."
 echo "=================================================="
 

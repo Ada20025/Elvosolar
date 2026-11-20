@@ -52,6 +52,8 @@ mkdir -p /tmp/elvosolar_extract
 unzip -q /tmp/elvosolar_main.zip -d /tmp/elvosolar_extract
 cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.py ~/Hardware/ 2>/dev/null | tail -3
 cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.sh ~/Hardware/ 2>/dev/null | tail -2
+cp -f /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.json ~/Hardware/ 2>/dev/null
+cp -f /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.txt ~/Hardware/ 2>/dev/null
 mkdir -p ~/Hardware/templates
 cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/templates/* ~/Hardware/templates/ 2>/dev/null
 chmod +x ~/Hardware/*.sh 2>/dev/null

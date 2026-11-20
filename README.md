@@ -1,4 +1,4 @@
-# ElvoControl
+# ElvoControll
 
 Inteligentný energetický manažment pre fotovoltiku a batérie.
 
@@ -11,7 +11,7 @@ Inteligentný energetický manažment pre fotovoltiku a batérie.
 
 | Zložka | Popis |
 |--------|-------|
-| `Software/App/` | PHP aplikácia (ElvoControl dashboard) |
+| `Software/App/` | PHP aplikácia (ElvoControll dashboard) |
 | `Software/Web/` | Statický web (elvosolar.sk) |
 | `Hardware/` | Python backend pre CM5 riadiacu jednotku |
 
@@ -194,4 +194,4 @@ Alternatíva bez Railway: súbor `Software/App/turnstile_keys.php` vráti `['sit
 
 ---
 
-*2011–2026 ElvoControl. Všetky práva vyhradené.*
+*2011–2026 ElvoControll. Všetky práva vyhradené.*

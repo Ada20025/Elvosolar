@@ -1,5 +1,5 @@
 <?php
-// config.php — ElvoControl
+// config.php — ElvoControll
 // Prostredie: Railway (MySQL) / iný MySQL hosting / lokálne (SQLite fallback)
 //
 // Railway MySQL plugin dáva tieto premenné:

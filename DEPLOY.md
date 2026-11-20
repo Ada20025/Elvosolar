@@ -1,4 +1,4 @@
-# ElvoControl — Deployment Guide
+# ElvoControll — Deployment Guide
 
 ## Architektúra
 

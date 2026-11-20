@@ -31,8 +31,9 @@ def set_update_stage(stage):
         pass
 
 # Súbory na aktualizáciu: relatívna cesta -> GitHub raw URL
-# POZOR: zdrojom je repo, do ktorého sa naozaj pushuje (dzurkoadam1-la/Hardware).
-RAW_BASE = "https://raw.githubusercontent.com/dzurkoadam1-la/Hardware/main/Hardware/"
+# POZOR: zdrojom je TEN ISTÝ repo, z ktorého ťahajú aj update.sh / update_now.sh /
+# clean.sh / reset.sh (Ada20025/Elvosolar). Iný repo = CM5 by sťahoval starý kód.
+RAW_BASE = "https://raw.githubusercontent.com/Ada20025/Elvosolar/main/Hardware/"
 UPDATE_FILES = {
     "app.py": RAW_BASE + "app.py",
     "network_scan.py": RAW_BASE + "network_scan.py",
@@ -48,9 +49,14 @@ UPDATE_FILES = {
     "ai_engine.py": RAW_BASE + "ai_engine.py",
     "led_service.py": RAW_BASE + "led_service.py",
     "smart_meter_service.py": RAW_BASE + "smart_meter_service.py",
+    "serial_config_service.py": RAW_BASE + "serial_config_service.py",
+    "mqtt_client.py": RAW_BASE + "mqtt_client.py",
+    "modbus_compat.py": RAW_BASE + "modbus_compat.py",
     "update_service.py": RAW_BASE + "update_service.py",
     "start.sh": RAW_BASE + "start.sh",
+    "requirements.txt": RAW_BASE + "requirements.txt",
     "templates/setup.html": RAW_BASE + "templates/setup.html",
+    "templates/mqtt.html": RAW_BASE + "templates/mqtt.html",
 }
 
 CHECK_INTERVAL = 3600  # 1 hodina

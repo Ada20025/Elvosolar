@@ -2813,12 +2813,37 @@
             }
         }
 
-        function showNativeAlert(title, body, tag) {
+        // Systemova notifikacia, ktora funguje aj na TELEFONE.
+        // Android Chrome (a iPhone v PWA) NEDOVOLI 'new Notification()' — hodi
+        // "Illegal constructor" a notifikacia sa ticho zahodi (preto na mobile nic
+        // nechodilo, kym na pocitaci ano). Preto ide vzdy cez Service Worker.
+        function elvoNotify(title, body, tag) {
             try {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(title, { body: body, icon: basePath + '/templates/ElvosolarLogo.png', badge: basePath + '/templates/ElvosolarLogo.png', tag: tag || 'elvo-alert', vibrate: [200, 100, 200] });
+                if (!('Notification' in window) || Notification.permission !== 'granted') return;
+                const opts = {
+                    body: body || '',
+                    icon: basePath + '/templates/ElvosolarLogo.png',
+                    badge: basePath + '/templates/ElvosolarLogo.png',
+                    tag: tag || 'elvo-alert',
+                    data: { url: basePath + '/dashboard' }
+                };
+                const fallback = () => { try { new Notification(title, opts); } catch (e) {} };
+                if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+                    navigator.serviceWorker.getRegistration().then(reg => {
+                        if (reg && typeof reg.showNotification === 'function') {
+                            reg.showNotification(title, opts).catch(fallback);
+                        } else {
+                            fallback();
+                        }
+                    }).catch(fallback);
+                    return;
                 }
-            } catch (e) {}
+                new Notification(title, opts);
+            } catch (e) { /* notifikacie nie su dostupne */ }
+        }
+
+        function showNativeAlert(title, body, tag) {
+            elvoNotify(title, body, tag);
         }
 
         function toggleAlertsPanel(ev) {
@@ -4587,11 +4612,9 @@
             if (lbl) lbl.style.background = isOnline ? '#10b981' : '#ef4444';
             // Notifikácia pri zmene stavu
             if (lastDeviceOnline !== isOnline && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                new Notification(isOnline ? '✅ Zariadenie online' : '❌ Zariadenie offline', {
-                    body: isOnline ? 'Vaše zariadenie je opäť dostupné.' : 'Zariadenie prestalo komunikovať!',
-                    icon: '/templates/ElvosolarLogo.png',
-                    badge: '/templates/ElvosolarLogo.png'
-                });
+                elvoNotify(isOnline ? '✅ Zariadenie online' : '❌ Zariadenie offline',
+                    isOnline ? 'Vaše zariadenie je opäť dostupné.' : 'Zariadenie prestalo komunikovať!',
+                    'device-status');
             }
             lastDeviceOnline = isOnline;
         }
@@ -4654,7 +4677,19 @@
             fetchMeterData();
             setInterval(fetchTelemetry, 5000);
             setInterval(fetchMeterData, 8000);
-            setInterval(refreshDashboard, 600000); // 10 min
+            setInterval(refreshDashboard, 60000); // kazdu minutu (grafy a info z DB)
+            // Po navrate do appky (napr. zo SQL editora) hned nacitaj cerstve data
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState !== 'visible') return;
+                fetchTelemetry();
+                checkDeviceStatus();
+                pollAlerts();
+                refreshDashboard();
+            });
+            window.addEventListener('focus', () => {
+                fetchTelemetry();
+                checkDeviceStatus();
+            });
             // Retry chart if Chart.js loads late
             if (typeof Chart === 'undefined') {
                 const retryInterval = setInterval(() => {
@@ -4671,6 +4706,18 @@
             setInterval(checkDeviceStatus, 10000); // každých 10 s — farba odráža stav okamžite
             setInterval(pollAlerts, 20000); // alert check kazdych 20s
             pollAlerts();
+            // Cache-bypass pre API (po zmene v SQL musi prist nova odpoved, nie pamat prehliadaca)
+            if (window.fetch && !window.__elvoNoStorePatched) {
+                window.__elvoNoStorePatched = true;
+                const origFetch = window.fetch.bind(window);
+                window.fetch = function (input, init) {
+                    const url = typeof input === 'string' ? input : (input && input.url) || '';
+                    if (url.indexOf('/api/') !== -1) {
+                        init = Object.assign({}, init, { cache: 'no-store' });
+                    }
+                    return origFetch(input, init);
+                };
+            }
             initNotifPermission();
             // === PUSH NOTIFICATION REGISTRATION (Web Push VAPID - chodia aj ked je appka zatvorena) ===
             if ('serviceWorker' in navigator && 'Notification' in window) {

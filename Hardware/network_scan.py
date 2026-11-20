@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ElvoControl Network Discovery - Najde SmartLogger / Enspire / Modbus TCP zariadenia v sieti.
+ElvoControll Network Discovery - Najde SmartLogger / Enspire / Modbus TCP zariadenia v sieti.
 
 Pouziva 3 metody:
   1. Modbus TCP direct probe - skusa port 502 na kazdej IP
@@ -242,7 +242,7 @@ def udp_broadcast_discover(subnet, port=50000, timeout=2):
     """Odosle UDP broadcast a caka odpovede."""
     devices = []
     try:
-        msg = b'ELVOCONTROL_DISCOVER_v1'
+        msg = b'ELVOCONTROLL_DISCOVER_v1'
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.settimeout(timeout)
@@ -406,7 +406,7 @@ def scan_network(port=502, timeout=0.3, max_workers=48):
 
 if __name__ == "__main__":
     print("="*60)
-    print("ELVOCONTROL NETWORK DISCOVERY")
+    print("ELVOCONTROLL NETWORK DISCOVERY")
     print(f"Cas: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Moja IP: {get_local_ip()}")
     print(f"Subnet: {get_subnet()}")

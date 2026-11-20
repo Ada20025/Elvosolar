@@ -49,6 +49,8 @@ rm -rf /tmp/elvo_reset_x && mkdir -p /tmp/elvo_reset_x
 unzip -q /tmp/elvo_reset.zip -d /tmp/elvo_reset_x
 cp /tmp/elvo_reset_x/Elvosolar-main/Hardware/*.py ~/Hardware/ 2>/dev/null
 cp /tmp/elvo_reset_x/Elvosolar-main/Hardware/*.sh ~/Hardware/ 2>/dev/null
+cp -f /tmp/elvo_reset_x/Elvosolar-main/Hardware/*.json ~/Hardware/ 2>/dev/null
+cp -f /tmp/elvo_reset_x/Elvosolar-main/Hardware/*.txt ~/Hardware/ 2>/dev/null
 mkdir -p ~/Hardware/templates
 cp /tmp/elvo_reset_x/Elvosolar-main/Hardware/templates/* ~/Hardware/templates/ 2>/dev/null
 chmod +x ~/Hardware/*.sh 2>/dev/null

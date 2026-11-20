@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Modbus Scanner pre ElvoControl - 2-fazovy scan
+Modbus Scanner pre ElvoControll - 2-fazovy scan
 Faza 1: Rychlo prejde vsetky porty a ID - cokolvek odpovie = naslo sa
 Faza 2: Na najdenom porte cita detaily (model, znacka, seriove cislo)
 """
@@ -220,7 +220,7 @@ def phase2_deep_scan(port, baud, parity, slave_id):
 
 
 def main():
-    print("ELVOCONTROL MODBUS SCANNER")
+    print("ELVOCONTROLL MODBUS SCANNER")
     print("=" * 60)
     
     # Najdi porty

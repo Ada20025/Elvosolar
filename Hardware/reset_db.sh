@@ -1,15 +1,15 @@
 #!/bin/bash
 # ==============================================================================
-# ElvoSolar CM5 — Reset Databázy & Čistý štart
+# ElvoControll CM5 — Reset Databázy & Čistý štart
 # Zmaže starú databázu a reinicializuje čisté tabuľky
 # ==============================================================================
 
 echo "=================================================="
-echo "    ELVOSOLAR CM5 — RESETOVANIE DATABÁZY          "
+echo "   ELVOCONTROLL CM5 — RESETOVANIE DATABÁZY      "
 echo "=================================================="
 
 # 1. Zastavenie bežiacich procesov
-echo "[1/3] Zastavujem ElvoSolar službu a procesy..."
+echo "[1/3] Zastavujem ElvoControll službu a procesy..."
 sudo systemctl stop elvosolar 2>/dev/null || true
 sudo pkill -f "app.py" 2>/dev/null || true
 sudo pkill -f "modbus_slave_service.py" 2>/dev/null || true

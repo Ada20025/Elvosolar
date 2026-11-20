@@ -899,6 +899,9 @@ if (!function_exists('send_json')) {
         // do JSON odpovede ("Unexpected token '<', \"<br />\" is not valid JSON")
         while (ob_get_level() > 0) { @ob_end_clean(); }
         header("Content-Type: application/json; charset=UTF-8");
+        // API dáta sa NIKDY nekešujú — po zmene v DB musí dashboard ukázať nové čísla hneď
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
         http_response_code($status);
         echo json_encode($data);
         exit;
@@ -1125,7 +1128,7 @@ if (!function_exists('elvo_report_data')) {
         $rep = [
             'month' => $month, 'label' => elvo_report_month_label($month),
             'owner' => '', 'devices' => [], 'daily' => array_fill(0, $daysInMonth, 0),
-            'soc_curve' => $yearCurve, 'kwh' => 0, 'avg_day' => 0, 'max_power' => 0,
+            'soc_curve' => array_fill(0, 24, null), 'kwh' => 0, 'avg_day' => 0, 'max_power' => 0,
             'saving' => 0, 'price' => $price, 'availability' => 0, 'soc_avg' => 0,
             'soc_min' => 0, 'soc_max' => 0, 'days_with_data' => 0,
             'days_in_month' => $daysInMonth, 'peak_day' => 0, 'has_data' => false,
@@ -1153,6 +1156,8 @@ if (!function_exists('elvo_report_data')) {
 
         // Súhrn za mesiac z denného agregátu
         $byDevice = [];
+        $rawDaily = [];          // fallback: denná výroba z raw telemetrie (keď agregát chýba)
+        $rawDaysWithData = 0;
         if ($ids) {
             try {
                 $q = $pdo->prepare("SELECT device_id, SUM(kwh) kwh, AVG(avg_power) avg_power, MAX(max_power) max_power,
@@ -1162,6 +1167,73 @@ if (!function_exists('elvo_report_data')) {
                 $q->execute(array_merge($ids, [$start, $end]));
                 foreach ($q->fetchAll() as $row) { $byDevice[(int)$row['device_id']] = $row; }
             } catch (Throwable $e) { /* agregát ešte neexistuje */ }
+        }
+
+        // RAW TELEMETRIA: report sa počíta priamo z tabuľky telemetry, kým sú dáta
+        // ešte v retencii (90 dní). Agregát telemetry_daily sa totiž plní cronom len
+        // za posledné 2 dni, takže po akejkoľvek zmene/importe v SQL by report
+        // ukazoval staré čísla. Staršie mesiace (už preriedené) berú agregát.
+        if ($ids) {
+            try {
+                $qr = $pdo->prepare("SELECT device_id, timestamp, power_ac, battery_soc FROM telemetry
+                                      WHERE device_id IN ($in) AND timestamp BETWEEN ? AND ?
+                                      ORDER BY timestamp");
+                $qr->execute(array_merge($ids, [$start . ' 00:00:00', $end . ' 23:59:59']));
+                $acc = [];
+                foreach ($qr->fetchAll() as $row) {
+                    $ts = strtotime((string)($row['timestamp'] ?? ''));
+                    if ($ts === false) continue;
+                    $didR = (int)$row['device_id'];
+                    $dayR = (int)date('j', $ts);
+                    $pR = (float)$row['power_ac'];
+                    $sR = (float)$row['battery_soc'];
+                    if (!isset($acc[$didR][$dayR])) {
+                        $acc[$didR][$dayR] = ['sum' => 0.0, 'n' => 0, 'min' => null, 'max' => 0.0,
+                                              'first' => $ts, 'last' => $ts, 'maxp' => 0.0];
+                    }
+                    $acc[$didR][$dayR]['sum'] += $pR;
+                    $acc[$didR][$dayR]['n']++;
+                    $acc[$didR][$dayR]['maxp'] = max($acc[$didR][$dayR]['maxp'], $pR);
+                    if ($sR > 0) {
+                        $acc[$didR][$dayR]['min'] = $acc[$didR][$dayR]['min'] === null
+                            ? $sR : min($acc[$didR][$dayR]['min'], $sR);
+                        $acc[$didR][$dayR]['max'] = max($acc[$didR][$dayR]['max'], $sR);
+                    }
+                    $acc[$didR][$dayR]['first'] = min($acc[$didR][$dayR]['first'], $ts);
+                    $acc[$didR][$dayR]['last'] = max($acc[$didR][$dayR]['last'], $ts);
+                }
+                $rawByDevice = [];
+                foreach ($acc as $didR => $daysR) {
+                    $sumKwh = 0.0; $sumP = 0.0; $sumN = 0; $maxPR = 0.0;
+                    $minSocR = null; $maxSocR = null;
+                    foreach ($daysR as $dayR => $aR) {
+                        $hours = max(0.0, ($aR['last'] - $aR['first']) / 3600);
+                        $avgP = $aR['n'] ? $aR['sum'] / $aR['n'] : 0.0;
+                        $kwhR = $avgP / 1000 * $hours;
+                        $sumKwh += $kwhR;
+                        $sumP += $avgP * $aR['n'];
+                        $sumN += $aR['n'];
+                        $maxPR = max($maxPR, $aR['maxp']);
+                        if ($aR['min'] !== null) $minSocR = $minSocR === null ? $aR['min'] : min($minSocR, $aR['min']);
+                        if ($aR['max'] > 0) $maxSocR = $maxSocR === null ? $aR['max'] : max($maxSocR, $aR['max']);
+                        $idxR = $dayR - 1;
+                        if ($idxR >= 0 && $idxR < $daysInMonth) {
+                            $rawDaily[$idxR] = ($rawDaily[$idxR] ?? 0) + $kwhR;
+                            $rawDaysWithData++;
+                        }
+                    }
+                    $rawByDevice[(int)$didR] = [
+                        'device_id' => (int)$didR,
+                        'kwh' => $sumKwh,
+                        'avg_power' => $sumN ? $sumP / $sumN : 0,
+                        'max_power' => $maxPR,
+                        'min_soc' => $minSocR,
+                        'max_soc' => $maxSocR,
+                        'samples' => $sumN,
+                    ];
+                }
+                foreach ($rawByDevice as $didR => $aggR) { $byDevice[$didR] = $aggR; }
+            } catch (Throwable $eRaw) { /* bez fallbacku — report ostane prázdny */ }
         }
 
         $totalKwh = 0.0; $maxPower = 0.0; $socMin = null; $socMax = null;
@@ -1207,6 +1279,13 @@ if (!function_exists('elvo_report_data')) {
                 }
             } catch (Throwable $e) { /* ignore */ }
         }
+        // Raw telemetria má prednosť pred agregátom (aktuálne zmeny v SQL hneď v reporte)
+        if ($rawDaily) {
+            foreach ($rawDaily as $idxR => $kwhR) {
+                if ($idxR >= 0 && $idxR < $daysInMonth) $rep['daily'][$idxR] = round((float)$kwhR, 1);
+            }
+            $daysWithData = $rawDaysWithData;
+        }
 
         // Priemerné SOC po hodinách (krivka)
         if ($ids) {
@@ -1232,7 +1311,9 @@ if (!function_exists('elvo_report_data')) {
         $peak = 0;
         foreach ($rep['daily'] as $i => $v) { if ($v > ($rep['daily'][$peak] ?? 0)) $peak = $i; }
 
-        $socValues = array_filter($rep['soc_curve']);
+        $socValues = is_array($rep['soc_curve'])
+            ? array_filter($rep['soc_curve'], static fn($v) => $v !== null && $v !== '')
+            : [];
         $rep['kwh'] = round($totalKwh, 1);
         $rep['avg_day'] = $daysInMonth > 0 ? round($totalKwh / $daysInMonth, 1) : 0;
         $rep['max_power'] = round($maxPower / 1000, 2);

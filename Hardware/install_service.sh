@@ -1,13 +1,13 @@
 #!/bin/bash
 # ==============================================================================
-# ElvoSolar CM5 Systemd Service Installer & Auto-Start
+# ElvoControll CM5 Systemd Service Installer & Auto-Start
 # Nastaví automatický štart po bootovaní Raspberry Pi CM5
 # ==============================================================================
 
 set -e
 
 echo "=================================================="
-echo "   ELVOSOLAR CM5 — AUTO-START INŠTALÁTOR         "
+echo "  ELVOCONTROLL CM5 — AUTO-START INŠTALÁTOR      "
 echo "=================================================="
 
 SERVICE_PATH="/etc/systemd/system/elvosolar.service"
@@ -22,7 +22,7 @@ echo "[1/4] Vytváram systemd službu: $SERVICE_PATH..."
 
 cat << 'EOF' > "$SERVICE_PATH"
 [Unit]
-Description=ElvoSolar CM5 Smart EMS & Modbus Core Service
+Description=ElvoControll CM5 Smart EMS & Modbus Core Service
 After=network.target network-online.target time-sync.target
 Wants=network-online.target
 
@@ -56,7 +56,7 @@ echo "[4/4] Spúšťam službu elvosolar..."
 systemctl restart elvosolar.service
 
 echo "=================================================="
-echo "✅ HOTOVO: ElvoSolar služba je aktívna a povolená na auto-štart!"
+echo "✅ HOTOVO: ElvoControll služba je aktívna a povolená na auto-štart!"
 echo "   Status môžete skontrolovať príkazom:"
 echo "   sudo systemctl status elvosolar"
 echo "=================================================="

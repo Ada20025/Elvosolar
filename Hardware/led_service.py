@@ -292,6 +292,43 @@ class _SpiDriver:
             pass
 
 
+class _BlinkaNeopixelDriver:
+    """Adafruit Blinka + neopixel (board.D<pin>) — rovnaký backend ako ručný
+    /home/pi/led.py. Funguje AJ BEZ kernel overlayu /dev/leds0 (CM5, Pi 5).
+    Vyžaduje: pip install adafruit-blinka adafruit-circuitpython-neopixel"""
+
+    name = "adafruit-neopixel"
+
+    def __init__(self):
+        import board
+        import neopixel
+
+        pin_name = "D%d" % DATA_PIN
+        pin = getattr(board, pin_name, None)
+        if pin is None:
+            raise RuntimeError(f"board.{pin_name} nie je dostupný (Blinka nepozná GPIO {DATA_PIN})")
+        # Jas sa aplikuje už pri skladaní frame (brightness=1.0 = bez ďalšieho stmievania).
+        # pixel_order=GRBW = hardvérové poradie SK6812 RGBW; hodnoty sa zadávajú R,G,B,W.
+        self._np = neopixel.NeoPixel(
+            pin, NUM_LEDS, brightness=1.0, auto_write=False, bpp=4, pixel_order=neopixel.GRBW
+        )
+
+    def write(self, frame):
+        # frame = G,R,B,W na každú LED -> neopixel očakáva R,G,B,W
+        count = min(NUM_LEDS, len(frame) // 4)
+        for i in range(count):
+            b = i * 4
+            self._np[i] = (frame[b + 1], frame[b], frame[b + 2], frame[b + 3])
+        self._np.show()
+
+    def close(self):
+        try:
+            self._np.fill((0, 0, 0, 0))
+            self._np.show()
+        except Exception:
+            pass
+
+
 class _GpiodBitbangDriver:
     """Núdzový bit-bang z userspace. Časovanie nie je garantované."""
 
@@ -382,7 +419,7 @@ class LedService:
 
     # ── inicializácia ────────────────────────────────────────────────────────
     def _init_driver(self):
-        candidates = [_KernelPioDriver, _Ws281xDriver, _SpiDriver]
+        candidates = [_KernelPioDriver, _BlinkaNeopixelDriver, _Ws281xDriver, _SpiDriver]
         if ALLOW_BITBANG:
             candidates.append(_GpiodBitbangDriver)
 
@@ -602,7 +639,9 @@ class LedService:
             "num_leds": self._num_leds,
             "pin": DATA_PIN,
             "driver": self._driver.name if self._driver else None,
+            "driver_error": self._driver_error or "",
             "device": LED_DEVICE,
+            "device_exists": os.path.exists(LED_DEVICE),
             "manual": self._manual_state is not None,
             "manual_color": list(getattr(self, "_manual_color", (0, 0, 0, 0))),
             "overlay_hint": OVERLAY_HINT,

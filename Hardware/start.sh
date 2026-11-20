@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  ElvoSolar CM5 — START (systemd riadi reštarty, žiadne slučky)
+#  ElvoControll CM5 — START (systemd riadi reštarty, žiadne slučky)
 # ============================================================
 
 VENV_PYTHON="/home/pi/Hardware/venv/bin/python3"
@@ -10,7 +10,7 @@ APP_DIR="/home/pi/Hardware"
 if [ ! -f "$VENV_PYTHON" ]; then
     echo "[SETUP] Vytváram venv..."
     python3 -m venv /home/pi/Hardware/venv
-    $VENV_PYTHON -m pip install --quiet fastapi uvicorn pyserial pymodbus requests gpiod paho-mqtt
+    $VENV_PYTHON -m pip install --quiet fastapi uvicorn pyserial pymodbus requests gpiod paho-mqtt cryptography adafruit-blinka adafruit-circuitpython-neopixel
     echo "[SETUP] Závislosti nainštalované."
 fi
 
@@ -19,6 +19,13 @@ if ! $VENV_PYTHON -c "import paho.mqtt" >/dev/null 2>&1; then
     $VENV_PYTHON -m pip install --quiet paho-mqtt \
         && echo "[SETUP] paho-mqtt doinštalované." \
         || echo "[SETUP] ⚠️ paho-mqtt sa nepodarilo nainštalovať (MQTT bude vypnuté)"
+fi
+
+# Adafruit NeoPixel (Blinka) — driver pre LED, funguje aj bez kernel overlayu
+if ! $VENV_PYTHON -c "import board, neopixel" >/dev/null 2>&1; then
+    $VENV_PYTHON -m pip install --quiet adafruit-blinka adafruit-circuitpython-neopixel \
+        && echo "[SETUP] adafruit neopixel doinštalované (LED cez Blinka)." \
+        || echo "[SETUP] ⚠️ adafruit neopixel sa nepodarilo nainštalovať (LED cez kernel overlay ostávajú)"
 fi
 
 # ============================================================

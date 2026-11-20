@@ -93,7 +93,7 @@ class SystemService:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def start_ap_mode(ssid: str = "ElvoControl-Setup", password: str = "elvo1234") -> dict:
+    def start_ap_mode(ssid: str = "ElvoControll-Setup", password: str = "elvo1234") -> dict:
         """Vytvori WiFi hotspot pre pocatecne nastavenie zariadenia."""
         if not shutil.which("nmcli"):
             return {"status": "error", "message": "nmcli nie je dostupny."}

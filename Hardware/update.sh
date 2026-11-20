@@ -48,6 +48,9 @@ echo "    ✅ Zastavené"
 echo "[5/6] Kopírujem nové súbory..."
 cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.py ~/Hardware/ 2>/dev/null
 cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.sh ~/Hardware/ 2>/dev/null
+cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.json ~/Hardware/ 2>/dev/null
+cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.txt ~/Hardware/ 2>/dev/null
+cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/*.md ~/Hardware/ 2>/dev/null
 mkdir -p ~/Hardware/templates
 cp -v /tmp/elvosolar_extract/Elvosolar-main/Hardware/templates/* ~/Hardware/templates/ 2>/dev/null
 chmod +x ~/Hardware/*.sh 2>/dev/null

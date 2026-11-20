@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# upgrade.sh - ElvoControl CM5 Manual Upgrade Script
+# upgrade.sh - ElvoControll CM5 Manual Upgrade Script
 # =============================================================================
 # Použitie:
 #   chmod +x upgrade.sh
@@ -15,7 +15,7 @@ BACKUP_DIR="/home/pi/backup_$(date +%Y%m%d_%H%M%S)"
 HARDWARE_DIR="/home/pi/Hardware"
 
 echo "╔══════════════════════════════════════════╗"
-echo "║  ElvoControl CM5 - Manuálny Upgrade      ║"
+echo "║  ElvoControll CM5 - Manuálny Upgrade      ║"
 echo "║  Verzia: $(date '+%Y-%m-%d %H:%M:%S')              ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
@@ -155,11 +155,11 @@ echo "Backup: $BACKUP_DIR"
 echo ""
 
 # Ponuka spustenia
-read -p "Spustiť ElvoControl teraz? (á/n): " -n 1 -r
+read -p "Spustiť ElvoControll teraz? (á/n): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[ÁáAaYy]$ ]]; then
-    echo "🚀 Spúšťam ElvoControl..."
+    echo "🚀 Spúšťam ElvoControll..."
     cd "$HARDWARE_DIR"
     python3 app.py &
-    echo "✅ ElvoControl spustený na http://$(hostname -I | awk '{print $1}'):80"
+    echo "✅ ElvoControll spustený na http://$(hostname -I | awk '{print $1}'):80"
 fi

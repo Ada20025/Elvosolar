@@ -784,7 +784,7 @@ def serve_wifi_config():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nastavenie WiFi | ElvoControl</title>
+        <title>Nastavenie WiFi | ElvoControll</title>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
         <style>
             * { margin:0; padding:0; box-sizing:border-box; }
@@ -813,7 +813,7 @@ def serve_wifi_config():
     <body>
         <div class="card">
             <h1>📶 Nastavenie WiFi</h1>
-            <p class="subtitle">Pripojte ElvoControl k vašej domácej WiFi sieti</p>
+            <p class="subtitle">Pripojte ElvoControll k vašej domácej WiFi sieti</p>
             
             <div id="wifiList" class="wifi-list">
                 <p style="text-align:center;color:#64748b;font-size:12px;">Načítavam siete...</p>

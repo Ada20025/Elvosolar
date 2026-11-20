@@ -1,5 +1,5 @@
 <?php
-// create_admin.php — ElvoControl
+// create_admin.php — ElvoControll
 // Vytvorí (alebo povýši) admin účet. IBA z príkazového riadku:
 //
 //   ADMIN_EMAIL=admin@elvosolar.sk ADMIN_PASS='silne-heslo' php create_admin.php
