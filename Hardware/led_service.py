@@ -72,6 +72,11 @@ STATE_TABLE = {
         color=BLUE, effect="breathe", label="Štart",
         meaning="Modrá pomaly dýcha = systém sa spúšťa (boot).",
     ),
+    "no_data": dict(
+        color=BLUE, effect="blink", blink=(2, 0.6, 0.4, 0.6),
+        label="Bez dát",
+        meaning="Celý rad bliká modro (2×) = prvé spustenie / v databáze ešte nie sú žiadne dáta.",
+    ),
     "setup": dict(
         color=CYAN, effect="blink", blink=(2, 0.25, 0.25, 1.2),
         label="Setup",
@@ -83,8 +88,8 @@ STATE_TABLE = {
         meaning="Azúrová rýchlo bliká = WiFi hotspot pre nastavenie je aktívny.",
     ),
     "connecting": dict(
-        color=DEEP_BLUE, effect="breathe", label="Pripájanie",
-        meaning="Tmavomodrá dýcha = pripája sa zbernica / cloud.",
+        color=BLUE, effect="wipe", finish=GREEN, label="Pripájanie",
+        meaning="Modrá sa rozsvecuje LED po LED = pripája sa zbernica / cloud mimo DB; na konci zelené prebliknutie.",
     ),
     "cloud": dict(
         color=AZURE, effect="pulse", label="Cloud",
@@ -492,6 +497,24 @@ class LedService:
                 idx = int(t / unit)
                 lit = (t - idx * unit) < on_s
             pixels = [color if lit else BLACK] * n
+        elif effect == "wipe":
+            # Postupné rozsvecovanie LED po jednej, potom zelené prebliknutie a pauza.
+            step = 0.45          # sekundy na jednu LED
+            hold = 0.55          # ako dlho svieti celý rad pred prebliknutím
+            flash = 0.35         # dĺžka zeleného prebliknutia
+            pause = 0.35         # pauza po prebliknutí
+            finish = spec.get("finish", GREEN)
+            cycle = n * step + hold + flash + pause
+            t = elapsed % cycle
+            if t < n * step:
+                lit = int(t / step) + 1
+                pixels = [color if i < lit else BLACK for i in range(n)]
+            elif t < n * step + hold:
+                pixels = [color] * n
+            elif t < n * step + hold + flash:
+                pixels = [finish] * n
+            else:
+                pixels = [BLACK] * n
         elif effect == "chase":
             idx = int(elapsed / 0.25) % n
             pixels = [BLACK] * n
@@ -686,6 +709,9 @@ class LedService:
 
     def anim_startup(self):
         return self.set_state("boot")
+
+    def anim_no_data(self):
+        return self.set_state("no_data")
 
     # ── upratovanie ─────────────────────────────────────────────────────────
     def cleanup(self):

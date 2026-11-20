@@ -2157,7 +2157,7 @@ def resolve_led_state():
     if last_ok and (time.time() - last_ok) > LED_BUS_TIMEOUT_S:
         return "bus_error"
     if _count_devices() == 0:
-        return "setup"
+        return "no_data"
     if not live and not last_ok:
         return "connecting"
     return "ok"
