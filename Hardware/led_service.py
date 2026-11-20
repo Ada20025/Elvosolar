@@ -24,6 +24,7 @@
 #    SK6812_DEVICE=/dev/leds0 zariadenie kernel drivera
 #    SK6812_BRIGHTNESS=100    predvolený jas v %
 #    SK6812_ALLOW_BITBANG=0   1 = povolí záložný bit-bang GPIO (len núdzovo)
+#    SK6812_ORDER=rgbw        poradie bajtov pre surové drivery (rgbw = overlay, grbw = pásek)
 # =============================================================================
 
 import math
@@ -40,6 +41,9 @@ NUM_LEDS = int(os.environ.get("SK6812_LEDS", "3"))
 LED_DEVICE = os.environ.get("SK6812_DEVICE", "/dev/leds0")
 DEFAULT_BRIGHTNESS = int(os.environ.get("SK6812_BRIGHTNESS", "100"))
 ALLOW_BITBANG = os.environ.get("SK6812_ALLOW_BITBANG", "0") == "1"
+# Poradie bajtov, aké čaká hardvér za surovými drivermi (kernel overlay / SPI / bit-bang).
+# Interný frame je vždy G,R,B,W (SK6812 GRBW pásek), overlay ws2812-pio,rgbw chce R,G,B,W.
+HW_ORDER = os.environ.get("SK6812_ORDER", "rgbw").strip().lower()
 RENDER_FPS = 30
 
 OVERLAY_HINT = f"dtoverlay=ws2812-pio,gpio={DATA_PIN},num_leds={NUM_LEDS},rgbw"
@@ -177,6 +181,19 @@ def _clamp8(value):
     return 0 if value < 0 else (255 if value > 255 else value)
 
 
+def _raw_frame(frame):
+    """G,R,B,W (interné poradie) -> bajty v poradí, aké čaká hardvér."""
+    if HW_ORDER.startswith("grb"):
+        return bytes(frame)
+    out = bytearray(len(frame))
+    for i in range(0, len(frame) - 3, 4):
+        out[i] = frame[i + 1]      # R
+        out[i + 1] = frame[i]      # G
+        out[i + 2] = frame[i + 2]  # B
+        out[i + 3] = frame[i + 3]  # W
+    return bytes(out)
+
+
 def _scale(color, factor):
     factor = 0.0 if factor < 0 else factor
     return (_clamp8(color[0] * factor), _clamp8(color[1] * factor),
@@ -207,6 +224,7 @@ class _KernelPioDriver:
         self._fd = os.open(self._path, os.O_WRONLY)
 
     def write(self, frame):
+        frame = _raw_frame(frame)
         try:
             os.write(self._fd, frame)
         except OSError:
@@ -288,7 +306,7 @@ class _SpiDriver:
         return bytes(out)
 
     def write(self, frame):
-        self._spi.writebytes2(self._encode(frame))
+        self._spi.writebytes2(self._encode(_raw_frame(frame)))
 
     def close(self):
         try:
@@ -371,7 +389,7 @@ class _GpiodBitbangDriver:
             pass
 
     def write(self, frame):
-        for byte in frame:
+        for byte in _raw_frame(frame):
             for shift in range(7, -1, -1):
                 self._bit((byte >> shift) & 1)
         time.sleep(0.0003)
