@@ -12,7 +12,8 @@
 APP_DIR="/home/pi/Hardware"
 SERVICE="elvosolar"
 BRANCH="${BRANCH:-main}"
-RAW_BASE="https://raw.githubusercontent.com/Ada20025/Elvosolar/${BRANCH}/Hardware"
+REPO="Ada20025/Elvosolar"
+RAW_BASE="https://raw.githubusercontent.com/${REPO}/${BRANCH}/Hardware"
 DL_DIR="/tmp/elvo_dl_$$"
 PARALLEL=6
 
@@ -58,6 +59,18 @@ echo "=================================================="
 
 # --- 1) Stiahni LEN súbory z Hardware/ (žiadny zip celého repa) ---
 echo "[1/6] Sťahujem ${BRANCH} — Hardware/ (raw súbory)..."
+
+# Raw odkazy na vetvu sú ~5 min cachované (max-age=300). Preto zistíme
+# presný commit SHA a ťaháme súbory pinuté naň — nikdy nepríde stará verzia.
+COMMIT=$(curl -fsSL --max-time 10 "https://api.github.com/repos/${REPO}/commits/${BRANCH}" 2>/dev/null \
+    | sed -n 's/^[[:space:]]*"sha": "\([0-9a-f]\{40\}\)".*/\1/p' | head -1)
+if [ -n "$COMMIT" ]; then
+    RAW_BASE="https://raw.githubusercontent.com/${REPO}/${COMMIT}/Hardware"
+    echo "    Commit: $(echo "$COMMIT" | cut -c1-7)"
+else
+    echo "    ⚠️  Commit sa nepodarilo zistiť — použijem vetvu ${BRANCH}"
+fi
+
 rm -rf "$DL_DIR"
 mkdir -p "$DL_DIR"
 : > "$DL_DIR/.failed"
