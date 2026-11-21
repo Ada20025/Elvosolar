@@ -35,6 +35,16 @@ $db_cfg = null;
 $elvo_local_cfg = __DIR__ . '/config.local.php';
 if (is_file($elvo_local_cfg)) {
     $elvo_local = @include $elvo_local_cfg;
+    if (is_array($elvo_local)) {
+        // Placeholdery z pripravenej šablóny — jasná hláška namiesto "nepodarilo sa pripojiť"
+        foreach (['name', 'user', 'pass'] as $elvo_k) {
+            if (strpos((string)($elvo_local[$elvo_k] ?? ''), 'SEM_') === 0) {
+                http_response_code(500);
+                die('config.local.php ešte nemá vyplnené údaje. Doplň názov databázy, '
+                    . 'používateľa a heslo z panela hostingu (MySQL) a nahraj súbor znova.');
+            }
+        }
+    }
     if (is_array($elvo_local) && !empty($elvo_local['host']) && !empty($elvo_local['name'])) {
         $db_cfg = [
             'host' => (string)$elvo_local['host'],
