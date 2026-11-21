@@ -105,18 +105,35 @@ $pdo = null;
 
 // ── MySQL pripojenie ────────────────────────────────────────────────────────
 if ($is_mysql) {
-    try {
-        $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => false,
-            PDO::ATTR_TIMEOUT            => 5,
-        ]);
-    } catch (Exception $e) {
-        error_log("[DB] MySQL pripojenie zlyhalo (" . DB_HOST . "/" . DB_NAME . "): " . $e->getMessage());
-        $pdo = null;
+    // Na zdieľanom hostingu (WebSupport) je ten istý MySQL server dostupný aj cez
+    // `localhost`. Skúsime najprv nakonfigurovaný host a potom localhost —
+    // vďaka tomu appka funguje aj vtedy, keď je vzdialený názov z PHP blokovaný.
+    $db_tries = [[DB_HOST, DB_PORT]];
+    if (DB_HOST !== 'localhost' && DB_HOST !== '127.0.0.1') {
+        $db_tries[] = ['localhost', DB_PORT];
+        if (DB_PORT !== '3306') { $db_tries[] = ['localhost', '3306']; }
     }
+    $db_errors = [];
+    foreach ($db_tries as [$db_h, $db_p]) {
+        try {
+            $dsn = "mysql:host=" . $db_h . ";port=" . $db_p . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+            $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+                PDO::ATTR_TIMEOUT            => 5,
+            ]);
+            if ($db_h !== DB_HOST) {
+                error_log("[DB] Pripojené cez $db_h:$db_p namiesto " . DB_HOST . ':' . DB_PORT);
+            }
+            break;
+        } catch (Exception $e) {
+            $pdo = null;
+            $db_errors[] = $db_h . ':' . $db_p . ' → ' . $e->getMessage();
+            error_log("[DB] MySQL pripojenie zlyhalo (" . $db_h . ':' . $db_p . '/' . DB_NAME . "): " . $e->getMessage());
+        }
+    }
+    $db_err = $db_errors ? implode(' | ', $db_errors) : null;
 }
 
 // ── Automatické vytvorenie tabuliek (Railway štart s prázdnou DB) ──────────
@@ -135,8 +152,19 @@ if ($pdo) {
 // SQLite — appka by bežala nad prázdnou lokálnou DB a tvárila sa, že dáta sú OK.
 if (!$pdo && $is_mysql) {
     http_response_code(500);
-    die('Chyba: nepodarilo sa pripojiť k MySQL (' . DB_HOST . '/' . DB_NAME . '). '
-        . 'Skontroluj údaje v config.local.php alebo premenné prostredia.');
+    // Konkrétnu príčinu ukážeme aj na stránke — bez nej sa nedá rozlíšiť zlé
+    // heslo od chýbajúceho ovládača pdo_mysql alebo blokovaného portu.
+    $db_hint = match (true) {
+        str_contains((string)($db_err ?? ''), 'Access denied') => 'nesprávne heslo alebo používateľ bez práv k tejto databáze',
+        str_contains((string)($db_err ?? ''), 'Unknown database') => 'databáza s týmto názvom neexistuje',
+        str_contains((string)($db_err ?? ''), 'could not find driver') => 'na hostingu chýba PHP rozšírenie pdo_mysql',
+        str_contains((string)($db_err ?? ''), 'getaddrinfo') || str_contains((string)($db_err ?? ''), 'Name or service not known') => 'nesprávny názov servera (host) databázy',
+        str_contains((string)($db_err ?? ''), 'timed out') || str_contains((string)($db_err ?? ''), 'Connection refused') => 'server/port databázy je nedostupný (skús host localhost)',
+        default => 'pozri error_log',
+    };
+    die('Chyba: nepodarilo sa pripojiť k MySQL (' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME . '). '
+        . 'Dôvod: ' . $db_hint . '. '
+        . 'Technická chyba: ' . (string)($db_err ?? 'neznáma'));
 }
 
 // ── SQLite fallback (lokálny vývoj / výpadok DB) ───────────────────────────
