@@ -1596,7 +1596,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-grid);">
                             <span class="metric-label-styled"><i data-lucide="activity" style="width:12px;height:12px;color:var(--accent-grid);"></i> Odber zo Siete <i data-lucide="info" style="width:10px;height:10px;color:var(--text-muted);cursor:help;" title="Odber zo siete. Pre presný údaj pripoj Smart Meter."></i></span>
-                            <span class="metric-value-styled text-grid" id="dashConsumption">0 W</span>
+                            <span class="metric-value-styled text-grid" id="dashConsumption">— W</span>
                             <div class="metric-indicator-bar">
                                 <div id="dashConsumptionBar" class="metric-bar-fill"></div>
                             </div>
@@ -1604,7 +1604,7 @@
 
                         <div class="metric-card" style="--line-color: var(--accent-saved);">
                             <span class="metric-label-styled"><i data-lucide="banknote" style="width:12px;height:12px;color:var(--accent-saved);"></i> Celková Úspora</span>
-                            <span class="metric-value-styled text-saved" id="dashTotalSaved">0.00 €</span>
+                            <span class="metric-value-styled text-saved" id="dashTotalSaved">— €</span>
                         </div>
                     </div>
 
@@ -3189,9 +3189,9 @@
                 const lkPower = lk ? num(lk.power) : null;
                 const lkSeen = (lk && lk.last_seen) ? String(lk.last_seen).replace('T', ' ').substr(0, 16) : null;
                 if (elPower) elPower.innerText = (hasReal && powerW !== null) ? `${Math.round(powerW)} W`
-                    : (lkPower !== null ? `${Math.round(lkPower)} W` : '0 W');
+                    : (lkPower !== null ? `${Math.round(lkPower)} W` : '— W');
                 if (elSoc) elSoc.innerText = (hasReal && socPct !== null) ? `${Math.round(socPct)}%`
-                    : (lkSoc !== null ? `${Math.round(lkSoc)}%` : '0%');
+                    : (lkSoc !== null ? `${Math.round(lkSoc)}%` : '— %');
                 // Odber zo siete: presne udaje z meteru/bilancie - bez odhadov.
                 // Bez cerstvej telemetrie odber NEVIEME -> '—', nie falošna nula.
                 const consShown = hasReal ? num(data.consumption) : null;
