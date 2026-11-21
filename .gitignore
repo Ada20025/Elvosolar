@@ -50,3 +50,7 @@ Software/App/url_key_now.php
 Software/App/url_key_history.php
 # Cloudflare Turnstile kľúče
 Software/App/turnstile_keys.php
+
+# Lokálne DB údaje pre shared hosting (obsahuje heslo) + upload balík
+Software/App/config.local.php
+Software/App_upload/

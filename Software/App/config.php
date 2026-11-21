@@ -27,8 +27,26 @@ if (!function_exists('elvo_parse_db_url')) {
     }
 }
 
-// 1) Priorita: URL z Railway / všeobecná DATABASE_URL
+// 0) Voliteľný config.local.php — pre shared hosting (WebSupport a pod.), kde sa
+//    premenné prostredia nedajú nastaviť. Súbor nie je v gite, takže aktualizácia
+//    appky ho neprepíše. Formát:
+//    return ['host' => 'localhost', 'port' => '3306', 'name' => 'db', 'user' => 'u', 'pass' => 'p'];
 $db_cfg = null;
+$elvo_local_cfg = __DIR__ . '/config.local.php';
+if (is_file($elvo_local_cfg)) {
+    $elvo_local = @include $elvo_local_cfg;
+    if (is_array($elvo_local) && !empty($elvo_local['host']) && !empty($elvo_local['name'])) {
+        $db_cfg = [
+            'host' => (string)$elvo_local['host'],
+            'port' => (string)($elvo_local['port'] ?? '3306'),
+            'user' => (string)($elvo_local['user'] ?? ''),
+            'pass' => (string)($elvo_local['pass'] ?? ''),
+            'name' => (string)$elvo_local['name'],
+        ];
+    }
+}
+
+// 1) Priorita: URL z Railway / všeobecná DATABASE_URL
 foreach (['MYSQL_URL', 'MYSQL_PRIVATE_URL', 'DATABASE_URL', 'DB_URL'] as $env_key) {
     $parsed = elvo_parse_db_url(getenv($env_key));
     if ($parsed) { $db_cfg = $parsed; break; }
@@ -101,6 +119,14 @@ if ($pdo) {
     } catch (Throwable $e) {
         error_log("[DB] Bootstrap schémy zlyhal: " . $e->getMessage());
     }
+}
+
+// ── Ak sú MySQL údaje nastavené, ale spojenie zlyhalo, NEPREJDEME potichu na
+// SQLite — appka by bežala nad prázdnou lokálnou DB a tvárila sa, že dáta sú OK.
+if (!$pdo && $is_mysql) {
+    http_response_code(500);
+    die('Chyba: nepodarilo sa pripojiť k MySQL (' . DB_HOST . '/' . DB_NAME . '). '
+        . 'Skontroluj údaje v config.local.php alebo premenné prostredia.');
 }
 
 // ── SQLite fallback (lokálny vývoj / výpadok DB) ───────────────────────────
