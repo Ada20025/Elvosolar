@@ -2539,6 +2539,21 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'grid_export_w' => 0,
         'device_battery_pct' => $latest ? (float)$latest['battery_soc'] : 0,
         'has_real_data' => $latest ? true : false,
+        // Posledné známe hodnoty (devices) — dashboard ich ukáže, keď telemetria ešte
+        // neprišla (napr. SmartLogger práve neodpovedá), aby nesvietili falošné nuly.
+        'last_known' => (function() use ($device) {
+            if (!$device) return null;
+            $soc = (float)($device['battery_soc'] ?? 0);
+            $pow = (float)($device['fve_power_w'] ?? 0);
+            $tmp = (float)($device['temp'] ?? 0);
+            if ($soc <= 0 && $pow <= 0 && $tmp <= 0) return null;
+            return [
+                'soc' => $soc,
+                'power' => $pow,
+                'temp' => $tmp,
+                'last_seen' => $device['last_seen'] ?? null,
+            ];
+        })(),
         'history' => $history,
         'manual_override' => $device['manual_override'] ?? 'AUTO',
         'meter_control_mode' => $device['meter_control_mode'] ?? 'SMART',

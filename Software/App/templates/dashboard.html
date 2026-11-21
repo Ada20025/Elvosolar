@@ -2464,11 +2464,11 @@
             const brandName = brandNames[brandId] || data.brand || '';
             const deviceName = data.name || brandName || 'Moje zariadenie';
             const temp = data.temp || 0;
-            const power = data.total_live_power || 0;
-            const soc = data.avg_live_soc || 0;
+            const power = data.total_live_power || (data.last_known && data.last_known.power) || 0;
+            const soc = data.avg_live_soc || (data.last_known && data.last_known.soc) || 0;
             // Zobraz hodnoty vždy, keď CM5 poslal telemetriu (rovnaké čísla hore aj dole).
             // Nula, keď CM5 nič neposlal — žiadne vymyslené čísla navyše.
-            const hasReal = data.has_real_data === true;
+            const hasReal = data.has_real_data === true || !!data.last_known;
             // Pouzi realny status z DB (is_online) alebo fallback na power/soc
             const isOnline = data.is_online === true || (data.is_online === undefined && (power > 0 || soc > 0));
             // Typ zariadenia: SmartLogger alebo Striedač - IBA podla model_name/sub_type z DB
@@ -3183,8 +3183,15 @@
                 const powerW = num(data.total_live_power);
                 const socPct = num(data.avg_live_soc);
                 const savedEur = num(data.total_saved_eur);
-                if (elPower) elPower.innerText = (hasReal && powerW !== null) ? `${Math.round(powerW)} W` : '0 W';
-                if (elSoc) elSoc.innerText = (hasReal && socPct !== null) ? `${Math.round(socPct)}%` : '0%';
+                // Bez telemetrie ukaz posledne zname hodnoty zo zariadenia (nie falošnú nulu)
+                const lk = (!hasReal && data.last_known) ? data.last_known : null;
+                const lkSoc = lk ? num(lk.soc) : null;
+                const lkPower = lk ? num(lk.power) : null;
+                const lkSeen = (lk && lk.last_seen) ? String(lk.last_seen).replace('T', ' ').substr(0, 16) : null;
+                if (elPower) elPower.innerText = (hasReal && powerW !== null) ? `${Math.round(powerW)} W`
+                    : (lkPower !== null ? `${Math.round(lkPower)} W` : '0 W');
+                if (elSoc) elSoc.innerText = (hasReal && socPct !== null) ? `${Math.round(socPct)}%`
+                    : (lkSoc !== null ? `${Math.round(lkSoc)}%` : '0%');
                 // Odber zo siete: presne udaje z meteru/bilancie - bez odhadov
                 if (elCons) {
                     const cons = num(data.consumption);
@@ -3284,7 +3291,8 @@
                 if (typeof applyDeviceStatus === 'function') applyDeviceStatus(data.comm_ok === true);
 
                 const batteryBarEl = document.getElementById('dashBatteryBar');
-                const socShown = (hasReal && socPct !== null) ? Math.max(0, Math.min(100, Math.round(socPct))) : null;
+                const socShown = (hasReal && socPct !== null) ? Math.max(0, Math.min(100, Math.round(socPct)))
+                    : (lkSoc !== null ? Math.max(0, Math.min(100, Math.round(lkSoc))) : null);
                 if (batteryBarEl) batteryBarEl.style.width = (socShown !== null) ? `${socShown}%` : '0%';
                 const batteryCardEl = document.getElementById('batteryCard');
                 if (batteryCardEl) {
@@ -3292,10 +3300,12 @@
                     batteryCardEl.dataset.level = lvl;
                     const cap = document.getElementById('dashBatteryCaption');
                     if (cap) cap.innerText = socShown === null ? 'Bez dát'
-                        : (lvl === 'low' ? 'Nízka kapacita' : (lvl === 'mid' ? 'Stredná kapacita' : 'Dostatočná kapacita'));
+                        : ((hasReal || !lkSeen) ? (lvl === 'low' ? 'Nízka kapacita' : (lvl === 'mid' ? 'Stredná kapacita' : 'Dostatočná kapacita'))
+                                                : 'Posledné známe · ' + lkSeen);
                 }
                 const powerBarEl = document.getElementById('dashPowerBar');
-                if (powerBarEl) powerBarEl.style.width = (hasReal && powerW !== null) ? `${Math.min(100, Math.round(powerW / 60))}%` : '0%';
+                if (powerBarEl) powerBarEl.style.width = ((hasReal && powerW !== null) || lkPower !== null)
+                    ? `${Math.min(100, Math.round(((hasReal && powerW !== null) ? powerW : lkPower) / 60))}%` : '0%';
                 const consBarEl = document.getElementById('dashConsumptionBar');
                 if (consBarEl) consBarEl.style.width = (num(data.consumption) !== null) ? `${Math.min(100, Math.round(Number(data.consumption) / 60))}%` : '0%';
 
