@@ -3192,14 +3192,13 @@
                     : (lkPower !== null ? `${Math.round(lkPower)} W` : '0 W');
                 if (elSoc) elSoc.innerText = (hasReal && socPct !== null) ? `${Math.round(socPct)}%`
                     : (lkSoc !== null ? `${Math.round(lkSoc)}%` : '0%');
-                // Odber zo siete: presne udaje z meteru/bilancie - bez odhadov
-                if (elCons) {
-                    const cons = num(data.consumption);
-                    const hasMeter = data.has_smart_meter === true;
-                    if (cons !== null && (hasMeter || cons > 0)) { elCons.innerText = `${Math.round(cons)} W`; }
-                    else { elCons.innerText = '0 W'; }
-                }
-                if (elSaved) elSaved.innerText = (savedEur !== null && hasReal) ? `${savedEur.toFixed(2)} €` : '0.00 €';
+                // Odber zo siete: presne udaje z meteru/bilancie - bez odhadov.
+                // Bez cerstvej telemetrie odber NEVIEME -> '—', nie falošna nula.
+                const consShown = hasReal ? num(data.consumption) : null;
+                if (elCons) elCons.innerText = (consShown !== null) ? `${Math.round(consShown)} W` : '— W';
+                // Celkova uspora je kumulativna hodnota ulozena v zariadeni (devices) —
+                // nezávisí od telemetrie, tak ju ukaz vzdy, ked ju DB ma.
+                if (elSaved) elSaved.innerText = (savedEur !== null) ? `${savedEur.toFixed(2)} €` : '— €';
 
                 const deviceBatPct = hasReal && num(data.device_battery_pct) !== null ? Math.round(data.device_battery_pct) : null;
 
@@ -3307,7 +3306,7 @@
                 if (powerBarEl) powerBarEl.style.width = ((hasReal && powerW !== null) || lkPower !== null)
                     ? `${Math.min(100, Math.round(((hasReal && powerW !== null) ? powerW : lkPower) / 60))}%` : '0%';
                 const consBarEl = document.getElementById('dashConsumptionBar');
-                if (consBarEl) consBarEl.style.width = (num(data.consumption) !== null) ? `${Math.min(100, Math.round(Number(data.consumption) / 60))}%` : '0%';
+                if (consBarEl) consBarEl.style.width = (consShown !== null) ? `${Math.min(100, Math.round(consShown / 60))}%` : '0%';
 
                 // Grid status (powerSourceStatus removed from UI)
 

@@ -2535,7 +2535,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'temp' => $latest ? (float)$latest['temp'] : 0,
         'inverter_temp' => $latest ? (float)$latest['temp'] : 0,
         'freq' => $latest ? (float)$latest['freq'] : 0,
-        'consumption' => $latest && isset($latest['grid_import_w']) ? (float)$latest['grid_import_w'] : 0,
+        // null = odber zo siete nevieme (ziadna telemetria / stary stlpec) — klient nesmie kreslit falošnu nulu
+        'consumption' => ($latest && isset($latest['grid_import_w'])) ? (float)$latest['grid_import_w'] : null,
         'grid_export_w' => 0,
         'device_battery_pct' => $latest ? (float)$latest['battery_soc'] : 0,
         'has_real_data' => $latest ? true : false,
