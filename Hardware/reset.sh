@@ -4,7 +4,7 @@
 #  Update kódu + zmaže lokálnu DB a __pycache__
 #  Použitie na CM5:  bash ~/reset.sh
 #
-#  Cloudová DB (Railway) ostáva NEDOTKNUTÁ!
+#  Cloudová DB na serveri ostáva NEDOTKNUTÁ!
 #  Po tomto prejdi setup znova káblom.
 # ============================================================
 
@@ -16,7 +16,7 @@ echo ""
 echo "  Zmaže:      ~/Hardware/database.db (lokálne nastavenia)"
 echo "  Zmaže:      všetky __pycache__ a .pyc"
 echo "  Aktualizuje: kód z GitHubu na najnovší"
-echo "  NEZMAŽE:    cloudovú DB na Railway (zariadenia, users, telemetria)"
+echo "  NEZMAŽE:    cloudovú DB na serveri (zariadenia, users, telemetria)"
 echo ""
 read -p "Pokračovať? (y/N): " CONFIRM
 if [ "$CONFIRM" != "y" ]; then echo "Zrušené."; exit 0; fi
@@ -75,7 +75,7 @@ echo "   ✅ ČISTÝ ŠTART DOKONČENÝ"
 echo ""
 echo "   Ďalší krok — setup káblom:"
 echo "   1. USB-C kábel CM5 ↔ PC"
-echo "   2. elvosolar-production.up.railway.app/setup"
+echo "   2. elvocontrol.elvosolar.sk/setup"
 echo "   3. 🔌 Pripojiť cez USB UART → kroky → ODOŠLI"
 echo "   4. Zariadenie sa zaregistruje pod TVOJ účet"
 echo "      (v finálnom kroku uvidíš meno + ID používateľa)"

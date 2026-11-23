@@ -4,7 +4,7 @@
 #  Použitie:  bash ~/clean.sh
 #
 #  POZOR: Zmaže LOKÁLNU database.db na CM5 (nastavenia aj história).
-#  Cloudová DB (Railway) ostáva nedotknutá!
+#  Cloudová DB na serveri ostáva nedotknutá!
 #  Po vyčistení musíš zariadenie znova setupnúť káblom.
 # ============================================================
 
@@ -17,7 +17,7 @@ echo "    ❌ ~/Hardware/database.db       (lokálne nastavenia, história)"
 echo "    ❌ všetky __pycache__ a .pyc    (staré bajtkódy)"
 echo ""
 echo "  Toto NEZMAŽE:"
-echo "    ✅ Cloudovú DB na Railway       (zariadenia, telemetry, users)"
+echo "    ✅ Cloudovú DB na serveri       (zariadenia, telemetry, users)"
 echo "    ✅ Samotný kód                  (ten sa naopak AKTUALIZUJE)"
 echo ""
 read -p "Naozaj pokračovať? (y/N): " CONFIRM
@@ -74,7 +74,7 @@ echo ""
 echo "   CM5 teraz beží s ČISTOU databázou."
 echo "   ➡️  Prejdi setup znova káblom:"
 echo "      1. USB-C kábel: CM5 ↔ PC"
-echo "      2. elvosolar-production.up.railway.app/setup"
+echo "      2. elvocontrol.elvosolar.sk/setup"
 echo "      3. 🔌 Pripojiť cez USB UART → kroky → ODOŠLI"
 echo ""
 echo "   Stará DB je v ~/Hardware/db_old_backup/ (ak potrebuješ niečo získať)"

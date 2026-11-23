@@ -35,7 +35,7 @@ logging.getLogger("LED").addHandler(logging.StreamHandler())
 logging.getLogger("LED").setLevel(logging.INFO)
 from Config import DEVICE_DB, PORT, WEB_PORT
 
-CLOUD_SERVER_URL = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
+CLOUD_SERVER_URL = os.environ.get("CLOUD_SERVER_URL", "https://elvocontrol.elvosolar.sk")
 
 app = FastAPI(
     title="Industrial IoT Core Server (Waveshare CM5)",

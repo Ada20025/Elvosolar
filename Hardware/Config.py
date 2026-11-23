@@ -15,7 +15,7 @@ MODBUS_RTU_DATABITS = 8         # Dátové bity
 MODBUS_RTU_PARITY = 'N'         # Parita: N (None)
 MODBUS_RTU_STOPBITS = 1         # Stop bit: 1
 
-IP_REPORT_URL = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app") + "/api/report-ip"
+IP_REPORT_URL = os.environ.get("CLOUD_SERVER_URL", "https://elvocontrol.elvosolar.sk") + "/api/report-ip"
 COMMON_APNS = ["internet", "o2internet", "to.naklik", "o2.sk"]
 
 DEVICE_DB = {

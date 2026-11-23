@@ -4,7 +4,7 @@ ElvoControll CM5 - Serial Config Service
 Cita JSON config z USB UART konzoly (kedy pouzivatel posiela setup z web stranky cez WebSerial).
 
 Ako to funguje:
-1. Pouzivatel otvori setup na https://elvosolar-production.up.railway.app/setup
+1. Pouzivatel otvori setup na https://elvocontrol.elvosolar.sk/setup
 2. Klikne "🔌 Pripojiť cez USB UART" (Chrome na PC, kabel z PC do CM5)
 3. WebSerial posle JSON config cez USB kabel do CM5 konzoly
 4. Tento service ho precita a ulozi do database.db (rovnako ako /api/admin/claim)
@@ -239,7 +239,7 @@ def register_to_cloud(config):
     """
     import requests
 
-    CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
+    CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvocontrol.elvosolar.sk")
 
     # Serial z lokalnej DB - INAK by sa kazdou registraciou vytvorilo nove zariadenie v cloude
     _serial = get_box_serial()
@@ -649,7 +649,7 @@ def ensure_cloud_registration():
         # Skús registráciu (retry nekonečne kým nie je online)
         attempt = 0
         import requests as _rq
-        CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvosolar-production.up.railway.app")
+        CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvocontrol.elvosolar.sk")
         while True:
             attempt += 1
             if attempt % 3 == 1:  # každé 3 minúty: skontroluj default route konflikt

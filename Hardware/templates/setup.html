@@ -508,7 +508,7 @@
         let activeSerialPort = null;
         let discoveredSlaveIds = [];    
 
-        const isDevelopment = window.location.hostname.endsWith('alwaysdata.net') || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         let localGatewayIP = isDevelopment ? 'http://cm5.local' : '';
 
         async function initWizard() {
@@ -525,8 +525,8 @@
                 loadBrands();
                 selectCableType(2);
 
-                const isAlwaysdata = window.location.hostname.includes('alwaysdata.net');
-                if (!isAlwaysdata && window.location.hostname !== '') {
+                const isCloudHost = window.location.hostname.endsWith('elvosolar.sk');
+                if (!isCloudHost && window.location.hostname !== '') {
                     localGatewayIP = window.location.origin;
                     selectedTransport = 'HTTP';
                     goToSlide(1); 

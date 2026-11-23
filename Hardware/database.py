@@ -198,7 +198,7 @@ def init_db():
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('night_sleep', '1')")
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('installation_type', 'HOME')")
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('allow_grid_export', '0')")
-        cloud_url = os.environ.get('CLOUD_SERVER_URL', 'https://elvosolar-production.up.railway.app') + '/api/cloud/sync-telemetry'
+        cloud_url = os.environ.get('CLOUD_SERVER_URL', 'https://elvocontrol.elvosolar.sk') + '/api/cloud/sync-telemetry'
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('cloud_sync_url', ?)", (cloud_url,))
         
         # Smart Meter konfigurácia
