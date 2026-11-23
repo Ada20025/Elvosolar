@@ -1,14 +1,11 @@
 <?php
-// db_bootstrap.php — automatické vytvorenie všetkých tabuliek
-// Volá sa z config.php po pripojení k MySQL. Idempotentné.
-// Zdroj pravdy je db/schema.sql (rovnaké tabuľky ako používa index.php).
+// db_bootstrap.php - vytvorí chýbajúce tabuľky
+// volá sa z config.php, dá sa spustiť viackrát
 
 if (!function_exists('elvo_db_bootstrap')) {
 
     /**
-     * Vytvorí chýbajúce tabuľky. Vráti true, ak je schéma pripravená.
-     * Výsledok si pamätá 10 minút v dočasnom súbore, aby sa nekontrolovalo
-     * pri každom requeste.
+     * true = schéma je pripravená. Výsledok sa pamätá 10 minút v dočasnom súbore.
      */
     function elvo_db_bootstrap($pdo, $force = false) {
         if (!$pdo) return false;
@@ -19,7 +16,7 @@ if (!function_exists('elvo_db_bootstrap')) {
             return false;
         }
         if ($driver !== 'mysql') {
-            // SQLite fallback má vlastnú minimálnu schému v config.php
+            // SQLite má schému v config.php
             return false;
         }
 
@@ -28,7 +25,7 @@ if (!function_exists('elvo_db_bootstrap')) {
             return true;
         }
 
-        // Rýchla kontrola — ak kľúčové tabuľky existujú, netreba nič robiť
+        // ak tabuľky existujú, netreba nič robiť
         try {
             $hasUsers = $pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn();
             $hasDevices = $pdo->query("SHOW TABLES LIKE 'devices'")->fetchColumn();
@@ -74,10 +71,8 @@ if (!function_exists('elvo_db_bootstrap')) {
     }
 
     /**
-     * Dočasné demo dáta — vložia sa IBA do úplne prázdnej databázy a IBA ak
-     * sa výslovne zapnú premennou SEED_DEMO=1. Predvolene sú VYPNUTÉ, aby sa
-     * do appky nedostal nikto cez demo123.
-     * Účet: demo@elvosolar.sk / demo123 (rola 'user', nie admin).
+     * demo dáta, len do prázdnej DB a len so SEED_DEMO=1
+     * demo@elvosolar.sk / demo123 (rola user)
      */
     function elvo_db_seed_demo($pdo) {
         if (getenv('SEED_DEMO') !== '1') return false;
@@ -85,7 +80,7 @@ if (!function_exists('elvo_db_bootstrap')) {
             if ((int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() > 0) return false;
 
             $hash = password_hash('demo123', PASSWORD_BCRYPT);
-            // Demo účet je bežný používateľ — admin práva má len skutočný admin.
+            // demo je bežný používateľ
             $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'user', 1)")
                 ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $hash]);
             $uid = (int)$pdo->lastInsertId();

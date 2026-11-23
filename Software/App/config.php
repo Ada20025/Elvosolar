@@ -1,15 +1,9 @@
 <?php
-// config.php — ElvoControll
-// Prostredie: Railway (MySQL) / iný MySQL hosting / lokálne (SQLite fallback)
-//
-// Railway MySQL plugin dáva tieto premenné:
-//   MYSQL_DATABASE, MYSQL_PRIVATE_URL, MYSQL_ROOT_PASSWORD
-//   (staršie varianty: MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQLPASSWORD, MYSQL_URL)
-// Preto sa najprv skúša URL (mysql://user:heslo@host:port/db) a až potom
-// jednotlivé premenné. Žiadne heslá nie sú v kóde.
+// config.php - pripojenie k databáze
+// poradie: config.local.php -> DATABASE_URL -> premenné prostredia -> SQLite
 
 if (!function_exists('elvo_parse_db_url')) {
-    /** mysql://user:pass@host:port/dbname -> pole alebo null */
+    /** rozdelí mysql://user:pass@host:port/db na časti */
     function elvo_parse_db_url($url) {
         $url = trim((string)$url);
         if ($url === '') return null;
@@ -27,16 +21,14 @@ if (!function_exists('elvo_parse_db_url')) {
     }
 }
 
-// 0) Voliteľný config.local.php — pre shared hosting (WebSupport a pod.), kde sa
-//    premenné prostredia nedajú nastaviť. Súbor nie je v gite, takže aktualizácia
-//    appky ho neprepíše. Formát:
+// 0) config.local.php - údaje pre hosting, nie je v gite. Formát:
 //    return ['host' => 'localhost', 'port' => '3306', 'name' => 'db', 'user' => 'u', 'pass' => 'p'];
 $db_cfg = null;
 $elvo_local_cfg = __DIR__ . '/config.local.php';
 if (is_file($elvo_local_cfg)) {
     $elvo_local = @include $elvo_local_cfg;
     if (is_array($elvo_local)) {
-        // Placeholdery z pripravenej šablóny — jasná hláška namiesto "nepodarilo sa pripojiť"
+        // placeholdery zo šablóny = jasná hláška
         foreach (['name', 'user', 'pass'] as $elvo_k) {
             if (strpos((string)($elvo_local[$elvo_k] ?? ''), 'SEM_') === 0) {
                 http_response_code(500);
@@ -56,13 +48,13 @@ if (is_file($elvo_local_cfg)) {
     }
 }
 
-// 1) Priorita: URL z Railway / všeobecná DATABASE_URL
+// 1) adresa v jednej premennej
 foreach (['MYSQL_URL', 'MYSQL_PRIVATE_URL', 'DATABASE_URL', 'DB_URL'] as $env_key) {
     $parsed = elvo_parse_db_url(getenv($env_key));
     if ($parsed) { $db_cfg = $parsed; break; }
 }
 
-// 2) Fallback: jednotlivé premenné
+// 2) samostatné premenné
 if (!$db_cfg) {
     $host = getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: '';
     $name = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: '';
@@ -77,7 +69,7 @@ if (!$db_cfg) {
     }
 }
 
-// 3) Ak je známa len DB + root heslo (Railway), doplň používateľa/heslo
+// 3) doplnenie používateľa a hesla
 if ($db_cfg && $db_cfg['pass'] === '') {
     $db_cfg['pass'] = getenv('MYSQL_ROOT_PASSWORD') ?: '';
 }
@@ -103,11 +95,9 @@ if ($is_mysql) {
 
 $pdo = null;
 
-// ── MySQL pripojenie ────────────────────────────────────────────────────────
+// ── Pripojenie k MySQL ──────────────────────────────────────────────────────
 if ($is_mysql) {
-    // Na zdieľanom hostingu (WebSupport) je ten istý MySQL server dostupný aj cez
-    // `localhost`. Skúsime najprv nakonfigurovaný host a potom localhost —
-    // vďaka tomu appka funguje aj vtedy, keď je vzdialený názov z PHP blokovaný.
+    // skúsime host z configu, potom localhost (WebSupport)
     $db_tries = [[DB_HOST, DB_PORT]];
     if (DB_HOST !== 'localhost' && DB_HOST !== '127.0.0.1') {
         $db_tries[] = ['localhost', DB_PORT];
@@ -136,7 +126,7 @@ if ($is_mysql) {
     $db_err = $db_errors ? implode(' | ', $db_errors) : null;
 }
 
-// ── Automatické vytvorenie tabuliek (Railway štart s prázdnou DB) ──────────
+// ── vytvorenie tabuliek ─────────────────────────────────────────────────────
 if ($pdo) {
     try {
         require_once __DIR__ . '/db_bootstrap.php';
@@ -148,12 +138,10 @@ if ($pdo) {
     }
 }
 
-// ── Ak sú MySQL údaje nastavené, ale spojenie zlyhalo, NEPREJDEME potichu na
-// SQLite — appka by bežala nad prázdnou lokálnou DB a tvárila sa, že dáta sú OK.
+// ── MySQL zlyhalo → neprechádzame potichu na SQLite ────────────────────────
 if (!$pdo && $is_mysql) {
     http_response_code(500);
-    // Konkrétnu príčinu ukážeme aj na stránke — bez nej sa nedá rozlíšiť zlé
-    // heslo od chýbajúceho ovládača pdo_mysql alebo blokovaného portu.
+    // dôvod chyby ukážeme aj na stránke
     $db_hint = match (true) {
         str_contains((string)($db_err ?? ''), 'Access denied') => 'nesprávne heslo alebo používateľ bez práv k tejto databáze',
         str_contains((string)($db_err ?? ''), 'Unknown database') => 'databáza s týmto názvom neexistuje',
@@ -167,7 +155,7 @@ if (!$pdo && $is_mysql) {
         . 'Technická chyba: ' . (string)($db_err ?? 'neznáma'));
 }
 
-// ── SQLite fallback (lokálny vývoj / výpadok DB) ───────────────────────────
+// ── SQLite záloha (lokálny vývoj) ───────────────────────────────────────────
 if (!$pdo) {
     try {
         $sqlite_path = __DIR__ . '/local_app.db';
@@ -226,12 +214,10 @@ if (!$pdo) {
             );
         ");
 
-        // Seed predvoleného admin používateľa — len lokálny SQLite fallback.
-        // Heslo sa berie z ADMIN_PASS (v Railway si ho nastav!), inak admin123.
-        // Vypnutie: SEED_DEMO=0.
+        // predvolený admin len pre SQLite (heslo z ADMIN_PASS)
         $admPass = (string)(getenv('ADMIN_PASS') ?: '');
         if ($admPass === '') {
-            // Ziadne zname default heslo — nahodne, zapisane iba do serveroveho logu
+            // náhodné heslo, zapíše sa do logu
             $admPass = bin2hex(random_bytes(12));
             error_log('[DB] SEED admin heslo (nastav ADMIN_PASS): ' . $admPass);
         }
@@ -249,14 +235,14 @@ if (!$pdo) {
     }
 }
 
-// Jasná chyba namiesto bielej obrazovky, ak DB nie je dostupná
+// DB nedostupná = jasná chyba
 if (!$pdo) {
     http_response_code(500);
-    die('Chyba: databáza nie je dostupná. V Railway skontroluj premenné '
-        . 'MYSQL_PRIVATE_URL (alebo MYSQLHOST + MYSQL_DATABASE) v záložke Variables.');
+    die('Chyba: databáza nie je dostupná. Skontroluj údaje v config.local.php '
+        . '(alebo premenné DATABASE_URL / MYSQLHOST + MYSQL_DATABASE v prostredí servera).');
 }
 
-// cm5_config tabuľka (permissívna schéma — rovnaká ako v db/schema.sql)
+// tabuľka cm5_config
 if ($pdo && file_exists(__DIR__ . '/cm5_config_table.php')) {
     try {
         require_once __DIR__ . '/cm5_config_table.php';

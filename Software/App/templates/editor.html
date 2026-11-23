@@ -1,0 +1,158 @@
+<?php
+    $vBase = htmlspecialchars($base_path ?? '');
+    $devs = $devices ?? [];
+    $reqs = $requests ?? [];
+    $okCount = 0;
+    $badCount = 0;
+    $pendingCount = 0;
+    foreach ($devs as $dRow) {
+        $dStatus = strtolower((string)($dRow['status'] ?? 'offline'));
+        if (in_array($dStatus, ['normal', 'ok', 'online'], true)) $okCount++; else $badCount++;
+        $rq = $reqs[(int)($dRow['id'] ?? 0)] ?? null;
+        if ($rq && ($rq['status'] ?? '') === 'pending') $pendingCount++;
+    }
+?>
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor | ElvoControll</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo1.png">
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #050b18; color: #e2e8f0; min-height: 100vh; }
+        a { text-decoration: none; }
+        .nav { height: 56px; background: #000c20; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 50; }
+        .nav-left { display: flex; align-items: center; gap: 14px; }
+        .nav img { height: 27px; }
+        .nav h1 { font-size: 13px; font-weight: 800; color: #e2e8f0; }
+        .nav-links { display: flex; align-items: center; gap: 18px; }
+        .nav-links a { color: #94a3b8; font-size: 12px; font-weight: 700; }
+        .nav-links a:hover { color: #38bdf8; }
+        .nav-links a.green { color: #34d399; }
+        .nav-links a.logout { color: #ef4444; }
+        main { max-width: 1300px; margin: 0 auto; padding: 22px 22px 60px; }
+        .banner { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.35); color: #fcd34d; border-radius: 12px; padding: 11px 16px; font-size: 12px; font-weight: 700; display: flex; gap: 9px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .kpi { background: #0b1226; border: 1px solid #1e293b; border-radius: 14px; padding: 16px; }
+        .kpi .label { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #64748b; }
+        .kpi .val { font-size: 26px; font-weight: 900; font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+        .kpi.ok .val { color: #34d399; }
+        .kpi.bad .val { color: #f87171; }
+        .kpi.wait .val { color: #fbbf24; }
+        .card { background: #0b1226; border: 1px solid #1e293b; border-radius: 16px; padding: 18px; }
+        .card h2 { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 14px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .8px; color: #64748b; padding: 9px 10px; border-bottom: 1px solid #1e293b; }
+        td { padding: 11px 10px; font-size: 12px; border-bottom: 1px solid #0f1b31; color: #cbd5e1; vertical-align: middle; }
+        td.name { font-weight: 800; color: #f1f5f9; }
+        td.mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94a3b8; }
+        .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; }
+        .pill.ok { background: rgba(16,185,129,.12); color: #34d399; border: 1px solid rgba(16,185,129,.35); }
+        .pill.bad { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.35); }
+        .pill.wait { background: rgba(245,158,11,.12); color: #fbbf24; border: 1px solid rgba(245,158,11,.35); }
+        .pill.grant { background: rgba(56,189,248,.12); color: #38bdf8; border: 1px solid rgba(56,189,248,.35); }
+        .btn { display: inline-block; border: 0; border-radius: 8px; padding: 7px 13px; font-size: 10px; font-weight: 900; letter-spacing: .4px; cursor: pointer; text-transform: uppercase; }
+        .btn.ask { background: #0891b2; color: #fff; }
+        .btn.open { background: #059669; color: #fff; }
+        .muted { color: #64748b; font-size: 11px; font-weight: 600; }
+        .flash { border-radius: 10px; padding: 10px 14px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+        .flash.success { background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.35); color: #6ee7b7; }
+        .flash.error { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: #fca5a5; }
+        .flash.info { background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.35); color: #7dd3fc; }
+    </style>
+</head>
+<body>
+
+<header class="nav">
+    <div class="nav-left">
+        <a href="<?php echo $vBase; ?>/"><img src="/templates/ElvosolarLogo1.png" alt="ElvoControll"></a>
+        <h1>✏️ Editor — prehľad zariadení</h1>
+    </div>
+    <div class="nav-links">
+        <a href="<?php echo $vBase; ?>/setup" class="green">+ Pridať zariadenie</a>
+        <a href="<?php echo $vBase; ?>/profile">Profil</a>
+        <a href="<?php echo $vBase; ?>/logout" class="logout">Odhlásiť</a>
+    </div>
+</header>
+
+<main>
+    <?php foreach (($flash ?? []) as $f): ?>
+        <div class="flash <?php echo htmlspecialchars($f['category'] ?? 'info'); ?>"><?php echo htmlspecialchars($f['message'] ?? ''); ?></div>
+    <?php endforeach; ?>
+
+    <div class="banner">
+        <span>⚠️</span>
+        <span>Režim Editor — nič nemôžeš upraviť. Vidíš len stav zariadení. Na zásah potrebuješ povolenie od manažéra.</span>
+    </div>
+
+    <div class="kpis">
+        <div class="kpi"><div class="label">Zariadenia spolu</div><div class="val" style="color:#e2e8f0;"><?php echo count($devs); ?></div></div>
+        <div class="kpi ok"><div class="label">V poriadku</div><div class="val"><?php echo $okCount; ?></div></div>
+        <div class="kpi bad"><div class="label">Pokazené</div><div class="val"><?php echo $badCount; ?></div></div>
+        <div class="kpi wait"><div class="label">Čaká na povolenie</div><div class="val"><?php echo $pendingCount; ?></div></div>
+    </div>
+
+    <div class="card">
+        <h2>Stav zariadení (bez možnosti úprav)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Zariadenie</th>
+                    <th>Sériové číslo</th>
+                    <th>Stav</th>
+                    <th>Hlásenie</th>
+                    <th>Povolenie</th>
+                    <th style="text-align:right;">Akcia</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (empty($devs)): ?>
+                <tr><td colspan="6" class="muted">Zatiaľ žiadne zariadenia. Pridaj prvé cez „Pridať zariadenie“.</td></tr>
+            <?php else: foreach ($devs as $d):
+                $dId = (int)($d['id'] ?? 0);
+                $dStatus = strtolower((string)($d['status'] ?? 'offline'));
+                $dOk = in_array($dStatus, ['normal', 'ok', 'online'], true);
+                $dErr = (string)($d['error_code'] ?? ($d['last_error'] ?? ($dOk ? 'Bez chýb' : 'Zariadenie neodpovedá')));
+                $rq = $reqs[$dId] ?? null;
+                $granted = $rq && ($rq['status'] ?? '') === 'approved' && !empty($rq['granted_until']) && strtotime((string)$rq['granted_until']) > time();
+                $pending = $rq && ($rq['status'] ?? '') === 'pending';
+            ?>
+                <tr>
+                    <td class="name"><?php echo htmlspecialchars((string)($d['name'] ?? ('Zariadenie #' . $dId))); ?></td>
+                    <td class="mono"><?php echo htmlspecialchars((string)($d['serial_number'] ?? '—')); ?></td>
+                    <td><span class="pill <?php echo $dOk ? 'ok' : 'bad'; ?>"><?php echo $dOk ? 'V poriadku' : 'Pokazené'; ?></span></td>
+                    <td style="font-size:11px;"><?php echo htmlspecialchars($dErr); ?></td>
+                    <td>
+                        <?php if ($granted): ?>
+                            <span class="pill grant">Povolené do <?php echo date('d.m. H:i', strtotime((string)$rq['granted_until'])); ?></span>
+                        <?php elseif ($pending): ?>
+                            <span class="pill wait">Čaká na manažéra</span>
+                        <?php else: ?>
+                            <span class="muted">Bez povolenia</span>
+                        <?php endif; ?>
+                    </td>
+                    <td style="text-align:right;">
+                        <?php if ($granted): ?>
+                            <a class="btn open" href="<?php echo $vBase; ?>/admin_device.html?id=<?php echo $dId; ?>">Otvoriť</a>
+                        <?php elseif ($pending): ?>
+                            <span class="muted">Čaká sa</span>
+                        <?php else: ?>
+                            <form method="post" action="<?php echo $vBase; ?>/editor/request" style="display:inline;margin:0;">
+                                <input type="hidden" name="device_id" value="<?php echo $dId; ?>">
+                                <button type="submit" class="btn ask">Požiadať o povolenie</button>
+                            </form>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; endif; ?>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+</body>
+</html>

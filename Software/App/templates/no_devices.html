@@ -50,6 +50,13 @@
                 <span class="font-bold">ℹ️ Zariadenie priraďuje správca:</span> požiadajte administrátora, aby k vášmu účtu priradil zariadenie. Keď ho priradí, dashboard sa odomkne sám po obnovení stránky.
             </div>
 
+            <?php if (!empty($is_demo)): ?>
+            <!-- DEMO: prepnutie medzi obrazovkami -->
+            <a href="/dashboard" class="block w-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-bold text-xs py-3.5 rounded-xl transition border border-cyan-500/30 uppercase tracking-wider">
+                ⚡ Prepnúť na dashboard (demo)
+            </a>
+            <?php endif; ?>
+
             <!-- Odhlásiť sa -->
             <a href="/logout" class="block w-full bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs py-3.5 rounded-xl transition border border-slate-700 uppercase tracking-wider">
                 🚪 Odhlásiť sa

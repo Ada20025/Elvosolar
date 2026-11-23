@@ -1,5 +1,5 @@
 <?php
-// okte_api.php
+// okte_api.php - ceny OKTE pre daný deň (JSON)
 error_reporting(0);
 ini_set('display_errors', 0);
 
@@ -8,7 +8,7 @@ header('Access-Control-Allow-Origin: *');
 
 date_default_timezone_set('Europe/Bratislava');
 
-// Získanie dátumu (predvolený je dnešný deň)
+// Dátum z URL (bez neho berieme dnešok)
 $today = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 if (!preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $today)) {
     $today = date('Y-m-d');
@@ -16,7 +16,7 @@ if (!preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $today)) {
 
 $cacheFile = __DIR__ . '/cache_okte_' . $today . '.json';
 
-// 1. Kontrola, či existuje lokálna disková vyrovnávacia pamäť pre vybraný deň
+// 1. Ak máme deň uložený v cache, pošleme ho hneď
 if (file_exists($cacheFile)) {
     $cacheData = file_get_contents($cacheFile);
     if ($cacheData) {
@@ -25,7 +25,7 @@ if (file_exists($cacheFile)) {
     }
 }
 
-// 2. Ak cache neexistuje, stiahneme reálne dáta zo servera OKTE
+// 2. Keď cache nie je, stiahneme reálne dáta z OKTE
 function fetchOkteDay($day) {
     $url = "https://isot.okte.sk/api/v1/dam/results?deliveryDayFrom=" . $day . "&deliveryDayTo=" . $day;
     $userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';

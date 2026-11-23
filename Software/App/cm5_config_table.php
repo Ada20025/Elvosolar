@@ -1,9 +1,7 @@
 <?php
 /**
- * Pridá cm5_config tabuľku ak neexistuje.
- * Volá sa z config.php po vytvorení PDO spojenia.
- * Schéma musí byť permissívna — index.php do nej zapisuje rôzne stĺpce
- * (admin_command, modbus_slave_id), takže nič nesmie byť NOT NULL bez defaultu.
+ * pridá tabuľku cm5_config, keď neexistuje (volá sa z config.php)
+ * nič nesmie byť NOT NULL bez defaultu
  */
 function ensure_cm5_config_table($pdo) {
     try {

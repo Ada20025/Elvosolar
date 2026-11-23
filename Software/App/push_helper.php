@@ -1,13 +1,12 @@
 <?php
-// push_helper.php — Web Push (VAPID + aes128gcm) bez externych kniznic (pure PHP + OpenSSL)
-// VAPID par sa vygeneruje raz a ulozi v tabulke push_keys.
-// Subscriptions sa ukladaju v tabulke push_subs (user_id + endpoint + JSON).
+// push_helper.php - Web Push notifikácie (VAPID, čisté PHP + OpenSSL)
+// kľúč je v push_keys, odbery v push_subs
 
 if (!function_exists('elvo_push_b64url_enc')) {
     function elvo_push_b64url_enc($bin) { return rtrim(strtr(base64_encode($bin), '+/', '-_'), '='); }
     function elvo_push_b64url_dec($str) { $pad = strlen($str) % 4; if ($pad) $str .= str_repeat('=', 4 - $pad); return base64_decode(strtr($str, '-_', '+/')); }
 
-    // Vrati ['pub'=>b64url, 'priv'=>PEM] — pri prvom pouziti vygeneruje
+    // vráti VAPID kľúč, pri prvom použití ho vygeneruje
     function elvo_push_keys($pdo) {
         try {
             $pdo->exec("CREATE TABLE IF NOT EXISTS push_keys (id TINYINT PRIMARY KEY, pub TEXT, priv TEXT)");
@@ -72,8 +71,7 @@ if (!function_exists('elvo_push_b64url_enc')) {
         }
     }
 
-    // Posle push VSETKYM zariadeniam usera. Vracia pocet uspesnych odoslani.
-    // Ak $details je pole (referencia), doplni pre kazde zariadenie: device + result (pre diagnostiku).
+    // pošle push na všetky zariadenia používateľa, vráti počet úspešných
     function elvo_push_user($pdo, $user_id, $title, $body, $tag, $url, &$details = null) {
         try {
             $stmt = $pdo->prepare("SELECT sub_json, ua FROM push_subs WHERE user_id = ?");
@@ -101,7 +99,7 @@ if (!function_exists('elvo_push_b64url_enc')) {
         } catch (Exception $e) { error_log('[WEBPUSH] user: ' . $e->getMessage()); return 0; }
     }
 
-    // Posle push notifikaciu. true = OK, 'expired' = subscription mrtva (vymazat), false = ina chyba
+    // pošle jednu push; true = OK, 'expired' = mŕtvy odber, false = chyba
     function elvo_push_send($pdo, $sub, $title, $body, $tag, $url) {
         try {
             $keys = elvo_push_keys($pdo);
@@ -126,16 +124,13 @@ if (!function_exists('elvo_push_b64url_enc')) {
             if ($shared === false) { try { $shared = openssl_pkey_derive($eph, $uaKey, 32); } catch (Throwable $t2) { $shared = false; } }
             if ($shared === false) return false;
 
-            // RFC 8291 (aes128gcm) — OVERENE NEZAVISLOU SIMULACIOU (desifrovanie ako v prehliadaci):
-            // IKM  = HKDF(salt=auth_secret, IKM=ecdh_secret, info="WebPush: info\0"||ua_pub||as_pub, 32)
-            // CEK  = HKDF(salt=random, IKM=ikm, "Content-Encoding: aes128gcm\0", 16)
-            // NONCE= HKDF(salt=random, IKM=ikm, "Content-Encoding: nonce\0", 12)
+            // RFC 8291 (aes128gcm): kľúče z HKDF
             $info = "WebPush: info\x00" . $uaPub . $asPub;
             $ikm = hash_hkdf('sha256', $shared, 32, $info, $authSec);
             $cek = hash_hkdf('sha256', $ikm, 16, "Content-Encoding: aes128gcm\x00", $salt);
             $nonce = hash_hkdf('sha256', $ikm, 12, "Content-Encoding: nonce\x00", $salt);
 
-            // RFC 8291 (aes128gcm): padding delimiter je IBA 0x02 na konci (potvrdené RFC Appendix A vektorom)
+            // RFC 8291: na konci je 0x02
             $plaintext = json_encode(['title' => $title, 'body' => $body, 'tag' => $tag, 'url' => $url]) . "\x02";
             $tagBin = '';
             $ct = openssl_encrypt($plaintext, 'aes-128-gcm', $cek, OPENSSL_RAW_DATA, $nonce, $tagBin);
@@ -161,9 +156,7 @@ if (!function_exists('elvo_push_b64url_enc')) {
                 }
             }
             if ($code >= 200 && $code < 300) return true;
-            // 404/410 = mŕtva subscription; 400/401/403 = neplatná VAPID autorizácia
-            // (typicky po obnove DB, keď sa vygeneroval nový kľúčový pár). V oboch
-            // prípadoch subscription zmažeme — appka si pri ďalšom otvorení vytvorí novú.
+            // 404/410 alebo 400/401/403 = odber zmažeme, appka si spraví nový
             if (in_array($code, [400, 401, 403, 404, 410], true)) {
                 error_log('[WEBPUSH] HTTP ' . $code . ' (subscription sa obnoví pri ďalšom otvorení appky): ' . substr((string)$resp, 0, 200));
                 return 'expired';

@@ -77,7 +77,7 @@ return [
 ];
 ```
 
-Ovládanie: prihlásený admin/mechanik → **`/mqtt`** (tlačidlá Zapnúť/Vypnúť/AUTO,
+Ovládanie: prihlásený admin/manažér → **`/mqtt`** (tlačidlá Zapnúť/Vypnúť/AUTO,
 zelená/červená/sivá ikona, auto-refresh 5 s).
 
 Vrstvená bezpečnosť webu: prístupová brána + session, CSRF token, whitelist

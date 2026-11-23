@@ -1,19 +1,18 @@
 <?php
 ob_start();
-// Chyby sa v produkcii NIKDY nezobrazujú používateľovi (obsahujú cesty, SQL, názvy tabuliek).
-// Zapnúť sa dajú len premennou APP_DEBUG=1 v Railway.
+// chyby sa zobrazia len s APP_DEBUG=1
 $elvo_debug = (getenv('APP_DEBUG') === '1');
 ini_set('display_errors', $elvo_debug ? '1' : '0');
 ini_set('display_startup_errors', $elvo_debug ? '1' : '0');
 ini_set('log_errors', '1');
 error_reporting(E_ALL);
 
-// HTTPS detekcia — na Railway je TLS ukončený na proxy, takže $_SERVER['HTTPS'] je prázdne
+// zistenie HTTPS (za proxy býva $_SERVER['HTTPS'] prázdne)
 $elvo_https = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
     || (strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https')
     || ((string)($_SERVER['SERVER_PORT'] ?? '') === '443');
 
-// RYCHLOST: gzip kompresia - dashboard HTML 219 kB -> ~30 kB (menej prenosu = rychlejsie nacitanie)
+// gzip, aby sa dashboard načítal rýchlejšie
 if (!empty($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false
     && !in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['POST', 'PUT', 'DELETE'])) {
     ini_set('zlib.output_compression', '1');
@@ -26,10 +25,10 @@ ini_set('session.gc_maxlifetime', 31536000); // 1 rok — appka sa nikdy neodhl�
 session_set_cookie_params(['lifetime' => 31536000, 'path' => '/', 'secure' => $elvo_https, 'httponly' => true, 'samesite' => 'Lax']);
 session_start();
 require_once 'config.php';
-// MQTT most (Ruka -> Mozog): klient, CSRF, audit, rate limit
+// MQTT most (web -> stroj): klient, CSRF, audit a limit pokusov.
 require_once __DIR__ . '/mqtt_lib.php';
 
-// === SECURITY HEADERS ===
+// === BEZPEČNOSTNÉ HLAVIČKY ===
 header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
@@ -37,7 +36,7 @@ header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
 header('X-Permitted-Cross-Domain-Policies: none');
 header('Cross-Origin-Opener-Policy: same-origin');
 if ($elvo_https) header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
-// HTML stranky nikdy necachovat (vzdy cerstvy dashboard)
+// HTML stránky nedávame do cache — dashboard má byť vždy aktuálny.
 if (!preg_match('#\.(png|jpg|svg|ico|css|js|json|woff2?)$#', $request_uri ?? '')) {
     header('Cache-Control: no-cache, no-store, must-revalidate');
     header('Pragma: no-cache');
@@ -45,18 +44,15 @@ if (!preg_match('#\.(png|jpg|svg|ico|css|js|json|woff2?)$#', $request_uri ?? '')
 }
 
 // ============================================================
-// === PRÍSTUPOVÁ BRÁNA — bez špeciálneho prístupu sa nikto nedostane ani na login ===
-// Prístupové údaje: Railway premenné ACCESS_GATE_USER / ACCESS_GATE_PASS (prevažujú),
-// inak tabuľka access_gate (predvolené: admin / ELVO-ACCESS-2026).
-// Kto raz správne zadal → cookie na 1 ROK → už sa nikdy nepýta.
-// Už prihlásení používatelia (nainštalovaná PWA) prechádzajú automaticky.
-// CM5 strojové endpointy bežia vždy (nemajú prehliadač).
+// === PRÍSTUPOVÁ BRÁNA ===
+// údaje: ACCESS_GATE_USER/PASS alebo tabuľka access_gate
+// správne údaje = cookie na rok, CM5 endpointy idú vždy
 // ============================================================
 if (!function_exists('elvo_gate_creds')) {
     function elvo_gate_creds($pdo) {
         $u = getenv('ACCESS_GATE_USER'); $p = getenv('ACCESS_GATE_PASS');
         if ($u && $p) return ['user' => (string)$u, 'pass' => (string)$p, 'env' => true];
-        // DB môže byť nedostupná (výpadok MySQL, chýbajúci ovládač) — NIKDY nesmieme spadnúť na bielu obrazovku.
+        // keď DB nejde, nesmieme spadnúť na bielu obrazovku
         if (!($pdo instanceof PDO)) {
             return ['user' => 'admin', 'hash' => password_hash('ELVO-ACCESS-2026', PASSWORD_DEFAULT), 'env' => false];
         }
@@ -83,7 +79,7 @@ if (!function_exists('elvo_gate_creds')) {
             'secure' => !empty($GLOBALS['elvo_https']), 'httponly' => true, 'samesite' => 'Lax'
         ]);
     }
-    // Over prístup: buď prístupové údaje správcu, ALEBO prihlasovacie údaje skutočného účtu (e-mail + heslo)
+    // buď údaje správcu, alebo e-mail a heslo účtu
     function elvo_gate_verify($pdo, $creds, $gu, $gp) {
         if ($gu === '' || $gp === '') return false;
         // 1) Prístupové údaje správcu
@@ -91,7 +87,7 @@ if (!function_exists('elvo_gate_creds')) {
             && (($creds['env'] ?? false) ? hash_equals($creds['pass'], $gp) : password_verify($gp, $creds['hash']))) {
             return true;
         }
-        // 2) Reálny účet (e-mail + heslo k účtu) — pre nainštalovanú appku / owners
+        // 2) účet appky (e-mail + heslo)
         $emailNorm = strtolower(trim($gu));
         if (strpos($emailNorm, '@') !== false && ($pdo instanceof PDO)) {
             try {
@@ -105,7 +101,7 @@ if (!function_exists('elvo_gate_creds')) {
     }
     function elvo_gate_page($msg, $next) {
         $bp = $GLOBALS['base_path'] ?? '';
-        // Cloudflare Turnstile — test proti robotom. Kým nie sú kľúče, widget sa nezobrazí.
+        // Turnstile proti robotom (bez kľúčov sa preskočí)
         $elvo_ts_keys = elvo_turnstile_keys();
         $elvo_ts_on = ($elvo_ts_keys['site'] !== '' && $elvo_ts_keys['secret'] !== '');
         $elvo_ts_site = $elvo_ts_keys['site'];
@@ -136,14 +132,14 @@ if (!function_exists('elvo_gate_creds')) {
             . '<div class="note">Prístupový kód vám poskytne správca — alebo použite prihlasovacie údaje svojho účtu.<br>Po overení ťa systém pošle na stránku, kde si appku stiahneš.</div>'
             . '</div>'
             . '<script>'
-            // Registruj SW — bez neho prehliadač nevytiahne beforeinstallprompt
+            // registrácia service workera
             . 'if ("serviceWorker" in navigator) { navigator.serviceWorker.register("' . htmlspecialchars($bp) . '/sw.js").catch(function(){}); }'
             . '</script>'
             . ($elvo_ts_on ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : '')
             . '</body></html>';
     }
 }
-// Úplne prázdna stránka (404) — root/login bez tajného URL kľúča neukazujú nič.
+// bez tajného kľúča prázdna 404
 function elvo_blank_page() {
     while (ob_get_level() > 0) { @ob_end_clean(); }
     header('Content-Type: text/html; charset=utf-8');
@@ -158,14 +154,11 @@ function elvo_blank_page() {
 // ============================================================
 // === ROLE ÚČTU
 // ============================================================
-// Majiteľ (a ktokolvek ďalší) sa dá povýšiť na admina aj cez premennú
-// ADMIN_EMAILS="mail1@x.sk,mail2@x.sk" — platí hneď pri prihlásení,
-// takže existujúci účet v DB sa nemusí prepisovať ručne v SQL.
+// admin sa dá nastaviť aj cez ADMIN_EMAILS (platí hneď pri prihlásení)
 if (!function_exists('elvo_promote_admin_if_listed')) {
     /**
-     * Ktoré e-maily sú admini. Predvolene LEN admin@elvosolar.sk — žiadny iný
-     * účet (napr. súkromný gmail) sa adminom nestane sám od seba.
-     * Ďalších adminov pridávej cez premennú ADMIN_EMAILS (čiarkou oddelené).
+     * ktoré e-maily sú admini
+     * predvolene len admin@elvosolar.sk, ďalšie cez ADMIN_EMAILS
      */
     function elvo_admin_emails() {
         $raw = trim((string)(getenv('ADMIN_EMAILS') ?: ''));
@@ -188,10 +181,7 @@ if (!function_exists('elvo_promote_admin_if_listed')) {
         }
         return $user;
     }
-    // Ak v databáze NEEXISTUJE žiadny admin, adminom sa stane LEN účet z
-    // ADMIN_EMAILS (predvolene admin@elvosolar.sk). Náhodný účet, ktorý sa
-    // prihlási, sa adminom NIKDY nestane — inak sa admin práva dostanú
-    // komukoľvek so súkromným e-mailom.
+    // keď v DB nie je admin, adminom sa stane len účet z ADMIN_EMAILS
     function elvo_ensure_some_admin($pdo, $user) {
         if (!is_array($user) || empty($user['id'])) return $user;
         if (($user['role'] ?? '') === 'admin') return $user;
@@ -208,9 +198,186 @@ if (!function_exists('elvo_promote_admin_if_listed')) {
     }
 }
 
+// === ROLE: admin / manažér / editor ===
+if (!function_exists('elvo_role_manages')) {
+    // kto smie spravovať zariadenia (manažér smie všetko okrem admin kódu)
+    function elvo_role_manages($role) {
+        return in_array((string)$role, ['admin', 'manazer'], true);
+    }
+    function elvo_role_label($role) {
+        $map = ['admin' => 'Admin', 'manazer' => 'Manažér', 'editor' => 'Editor', 'user' => 'Používateľ', 'blocked' => 'Zablokovaný'];
+        return $map[(string)$role] ?? (string)$role;
+    }
+}
+
+// === NÁVŠTEVNOSŤ APPKY ===
+if (!function_exists('elvo_track_pageview')) {
+    // zapíše zobrazenie stránky prihláseného používateľa
+    function elvo_track_pageview($pdo, $path) {
+        if (!($pdo instanceof PDO) || empty($_SESSION['user_id'])) return;
+        static $done = false;
+        if ($done) return;
+        $done = true;
+        try {
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        } catch (Throwable $e) {
+            return;
+        }
+        $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? '-');
+        $visitor = hash_hmac('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? '-') . '|' . $ua, elvo_url_key_seed());
+        $ins = function () use ($pdo, $path, $visitor) {
+            $pdo->prepare("INSERT INTO page_views (path, user_id, visitor_hash, created_at) VALUES (?, ?, ?, ?)")
+                ->execute([substr((string)$path, 0, 190), (int)$_SESSION['user_id'], $visitor, date('Y-m-d H:i:s')]);
+        };
+        try {
+            $ins();
+            return;
+        } catch (Throwable $e) { /* tabuľka ešte neexistuje → vytvoríme */ }
+        try {
+            if ($driver === 'sqlite') {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS page_views (id INTEGER PRIMARY KEY AUTOINCREMENT, path VARCHAR(190) NOT NULL, user_id INT NULL, visitor_hash VARCHAR(64) NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            } else {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS page_views (id INT AUTO_INCREMENT PRIMARY KEY, path VARCHAR(190) NOT NULL, user_id INT NULL, visitor_hash VARCHAR(64) NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, INDEX idx_pv_time (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            }
+            $ins();
+        } catch (Throwable $e) { /* návštevnosť nie je kritická */ }
+    }
+
+    // štatistika návštevnosti za posledných 30 dní (denný výrez podľa $days)
+    function elvo_visit_stats($pdo, $days = 14) {
+        $days = max(1, min(30, (int)$days));
+        $out = ['days' => $days, 'daily' => [], 'hourly' => array_fill(0, 24, 0),
+                'today' => 0, 'yesterday' => 0, 'week' => 0, 'month' => 0,
+                'unique' => 0, 'total' => 0, 'top' => []];
+        $labels = [];
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $labels[date('Y-m-d', strtotime('-' . $i . ' days'))] = 0;
+        }
+        $from = date('Y-m-d 00:00:00', strtotime('-29 days'));
+        $rows = [];
+        try {
+            $st = $pdo->prepare("SELECT path, visitor_hash, created_at FROM page_views WHERE created_at >= ?");
+            $st->execute([$from]);
+            $rows = $st->fetchAll();
+        } catch (Throwable $e) { /* tabuľka ešte neexistuje */ }
+        $today = date('Y-m-d');
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $weekFrom = date('Y-m-d 00:00:00', strtotime('-6 days'));
+        $monthFrom = date('Y-m-d 00:00:00', strtotime('-29 days'));
+        $visitors = [];
+        $top = [];
+        foreach ($rows as $r) {
+            $ts = strtotime((string)($r['created_at'] ?? ''));
+            if (!$ts) continue;
+            $d = date('Y-m-d', $ts);
+            if (isset($labels[$d])) $labels[$d]++;
+            if ($d === $today) {
+                $out['today']++;
+                $out['hourly'][(int)date('G', $ts)]++;
+            }
+            if ($d === $yesterday) $out['yesterday']++;
+            $created = (string)($r['created_at'] ?? '');
+            if ($created >= $weekFrom) $out['week']++;
+            if ($created >= $monthFrom) $out['month']++;
+            $visitors[(string)($r['visitor_hash'] ?? '')] = 1;
+            $p = (string)($r['path'] ?? '/');
+            $top[$p] = ($top[$p] ?? 0) + 1;
+        }
+        arsort($top);
+        $out['daily'] = $labels;
+        $out['top'] = array_slice($top, 0, 10, true);
+        $out['unique'] = count($visitors);
+        $out['total'] = count($rows);
+        return $out;
+    }
+
+    // performance: zariadenia, výkon, batéria, účty
+    function elvo_admin_performance($pdo) {
+        $p = ['devices' => 0, 'online' => 0, 'faults' => 0, 'power_kw' => 0.0,
+              'soc_avg' => 0.0, 'users' => 0, 'admins' => 0, 'managers' => 0];
+        try {
+            $rows = $pdo->query("SELECT * FROM devices")->fetchAll();
+            $p['devices'] = count($rows);
+            $socSum = 0; $socN = 0;
+            foreach ($rows as $r) {
+                $last = (string)($r['last_seen'] ?? '');
+                $fresh = $last !== '' && (time() - (int)strtotime($last)) < 900;
+                $st = strtolower((string)($r['status'] ?? ''));
+                if ($fresh || in_array($st, ['online', 'normal', 'ok'], true)) $p['online']++;
+                else $p['faults']++;
+                $w = (float)($r['fve_power_w'] ?? 0);
+                if ($w <= 0) $w = (float)($r['power_ac'] ?? 0);
+                $p['power_kw'] += $w / 1000;
+                $soc = (float)($r['battery_soc'] ?? 0);
+                if ($soc > 0) { $socSum += $soc; $socN++; }
+            }
+            if ($socN > 0) $p['soc_avg'] = $socSum / $socN;
+        } catch (Throwable $e) { /* ignore */ }
+        try {
+            foreach ($pdo->query("SELECT role, COUNT(*) AS c FROM users GROUP BY role")->fetchAll() as $r) {
+                $p['users'] += (int)$r['c'];
+                if (($r['role'] ?? '') === 'admin') $p['admins'] = (int)$r['c'];
+                if (($r['role'] ?? '') === 'manazer') $p['managers'] = (int)$r['c'];
+            }
+        } catch (Throwable $e) { /* ignore */ }
+        return $p;
+    }
+}
+
+// === ODOMKNUTIE ÚPRAV PRE ADMINA ===
+// admin musí zadať kód, až potom môže meniť zariadenia a nastavenia
+if (!function_exists('elvo_admin_edit_code')) {
+    function elvo_admin_edit_code() {
+        $c = trim((string)(getenv('ADMIN_EDIT_CODE') ?: ''));
+        return $c !== '' ? $c : 'ELVO-EDIT-2026';
+    }
+    function elvo_admin_edit_until() {
+        return (int)($_SESSION['admin_edit_until'] ?? 0);
+    }
+    function elvo_admin_edit_locked() {
+        // manažér kód nepotrebuje
+        if (($_SESSION['role'] ?? '') !== 'admin') return false;
+        return elvo_admin_edit_until() < time();
+    }
+    function elvo_admin_csrf() {
+        if (empty($_SESSION['admin_csrf'])) $_SESSION['admin_csrf'] = bin2hex(random_bytes(16));
+        return (string)$_SESSION['admin_csrf'];
+    }
+}
+
+// === EDITOR: úpravy len s povolením od manažéra ===
+if (!function_exists('elvo_editor_table')) {
+    function elvo_editor_table($pdo) {
+        static $made = false;
+        if ($made) return;
+        $made = true;
+        try {
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        } catch (Throwable $e) { return; }
+        try {
+            if ($driver === 'sqlite') {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS editor_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, editor_id INT NOT NULL, device_id INT NOT NULL, status VARCHAR(20) DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, decided_at DATETIME NULL, decided_by INT NULL, granted_until DATETIME NULL, UNIQUE (editor_id, device_id))");
+            } else {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS editor_requests (id INT AUTO_INCREMENT PRIMARY KEY, editor_id INT NOT NULL, device_id INT NOT NULL, status VARCHAR(20) DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, decided_at DATETIME NULL, decided_by INT NULL, granted_until DATETIME NULL, UNIQUE KEY uq_edreq (editor_id, device_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            }
+        } catch (Throwable $e) { /* ignore */ }
+    }
+    function elvo_editor_can_edit($pdo, $deviceId) {
+        if (($_SESSION['role'] ?? '') !== 'editor') return false;
+        elvo_editor_table($pdo);
+        try {
+            $st = $pdo->prepare("SELECT status, granted_until FROM editor_requests WHERE editor_id = ? AND device_id = ? LIMIT 1");
+            $st->execute([(int)($_SESSION['user_id'] ?? 0), (int)$deviceId]);
+            $row = $st->fetch();
+        } catch (Throwable $e) { return false; }
+        if (!$row) return false;
+        return ($row['status'] ?? '') === 'approved' && !empty($row['granted_until']) && strtotime((string)$row['granted_until']) > time();
+    }
+}
+
 if (!function_exists('elvo_url_key_seed')) {
-    // Seed tajného kľúča — NIKDY sa nevypisuje von, len z neho derivujeme mesačný kľúč.
-    // Zdroj (v poradí): env ACCESS_URL_KEY | $elvo_url_key_config | url_key.php | default
+    // tajný kľúč sa nikde nevypisuje
+    // zdroj: ACCESS_URL_KEY | url_key.php | default
     function elvo_url_key_seed() {
         global $elvo_url_key_config;
         $seed = (string)(getenv('ACCESS_URL_KEY') ?: '');
@@ -225,8 +392,7 @@ if (!function_exists('elvo_url_key_seed')) {
     function elvo_month_key($seed, $ym) {
         return strtoupper(substr(hash_hmac('sha256', 'elvo-url-key|' . $ym, $seed), 0, 20));
     }
-    // Zapíše aktuálnu adresu do suboru url_key_now.php (+ históriu do url_key_history.php).
-    // Oba súboru sú PHP: cez prehliadač vyjdú prázdne (neunikne nič), vo File Managery vidíš adresu.
+    // zapíše adresu do url_key_now.php a históriu
     function elvo_write_key_files($curYm, $cur, $prevYm, $prev) {
         $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
         $host = preg_replace('#[^a-z0-9.:\-]#', '', $host);
@@ -263,8 +429,7 @@ if (!function_exists('elvo_url_key_seed')) {
             @file_put_contents($hist, rtrim($h) . "\n// " . $curYm . "  " . $cur . "  (od " . $from . " do " . $to . ", zapísané " . $now . ")\n", LOCK_EX);
         }
     }
-    // Aktuálny + minulý mesačný kľúč. Minulý ešte platí počas nasledujúceho mesiaca,
-    // aby ťa vymena kľuca nikdy nezamkla von. Zároveň to zapíše aktuálnu adresu do súboru.
+    // aktuálny + minulý kľúč (minulý platí ešte mesiac)
     function elvo_monthly_url_keys() {
         $seed = elvo_url_key_seed();
         $curYm = date('Y-m');
@@ -278,10 +443,7 @@ if (!function_exists('elvo_url_key_seed')) {
 // ============================================================
 // === ZAPAMÄTANÉ ZARIADENIE (device cookie)
 // ============================================================
-// Kto raz otvorí tajnú adresu a prejde bránou, tomu sa uloží podpísaný
-// cookie na 10 rokov → ten istý prehliadač/PWA už NIKDY nič nepýta
-// (ani kľúč, ani meno/heslo). Token je podpísaný tajným kľúčom appky,
-// takže sa nedá vyrobiť ručne; je náhodný pre každé zariadenie.
+// cookie zariadenia na 10 rokov (podpísané tajným kľúčom)
 if (!function_exists('elvo_device_ok')) {
     function elvo_device_secret() {
         return elvo_url_key_seed();
@@ -312,22 +474,40 @@ if (!function_exists('elvo_device_ok')) {
         $_COOKIE['elvo_dev'] = $token; // platí hneď aj v tomto requeste
     }
 }
+if (!function_exists('elvo_is_demo_user')) {
+    /**
+     * Demo účet (demo@elvosolar.sk) — smie si prepínať medzi obrazovkou
+     * „bez zariadenia“ a dashboardom, aj keď nemá priradené zariadenie.
+     */
+    function elvo_is_demo_user($pdo) {
+        if (!isset($_SESSION['user_id'])) return false;
+        $email = strtolower(trim((string)($_SESSION['email'] ?? '')));
+        if ($email === '') {
+            if (!($pdo instanceof PDO)) return false;
+            try {
+                $st = $pdo->prepare("SELECT email FROM users WHERE id = ? LIMIT 1");
+                $st->execute([$_SESSION['user_id']]);
+                $email = strtolower(trim((string)$st->fetchColumn()));
+            } catch (Throwable $e) { return false; }
+        }
+        return $email === 'demo@elvosolar.sk';
+    }
+}
 if (!function_exists('elvo_redirect_web')) {
-    // „Normálna“ adresa (hocičo bez tajného kľúča) → rovno na web elvosolar.sk.
-    // Odchádza iba presmerovanie — žiadne údaje appky, žiadne informácie neuniknú.
+    // bez tajného kľúča → elvosolar.sk
     function elvo_redirect_web() {
         while (ob_get_level() > 0) { @ob_end_clean(); }
         global $elvo_public_site;
         $target = !empty($elvo_public_site) ? (string)$elvo_public_site : 'https://www.elvosolar.sk/';
         $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
-        // Ochrana proti slučke: ak by appka bežala priamo na elvosolar.sk → tichý 404
+        // ochrana proti slučke: appka priamo na elvosolar.sk → 404
         if ($host !== '' && preg_match('#(^|\.)elvosolar\.sk$#', $host)) { elvo_blank_page(); exit; }
         header('Location: ' . $target, true, 302);
         exit;
     }
 }
 if (!function_exists('elvo_turnstile_keys')) {
-    // Cloudflare Turnstile kľúče: env | turnstile_keys.php (File Manager) | config.php
+    // Turnstile kľúče: env | turnstile_keys.php | config.php
     function elvo_turnstile_keys() {
         global $turnstile_site_key, $turnstile_secret_key;
         $site = (string)(getenv('TURNSTILE_SITE_KEY') ?: '');
@@ -347,7 +527,7 @@ if (!function_exists('elvo_turnstile_keys')) {
         $k = elvo_turnstile_keys();
         return ($k['site'] !== '' && $k['secret'] !== '');
     }
-    // true = test proti robotom prešiel (alebo ešte nie sú kľúče → preskočený)
+    // true = test prešiel (alebo kľúče nie sú nastavené)
     function elvo_turnstile_ok() {
         if (!elvo_turnstile_enabled()) return true;
         $k = elvo_turnstile_keys();
@@ -357,7 +537,7 @@ if (!function_exists('elvo_turnstile_keys')) {
         $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
         if ($ip !== '') $payload['remoteip'] = $ip;
         $out = '';
-        // Endpoint na overenie (len na testovanie sa da prepisnut cez env, inak Cloudflare)
+        // Endpoint na overenie (dá sa prepísať cez env, inak ide Cloudflare)
         $endpoint = (string)(getenv('TURNSTILE_SITEVERIFY_URL') ?: 'https://challenges.cloudflare.com/turnstile/v0/siteverify');
         if (function_exists('curl_init')) {
             $ch = curl_init($endpoint);
@@ -381,8 +561,7 @@ if (!function_exists('elvo_turnstile_keys')) {
             $r = @file_get_contents($endpoint, false, $ctx);
             if ($r !== false) $out = (string)$r;
         }
-        // Cloudflare sa nepodarilo osloviť (výpadok siete / chýbajúci CA bundle na serveri)
-        // alebo odpoveď nebola JSON — nenecháme ťa zamknúť von, test len zapíšeme do logu.
+        // Cloudflare neodpovedal, pustíme ďalej a zapíšeme do logu
         // Reálne odmietnutie ("success": false) od Cloudflare stále blokuje.
         if ($out === '') {
             error_log('[turnstile] siteverify nepodal odpoveď (siet/TLS) — test proti robotom preskočený');
@@ -401,7 +580,7 @@ if (!function_exists('elvo_turnstile_keys')) {
 }
 if (!function_exists('elvo_download_page')) {
     // STRÁNKA NA STIAHNUTIE APPKY — zoberie sa IBA za bránou
-    // (tajná adresa + meno/heslo + úspešný test proti robotom od Cloudflare).
+    // (tajná adresa + meno/heslo + Turnstile)
     function elvo_download_page() {
         $bp = $GLOBALS['base_path'] ?? '';
         echo '<!DOCTYPE html><html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -440,9 +619,7 @@ if (!function_exists('elvo_download_page')) {
             . 'if(isIOS&&ios){ios.style.display="block";}'
             . 'function showHelp(){if(help){help.style.display="block";}}'
             . 'function goApp(){window.location.href="' . htmlspecialchars($bp) . '/";}'
-            // AUTO: nedavame preventDefault -> Chrome si sam automaticky zobrazi
-            // instalacny banner hned pri nacitani stranky, bez nutnosti klikat.
-            // Ukladame si len udalost, aby fungovalo tlacidlo "Stiahnut app".
+            // uložíme si udalosť, aby fungovalo tlačidlo "Stiahnuť app"
             . 'window.addEventListener("beforeinstallprompt",function(e){'
             . 'deferred=e;'
             . '});'
@@ -464,7 +641,7 @@ if (!function_exists('elvo_download_page')) {
             . '});}'
             . 'window.addEventListener("appinstalled",function(){if(btn){btn.textContent="✅ Appka nainštalovaná";}'
             . 'if(help){help.style.display="none";}if(ok){ok.innerHTML="✅ Appka nainštalovaná<br>nájdete ju ikonou na ploche zariadenia.";}});'
-            // Ak udalost nepride do 2,5 s, automaticky ukazeme navod — tlacidlo nikdy nevyzera mrtve.
+            // bez udalosti do 2,5 s ukážeme návod
             . 'if(!standalone){setTimeout(function(){if(!deferred){showHelp();if(btn){btn.textContent="⬇️ Inštalovať app";}}},2500);}'
             . '})();'
             . '</script></body></html>';
@@ -472,16 +649,16 @@ if (!function_exists('elvo_download_page')) {
 }
 $elvo_uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $elvo_open = (bool)(preg_match('#^/(sw\.js|manifest\.json|favicon\.ico|healthcheck|health)$#', $elvo_uri)
-    // Šablóny (.html) sa nikdy neposielajú priamo — sú súčasťou brány (inak uniká kód appky)
+    // šablóny sa neposielajú priamo
     || (preg_match('#^/(templates|css|js|img)(/|$)#', $elvo_uri) && !preg_match('#^/templates/.+\.html?$#i', $elvo_uri))
     || preg_match('#^/api/user/(notifications|devices|me)(/|$)#', $elvo_uri)
     || preg_match('#^/api/push/(vapid|test|subscribe|unsubscribe)$#', $elvo_uri)
-    || preg_match('#^/api/user/(test-email|change-password|delete-account)$#', $elvo_uri)
+    || preg_match('#^/api/user/(test-email|mail-diag|change-password|delete-account)$#', $elvo_uri)
     || preg_match('#^/api/device/\d+/(telemetry|control|rename)$#', $elvo_uri)
-    || in_array($elvo_uri, ['/api/cm5/poll', '/api/cm5/result', '/api/cm5/register', '/api/cm5/hw-files', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/user/claim-device', '/api/cron/notifications'], true));
+    || in_array($elvo_uri, ['/api/cm5/poll', '/api/cm5/result', '/api/cm5/register', '/api/cloud/sync-telemetry', '/api/report-ip', '/api/user/claim-device', '/api/cron/notifications'], true));
 $elvo_gate_ok = false;
 if (!empty($_SESSION['user_id'])) {
-    // Prihlásený (nainštalovaná appka) — auto priechod + ticho obnov cookie
+    // prihlásený → obnov cookie
     $elvo_creds = elvo_gate_creds($pdo);
     if (!isset($_COOKIE['elvo_access']) || !hash_equals(elvo_gate_token($elvo_creds), (string)$_COOKIE['elvo_access'])) {
         elvo_gate_set_cookie($elvo_creds);
@@ -491,18 +668,14 @@ if (!empty($_SESSION['user_id'])) {
     $elvo_creds = elvo_gate_creds($pdo);
     if (hash_equals(elvo_gate_token($elvo_creds), (string)$_COOKIE['elvo_access'])) $elvo_gate_ok = true;
 }
-// Zapamätané zariadenie — raz zadaný kľúč aj brána, potom už nič nepýtať.
+// zapamätané zariadenie (kľúč + brána)
 if (!$elvo_gate_ok && elvo_device_ok()) {
     $elvo_creds = elvo_gate_creds($pdo);
     elvo_gate_set_cookie($elvo_creds);
     $elvo_gate_ok = true;
 }
-// TAJNY URL KLUC — MESACNE ROTUJUCI. Na svete je IBa jedina platna adresa
-// a ta sa kazdy mesiac zmeni (1. dna v mesiaci). Kym nepoznas aktualny kluc,
-// ta stranka ta normalne presmeruje na www.elvosolar.sk — neunikne ziadny udaj.
-//   Tvar adresy:  /?k=KLUC   ALEBO   /KLUC   (kluc ako prva cast cesty)
-//   Minuly kluc este plati cely nasledujuci mesiac (nemozes byt zamknuty von).
-//   AKTUALNA ADRESA SA ZAPISUJE DO SUBORU: url_key_now.php (otvor vo File Managery)
+// tajný kľúč v URL, mení sa každý mesiac 1. dňa
+// minulý kľúč platí ešte mesiac, aktuálna adresa je v url_key_now.php
 $elvo_url_keys = elvo_monthly_url_keys();
 $elvo_url_key = $elvo_url_keys['current'];
 $elvo_url_candidates = array_values(array_unique([$elvo_url_keys['current'], $elvo_url_keys['previous']]));
@@ -518,7 +691,7 @@ if (!$elvo_url_key_ok && isset($_GET['k'])) {
         }
     }
 }
-// „Správny tvar“ adresy:  https://domena.tld/KLUC — kluc je prva cast cesty
+// tvar adresy: https://domena/KLUC
 if (!$elvo_url_key_ok) {
     $elvo_segments = explode('/', trim($elvo_uri, '/'));
     $elvo_first = (string)($elvo_segments[0] ?? '');
@@ -529,7 +702,7 @@ if (!$elvo_url_key_ok) {
                 $elvo_url_key_ok = true;
                 elvo_device_remember();
                 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
-                    // očist adresa — kľúč neostane v histórii prehliadača ani v HTTP referreri
+                    // kľúč vymažeme z adresy
                     header('Location: ' . (($GLOBALS['base_path'] ?? '') . '/'));
                     exit;
                 }
@@ -550,9 +723,8 @@ if (!$elvo_gate_ok && !$elvo_open) {
         echo json_encode(['status' => 'error', 'message' => 'Neautorizovaný — prihlás sa znova', 'gate' => true]);
         exit;
     }
-    // Bez tajneho URL kluc a bez prihlasenia/gate cookie → PRESMEROVANIE NA WEB (elvosolar.sk).
-    // Normalna adresa = ziadne info neuniknu, dostanu sa rovno na verejny web.
-    // Aplikuje sa az PO API 401, aby API volania stale dospeli JSON (nie HTML).
+    // bez kľúča a bez prihlásenia → elvosolar.sk
+    // až po API 401, aby API dostalo JSON
     if (!$elvo_url_key_ok) { elvo_redirect_web(); exit; }
     // Validácia "next" — iba lokálna cesta
     $elvo_next = (string)($_REQUEST['next'] ?? $elvo_uri);
@@ -567,7 +739,7 @@ if (!$elvo_gate_ok && !$elvo_open) {
         $gu = trim((string)($_POST['user'] ?? '')); $gp = (string)($_POST['pass'] ?? '');
         $elvo_ok = elvo_gate_verify($pdo, $elvo_creds, $gu, $gp);
         $elvo_fail_msg = 'Nesprávne prístupové údaje.';
-        // CLOUDFLARE TURNSTILE — test proti robotom až PO správnom mene/hesle
+        // Turnstile až po mene a hesle
         if ($elvo_ok && !elvo_turnstile_ok()) {
             $elvo_ok = false;
             $elvo_fail_msg = 'Overenie proti robotom zlyhalo — skúste to prosím znova.';
@@ -576,7 +748,7 @@ if (!$elvo_gate_ok && !$elvo_open) {
             @unlink($lockF); @unlink($lockT);
             elvo_gate_set_cookie($elvo_creds);
             elvo_device_remember();
-            // Všetko OK (meno + heslo + test proti robotom) → stránka na stiahnutie appky
+            // všetko sedí → stránka na stiahnutie
             header('Location: ' . ($base_path ?? '') . '/stiahnut'); exit;
         }
         // Rate limit: 6 zlých pokusov → 60 s blokácia
@@ -590,7 +762,7 @@ if (!$elvo_gate_ok && !$elvo_open) {
     elvo_gate_page('', $elvo_next); exit;
 }
 
-// === MIGRATION CACHE: suborovy flag (0 DB dotazov pri kazdom requeste - rychlost!) ===
+// === MIGRATION CACHE: flag v súbore, šetrí DB dotazy ===
 $migrations_done = false;
 $mig_flag = sys_get_temp_dir() . '/elvo_migrations_' . date('Y-m-d') . '.flag';
 if (file_exists($mig_flag)) {
@@ -625,9 +797,9 @@ if (isset($pdo) && !$migrations_done) {
         if (!in_array('smartlogger_port', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN smartlogger_port INTEGER DEFAULT 502");
         if (!in_array('modbus_slave_id', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN modbus_slave_id INTEGER DEFAULT 205");
         if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
-        // Režim prevádzky (Zap/Vyp/SmartAI) - dedikovany stlpec (predtym sa miesal do manual_override)
+        // režim prevádzky má vlastný stĺpec
         if (!in_array('meter_control_mode', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN meter_control_mode VARCHAR(20) DEFAULT 'SMART'");
-        // Index pre rychlu telemetry historiu (inak full scan pri kazdom nacitani dashboardu)
+        // index pre telemetriu (rýchlejšie načítanie)
         try { $pdo->exec("CREATE INDEX idx_tel_dev_id ON telemetry (device_id, id)"); } catch (Exception $e2) { /* uz existuje */ }
     } catch (Exception $e) { /* ignore */ }
 
@@ -645,7 +817,7 @@ if (isset($pdo) && !$migrations_done) {
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )");
         
-        // Doplnenie stĺpca admin_command a modbus_slave_id ak tabuľka existuje v staršej verzii
+        // doplnenie chýbajúcich stĺpcov
         $cm5cols = $pdo->query("SHOW COLUMNS FROM cm5_config")->fetchAll(PDO::FETCH_COLUMN);
         if (!in_array('admin_command', $cm5cols)) {
             $pdo->exec("ALTER TABLE cm5_config ADD COLUMN admin_command TEXT NULL");
@@ -754,7 +926,7 @@ CREATE TABLE IF NOT EXISTS users (
     } catch (Exception $e) { /* ignore */ }
 }
 
-// === DEDUP ZARIADENI: 1 serial = 1 riadok (inak telemetria/nastavenia idu na zly riadok a dashboard ukazuje zle cisla) ===
+// === DUPLICITNÉ ZARIADENIA: jeden serial = jeden riadok ===
 if (isset($pdo) && !$migrations_done) {
     try {
         $pdo->exec("UPDATE devices AS d LEFT JOIN devices AS keep ON keep.serial_number = d.serial_number AND keep.id < d.id SET d.serial_number = CONCAT('DEAD-', d.id) WHERE d.serial_number IS NOT NULL AND d.serial_number != '' AND keep.id IS NOT NULL");
@@ -762,8 +934,7 @@ if (isset($pdo) && !$migrations_done) {
 }
 
 // === DEMO ÚČET JE PREDVOLENE VYPNUTÝ ===
-// demo@elvosolar.sk / demo123 už NIE je admin a vôbec sa neprihlasuje (rola 'blocked').
-// Demo sa založí len vtedy, ak sa výslovne nastaví SEED_DEMO=1 — a aj vtedy ako bežný používateľ.
+// demo účet je blocked, pokiaľ nie je SEED_DEMO=1
 if (isset($pdo) && !$migrations_done) {
     try {
         if (getenv('SEED_DEMO') === '1') {
@@ -777,14 +948,16 @@ if (isset($pdo) && !$migrations_done) {
                      ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'huawei', 'smartlogger', 'smartlogger3000a', 'smartlogger']);
             }
         } else {
-            // Zablokuje demo účet, ktorý už v DB je (napr. z predošlého seedu)
-            $pdo->exec("UPDATE users SET role = 'blocked' WHERE LOWER(email) = 'demo@elvosolar.sk' AND role <> 'blocked'");
+            // blocked len keď má ešte heslo demo123
+            $demoRow = $pdo->query("SELECT id, password_hash FROM users WHERE LOWER(email) = 'demo@elvosolar.sk' AND role <> 'blocked' LIMIT 1")->fetch();
+            if ($demoRow && password_verify('demo123', (string)$demoRow['password_hash'])) {
+                $pdo->prepare("UPDATE users SET role = 'blocked' WHERE id = ?")->execute([$demoRow['id']]);
+            }
         }
     } catch (Exception $e) { /* ignore */ }
 
-    // === ADMINI: adminom má byť len admin@elvosolar.sk (alebo ADMIN_EMAILS) ===
-    // Ak už existuje admin s povoleným e-mailom, ostatným sa admin práva odoberú
-    // (klesnú na 'user'). Mechanikom sa nič nemení, ich rola je samostatná.
+    // === ADMINI: admin len admin@elvosolar.sk (alebo ADMIN_EMAILS) ===
+    // ostatným admin práva zoberieme
     try {
         $pinned = elvo_admin_emails();
         if ($pinned) {
@@ -810,7 +983,7 @@ if (isset($pdo) && !$migrations_done) {
     } catch (Exception $e) { /* ignore */ }
 }
 
-// Označ migrácie za hotové na dnes (dalsie requesty preskocia tazke query)
+// migrácie hotové, ďalšie requesty ich preskočia
 if (isset($pdo) && !$migrations_done) {
     try {
         $pdo->exec("INSERT INTO migrations_state (id, done_date) VALUES (1, '" . date('Y-m-d') . "') ON DUPLICATE KEY UPDATE done_date = VALUES(done_date)");
@@ -836,7 +1009,13 @@ if (strpos($path, '/index.php') === 0) {
 }
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// === PRÍSTUPOVÁ BRÁNA: POST obsluha (funguje aj keď webserver nesmeruje /access na index.php) ===
+// návštevnosť: zapíšeme len bežné stránky, nie API a súbory
+if ($method === 'GET' && !preg_match('#^/(api|templates|assets)/#', $path)
+    && !preg_match('#\.(png|jpe?g|gif|svg|ico|css|js|json|pdf|woff2?|ttf)$#i', $path)) {
+    elvo_track_pageview($pdo, $path);
+}
+
+// === PRÍSTUPOVÁ BRÁNA: POST ===
 if ($path === '/access' && $method === 'POST') {
     $elvo_creds = elvo_gate_creds($pdo);
     $lockF = sys_get_temp_dir() . '/elvo_gate_' . md5($_SERVER['REMOTE_ADDR'] ?? 'x');
@@ -879,7 +1058,7 @@ if ($apply_timeout && isset($_SESSION['user_id'])) {
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout_seconds) {
         session_unset();
         session_destroy();
-        // API volania MUSIA dostat JSON (nie HTML redirect) — inak safeJson na telefone spadne na "neocekavana odpoved"
+        // API musí vrátiť JSON, nie HTML redirect
         if (strpos($path, '/api/') === 0) {
             header('Content-Type: application/json; charset=utf-8');
             http_response_code(401);
@@ -895,11 +1074,10 @@ if ($apply_timeout && isset($_SESSION['user_id'])) {
 // --- HELPER FUNKCIE ---
 if (!function_exists('send_json')) {
     function send_json($data, $status = 200) {
-        // Zahod pripadne PHP warnings/notices v bufferi — inak by sa primiesali
-        // do JSON odpovede ("Unexpected token '<', \"<br />\" is not valid JSON")
+        // zahodíme warningy, inak rozbijú JSON
         while (ob_get_level() > 0) { @ob_end_clean(); }
         header("Content-Type: application/json; charset=UTF-8");
-        // API dáta sa NIKDY nekešujú — po zmene v DB musí dashboard ukázať nové čísla hneď
+        // API dáta bez cache
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
         http_response_code($status);
@@ -911,6 +1089,24 @@ if (!function_exists('send_json')) {
 if (!function_exists('get_json_input')) {
     function get_json_input() {
         return json_decode(file_get_contents('php://input'), true) ?? [];
+    }
+}
+
+// admin má úpravy zamknuté, kým nezadá kód (manažér upravuje bez kódu)
+if ($method !== 'GET' && elvo_admin_edit_locked()) {
+    $elvoWritePaths = ['/api/device/', '/api/devices', '/api/system/', '/api/admin/', '/api/cm5/register', '/api/user/claim-device'];
+    foreach ($elvoWritePaths as $elvoWp) {
+        if (strpos($path, $elvoWp) === 0) {
+            send_json(['status' => 'error', 'locked' => true, 'message' => 'Úpravy sú zamknuté — zadaj admin kód na odomknutie.'], 403);
+        }
+    }
+}
+
+// editor smie do zariadenia zasiahnuť len s povolením od manažéra
+if ($method !== 'GET' && ($_SESSION['role'] ?? '') === 'editor'
+    && preg_match('#^/api/device/(\d+)/([a-z0-9\-]+)#', $path, $mEd)) {
+    if (!in_array($mEd[2], ['telemetry', 'last-cmd-result'], true) && !elvo_editor_can_edit($pdo, (int)$mEd[1])) {
+        send_json(['status' => 'error', 'message' => 'Na úpravu zariadenia potrebuješ povolenie od manažéra.'], 403);
     }
 }
 
@@ -959,7 +1155,7 @@ if (!function_exists('get_flash_messages')) {
 }
 
 if (!function_exists('get_user_devices')) {
-    // ========= ALERT SYSTEM: detekcia chyb + notifikacie + email =========
+    // ========= ALERT SYSTEM: chyby + notifikácie + mail =========
     if (!function_exists('eval_device_alerts')) {
         function eval_device_alerts($pdo, $device_ids, $notify_email = true) {
             if (!$device_ids) return;
@@ -1008,7 +1204,7 @@ if (!function_exists('get_user_devices')) {
                         }
                     }
                 } catch (Exception $e) { /* ignore */ }
-                // 2. Nizky SOC (len ked je fresh telemetria - inak je to stale)
+                // 2. nízky SOC (len pri čerstvej telemetrii)
                 if ($fresh && $soc > 0 && $soc < 15) {
                     $devAlerts['low_soc'] = ['Nízky stav batérie', ($d['name'] ?: 'Zariadenie') . ': SOC ' . round($soc) . '% — batéria je takmer vybitá', 'warn'];
                 }
@@ -1026,7 +1222,7 @@ if (!function_exists('get_user_devices')) {
                     $ins = $pdo->prepare("INSERT INTO device_alerts (device_id, alert_key, title, body, severity, last_seen) VALUES (?,?,?,?,?,NOW())
                         ON DUPLICATE KEY UPDATE last_seen = NOW(), body = VALUES(body), resolved_at = NULL");
                     $ins->execute([$did, $key, $a[0], $a[1], $a[2]]);
-                    // Email/push pri NOVOM alerte (nie pri kazdom opakovani) — podla kanalov usera
+                    // mail/push len pri novom alerte
                     $devPrefs = ['notif_email' => true, 'notif_push' => true];
                     try {
                         $pfStmt = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = (SELECT user_id FROM devices WHERE id = ?)");
@@ -1035,7 +1231,7 @@ if (!function_exists('get_user_devices')) {
                         if ($pfRow) {
                             $pf = json_decode($pfRow['prefs'], true);
                             if (is_array($pf)) {
-                                // Kanal pre chyby: both|push|email|none (novsie), inak legacy prepinace
+                                // kanál: both|push|email|none
                                 $errChan = $pf['error_channel'] ?? null;
                                 if (in_array($errChan, ['both', 'push', 'email', 'none'], true)) {
                                     $devPrefs['notif_email'] = ($errChan === 'both' || $errChan === 'email');
@@ -1053,7 +1249,7 @@ if (!function_exists('get_user_devices')) {
                             $u->execute([$did]);
                             $email = $u->fetchColumn();
                             if ($email) {
-                                // WEB PUSH na vsetky zariadenia usera (aj ked je appka zatvorena)
+                                // web push na všetky zariadenia
                                 try {
                                     $uidStmt = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
                                     $uidStmt->execute([$did]);
@@ -1066,7 +1262,7 @@ if (!function_exists('get_user_devices')) {
                                     }
                                 } catch (Exception $eP) { /* ignore */ }
                                 if (!$devPrefs['notif_email']) {
-                                    // user nepozeli email kanal — preskoc odoslanie
+                                    // kanál bez mailu → preskočiť
                                 } else {
                                 require_once __DIR__ . '/mail_helper.php';
                                 $sevIcon = ($a[2] === 'crit') ? '🚨' : '⚠️';
@@ -1105,7 +1301,7 @@ if (!function_exists('get_user_devices')) {
     }
 }
 
-// --- MESAČNÝ REPORT: príprava reálnych dát pre tlačovú A4 (templates/report.html) ---
+// --- MESAČNÝ REPORT: dáta pre A4 (templates/report.html) ---
 if (!function_exists('elvo_report_data')) {
     function elvo_report_month_label($month) {
         $names = [1 => 'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
@@ -1116,8 +1312,8 @@ if (!function_exists('elvo_report_data')) {
     }
 
     /**
-     * Dáta pre mesačný report. Zdroj: telemetry_daily (denný agregát) a telemetry (SOC po hodinách).
-     * $all_devices = true pre admina/mechanika (vidí všetky zariadenia).
+     * Dáta pre mesačný report. Berieme z telemetry_daily (denný súčet) a telemetry (SOC po hodinách).
+     * $all_devices = true pre admina/manažéra (vidí všetky zariadenia).
      */
     function elvo_report_data($pdo, $user_id, $month, $all_devices = false) {
         $price = (float)(getenv('REPORT_PRICE_EUR') ?: 0.18);
@@ -1169,10 +1365,7 @@ if (!function_exists('elvo_report_data')) {
             } catch (Throwable $e) { /* agregát ešte neexistuje */ }
         }
 
-        // RAW TELEMETRIA: report sa počíta priamo z tabuľky telemetry, kým sú dáta
-        // ešte v retencii (90 dní). Agregát telemetry_daily sa totiž plní cronom len
-        // za posledné 2 dni, takže po akejkoľvek zmene/importe v SQL by report
-        // ukazoval staré čísla. Staršie mesiace (už preriedené) berú agregát.
+        // report počítame z raw telemetrie (90 dní), staršie mesiace z agregátu
         if ($ids) {
             try {
                 $qr = $pdo->prepare("SELECT device_id, timestamp, power_ac, battery_soc FROM telemetry
@@ -1279,7 +1472,7 @@ if (!function_exists('elvo_report_data')) {
                 }
             } catch (Throwable $e) { /* ignore */ }
         }
-        // Raw telemetria má prednosť pred agregátom (aktuálne zmeny v SQL hneď v reporte)
+        // raw telemetria má prednosť pred agregátom
         if ($rawDaily) {
             foreach ($rawDaily as $idxR => $kwhR) {
                 if ($idxR >= 0 && $idxR < $daysInMonth) $rep['daily'][$idxR] = round((float)$kwhR, 1);
@@ -1330,9 +1523,9 @@ if (!function_exists('elvo_report_data')) {
     }
 }
 
-// --- REPORT: jedna A4 strana pre month/y, alebo 13 strán (1 prehľad roka + 12 mesiacov) ---
+// --- REPORT: A4 pre mesiac/rok alebo 13 strán ---
 if (!function_exists('elvo_report_month_page')) {
-    /** Mesačná strana reportu (dizajn v templates/report.html). */
+    /** Mesačná strana reportu (dizajn je v templates/report.html). */
     function elvo_report_month_page($pdo, $user_id, $month, $all_devices = false) {
         $r = elvo_report_data($pdo, $user_id, $month, $all_devices);
         $rows = [];
@@ -1447,7 +1640,7 @@ if (!function_exists('elvo_report_month_page')) {
             ];
         }
 
-        // Ročná krivka SOC = priemer hodinových kriviek jednotlivých mesiacov
+        // ročná krivka SOC = priemer mesiacov
         $yearCurve = [];
         for ($h = 0; $h < 24; $h++) {
             if (!empty($socCnt[$h])) $yearCurve[$h] = round($socSum[$h] / $socCnt[$h], 1);
@@ -1504,9 +1697,9 @@ if (!function_exists('elvo_report_month_page')) {
     }
 }
 
-// --- NOTIFIKACNE KANALY (both|push|email|none) — citanie z user_prefs + odoslanie podla kanala ---
+// --- NOTIFIKAČNÉ KANÁLY (both|push|email|none) ---
 if (!function_exists('elvo_notif_channels')) {
-    /** Vrati kanal pre dany typ notifikacie: both|push|email|none */
+    /** Vráti kanál pre daný typ notifikácie: both|push|email|none */
     function elvo_notif_channel($pdo, $user_id, $type) {
         try {
             $st = $pdo->prepare("SELECT prefs FROM user_prefs WHERE user_id = ?");
@@ -1546,7 +1739,7 @@ if (!function_exists('elvo_notif_channels')) {
     }
 }
 
-// Jednoduchy key/value store (system_settings) — použiva sa aj na posledny stav svetla.
+// key/value store (system_settings), aj posledný stav svetla
 if (!function_exists('elvo_set_setting')) {
     function elvo_set_setting($pdo, $key, $value) {
         if (!$pdo) return false;
@@ -1592,9 +1785,7 @@ if (!function_exists('elvo_cm5_token_ok')) {
 }
 
 // =============================================================================
-// BEZPECNOST: kazde /api/device/{id}/... vyzaduje prihlasenie a vlastnictvo.
-// Predtym boli telemetria, meter, relays, holiday-mode a power-limits verejne
-// (hocikto mohol citat data aj menit limity cudzieho zariadenia podla ID).
+// BEZPEČNOSŤ: /api/device/{id}/... vyžaduje prihlásenie a vlastníctvo
 // =============================================================================
 if (preg_match('#^/api/device/(\d+)(?:/|$)#', $path, $mDevGuard)) {
     $guardDevId = (int)$mDevGuard[1];
@@ -1610,9 +1801,10 @@ if (preg_match('#^/api/device/(\d+)(?:/|$)#', $path, $mDevGuard)) {
         }
         $gRole  = (string)($gRow['role'] ?? '');
         $gOwner = $gRow['owner_id'];
-        $gPriv  = in_array($gRole, ['admin', 'mechanik'], true);
+        $gPriv  = elvo_role_manages($gRole);
+        if (!$gPriv && $gRole === 'editor') $gPriv = elvo_editor_can_edit($pdo, $guardDevId);
         $gMine  = ($gOwner !== null && (int)$gOwner === (int)$_SESSION['user_id']);
-        // Zatial nepriradene zariadenie (user_id NULL) potrebuje setup — pustime prihlaseneho
+        // zariadenie bez user_id → setup
         $gUnclaimed = ($gOwner === null);
         if (!$gPriv && !$gMine && !$gUnclaimed) {
             send_json(['status' => 'error', 'message' => 'Nemáte prístup k tomuto zariadeniu'], 403);
@@ -1636,7 +1828,7 @@ if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
     $static_base = realpath(__DIR__);
     foreach ($possible_paths as $static_file) {
         if (!file_exists($static_file)) continue;
-        // Path traversal ochrana: subor MUSI lezat v aplikacii, nie mimo nej
+        // ochrana proti path traversal
         $static_real = realpath($static_file);
         if ($static_real === false || $static_base === false || strpos($static_real, $static_base) !== 0) continue;
         {
@@ -1647,20 +1839,18 @@ if (preg_match('#\.(json|js|css|woff2?|ttf|svg|ico|pdf|woff)$#i', $path)) {
             ];
             $ext = strtolower(pathinfo($static_file, PATHINFO_EXTENSION));
             header('Content-Type: ' . ($mime_types[$ext] ?? 'application/octet-stream'));
-            // CRITICAL: Service Worker NESMIE byt cache-ovany — inak telefony drzia
-            // stary SW aj mesiac (immutable) a vsetky opravy "nechodia". vzdy no-cache.
+            // Service Worker sa necachuje, inak telefóny držia starý
             if (preg_match('#(^|/)sw\.js$#i', $path)) {
                 header('Cache-Control: no-cache, no-store, must-revalidate');
                 header('Expires: 0');
                 header('Pragma: no-cache');
             } elseif (preg_match('#(^|/)manifest\.json$#i', $path)) {
-                // Manifest tiez vzdy cerstvy — Chrome pri starom manifeste ignoruje PWA
-                // (start_url/scope "invalid") a instalacia na plochu je rozbita
+                // manifest vždy čerstvý (inak sa PWA nedá nainštalovať)
                 header('Cache-Control: no-cache, no-store, must-revalidate');
                 header('Expires: 0');
                 header('Pragma: no-cache');
             } else {
-                // Cache: staticke subory 30 dni (prehladac nesťahuje znova = jedno nacitanie menej)
+                // cache statických súborov 30 dní
                 header('Cache-Control: public, max-age=2592000, immutable');
                 header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT');
             }
@@ -1702,7 +1892,7 @@ function fetch_okte_prices($date_from = null, $date_to = null, $cache_bust = '')
     if (!$date_to) $date_to = date('Y-m-d');
     
     $cache_file = __DIR__ . '/cache_okte_' . $date_from . '_' . $date_to . '.json';
-    // Cache platna ak: menej ako 15 min stara, ALEBO nova ako posledne zverejnenie OKTE (13:00 / zaciatok dna)
+    // cache 15 min alebo po zverejnení OKTE
     if (file_exists($cache_file)) {
         $publish_boundary = strtotime(date('Y-m-d') . ' 13:00');
         if (time() < $publish_boundary) $publish_boundary = strtotime(date('Y-m-d') . ' 00:00');
@@ -1757,7 +1947,7 @@ function fetch_okte_prices($date_from = null, $date_to = null, $cache_bust = '')
     });
     
     // REALNE 15-minutove ceny z OKTE (96 period/deň) - ziadne priemery
-    // Zoskupujeme podla deliveryDay; format: 'HH:MM' (00:00, 00:15, 00:30...)
+    // zoskupenie podľa dňa, formát HH:MM
     $periods = [];
     foreach ($raw as $item) {
         $period = (int)($item['period'] ?? 0);
@@ -1807,23 +1997,225 @@ function fetch_okte_prices($date_from = null, $date_to = null, $cache_bust = '')
 // ROUTING / SMEROVANIE POŽIADAVIEK
 // =============================================================================
 
-if ($path === '/' || $path === '') {
+// --- EDITOR: žiadosť o povolenie na úpravu zariadenia ---
+if ($path === '/editor/request' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
+    if (($_SESSION['role'] ?? '') !== 'editor') { header("Location: " . $base_path . "/"); exit; }
+    $eDev = (int)($_POST['device_id'] ?? 0);
+    elvo_editor_table($pdo);
+    if ($eDev > 0) {
+        try {
+            $chk = $pdo->prepare("SELECT id, status FROM editor_requests WHERE editor_id = ? AND device_id = ?");
+            $chk->execute([(int)$_SESSION['user_id'], $eDev]);
+            $existing = $chk->fetch();
+            if ($existing) {
+                if (($existing['status'] ?? '') !== 'approved') {
+                    $pdo->prepare("UPDATE editor_requests SET status = 'pending', granted_until = NULL, created_at = ? WHERE id = ?")
+                        ->execute([date('Y-m-d H:i:s'), (int)$existing['id']]);
+                }
+            } else {
+                $pdo->prepare("INSERT INTO editor_requests (editor_id, device_id, status, created_at) VALUES (?, ?, 'pending', ?)")
+                    ->execute([(int)$_SESSION['user_id'], $eDev, date('Y-m-d H:i:s')]);
+            }
+            flash('Žiadosť o povolenie je odoslaná manažérovi.', 'success');
+        } catch (Throwable $e) { flash('Žiadosť sa nepodarilo uložiť.', 'error'); }
+    }
+    header("Location: " . $base_path . "/"); exit;
+}
+
+// --- MANAŽÉR / ADMIN: schválenie alebo odobratie povolenia ---
+elseif ($path === '/editor/perm' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
+    $permRole = (string)($_SESSION['role'] ?? '');
+    if (!in_array($permRole, ['admin', 'manazer'], true)) { header("Location: " . $base_path . "/"); exit; }
+    if (!hash_equals(elvo_admin_csrf(), (string)($_POST['csrf'] ?? ''))) {
+        flash('Neplatný token — skús znova.', 'error');
+        header("Location: " . $base_path . "/"); exit;
+    }
+    if ($permRole === 'admin' && elvo_admin_edit_locked()) {
+        flash('Najprv zadaj admin kód (hore na stránke).', 'error');
+        header("Location: " . $base_path . "/"); exit;
+    }
+    $permId = (int)($_POST['id'] ?? 0);
+    $permAct = (string)($_POST['action'] ?? '');
+    elvo_editor_table($pdo);
+    if ($permId > 0) {
+        try {
+            if ($permAct === 'approve') {
+                $pdo->prepare("UPDATE editor_requests SET status = 'approved', granted_until = ?, decided_at = ?, decided_by = ? WHERE id = ?")
+                    ->execute([date('Y-m-d H:i:s', time() + 86400), date('Y-m-d H:i:s'), (int)$_SESSION['user_id'], $permId]);
+                flash('Editor má povolenie na 24 hodín.', 'success');
+            } elseif ($permAct === 'reject' || $permAct === 'revoke') {
+                $pdo->prepare("UPDATE editor_requests SET status = 'rejected', granted_until = NULL, decided_at = ?, decided_by = ? WHERE id = ?")
+                    ->execute([date('Y-m-d H:i:s'), (int)$_SESSION['user_id'], $permId]);
+                flash($permAct === 'revoke' ? 'Povolenie bolo odobrané.' : 'Žiadosť bola zamietnutá.', 'success');
+            }
+        } catch (Throwable $e) { flash('Zmena povolenia zlyhala.', 'error'); }
+    }
+    header("Location: " . $base_path . "/"); exit;
+}
+
+// --- NÁVŠTEVNOSŤ + PERFORMANCE (iba admin) ---
+elseif ($path === '/navstevnost' && $method === 'GET') {
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
+    if (($_SESSION['role'] ?? '') !== 'admin') { header("Location: " . $base_path . "/"); exit; }
+    $vDays = (int)($_GET['days'] ?? 14);
+    if (!in_array($vDays, [7, 14, 30], true)) $vDays = 14;
+    $vUsers = [];
+    try {
+        $vUsers = $pdo->query("SELECT id, username, email, role, created_at, email_verified FROM users ORDER BY id ASC")->fetchAll();
+    } catch (Throwable $e) {
+        // staršia databáza bez stĺpca email_verified
+        try { $vUsers = $pdo->query("SELECT id, username, email, role, created_at FROM users ORDER BY id ASC")->fetchAll(); } catch (Throwable $e2) { /* tabuľka nemusí existovať */ }
+    }
+    // doplnkové údaje k profilom (bez mena, e-mailu a hesla)
+    $vDevCount = [];
+    $vLastLogin = [];
+    $vGrantCount = [];
+    try {
+        foreach ($pdo->query("SELECT user_id, COUNT(*) AS c FROM devices GROUP BY user_id")->fetchAll() as $r) {
+            $vDevCount[(int)$r['user_id']] = (int)$r['c'];
+        }
+    } catch (Throwable $e) { /* ignore */ }
+    try {
+        foreach ($pdo->query("SELECT user_id, MAX(last_login) AS ll FROM login_devices GROUP BY user_id")->fetchAll() as $r) {
+            $vLastLogin[(int)$r['user_id']] = (string)($r['ll'] ?? '');
+        }
+    } catch (Throwable $e) { /* ignore */ }
+    try {
+        foreach ($pdo->query("SELECT editor_id, granted_until FROM editor_requests WHERE status = 'approved'")->fetchAll() as $r) {
+            if (!empty($r['granted_until']) && strtotime((string)$r['granted_until']) > time()) {
+                $vuId = (int)$r['editor_id'];
+                $vGrantCount[$vuId] = ($vGrantCount[$vuId] ?? 0) + 1;
+            }
+        }
+    } catch (Throwable $e) { /* tabuľka ešte neexistuje */ }
+    render_template('navstevnost.html', [
+        'days' => $vDays,
+        'stats' => elvo_visit_stats($pdo, $vDays),
+        'perf' => elvo_admin_performance($pdo),
+        'users' => $vUsers,
+        'dev_counts' => $vDevCount,
+        'last_logins' => $vLastLogin,
+        'grant_counts' => $vGrantCount,
+        'csrf' => elvo_admin_csrf(),
+        'unlock_locked' => elvo_admin_edit_locked(),
+        'flash' => get_flash_messages(),
+    ]);
+}
+
+// zmena roly účtu (admin, po odomknutí)
+elseif ($path === '/navstevnost/role' && $method === 'POST') {
+    if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') { header("Location: " . $base_path . "/"); exit; }
+    if (!hash_equals(elvo_admin_csrf(), (string)($_POST['csrf'] ?? ''))) {
+        flash('Neplatný token — skús znova.', 'error');
+        header("Location: " . $base_path . "/navstevnost"); exit;
+    }
+    if (elvo_admin_edit_locked()) {
+        flash('Najprv zadaj admin kód (hore na stránke).', 'error');
+        header("Location: " . $base_path . "/navstevnost"); exit;
+    }
+    $vUid = (int)($_POST['user_id'] ?? 0);
+    $vNewRole = (string)($_POST['role'] ?? '');
+    if ($vUid > 0 && in_array($vNewRole, ['admin', 'manazer', 'editor', 'user', 'blocked'], true)) {
+        if ($vUid === (int)$_SESSION['user_id'] && $vNewRole !== 'admin') {
+            flash('Vlastný admin účet si nemôžeš zablokovať.', 'error');
+        } else {
+            $pdo->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$vNewRole, $vUid]);
+            flash('Rola účtu bola zmenená na ' . elvo_role_label($vNewRole) . '.', 'success');
+        }
+    }
+    header("Location: " . $base_path . "/navstevnost"); exit;
+}
+
+// vytvorenie manažérskeho účtu (admin, po odomknutí)
+elseif ($path === '/navstevnost/create-manager' && $method === 'POST') {
+    if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') { header("Location: " . $base_path . "/"); exit; }
+    if (!hash_equals(elvo_admin_csrf(), (string)($_POST['csrf'] ?? '')) || elvo_admin_edit_locked()) {
+        flash('Najprv zadaj admin kód (hore na stránke).', 'error');
+        header("Location: " . $base_path . "/navstevnost"); exit;
+    }
+    $vName = trim((string)($_POST['username'] ?? ''));
+    $vEmail = trim((string)($_POST['email'] ?? ''));
+    $vPass = (string)($_POST['password'] ?? '');
+    if ($vName === '' || !filter_var($vEmail, FILTER_VALIDATE_EMAIL) || strlen($vPass) < 8) {
+        flash('Vyplň meno, platný e-mail a heslo aspoň 8 znakov.', 'error');
+    } else {
+        try {
+            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'manazer', 1)")
+                ->execute([$vName, $vEmail, password_hash($vPass, PASSWORD_BCRYPT)]);
+            flash('Manažér ' . $vName . ' bol vytvorený.', 'success');
+        } catch (Throwable $e) {
+            flash('Účet s týmto e-mailom už existuje.', 'error');
+        }
+    }
+    header("Location: " . $base_path . "/navstevnost"); exit;
+}
+
+// odomknutie / zamknutie úprav admina
+elseif ($path === '/admin/unlock' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
+    $vBack = (string)($_POST['back'] ?? '/');
+    if ($vBack === '' || $vBack[0] !== '/' || strpos($vBack, '//') === 0) $vBack = '/';
+    if (($_SESSION['role'] ?? '') !== 'admin') { header("Location: " . $base_path . $vBack); exit; }
+    if (hash_equals(elvo_admin_edit_code(), trim((string)($_POST['code'] ?? '')))) {
+        $_SESSION['admin_edit_until'] = time() + 1800;
+        flash('Úpravy sú odomknuté na 30 minút.', 'success');
+    } else {
+        flash('Nesprávny admin kód.', 'error');
+    }
+    header("Location: " . $base_path . $vBack); exit;
+}
+elseif ($path === '/admin/lock' && $method === 'POST') {
+    if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
+    $vBack = (string)($_POST['back'] ?? '/');
+    if ($vBack === '' || $vBack[0] !== '/' || strpos($vBack, '//') === 0) $vBack = '/';
+    unset($_SESSION['admin_edit_until']);
+    flash('Úpravy sú znova zamknuté.', 'success');
+    header("Location: " . $base_path . $vBack); exit;
+}
+
+elseif ($path === '/' || $path === '') {
     if (!isset($_SESSION['user_id'])) {
         header("Location: " . $base_path . "/login");
         exit;
     }
     $devices = get_user_devices($pdo, $_SESSION['user_id']);
-    
+
     $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $user_row = $stmt->fetch();
-    $is_admin = ($user_row && ($user_row['role'] ?? '') === 'admin');
-    
-    if ($is_admin) {
+    $home_role = (string)($user_row['role'] ?? '');
+    $is_admin = ($home_role === 'admin');
+    $is_manager = ($home_role === 'manazer');
+
+    if ($home_role === 'editor') {
+        // editor: iba zoznam zariadení a stav porúch
+        elvo_editor_table($pdo);
         $all_devices = $pdo->query("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.id DESC")->fetchAll();
-        render_template('admin.html', ['devices' => $all_devices, 'all_devices' => $all_devices, 'is_admin' => true]);
+        $my_requests = [];
+        try {
+            $stER = $pdo->prepare("SELECT * FROM editor_requests WHERE editor_id = ?");
+            $stER->execute([(int)$_SESSION['user_id']]);
+            foreach ($stER->fetchAll() as $eRow) $my_requests[(int)$eRow['device_id']] = $eRow;
+        } catch (Throwable $e) { /* tabuľka ešte neexistuje */ }
+        render_template('editor.html', ['devices' => $all_devices, 'requests' => $my_requests, 'flash' => get_flash_messages()]);
+    } elseif ($is_admin || $is_manager) {
+        $all_devices = $pdo->query("SELECT d.*, u.username FROM devices d LEFT JOIN users u ON d.user_id = u.id ORDER BY d.id DESC")->fetchAll();
+        elvo_editor_table($pdo);
+        $editor_requests = [];
+        try {
+            $editor_requests = $pdo->query("SELECT r.*, d.name AS device_name, u.username AS editor_name FROM editor_requests r LEFT JOIN devices d ON d.id = r.device_id LEFT JOIN users u ON u.id = r.editor_id ORDER BY r.id DESC LIMIT 50")->fetchAll();
+        } catch (Throwable $e) { /* tabuľka ešte neexistuje */ }
+        render_template('admin.html', [
+            'devices' => $all_devices,
+            'all_devices' => $all_devices,
+            'is_admin' => $is_admin,
+            'is_manager' => $is_manager,
+            'requests' => $editor_requests,
+        ]);
     } elseif (count($devices) === 0) {
-        render_template('no_devices.html');
+        render_template('no_devices.html', ['is_demo' => elvo_is_demo_user($pdo)]);
     } else {
         header("Location: " . $base_path . "/dashboard");
         exit;
@@ -1832,13 +2224,13 @@ if ($path === '/' || $path === '') {
 
 elseif ($path === '/stiahnut' || $path === '/install') {
     // STRÁNKA NA STIAHNUTIE APPKY (PWA).
-    // Prístupná len za bránou: tajná adresa + meno/heslo + úspešný test proti robotom.
-    // Sem ťa systém pošle automaticky po prihlásení na bráne.
+    // Len za bránou: tajná adresa + meno/heslo + test proti robotom.
+    // Sem ťa to pošle samo po prihlásení na bráne.
     elvo_download_page();
     exit;
 }
 
-// --- PRIHLASENIE CEZ GOOGLE / APPLE / MICROSOFT ---------------------------------
+// --- PRIHLÁSENIE CEZ GOOGLE / APPLE / MICROSOFT ---
 elseif (preg_match('#^/auth/(google|apple|microsoft)(/callback)?$#', $path, $mOauth)) {
     require_once __DIR__ . '/oauth_helper.php';
     $oauthProv = $mOauth[1];
@@ -1860,7 +2252,7 @@ elseif (preg_match('#^/auth/(google|apple|microsoft)(/callback)?$#', $path, $mOa
         exit;
     }
 
-    // 2) Návrat od poskytovateľa (Google/Microsoft = GET, Apple = POST)
+    // 2) návrat od poskytovateľa (Apple = POST)
     $oauthCode  = (string)($_REQUEST['code'] ?? '');
     $oauthErr   = (string)($_REQUEST['error'] ?? '');
     $stateRow   = elvo_oauth_state_take($pdo, (string)($_REQUEST['state'] ?? ''));
@@ -1900,21 +2292,21 @@ elseif (preg_match('#^/auth/(google|apple|microsoft)(/callback)?$#', $path, $mOa
 }
 
 elseif ($path === '/login') {
-    // Rate limit: max 3 neuspesnych pokusov -> 30 min lockout (per email+IP)
+    // max 3 zlé pokusy → 30 min blok
     $attempt_key = 'login_att_' . md5(strtolower(trim($_POST['email'] ?? '')) . '|' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
     $attempts = $_SESSION[$attempt_key] ?? ['count' => 0, 'until' => 0];
-    // Cloudflare Turnstile — políčko sa zobrazí, len keď sú nastavené kľúče
+    // Turnstile sa ukáže len keď sú kľúče
     // (TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY v Railway Variables).
     $elvo_ts_site = elvo_turnstile_enabled() ? (elvo_turnstile_keys()['site'] ?? '') : '';
     if ($method === 'POST') {
-        // Prihlasovací formulár chránime proti robotom rovnako ako bránu.
+        // formulár chránime rovnako ako bránu
         if (elvo_turnstile_enabled() && !elvo_turnstile_ok()) {
             flash('Overenie proti robotom zlyhalo — obnov stránku a skús znova.', 'error');
             require_once __DIR__ . '/oauth_helper.php';
             render_template('prihlasenie.html', ['flash' => get_flash_messages(), 'ts_site' => $elvo_ts_site, 'oauth' => elvo_oauth_available()]);
             exit;
         }
-        // 2FA blokada (3 zle kody -> 30 min): blokuje cele prihlasenie z tohto zariadenia
+        // 3 zlé kódy → 30 min blok
         $dev_hash_chk = hash('sha256', (trim($_POST['device_id'] ?? '') ?: ('ua:' . ($_SERVER['HTTP_USER_AGENT'] ?? '-'))));
         try {
             $tq = $pdo->prepare("SELECT blocked_until FROM login_throttle WHERE device_hash = ?");
@@ -1931,16 +2323,16 @@ elseif ($path === '/login') {
         } else {
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
-            // Stabilny fingerprint zariadenia (z frontendu localStorage ID alebo UA fallback)
+            // Fingerprint zariadenia (ID z localStorage, inak aspoň z UA)
             $device_hash = hash('sha256', (trim($_POST['device_id'] ?? '') ?: ('ua:' . ($_SERVER['HTTP_USER_AGENT'] ?? '-'))));
             
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             $user_role = $user['role'] ?? '';
-            // Prihlásiť sa môže admin, mechanik aj bežný používateľ (vidí len svoje zariadenia).
+            // admin, manažér, editor aj bežný používateľ
             // Blokované sú len neznáme/zablokované roly.
-            $role_allowed = in_array($user_role, ['admin', 'mechanik', 'user'], true);
+            $role_allowed = in_array($user_role, ['admin', 'manazer', 'editor', 'user'], true);
             
             if ($user && $role_allowed && password_verify($password, $user['password_hash'])) {
                 // Až PO overení hesla: povolený e-mail (ADMIN_EMAILS, predvolene
@@ -1951,7 +2343,7 @@ elseif ($path === '/login') {
                 $user = elvo_ensure_some_admin($pdo, $user);
                 $user_role = $user['role'] ?? $user_role;
                 unset($_SESSION[$attempt_key]);
-                // 2FA pri KAZDOM prihlaseni - vzdy posleme overovaci kod na email
+                // 2FA pri každom prihlásení
                 {
                     $code = strval(random_int(100000, 999999));
                     $_SESSION['pending_login'] = [
@@ -1968,19 +2360,17 @@ elseif ($path === '/login') {
                     $mail_sent = false;
                     {
                         require_once __DIR__ . '/mail_helper.php';
-                        // Token na odhlasenie zariadenia z mailu (platny 24 h)
+                        // token na odhlásenie zariadenia z mailu (24 h)
                         $unsub_token = bin2hex(random_bytes(16));
                         $_SESSION['pending_login']['unsub_token'] = hash('sha256', $unsub_token);
                         $unsub_url = $base_path . '/device-logout?token=' . $unsub_token . '&login=1';
                         $mail_sent = send_elvo_email($email, 'Overovací kód: ' . $code . ' | ElvoControll', 'Prihlásenie do vášho účtu',
                             elvo_mail_tpl_code($code, $unsub_url), '#6366f1');
                     }
-                    // FALLBACK bez mailu: ak sa mail NEPODAL odoslat (ziadny RESEND_API_KEY/SMTP),
-                    // kod sa zobrazi hore na obrazovke - inak by sa user nemohol nikdy prihlasit.
-                    // Ak mail odchadza, kod sa NIKDY nezobrazi (plna 2FA bezpecnost).
+                    // kód sa nikdy nezobrazuje na stránke — prichádza iba e-mailom
+                    $_SESSION['pending_login']['mail_ok'] = (bool)$mail_sent;
                     if (!$mail_sent) {
-                        $_SESSION['pending_login']['dev_code'] = $code;
-                        error_log("[LOGIN] Mail sa nepodarilo odoslat na " . $email . " - kod zobrazeny na obrazovke (fallback)");
+                        error_log("[LOGIN] Mail sa nepodarilo odoslat na " . $email);
                     }
                     header("Location: " . $base_path . "/verify-login");
                     exit;
@@ -1989,7 +2379,7 @@ elseif ($path === '/login') {
                 $attempts['count']++;
                 if ($attempts['count'] >= 3) { $attempts['until'] = time() + 1800; $attempts['count'] = 0; }
                 $_SESSION[$attempt_key] = $attempts;
-                // Rozlíš: účet existuje a heslo sedí, ale nemá rolu admin/mechanik → jasná správa.
+                // účet bez povolenej roly → hláška
                 if ($user && password_verify($password, $user['password_hash'])) {
                     flash("Tento účet je zablokovaný (rola „" . htmlspecialchars($user_role) . "„). Kontaktujte správcu.", 'error');
                 } else {
@@ -2017,7 +2407,7 @@ elseif ($path === '/verify-login') {
             exit;
         }
         if ($pl['attempts'] >= 3) {
-            // 3 zle kody = 30 min blokacia prihlasenia z tohto zariadenia
+            // 3 zlé kódy → 30 min blok
             $_SESSION['twofa_block_until'] = time() + 1800;
             $pdo->prepare("INSERT INTO login_throttle (device_hash, blocked_until) VALUES (?, DATE_ADD(NOW(), INTERVAL 30 MINUTE)) ON DUPLICATE KEY UPDATE blocked_until = VALUES(blocked_until)")
                 ->execute([$pl['device_hash']]);
@@ -2038,7 +2428,7 @@ elseif ($path === '/verify-login') {
                 $pdo->prepare("INSERT INTO login_devices (user_id, device_hash, device_name, last_login) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE last_login = NOW()")
                     ->execute([$pl['user_id'], $pl['device_hash'], substr($_SERVER['HTTP_USER_AGENT'] ?? 'Zariadenie', 0, 100)]);
             } catch (Exception $e) { /* ignore */ }
-            // ALERT: nove zariadenie sa prihlasilo na ucet (push + email podla kanala usera)
+            // alert: nové zariadenie na účte
             if ($isNewLoginDevice && !empty($pl['user_id'])) {
                 try {
                     $uaShort = substr($_SERVER['HTTP_USER_AGENT'] ?? 'Neznáme zariadenie', 0, 60);
@@ -2058,6 +2448,10 @@ elseif ($path === '/verify-login') {
             $_SESSION['role'] = $pl['role'] ?? '';
             $_SESSION['last_activity'] = time();
             $_SESSION['stay_logged_in'] = !empty($pl['stay']);
+            // Úspešné zadanie kódu z e-mailu = e-mail je overený
+            try {
+                $pdo->prepare("UPDATE users SET email_verified = 1 WHERE id = ?")->execute([$pl['user_id']]);
+            } catch (Throwable $e) { /* stĺpec nemusí existovať */ }
             unset($_SESSION['pending_login']);
             header("Location: " . $base_path . "/");
             exit;
@@ -2070,7 +2464,7 @@ elseif ($path === '/verify-login') {
     // Maskuj email: ad***@domena.sk
     $eparts = explode('@', $pl['email']);
     $mask_email = substr($eparts[0], 0, min(2, strlen($eparts[0]))) . '***@' . ($eparts[1] ?? '');
-    render_template('overenie.html', ['flash' => get_flash_messages(), 'mask_email' => $mask_email, 'dev_code' => ($_SESSION['pending_login']['dev_code'] ?? '')]);
+    render_template('overenie.html', ['flash' => get_flash_messages(), 'mask_email' => $mask_email]);
 }
 
 // --- ZNOVU POSLAT KOD ---
@@ -2080,7 +2474,6 @@ elseif ($path === '/verify-login/resend' && $method === 'GET') {
         $_SESSION['pending_login']['code_hash'] = password_hash($code, PASSWORD_DEFAULT);
         $_SESSION['pending_login']['expires'] = time() + 600;
         $_SESSION['pending_login']['attempts'] = 0;
-        unset($_SESSION['pending_login']['dev_code']);
         $mail_sent2 = false;
         {
             require_once __DIR__ . '/mail_helper.php';
@@ -2092,8 +2485,7 @@ elseif ($path === '/verify-login/resend' && $method === 'GET') {
                     elvo_mail_tpl_code($code, '', 'Požiadali ste o nový kód. Starý prestal platiť.'), '#6366f1');
             } catch (Exception $me) { $mail_sent2 = false; }
         }
-        // kod sa nezobrazuje na obrazovke (bezpecnost) - len mail
-        if (!$mail_sent2) $_SESSION['pending_login']['dev_code'] = $code;
+        $_SESSION['pending_login']['mail_ok'] = (bool)$mail_sent2;
     }
     header("Location: " . $base_path . "/verify-login");
     exit;
@@ -2112,7 +2504,7 @@ elseif ($path === '/register') {
             $role = in_array(strtolower($email), elvo_admin_emails(), true) ? 'admin' : 'user';
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)");
             $stmt->execute([$username, $email, $hashed, $role]);
-            // AUTO-LOGIN: pouzivatela rovno prihlasime - nemusi sa 2x prihlasovat
+            // po registrácii rovno prihlásime
             session_regenerate_id(true);
             $_SESSION['user_id'] = $pdo->lastInsertId();
             $_SESSION['username'] = $username;
@@ -2144,12 +2536,13 @@ elseif ($path === '/logout') {
 }
 
 elseif ($path === '/setup' || $path === '/setup.html') {
-    // Setup zariadenia moze robit IBA admin (user je presmerovany na dashboard)
+    // setup len pre admina
     if (isset($_SESSION['user_id'])) {
         $stmtRole = $pdo->prepare("SELECT role FROM users WHERE id = ?");
         $stmtRole->execute([$_SESSION['user_id']]);
         $roleRow = $stmtRole->fetch();
-        if (!$roleRow || ($roleRow['role'] ?? '') !== 'admin') {
+        $setupRole = (string)($roleRow['role'] ?? '');
+        if (!$roleRow || (!elvo_role_manages($setupRole) && $setupRole !== 'editor')) {
             header("Location: " . $base_path . "/dashboard");
             exit;
         }
@@ -2163,18 +2556,22 @@ elseif ($path === '/dashboard' && $method === 'GET') {
         exit;
     }
     $devices = get_user_devices($pdo, $_SESSION['user_id']);
-    // Admin (alebo admin poducet ako mechanik) moze pridavat zariadenia
+    // Admin alebo manažér môže pridávať zariadenia
     $stmtRole = $pdo->prepare("SELECT role FROM users WHERE id = ?");
     $stmtRole->execute([$_SESSION['user_id']]);
     $roleRowD = $stmtRole->fetch();
-    $is_admin = ($roleRowD && in_array($roleRowD['role'] ?? '', ['admin', 'mechanik']));
-    // Bez zariadenia sa dashboard NIKDY nezobrazí — používateľ vidí obrazovku „no device“.
-    // Zariadenie priraďuje admin/mechanik, nie používateľ, preto tu nie je žiadne pridávanie.
-    if (!$is_admin && count($devices) === 0) {
-        render_template('no_devices.html');
+    $is_admin = ($roleRowD && elvo_role_manages($roleRowD['role'] ?? ''));
+    // bez zariadenia sa dashboard nezobrazí (demo si prepne: ?view=none)
+    $is_demo = elvo_is_demo_user($pdo);
+    if ($is_demo && (string)($_GET['view'] ?? '') === 'none') {
+        render_template('no_devices.html', ['is_demo' => true]);
         exit;
     }
-    render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices, 'is_admin' => $is_admin]);
+    if (!$is_admin && !$is_demo && count($devices) === 0) {
+        render_template('no_devices.html', ['is_demo' => false]);
+        exit;
+    }
+    render_template('dashboard.html', ['username' => $_SESSION['username'], 'devices' => $devices, 'is_admin' => $is_admin, 'is_demo' => $is_demo]);
 }
 
 // Mesačný report — tlačová A4 verzia (Ctrl+P → Uložiť ako PDF)
@@ -2190,9 +2587,9 @@ elseif ($path === '/report' && $method === 'GET') {
         $stR->execute([$_SESSION['user_id']]);
         $repRole = (string)($stR->fetchColumn() ?: 'user');
     } catch (Throwable $e) { /* ostane user */ }
-    $repAll = in_array($repRole, ['admin', 'mechanik'], true);
+    $repAll = elvo_role_manages($repRole);
 
-    // ?year=YYYY → 13 strán (1 prehľad roka + 12 mesiacov), inak 1 mesiac
+    // ?year=YYYY → 13 strán, inak 1 mesiac
     $report_year = (string)($_GET['year'] ?? '');
     if (preg_match('/^\d{4}$/', $report_year)) {
         $repPages = elvo_report_year_pages($pdo, (int)$_SESSION['user_id'], (int)$report_year, $repAll);
@@ -2214,14 +2611,14 @@ elseif ($path === '/profile' && $method === 'GET') {
 }
 
 // =============================================================================
-// RUKA — MQTT OVLÁDANIE STROJOV (retained príkazy cez firemný broker)
+// RUKA - MQTT ovládanie strojov
 // =============================================================================
 elseif ($path === '/mqtt' && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) { header("Location: " . $base_path . "/login"); exit; }
     $stmtRoleM = $pdo->prepare("SELECT role FROM users WHERE id = ?");
     $stmtRoleM->execute([$_SESSION['user_id']]);
     $roleRowM = $stmtRoleM->fetch();
-    if (!$roleRowM || !in_array($roleRowM['role'] ?? '', ['admin', 'mechanik'], true)) {
+    if (!$roleRowM || !elvo_role_manages($roleRowM['role'] ?? '')) {
         header("Location: " . $base_path . "/dashboard");
         exit;
     }
@@ -2229,7 +2626,7 @@ elseif ($path === '/mqtt' && $method === 'GET') {
 }
 
 // =============================================================================
-// ADMIN DEVICE DETAIL (PODPORUJE: /admin_device.html, /admin/device/1, /admin_device/1)
+// ADMIN DEVICE DETAIL (/admin_device.html, /admin/device/1, ...)
 // =============================================================================
 elseif ((preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches) || $path === '/admin_device.html' || $path === '/admin_device') && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) { 
@@ -2237,17 +2634,22 @@ elseif ((preg_match('#^/(?:admin/device|admin_device)/(\d+)$#', $path, $matches)
         exit; 
     }
     
-    // Zistí ID zariadenia buď z URL cesty alebo z GET parametra ?id=...
-    // Admin/mechanik rozhranie — bezny pouzivatel tu nema co robit
+    // ID zariadenia z URL alebo ?id=
+    // Admin/manažér rozhranie — bežný používateľ tu nemá čo robiť
     $stRoleAd = $pdo->prepare("SELECT role FROM users WHERE id = ?");
     $stRoleAd->execute([$_SESSION['user_id']]);
     $roleAd = (string)($stRoleAd->fetchColumn() ?: '');
-    if (!in_array($roleAd, ['admin', 'mechanik'], true)) {
+    $dev_id = isset($matches[1]) ? intval($matches[1]) : intval($_GET['id'] ?? 1);
+    if ($roleAd === 'editor') {
+        // editor vidí detail len s platným povolením
+        if (!elvo_editor_can_edit($pdo, $dev_id)) {
+            header("Location: " . $base_path . "/");
+            exit;
+        }
+    } elseif (!elvo_role_manages($roleAd)) {
         header("Location: " . $base_path . "/dashboard");
         exit;
     }
-
-    $dev_id = isset($matches[1]) ? intval($matches[1]) : intval($_GET['id'] ?? 1);
     
     // Načítanie zariadenia z databázy
     $stmt = $pdo->prepare("SELECT * FROM devices WHERE id = ?");
@@ -2296,7 +2698,7 @@ elseif ($path === '/api/admin/terminal-command' && $method === 'POST') {
         $slave_id = $dev ? intval($dev['modbus_slave_id'] ?? 205) : 205;
         $serial = $dev['serial_number'] ?? 'CM5-DEFAULT';
 
-        // cm5_config zrusena (setup iba kablom) - prikaz sa ulozi do devices.admin_command
+        // príkaz sa uloží do devices.admin_command
         try {
             if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
                 $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
@@ -2314,7 +2716,7 @@ elseif ($path === '/api/admin/terminal-command' && $method === 'POST') {
 }
 
 // MANUÁLNY ZÁPIS VÝKONU cez web (skúška 2 / ovládanie) — ide cez cloud do CM5
-// --- ZMAZANIE ZARIADENIA Z CLOUDU (setup test 2 NEPREŠIEL alebo admin) ---
+// --- ZMAZANIE ZARIADENIA ---
 elseif (preg_match('#^/api/device/(\d+)/remove$#', $path, $mRem) && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
     $dev_id = intval($mRem[1]);
@@ -2352,9 +2754,9 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
     if ($pct < 0 || $pct > 100) {
         send_json(['status' => 'error', 'message' => 'Hodnota musí byť 0–100 %'], 400);
     }
-    // Voliteľný režim návratu pôvodnej hodnoty (restore) — IBA na výslovné potvrdenie používateľa
+    // restore len na potvrdenie používateľa
     $restore = !empty($data['restore']);
-    // Serial CM5 (setup ho pozná zo skúšky 1) — príkaz MUSÍ ísť na riadok, ktorý CM5 reálne polluje!
+    // serial CM5: príkaz musí ísť na riadok, ktorý CM5 číta
     $cmd_serial = trim($data['serial'] ?? '');
     try {
         $stmt = $pdo->prepare("SELECT id, serial_number FROM devices WHERE id = ?");
@@ -2363,8 +2765,7 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
         if (!$dev) {
             send_json(['status' => 'error', 'message' => 'Zariadenie nenájdené'], 404);
         }
-        // Rozhodni CIERY riadok: ak prišiel serial, prioritne riadok s TÝM serialom
-        // (devId riadok môže byť bez serialu — potom by CM5 príkaz nikdy nevzal!)
+        // prioritne riadok podľa serialu, inak by CM5 príkaz nevzal
         $target_id = intval($dev['id']);
         if ($cmd_serial !== '') {
             try {
@@ -2374,7 +2775,7 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
                 if ($rowS) { $target_id = intval($rowS['id']); }
             } catch (Exception $eS2) { /* fallback na devId */ }
         }
-        // Zapíš príkaz do devices.admin_command (CM5 si ho vyzdvihne pri poll-e)
+        // príkaz do devices.admin_command
         if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
             $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
         }
@@ -2384,7 +2785,7 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
             : ['action' => 'set_power', 'pct' => $pct, 'cmd_key' => $cmd_key]);
         $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
         $stmtU->execute([$cmd, $target_id]);
-        // STATUS 1: ODOSLANE (cloud zapisal prikaz; CM5 si ho ma vyzdvihnut pri polle)
+        // STATUS 1: odoslané
         try {
             $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
                 ->execute(['last_cmd_result_dev_' . $target_id, json_encode([
@@ -2400,7 +2801,7 @@ elseif (preg_match('#^/api/device/(\d+)/set-power$#', $path, $matches) && $metho
     }
 }
 
-// --- SVETLO / BATERKA (SK6812 RGBW pásek na CM5 — 3 pásky, GPIO 27) ---
+// --- SVETLO / BATERKA (SK6812 RGBW, GPIO 27) ---
 elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) {
         send_json(['status' => 'error', 'message' => 'Neprihlásený používateľ'], 401);
@@ -2414,7 +2815,7 @@ elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 
     foreach (['r', 'g', 'b', 'w'] as $ch) {
         $channels[$ch] = max(0, min(255, intval($data[$ch] ?? 0)));
     }
-    // Rovnaká logika ako set-power: príkaz ide na riadok, ktorý CM5 reálne polluje
+    // príkaz na riadok, ktorý CM5 číta
     $cmd_serial = trim($data['serial'] ?? '');
     try {
         $stmt = $pdo->prepare("SELECT id FROM devices WHERE id = ?");
@@ -2441,10 +2842,10 @@ elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 
             'brightness' => $brightness,
             'cmd_key' => $cmd_key,
         ], $channels));
-        // Príkaz si CM5 vyzdvihne pri najbližšom poll-e (do 5 s) a rozsvieti pásek
+        // CM5 ho vyzdvihne do 5 s
         $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
         $stmtU->execute([$cmd, $target_id]);
-        // Zapamätaj si posledný príkaz — dashboard ho ukáže aj po reloade / na inom zariadení
+        // posledný príkaz pre dashboard
         elvo_set_setting($pdo, 'led_state_' . $target_id, json_encode([
             'on' => $mode !== 'off',
             'brightness' => $brightness,
@@ -2462,8 +2863,7 @@ elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 
     }
 }
 
-// --- POSLEDNY VYSLEDOK PRIKAZU (setup polling — ci CM5 realne zapisal na SmartLogger) ---
-// Klúčom je SERIAL CM5 (rovnaký, pod ktorým CM5 aj ukladá výsledok) — imúnne voči devId nezhodám
+// --- POSLEDNÝ VÝSLEDOK PRÍKAZU (kľúč = serial CM5) ---
 elseif (preg_match('#^/api/device/(\d+)/last-cmd-result$#', $path, $matches) && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) { send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401); }
     // ?serial=CM5-... má prednosť (rovnaký serial, ako posiela CM5)
@@ -2507,7 +2907,7 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
     // Historia pre graf: poslednych 48 hodin (najstarsie -> najnovsie)
     $history = [];
     try {
-        // Rychle: poslednych max 384 zaznamov (48h x 15min) cez index, potom revers v PHP
+        // max 384 záznamov (48 h)
         $stmtH = $pdo->prepare("SELECT power_ac, battery_soc, temp, timestamp FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT 384");
         $stmtH->execute([$device_id]);
         $histRaw = $stmtH->fetchAll();
@@ -2521,7 +2921,7 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         }
     } catch (Exception $eH) { /* stara schema bez timestamp - ignore */ }
     
-    // Posledný známy stav svetla pre toto zariadenie (uložený pri POST /led)
+    // posledný stav svetla
     $ledStateRaw = elvo_get_setting($pdo, 'led_state_' . intval($device_id));
     $ledState = $ledStateRaw !== null ? json_decode($ledStateRaw, true) : null;
 
@@ -2529,19 +2929,18 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         // REALNE DATA IBA - ziadne fake fallbacky (3840/84 boli fake)
         'total_live_power' => $latest ? (float)$latest['power_ac'] : 0,
         'avg_live_soc' => $latest ? (float)$latest['battery_soc'] : 0,
-        // null = zariadenie vyrobu nikdy nenahlasilo (klient zobrazi '–', nie falošnu nulu)
+        // null = výroba nikdy nenahlásená
         'total_kwh' => (isset($device['total_kwh']) && $device['total_kwh'] !== '' && $device['total_kwh'] !== null) ? (float)$device['total_kwh'] : null,
         'total_saved_eur' => (float)($device['total_saved_eur'] ?? 0),
         'temp' => $latest ? (float)$latest['temp'] : 0,
         'inverter_temp' => $latest ? (float)$latest['temp'] : 0,
         'freq' => $latest ? (float)$latest['freq'] : 0,
-        // null = odber zo siete nevieme (ziadna telemetria / stary stlpec) — klient nesmie kreslit falošnu nulu
+        // null = odber neznámy
         'consumption' => ($latest && isset($latest['grid_import_w'])) ? (float)$latest['grid_import_w'] : null,
         'grid_export_w' => 0,
         'device_battery_pct' => $latest ? (float)$latest['battery_soc'] : 0,
         'has_real_data' => $latest ? true : false,
-        // Posledné známe hodnoty (devices) — dashboard ich ukáže, keď telemetria ešte
-        // neprišla (napr. SmartLogger práve neodpovedá), aby nesvietili falošné nuly.
+        // posledné známe hodnoty z devices
         'last_known' => (function() use ($device) {
             if (!$device) return null;
             $soc = (float)($device['battery_soc'] ?? 0);
@@ -2566,20 +2965,20 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'smartlogger_ip' => $device['smartlogger_ip'] ?? '',
         'is_online' => (($device['status'] ?? '') === 'online') || ($latest && (float)$latest['power_ac'] > 0),
         'has_smart_meter' => (bool)($device['has_smart_meter'] ?? false),
-        // Stav svetla z DB — rovnaký na mobile aj PC (null = ešte nebol žiadny príkaz)
+        // stav svetla z DB
         'led_on' => is_array($ledState) ? (bool)($ledState['on'] ?? false) : null,
         'led_brightness' => is_array($ledState) && isset($ledState['brightness']) ? intval($ledState['brightness']) : null,
-        // Stav komunikacie: zariadenie odpovedalo v poslednych 15 minutach?
+        // odpovedalo za posledných 15 min?
         'last_telemetry_at' => $latest ? $latest['timestamp'] : null,
         'comm_ok' => (function() use ($latest) { if (!$latest) return false; $d = time() - strtotime($latest['timestamp']); return $d >= 0 && $d < 900; })(),
         'last_comm_sec' => $latest ? max(0, time() - strtotime($latest['timestamp'])) : null,
-        // Typ zariadenia - podla sub_type/category_id (jedina pravda v DB)
+        // typ zariadenia podľa DB
         'is_smartlogger' => (strpos(strtolower($device['sub_type'] ?? ''), 'smartlogger') !== false) || (strpos(strtolower($device['category_id'] ?? ''), 'smartlogger') !== false),
         // Firmware verzia (z Modbus — ak CM5 posiela)
         'fw_version' => $device['fw_version'] ?? '',
-        // Reálny stav zariadenia z DB (status_msg od CM5 — napr. Standby, Uploading, chyba)
+        // stav zariadenia (status_msg z CM5)
         'status_msg' => $latest ? (string)($latest['status_msg'] ?? '') : '',
-        // Zoznam vsetkych pripojenych zariadeni (striedace/SmartLoggery) nahlásené CM5
+        // zariadenia nahlásené CM5
         'connected_devices' => (function() use ($device) {
             $raw = $device['connected_devices'] ?? null;
             if (!$raw) return [];
@@ -2592,7 +2991,7 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
 // --- OKTE CENY API ---
 // =============================================================================
 // MQTT API — publish príkazu (retained) + čítanie stavov
-// Bezpečnosť: gate + admin/mechanik + CSRF + whitelist + audit + rate limit
+// Bezpečnosť: gate + admin/manažér + CSRF + whitelist + audit + rate limit
 // =============================================================================
 elseif ($path === '/api/mqtt/publish' && $method === 'POST') {
     $elvoMqttUser = elvo_mqtt_current_user($pdo);
@@ -2679,8 +3078,7 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
     $serial = trim($data['serial'] ?? '');
     if ($serial === '') { send_json(['status' => 'no_pending']); }
     
-    // BEZPECNOST: poll berie IBA prikazy pre KONKRETNY serial - ziadny CM5-DEFAULT fallback.
-    // Nesetupnuty box tak nedostane ziadny stary/zaseknuty prikaz urceny inemu zariadeniu.
+    // poll berie len príkazy pre konkrétny serial
     $serials = [$serial];
     try {
         $sStmt = $pdo->prepare("SELECT serial_number FROM devices WHERE serial_number = ? LIMIT 1");
@@ -2691,8 +3089,7 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
         }
     } catch (Exception $eS) { /* tabulka neexistuje -> pokracuj (cloud sync prvy krat registruje) */ }
     
-    // 1) NOVÝ KANÁL: admin_command uložený priamo v devices podla serial_number
-    //    (cm5_config zrušená — setup ide výhradne káblom, nič sa neukladá do cloud DB)
+    // 1) admin_command z devices podľa serial_number
     try {
         $dStmt = $pdo->prepare("SELECT id, admin_command FROM devices WHERE serial_number = ? AND admin_command IS NOT NULL AND admin_command != '' ORDER BY id DESC LIMIT 1");
         $dStmt->execute([$serial]);
@@ -2711,7 +3108,7 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
             }
             // Vycisti prikaz (jednorazovy)
             $pdo->prepare("UPDATE devices SET admin_command = NULL WHERE id = ?")->execute([$dRow['id']]);
-            // STATUS 2: PRIJATE — CM5 si vyzdvihol prikaz (setup/Riadenie si to precita cez last-cmd-result)
+            // STATUS 2: prijaté
             try {
                 $cmdKey = '';
                 if ($cmd !== '' && $cmd[0] === '{') {
@@ -2748,7 +3145,7 @@ elseif ($path === '/api/cm5/result' && $method === 'POST') {
         $dStmt->execute([$serial]);
         $dev = $dStmt->fetch();
         if (!$dev) { send_json(['status' => 'unknown_device']); }
-        // Uloz posledny vysledok prikazu (setup si ho precita cez /api/device/{id}/last-cmd-result)
+        // uložíme posledný výsledok príkazu
         $res = $data['result'] ?? [];
         $payload = json_encode([
             'at' => date('c'),
@@ -2759,21 +3156,9 @@ elseif ($path === '/api/cm5/result' && $method === 'POST') {
             'readback_pct' => isset($res['readback_pct']) ? $res['readback_pct'] : null,
             'original_pct' => isset($res['original_pct']) ? $res['original_pct'] : null,
         ]);
-        // UPSERT: prepíš posledný výsledok (INSERT zlyhá na duplicate key pri druhom pupusu)
+        // upsert posledného výsledku
         $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
             ->execute(['last_cmd_result_dev_' . intval($dev['id']), $payload]);
-        // HW DEPLOY: ak CM5 potvrdil/nepotvrdil deploy súborov, zapis stav pre admin terminal
-        if (($res['status'] ?? '') === 'success' && isset($res['applied'])) {
-            try {
-                $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES ('hw_deploy_status', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)")
-                    ->execute(['success']);
-            } catch (Exception $e) {}
-        } elseif (($res['status'] ?? '') !== 'success') {
-            $cur = $pdo->query("SELECT `value` FROM system_settings WHERE `key` = 'hw_deploy_status' LIMIT 1")->fetch();
-            if ($cur && $cur['value'] === 'pending') {
-                $pdo->prepare("UPDATE system_settings SET `value` = 'error' WHERE `key` = 'hw_deploy_status'")->execute();
-            }
-        }
         send_json(['status' => 'success']);
     } catch (Exception $e) {
         try {
@@ -2808,13 +3193,13 @@ elseif ($path === '/api/report-ip' && $method === 'POST') {
 elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
     $data = get_json_input();
-    // CM5 posiela 'serial_number' v telemetry payload - akceptuj OBA kluce (ziadny CM5-DEFAULT fallback!)
+    // CM5 posiela serial_number, akceptujeme oba kľúče
     $serial = trim($data['serial'] ?? $data['serial_number'] ?? '');
     
     // Najdi zariadenie podla serial alebo prve
     $device_id = 0;
     try {
-        // BEZPECNOST: telemetria patri IBA znamemu serialu (ziadny fallback na prve zariadenie)
+        // telemetria len pre známy serial
         $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
         $stmt->execute([$serial]);
         $row = $stmt->fetch();
@@ -2822,7 +3207,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
     } catch (Exception $e) { /* ignore */ }
     
     if ($device_id) {
-        // Self-healing: dopln chybajuce stlpce v telemetry tabulke (stara schema fix)
+        // doplnenie chýbajúcich stĺpcov v telemetry
         try {
             $tcols = $pdo->query("SHOW COLUMNS FROM telemetry")->fetchAll(PDO::FETCH_COLUMN);
             if (!in_array('battery_soc', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN battery_soc FLOAT DEFAULT 0");
@@ -2831,7 +3216,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             if (!in_array('freq', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN freq FLOAT DEFAULT 50");
             if (!in_array('status_msg', $tcols)) $pdo->exec("ALTER TABLE telemetry ADD COLUMN status_msg VARCHAR(255) DEFAULT 'Online'");
         } catch (Exception $eSH) { /* ignore */ }
-        // Self-healing: aj devices tabulka moze mat staru schema bez tychto stlpcov
+        // a v devices
         $devHasSoc = false; $devHasFve = false; $devHasTemp = false;
         try {
             $dcols = $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN);
@@ -2844,7 +3229,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             $devHasSoc = true; $devHasFve = true; $devHasTemp = true;
         } catch (Exception $eSD) { /* ignore */ }
         try {
-            // Uloz telemetry zaznam - NOW() moze failnut na MySQL strict mode, pouzime date('Y-m-d H:i:s')
+            // NOW() môže zlyhať v MySQL strict mode, používame date()
             $ts = date('Y-m-d H:i:s');
             // Self-healing: grid_import_w stlpec (odber zo siete)
             try {
@@ -2862,7 +3247,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                 floatval($data['grid_import_w'] ?? 0),
                 $ts
             ]);
-            // Aktualizuj devices - status online + posledne hodnoty (sety podla toho co tabulka ma)
+            // devices: status online + posledné hodnoty
             $updParts = ["status = 'online'", "last_seen = NOW()"];
             $updVals = [];
             if ($devHasSoc) { $updParts[] = "battery_soc = ?"; $updVals[] = floatval($data['battery_soc'] ?? 0); }
@@ -2871,7 +3256,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             $updVals[] = $device_id;
             $stmt2 = $pdo->prepare("UPDATE devices SET " . implode(', ', $updParts) . " WHERE id = ?");
             $stmt2->execute($updVals);
-            // FIRMWARE: verzia striedaca/SmartLoggera (ak ju CM5 nacital cez Modbus)
+            // verzia firmware
             try {
                 $fw = trim((string)($data['fw_version'] ?? ''));
                 if ($fw !== '') {
@@ -2879,7 +3264,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                     $pdo->prepare("UPDATE devices SET fw_version = ? WHERE id = ?")->execute([substr($fw, 0, 64), $device_id]);
                 }
             } catch (Exception $eFw) { /* ignore */ }
-            // Zoznam pripojenych zariadeni (striedace/SmartLoggery nahlásené CM5)
+            // zariadenia nahlásené CM5
             try {
                 if (!in_array('connected_devices', $dcols ?? [])) $pdo->exec("ALTER TABLE devices ADD COLUMN connected_devices TEXT");
                 if (isset($data['connected_devices']) && is_array($data['connected_devices'])) {
@@ -2887,11 +3272,11 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                     $stmtC->execute([json_encode(array_slice($data['connected_devices'], 0, 64)), $device_id]);
                 }
             } catch (Exception $eC) { /* ignore */ }
-            // ALERT SYSTEM: vyhodnot alerty aj pri každej telemetrii (email aj keď nikto nepozerá dashboard)
+            // alerty pri každej telemetrii
             try { eval_device_alerts($pdo, [$device_id]); } catch (Exception $eA) { /* ignore */ }
             
-            // CONTROL: aktualne nastavenia z DB — CM5 si ich precita a OKAMZITE aplikuje.
-            // Dashboard meni devices tabulku, CM5 ju cita odtialto (DB = jedina pravda).
+            // nastavenia z DB, CM5 ich hneď aplikuje
+            // dashboard mení devices, CM5 to odtiaľto číta
             $ctrl = [];
             try {
                 $stC = $pdo->prepare("SELECT manual_override, active_model_id, min_power_pct, max_power_pct, min_okte_price_cz_eur FROM devices WHERE id = ?");
@@ -2904,7 +3289,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                         'min_power_pct' => floatval($rC['min_power_pct'] ?? 0),
                         'max_power_pct' => floatval($rC['max_power_pct'] ?? 100),
                         'min_okte_price' => floatval($rC['min_okte_price_cz_eur'] ?? 0),
-                        // Zap/Vyp/SmartAI - CM5 si to prehodi do smart_meter.control_mode
+                        // Zap/Vyp/Smart AI → smart_meter.control_mode
                         'meter_control_mode' => strtoupper(trim($rC['meter_control_mode'] ?? 'SMART')) ?: 'SMART',
                     ];
                 }
@@ -2919,87 +3304,6 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
 
 // --- CM5 REGISTER ---
 // --- CM5 REGISTER (startova registracia z lokalnej DB) ---
-        // ===== HW DEPLOY: ulozenie suborov + planovanie deployu na CM5 (admin only) =====
-        elseif ($path === '/api/hw-deploy' && $method === 'POST') {
-            if (($_SESSION['role'] ?? '') !== 'admin') send_json(['status' => 'error', 'message' => 'Iba admin'], 403);
-            // Auto-create system_settings (MySQL + SQLite kompatibilné)
-            try { $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)"); } catch (Exception $e) {}
-            $input = json_decode(file_get_contents('php://input'), true) ?: [];
-            $files = $input['files'] ?? [];
-            $serial = trim($input['serial'] ?? '');
-            $password = trim($input['password'] ?? '');
-            if (!$files || !is_array($files)) send_json(['status' => 'error', 'message' => 'Žiadne súbory'], 400);
-            if ($serial === '') send_json(['status' => 'error', 'message' => 'Vyber cieľové zariadenie (CM5)'], 400);
-            // Server-side heslo (nie JS!) - admin musi potvrdit svoje heslo
-            $st = $pdo->prepare("SELECT password_hash FROM users WHERE id = ? AND role = 'admin'");
-            $st->execute([$_SESSION['user_id']]);
-            $adminRow = $st->fetch();
-            if (!$adminRow || !password_verify($password, $adminRow['password_hash'])) {
-                send_json(['status' => 'error', 'message' => 'Nesprávne administrátorské heslo'], 403);
-            }
-            // Limit: max 20 suborov, max 400 KB kazdy, 2 MB spolu
-            $clean = [];
-            $totalBytes = 0;
-            foreach ($files as $name => $content) {
-                if (!is_string($name) || !is_string($content)) continue;
-                $name = str_replace(['..', '\\', chr(0)], '', $name);
-                if (strlen($content) > 400 * 1024) send_json(['status' => 'error', 'message' => "Súbor $name je príliš veľký (>400 KB)"], 400);
-                $totalBytes += strlen($content);
-                $clean[$name] = $content;
-                if (count($clean) >= 20) break;
-            }
-            if (!$clean) send_json(['status' => 'error', 'message' => 'Žiadne platné súbory'], 400);
-            if ($totalBytes > 2 * 1024 * 1024) send_json(['status' => 'error', 'message' => 'Spolu príliš veľa dát (>2 MB)'], 400);
-            // Ulozenie balika + planovanie prikazu pre cielovy CM5
-            $st = $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES ('hw_deploy_files', ?), ('hw_deploy_serial', ?), ('hw_deploy_time', ?), ('hw_deploy_status', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)");
-            $st->execute([json_encode($clean), $serial, date('Y-m-d H:i:s'), 'pending']);
-            $st = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
-            $st->execute([$serial]);
-            $dev = $st->fetch();
-            if (!$dev) send_json(['status' => 'error', 'message' => "Zariadenie $serial neexistuje v databáze"], 404);
-            $payload = json_encode(['action' => 'deploy_files', 'count' => count($clean)]);
-            $st = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
-            $st->execute([$payload, $dev['id']]);
-            send_json(['status' => 'success', 'message' => 'Deploy naplánovaný', 'device_id' => intval($dev['id']), 'count' => count($clean)]);
-        }
-
-        // ===== HW DEPLOY STATUS (admin polling - realny stav z CM5 result) =====
-        elseif ($path === '/api/hw-deploy/status' && $method === 'GET') {
-            if (($_SESSION['role'] ?? '') !== 'admin') send_json(['status' => 'error', 'message' => 'Iba admin'], 403);
-            try { $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)"); } catch (Exception $e) {}
-            try {
-                $st = $pdo->query("SELECT `key`, `value` FROM system_settings WHERE `key` IN ('hw_deploy_status','hw_deploy_serial','hw_deploy_time')");
-                $rows = $st->fetchAll();
-            } catch (Exception $e) {
-                $rows = [];
-            }
-            $out = ['status' => 'idle', 'serial' => '', 'time' => ''];
-            foreach ($rows as $row) {
-                if ($row['key'] === 'hw_deploy_status') $out['status'] = $row['value'];
-                elseif ($row['key'] === 'hw_deploy_serial') $out['serial'] = $row['value'];
-                elseif ($row['key'] === 'hw_deploy_time') $out['time'] = $row['value'];
-            }
-            send_json(['status' => 'success', 'deploy' => $out]);
-        }
-
-        // ===== CM5: stiahnutie HW suborov (poll nachystany balik) =====
-        elseif ($path === '/api/cm5/hw-files' && $method === 'GET') {
-            if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
-            $serial = trim($_GET['serial'] ?? '');
-            if ($serial === '') send_json(['status' => 'error', 'message' => 'Chýba serial'], 400);
-            try {
-                $st = $pdo->query("SELECT `value` FROM system_settings WHERE `key` = 'hw_deploy_files' LIMIT 1");
-                $row = $st->fetch();
-            } catch (Exception $e) {
-                // Tabulka neexistuje — vytvor ju (MySQL + SQLite kompatibilné)
-                try { $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (`key` VARCHAR(100) PRIMARY KEY, `value` TEXT)"); } catch (Exception $e2) {}
-                $row = false;
-            }
-            if (!$row) send_json(['status' => 'error', 'message' => 'Žiadny deploy pripravený'], 404);
-            $files = json_decode($row['value'], true);
-            if (!is_array($files) || !$files) send_json(['status' => 'error', 'message' => 'Balík je prázdny'], 404);
-            send_json(['status' => 'success', 'serial' => $serial, 'files' => $files]);
-        }
 
 elseif ($path === '/api/cm5/register' && $method === 'POST') {
     if (!elvo_cm5_token_ok()) send_json(['status' => 'error', 'message' => 'Neautorizované'], 401);
@@ -3015,7 +3319,7 @@ elseif ($path === '/api/cm5/register' && $method === 'POST') {
     send_json(['status' => 'success', 'serial' => $serial]);
 }
 
-// --- Overenie údajov zákazníka pri setup-e (admin inštaluje, zariadenie patrí zákazníkovi) ---
+// --- OVERENIE ÚDAJOV ZÁKAZNÍKA PRI SETUP-E ---
 elseif ($path === '/api/setup/verify-customer' && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
     // Iba admin môže setupovať pre zákazníkov
@@ -3049,7 +3353,7 @@ elseif ($path === '/api/setup/verify-customer' && $method === 'POST') {
     }
 }
 
-// --- USER CLAIM DEVICE (ulozi meno + parametre zariadenia do cloud DB) ---
+// --- USER CLAIM DEVICE ---
 elseif ($path === '/api/user/me' && $method === 'GET') {
     if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
     $stmt = $pdo->prepare("SELECT id, username, email, role, created_at FROM users WHERE id = ?");
@@ -3120,7 +3424,7 @@ elseif ($path === '/api/user/notifications' && $method === 'POST') {
         'notif_email' => !empty($data['notif_email']),
         'notif_push' => !empty($data['notif_push']),
     ];
-    // Kanal pre kazdy typ: both | push | email | none (kanalove volby — oboje/iba push/iba mail/ziadne)
+    // kanál: both | push | email | none
     $chVal = function ($v) { return in_array($v, ['both', 'push', 'email', 'none'], true) ? $v : 'both'; };
     $clean['new_device_channel'] = $chVal($data['new_device_channel'] ?? 'both');
     $clean['error_channel'] = $chVal($data['error_channel'] ?? 'both');
@@ -3164,14 +3468,99 @@ elseif ($path === '/api/user/test-email' && $method === 'POST') {
             '<p>Ak vidíte tento email, odosielanie funguje správne.</p><p style="color:#94a3b8;font-size:12px;">Čas: ' . date('d.m.Y H:i:s') . '</p>',
             '#10b981');
     } catch (Exception $e) { $ok = false; }
-    if ($ok) send_json(['status' => 'success', 'message' => 'Test email bol odoslaný na ' . $u['email']]);
-    // Diagnostika: resend ani relay nie su nastavene
-    $hasResend = getenv('RESEND_API_KEY') && trim(getenv('RESEND_API_KEY')) !== '';
-    $hasRelay = getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '';
     $lastErr = $GLOBALS['elvo_mail_last_error'] ?? '';
-    if (!$hasResend && !$hasRelay) send_json(['status' => 'error', 'message' => 'E-mailová služba nie je nastavená na serveri (chýba RESEND_API_KEY). Nastav ju v Railway premenných.']);
+    $channel = $GLOBALS['elvo_mail_channel'] ?? '';
+    if ($ok) {
+        $via = $channel === 'smtp' ? 'SMTP schránky (config.mail.php)' : 'mail() cez poštový server hostingu';
+        $sender = defined('MAIL_FROM') && MAIL_FROM !== '' ? MAIL_FROM : 'info@elvosolar.sk';
+        send_json(['status' => 'success', 'message' => 'Test email odoslaný na ' . $u['email'] . ' cez ' . $via . ', odosielateľ ' . $sender . '. Ak neprišiel, skontroluj spam.']);
+    }
     if ($lastErr !== '') send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo: ' . $lastErr]);
-    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo — skontroluj RESEND_API_KEY alebo mail doručenia']);
+    $smtpUser = defined('SMTP_USER') ? trim((string)SMTP_USER) : '';
+    $smtpPass = defined('SMTP_PASS') ? trim((string)SMTP_PASS) : '';
+    if ($smtpUser === '' || $smtpPass === '') {
+        send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo a údaje schránky nie sú vyplnené — doplň config.mail.php (smtp_user, smtp_pass) alebo skontroluj logy hostingu.']);
+    }
+    send_json(['status' => 'error', 'message' => 'Odoslanie zlyhalo — skontroluj prihlasovacie údaje schránky v config.mail.php a logy hostingu.']);
+}
+
+elseif ($path === '/api/user/mail-diag' && $method === 'GET') {
+    // Diagnostika mailov: ukáže, čo appka na hostingu naozaj načítala (bez hesla).
+    if (!isset($_SESSION['user_id'])) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
+    $diagRole = (string)($_SESSION['role'] ?? '');
+    if (!in_array($diagRole, ['admin', 'manazer'], true)) {
+        send_json(['status' => 'error', 'message' => 'Diagnostika je len pre admina a manažéra'], 403);
+    }
+    require_once __DIR__ . '/mail_helper.php';
+
+    $diagFiles = [];
+    foreach (['config.mail.php', 'config.local.php', 'mail_helper.php'] as $diagF) {
+        $diagFiles[$diagF] = is_file(__DIR__ . '/' . $diagF);
+    }
+
+    $diagUser = defined('SMTP_USER') ? trim((string)SMTP_USER) : '';
+    $diagPass = defined('SMTP_PASS') ? trim((string)SMTP_PASS) : '';
+    $diagUserMasked = '';
+    if ($diagUser !== '') {
+        $diagAt = strpos($diagUser, '@');
+        $diagUserMasked = $diagAt === false
+            ? substr($diagUser, 0, 2) . '***'
+            : substr($diagUser, 0, 2) . '***' . substr($diagUser, $diagAt);
+    }
+
+    // Skúška spojenia so SMTP (bez hesla) — odhalí blokovaný port alebo zlé SSL.
+    $diagProbe = ['ok' => false, 'banner' => '', 'ehlo' => '', 'error' => ''];
+    $diagHost = defined('SMTP_HOST') ? (string)SMTP_HOST : '';
+    $diagPort = defined('SMTP_PORT') ? (int)SMTP_PORT : 0;
+    $diagEnc  = defined('SMTP_ENCRYPTION') ? strtolower((string)SMTP_ENCRYPTION) : 'ssl';
+    if ($diagHost !== '' && $diagPort > 0 && function_exists('stream_socket_client')) {
+        $diagTarget = ($diagEnc === 'ssl' ? 'ssl://' : '') . $diagHost . ':' . $diagPort;
+        $diagCtx = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]]);
+        $diagErrno = 0; $diagErrstr = '';
+        $diagSock = @stream_socket_client($diagTarget, $diagErrno, $diagErrstr, 5, STREAM_CLIENT_CONNECT, $diagCtx);
+        if ($diagSock) {
+            stream_set_timeout($diagSock, 5);
+            $diagProbe['banner'] = trim((string)fgets($diagSock, 512));
+            @fwrite($diagSock, "EHLO elvocontroll.local\r\n");
+            $diagEhlo = '';
+            while (($diagLine = fgets($diagSock, 512)) !== false) {
+                $diagEhlo .= $diagLine;
+                if (strlen($diagLine) > 3 && substr($diagLine, 3, 1) === ' ') break;
+            }
+            $diagProbe['ehlo'] = trim($diagEhlo);
+            $diagProbe['ok'] = strpos($diagProbe['banner'], '220') === 0;
+            @fwrite($diagSock, "QUIT\r\n");
+            fclose($diagSock);
+        } else {
+            $diagProbe['error'] = $diagErrstr . ' (' . $diagErrno . ')';
+        }
+    }
+
+    $diagHints = [];
+    if (!$diagFiles['config.mail.php']) $diagHints[] = 'Na hostingu nie je config.mail.php — appka ide na predvolené hodnoty.';
+    if ($diagUser === '' || $diagPass === '') $diagHints[] = 'smtp_user/smtp_pass nie sú vyplnené → posiela sa cez mail() hostingu, ktorý správy často ticho zahodí.';
+    if (!extension_loaded('openssl')) $diagHints[] = 'PHP nemá openssl — SSL na porte 465 nebude fungovať, skús 587 + tls alebo mail().';
+    if ($diagProbe['error'] !== '') $diagHints[] = 'SMTP server neodpovedá: ' . $diagProbe['error'];
+    if (defined('MAIL_FROM') && $diagUser !== '' && strcasecmp((string)MAIL_FROM, $diagUser) !== 0) {
+        $diagHints[] = 'mail_from (' . MAIL_FROM . ') sa líši od schránky — odosielateľom bude ' . $diagUser . '.';
+    }
+
+    send_json(['status' => 'success', 'diag' => [
+        'config_files'    => $diagFiles,
+        'mail_from'       => defined('MAIL_FROM') ? (string)MAIL_FROM : '',
+        'smtp_host'       => $diagHost,
+        'smtp_port'       => $diagPort,
+        'smtp_encryption' => $diagEnc,
+        'smtp_user'       => $diagUserMasked,
+        'smtp_pass_set'   => $diagPass !== '',
+        'use_smtp'        => defined('USE_SMTP') ? (bool)USE_SMTP : false,
+        'openssl'         => extension_loaded('openssl'),
+        'mail_function'   => function_exists('mail'),
+        'sendmail_path'   => (string)ini_get('sendmail_path'),
+        'smtp_probe'      => $diagProbe,
+        'last_error'      => (string)($GLOBALS['elvo_mail_last_error'] ?? ''),
+        'hints'           => $diagHints,
+    ]]);
 }
 
 elseif ($path === '/forgot-password' && $method === 'GET') {
@@ -3210,8 +3599,7 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
             '#f59e0b');
     } catch (Exception $me) { $mail_sent = false; }
     if (!$mail_sent) {
-        $_SESSION['pw_reset']['dev_code'] = $code;
-        flash('Emailová služba nie je pripojená. Váš overovací kód: ' . $code, 'success');
+        flash('E-mail sa nepodarilo odoslať. Skús to znova o chvíľu.', 'error');
     } else {
         flash('Kód bol odoslaný na váš email.', 'success');
     }
@@ -3344,8 +3732,7 @@ elseif ($path === '/forgot-password' && $method === 'POST') {
             '#f59e0b');
     } catch (Exception $me) { $mail_sent = false; }
     if (!$mail_sent) {
-        $_SESSION['pw_reset']['dev_code'] = $code;
-        flash('Emailová služba nie je pripojená. Váš overovací kód: ' . $code, 'success');
+        flash('E-mail sa nepodarilo odoslať. Skús to znova o chvíľu.', 'error');
     } else {
         flash('Kód bol odoslaný na váš email.', 'success');
     }
@@ -3398,7 +3785,7 @@ elseif ($path === '/device-logout' && $method === 'GET') {
             exit;
         }
     }
-    // 2) Odhlasit dôveryhodné zariadenie (aj v budúcnu zablokovať rýchle prihlásenie)
+    // 2) odhlásiť dôveryhodné zariadenie
     if ($token && isset($_SESSION['user_id'])) {
         try {
             $pdo->exec("CREATE TABLE IF NOT EXISTS login_devices (id INTEGER PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, device_hash VARCHAR(64) NOT NULL, device_name VARCHAR(100) DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login DATETIME NULL, UNIQUE KEY uq_userdev (user_id, device_hash))");
@@ -3414,8 +3801,7 @@ elseif ($path === '/device-logout' && $method === 'GET') {
 elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $data = get_json_input();
     $user_id = $_SESSION['user_id'] ?? 0;
-    // CM5 posiela e-mail admina, ktory setupoval (ides cez kabel v cloud_username) -
-    // zariadenie musi patriť PRESNE TOMUTO uctu (owner_email ma prednost pred fallbackom)
+    // owner_email z CM5 (platí pre presne tento účet)
     if (!$user_id && !empty($data['owner_email'])) {
         try {
             $stO = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
@@ -3423,13 +3809,13 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             $rowO = $stO->fetch();
             if ($rowO) { $user_id = intval($rowO['id']); }
             else {
-                // Admin zadal vlastníka, ktorý nemá účet — jasné chybové hlásenie (žiadne tiché priradenie adminovi)
+                // vlastník bez účtu → chybová hláška
                 send_json(['status' => 'error', 'message' => 'Účet s e-mailom ' . trim($data['owner_email']) . ' neexistuje — zákazník sa musí najprv zaregistrovať.'], 404);
             }
         } catch (Exception $e) { /* fallback nizsie */ }
     }
     if (!$user_id) {
-        // Bez session aj bez owner_email: prirad PRVEMU ADMINovi (nie user_id=1 ktory moze byt obycajny user)
+        // bez session aj owner_email → prvý admin
         try {
             $stA = $pdo->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
             $rowA = $stA->fetch();
@@ -3447,12 +3833,12 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $serial = trim($data['serial'] ?? '');
     
     try {
-        // BEZPECNOST: anonymny claim BEZ serialu BEZ session BEZ owner_email = odmietnut
+        // anonymný claim bez serialu odmietneme
         // (inak by kazdy nezavany POST prepisal prve zariadenie admina!)
         if (!$serial && !isset($_SESSION['user_id']) && empty($data['owner_email'])) {
             send_json(['status' => 'error', 'message' => 'Odmietnuté: chýba serial aj autentifikácia'], 401);
         }
-        // Najdi existujuce zariadenie podla serialu AJ podla usera (stary zaznam bez spravneho serialu)
+        // hľadáme zariadenie podľa serialu aj usera
         $existing = null;
         if ($serial) {
             $stmt = $pdo->prepare("SELECT id FROM devices WHERE serial_number = ? LIMIT 1");
@@ -3460,12 +3846,12 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             $existing = $stmt->fetch();
         }
         if ($existing) {
-            // POZOR: prazdny serial v poziadavke NIKDY nevymaze existujuci serial v DB!
+            // prázdny serial nikdy nevymaže existujúci
             $pdo->prepare("UPDATE devices SET name = ?, brand_id = ?, model_id = ?, sub_type = ?, user_id = ?, serial_number = CASE WHEN ? = '' THEN serial_number ELSE ? END, status = COALESCE(status, 'offline') WHERE id = ?")
                 ->execute([$name, $brand_id, $model_id, $category_id, $user_id, $serial, $serial, $existing['id']]);
         } else {
-            // Zariadenie so serialom neexistuje - ale mozno user uz nejake ma (stary zaznam z inej registracie):
-            // aktualizuj HO (nieto noveho riadku) aby v dashboarde nevznikal duplikat
+            // zariadenie so serialom neexistuje, ale user už nejaké má
+            // starý záznam updatneme, aby nevznikol duplikát
             $upd = null;
             try {
                 $stU = $pdo->prepare("SELECT id FROM devices WHERE user_id = ? ORDER BY id ASC LIMIT 1");
@@ -3473,7 +3859,7 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
                 $upd = $stU->fetch();
             } catch (Exception $e) { /* ignore */ }
             if ($upd) {
-                // Prazdny serial nezapisujeme - zachovaj povodny (samooprava: CM5 posle svoj serial pri dalsej registracii)
+                // prázdny serial nezapisujeme
                 $pdo->prepare("UPDATE devices SET serial_number = CASE WHEN ? = '' THEN serial_number ELSE ? END, name = ?, brand_id = ?, model_id = ?, sub_type = ?, status = 'offline' WHERE id = ?")
                     ->execute([$serial, $serial, $name, $brand_id, $model_id, $category_id, $upd['id']]);
                 $keep_id = $upd['id'];
@@ -3482,9 +3868,7 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
                     ->execute([$user_id, $name, $serial, $brand_id, $category_id, $model_id, $category_id]);
                 $keep_id = intval($pdo->lastInsertId());
             }
-            // PURGE: 1 CM5 = 1 zariadenie. Stare smety (Mdatabase, testy, stary serial)
-            // tohto usera mazu - inak sa kopia a telemetria/nastavenia idu na zly riadok.
-            // MIGRÁCIA: cakajúci príkaz zo starého riadku prenes na hlavný (inak by sa stratil pri self-heal re-registrácii)
+            // 1 CM5 = 1 zariadenie, staré riadky zmažeme
             try {
                 $stC = $pdo->prepare("SELECT admin_command FROM devices WHERE user_id = ? AND id != ? AND admin_command IS NOT NULL AND admin_command != '' ORDER BY id DESC LIMIT 1");
                 $stC->execute([$user_id, $keep_id]);
@@ -3500,7 +3884,7 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
                     ->execute([$user_id, $keep_id]);
             } catch (Exception $eP) { /* tabulky mozu neexistovat */ }
         }
-        // NOTIFIKÁCIA vlastníkovi (len pri NOVEJ registrácii — nie pri každom self-heal update)
+        // notifikácia len pri novej registrácii
         if (isset($keep_id) && !empty($data['owner_email'])) {
             try {
                 $chan = elvo_notif_channel($pdo, $user_id, 'new_device');
@@ -3634,7 +4018,7 @@ elseif ($path === '/api/system/save-smartlogger' && $method === 'POST') {
     $mode = trim($data['mode'] ?? 'tcp');
 
     try {
-        // cm5_config zrusena - SmartLogger config sa nastavuje priamo na CM5 (/api/system/save-smartlogger na boxe)
+        // cm5_config zrušená, SmartLogger sa nastavuje na CM5
         // Cloud ulozisko nie je potrebne (setup ide kablom).
     } catch (Exception $e) { /* ignore */ }
 
@@ -3706,13 +4090,13 @@ elseif ($path === '/api/alerts' && $method === 'GET') {
     }
 }
 
-// --- ADMIN RECOVERY: reset admin hesla cez tajny kluc (nucdezovy pristup k setupu) ---
+// --- ADMIN RECOVERY: reset hesla cez tajný kľúč ---
 elseif ($path === '/admin-recovery' && $method === 'POST') {
     $data = get_json_input();
     $key = trim($data['key'] ?? '');
     $newpass = (string)($data['new_password'] ?? '');
     $email = trim($data['email'] ?? '');
-    // TAJNY KLUC - zmenitelny cez env ADMIN_RECOVERY_KEY (default pre prvotne nastavenie)
+    // kľúč z env ADMIN_RECOVERY_KEY
     $expected = getenv('ADMIN_RECOVERY_KEY') ?: 'ELVO-RESCUE-2026';
     if ($key !== $expected) {
         error_log('[RECOVERY] Zly pokus o recovery (zlý kľúč) z IP ' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
@@ -3867,7 +4251,7 @@ elseif ($path === '/api/push/subscribe' && $method === 'POST') {
         )");
         try { $pdo->exec("ALTER TABLE push_subs ADD COLUMN ua VARCHAR(200) DEFAULT ''"); } catch (Exception $e) { /* uz existuje */ }
         $uid = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0;
-        // Bez prihlásenia by subscription skončila pod user_id = 0 a push by nikdy nechodil.
+        // bez prihlásenia by push nechodil
         if ($uid <= 0) { send_json(['status' => 'error', 'error' => 'not_logged_in'], 401); }
         $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200);
         $pdo->prepare("INSERT INTO push_subs (user_id, endpoint, sub_json, ua) VALUES (?, ?, ?, ?)
@@ -3885,7 +4269,7 @@ elseif ($path === '/api/push/unsubscribe' && $method === 'POST') {
     send_json(['status' => 'success']);
 }
 
-// --- PUSH TEST (realna web push notifikacia na vsetky zariadenia usera) ---
+// --- PUSH TEST ---
 elseif ($path === '/api/push/test' && $method === 'POST') {
     $uid = intval($_SESSION['user_id'] ?? 0);
     if (!$uid) send_json(['status' => 'error', 'message' => 'Neprihlásený'], 401);
@@ -3954,7 +4338,7 @@ elseif (preg_match('#^/api/device/(\d+)/model$#', $path, $matches) && $method ==
     send_json(['status' => 'success']);
 }
 
-// --- DEVICE METER MODE (Zap/Vyp/SmartAI - dedikovany stlpec, CM5 ho cita v control bloku) ---
+// --- DEVICE METER MODE (Zap/Vyp/Smart AI) ---
 elseif (preg_match('#^/api/device/(\d+)/meter$#', $path, $matches) && $method === 'POST') {
     $dev_id = intval($matches[1]);
     $data = get_json_input();
@@ -3980,7 +4364,7 @@ elseif (preg_match('#^/api/device/(\d+)/relay$#', $path, $matches) && $method ==
     $temp = floatval($data['temp'] ?? 0);
     $name = trim($data['name'] ?? '');
     $type = trim($data['type'] ?? '');
-    // Persist do user_prefs JSON (devices.ai_state bol vymazany z DB; relé neskôr do 3_device)
+    // do user_prefs JSON
     try {
         $st = $pdo->prepare("SELECT user_id FROM devices WHERE id = ?");
         $st->execute([$dev_id]);
@@ -4045,7 +4429,7 @@ elseif (preg_match('#^/api/device/(\d+)/status$#', $path, $matches) && $method =
 }
 
 // --- CRON: NOTIFIKÁCIE (alerty + denný súhrn + záporná cena) ---
-// Railway cron: POST /api/cron/notifications s hlavičkou `X-Cron-Key: <CRON_SECRET>`
+// cron: POST /api/cron/notifications s hlavičkou X-Cron-Key
 elseif ($path === '/api/cron/notifications' && $method === 'POST') {
     $secret = trim((string)(getenv('CRON_SECRET') ?: ''));
     $given = trim((string)($_SERVER['HTTP_X_CRON_KEY'] ?? ($_GET['key'] ?? '')));
@@ -4071,7 +4455,7 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
             'monthly_report' => 0, 'devices_offline' => 0, 'devices_online' => 0,
             'telemetry_pruned' => 0, 'errors' => []];
 
-    // 1) ALERTY ZARIADENÍ (offline / chyba striedača / nízke SOC / teplota)
+    // 1) alerty zariadení
     try {
         $byUser = [];
         foreach ($pdo->query("SELECT id, user_id FROM devices")->fetchAll() as $r) {
@@ -4139,7 +4523,7 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
         } catch (Exception $e) { $out['errors'][] = 'daily: ' . $e->getMessage(); }
     }
 
-    // 3) ZÁPORNÁ CENA NA OKTE (raz za 15-minútový blok, ktorý je záporný)
+    // 3) záporná cena na OKTE
     try {
         $url = 'https://isot.okte.sk/api/v1/dam/results?deliveryDayFrom=' . date('Y-m-d') . '&deliveryDayTo=' . date('Y-m-d');
         $ctx = stream_context_create([
@@ -4183,8 +4567,7 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
         }
     } catch (Exception $e) { $out['errors'][] = 'negative_price: ' . $e->getMessage(); }
 
-    // 4) STAV ZARIADENÍ — offline/online podľa poslednej telemetrie (>15 min = offline)
-    //    Dashboard tak neukazuje "online" zariadenie, ktoré už dávno mlčí.
+    // 4) stav zariadení (>15 min = offline)
     try {
         $offline = $pdo->exec("UPDATE devices SET status = 'offline'
             WHERE last_seen IS NOT NULL AND last_seen < NOW() - INTERVAL 15 MINUTE AND status <> 'offline'");
@@ -4194,8 +4577,7 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
         $out['devices_online'] = max(0, (int)$online);
     } catch (Exception $e) { $out['errors'][] = 'status: ' . $e->getMessage(); }
 
-    // 5) TELEMETRIA — denná agregácia + retencia. Bez toho tabuľka rastie donekonečna
-    //    a dashboard sa po čase spomalí. Agregát drží históriu, raw dáta sa mažú po 90 dňoch.
+    // 5) denná agregácia + retencia 90 dní
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS telemetry_daily (
             device_id INT NOT NULL,
@@ -4222,7 +4604,7 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
         $out['telemetry_pruned'] = max(0, (int)$pruned);
     } catch (Exception $e) { $out['errors'][] = 'telemetry: ' . $e->getMessage(); }
 
-    // 6) MESAČNÝ REPORT — 1. deň v mesiaci po 07:00 za predošlý mesiac
+    // 6) mesačný report 1. deň po 07:00
     if (intval(date('j')) === 1 && intval(date('G')) >= 7) {
         try {
             $monthKey = date('Y-m', strtotime('first day of last month'));
@@ -4230,7 +4612,7 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
             $monthEnd = date('Y-m-t', strtotime($monthStart));
             $daysInMonth = (int)date('t', strtotime($monthStart));
 
-            // Adresa appky pre odkaz na PDF report v maily (APP_URL alebo z requestu)
+            // adresa appky pre odkaz v maili
             $appBase = rtrim((string)(getenv('APP_URL') ?: ''), '/');
             if ($appBase === '') {
                 $repScheme = (!empty($_SERVER['HTTPS']) || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')) ? 'https' : 'http';
@@ -4320,7 +4702,7 @@ elseif ($path === '/api/cron/notifications' && $method === 'POST') {
             }
         } catch (Exception $e) { $out['errors'][] = 'monthly: ' . $e->getMessage(); }
     }
-    // 7) ROČNÝ REPORT — 1. január po 07:00, 13 strán (prehľad + 12 mesiacov)
+    // 7) ročný report 1. januára
     if (intval(date('n')) === 1 && intval(date('j')) === 1 && intval(date('G')) >= 7) {
         try {
             $yearKey = (int)date('Y') - 1;

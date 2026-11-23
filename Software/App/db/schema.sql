@@ -175,6 +175,30 @@ CREATE TABLE IF NOT EXISTS login_throttle (
     blocked_until DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ── Návštevnosť appky (admin prehľad) ──────────────────────────────────────
+CREATE TABLE IF NOT EXISTS page_views (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    path VARCHAR(190) NOT NULL,
+    user_id INT NULL,
+    visitor_hash VARCHAR(64) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_pv_time (created_at),
+    INDEX idx_pv_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Povolenia editora (úpravy len po schválení manažérom) ──────────────────
+CREATE TABLE IF NOT EXISTS editor_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    editor_id INT NOT NULL,
+    device_id INT NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    decided_at DATETIME NULL,
+    decided_by INT NULL,
+    granted_until DATETIME NULL,
+    UNIQUE KEY uq_edreq (editor_id, device_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ── Stav migrácií ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS migrations_state (
     id INT PRIMARY KEY AUTO_INCREMENT,

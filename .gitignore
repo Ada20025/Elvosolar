@@ -1,6 +1,7 @@
 # === SECRETS - NIKDY neposielať na GitHub ===
 Software/App/config.php
 Software/App/create_admin.php
+mqtt_config.local.php
 *.env
 .env*
 
@@ -54,3 +55,7 @@ Software/App/turnstile_keys.php
 # Lokálne DB údaje pre shared hosting (obsahuje heslo) + upload balík
 Software/App/config.local.php
 Software/App_upload/
+
+# E-mail (WebSupport SMTP) - heslo schránky
+Software/App/config.mail.php
+Software/App_upload/config.mail.php

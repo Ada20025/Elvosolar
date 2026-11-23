@@ -46,7 +46,7 @@ a dve zariadenia. Do produkcie ho nespúšťaj.
 ### Admin účet
 
 - **Adminom je len `admin@elvosolar.sk`** (predvolená hodnota `ADMIN_EMAILS`). Účet registrovaný s iným e-mailom dostane rolu `user` — súkromný gmail sa adminom nestane ani pri prvom prihlásení.
-- Ďalší admin sa pridá cez `ADMIN_EMAILS` v Railway Variables (čiarkou oddelené e-maily). Ak existuje admin s povoleným e-mailom, ostatným sa rola `admin` automaticky odoberie (klesne na `user`); rola `mechanik` zostáva nedotknutá.
+- Ďalší admin sa pridá cez `ADMIN_EMAILS` v Railway Variables (čiarkou oddelené e-maily). Ak existuje admin s povoleným e-mailom, ostatným sa rola `admin` automaticky odoberie (klesne na `user`).
 - Existujúci účet sa dá povýšiť bez SQL cez premennú `ADMIN_EMAILS` (Railway → Variables),
 napr. `ADMIN_EMAILS=adam@elvosolar.sk,druhy@firma.sk` — pri najbližšom prihlásení sa rola prepíše na `admin`.
 - Alebo priamo v MySQL:
@@ -77,23 +77,29 @@ DELETE FROM users WHERE email = 'demo@elvosolar.sk';
   `POST /api/push/test`.
 - Push chodia aj pri zatvorenej appke (service worker `sw.js`).
 
-## 3. E-maily (Railway blokuje SMTP — použi HTTPS API)
+## 3. E-maily (WebSupport)
 
-Nastav v Railway *Variables* (Služba s aplikáciou):
+Appka posiela e-maily cez WebSupport, na ktorom beží:
 
-| Premenná | Význam |
-|---|---|
-| `RESEND_API_KEY` | kľúč z [resend.com](https://resend.com) (3 000 mailov/mesiac zdarma) |
-| `RESEND_FROM` | voliteľne odosielateľ, napr. `ElvoControll <no-reply@elvosolar.sk>` (doména musí byť v Resende overená) |
+1. **SMTP** — `smtp.m1.websupport.sk`, port `465` (SSL) alebo `587` (TLS),
+2. **`mail()`** — poštový server hostingu, ak SMTP nie je vyplnené.
 
-Alternatíva bez Resendu — relay na alwaysdata:
+Údaje schránky (WebSupport panel → *Emaily → Prihlasovacie údaje*) patria do
+`config.mail.php` vedľa `config.php` (vzor: `Software/App/config.mail.example.php`):
 
-| Premenná | Význam |
-|---|---|
-| `MAIL_RELAY_URL` | `https://adamdz.alwaysdata.net/mail-relay.php` |
-| `MAIL_RELAY_KEY` | rovnaký kľúč, aký je na relaying hoste |
+```php
+return [
+    'mail_from'       => 'info@elvosolar.sk',
+    'smtp_host'       => 'smtp.m1.websupport.sk',
+    'smtp_port'       => 465,
+    'smtp_encryption' => 'ssl',
+    'smtp_user'       => 'info@elvosolar.sk',
+    'smtp_pass'       => 'heslo-schranky',
+];
+```
 
-Poradie odoslania: **Resend → relay → SMTP → `mail()`**.
+`mail_from` musí byť **existujúca schránka** na doméne — WebSupport neodošle
+správu s vymyslenou adresou (`no-reply@…`).
 Ak nie je nastavené nič, appka e-mail neodošle a pri registrácii/obnovení hesla
 zobrazí kód priamo na obrazovke (aby sa človek vedel prihlásiť).
 

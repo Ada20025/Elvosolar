@@ -1,0 +1,289 @@
+<?php
+    $vBase = htmlspecialchars($base_path ?? '');
+    $vDays = (int)($days ?? 14);
+    $s = $stats ?? [];
+    $p = $perf ?? [];
+    $vUsers = $users ?? [];
+    $devCounts = $dev_counts ?? [];
+    $lastLogins = $last_logins ?? [];
+    $grantCounts = $grant_counts ?? [];
+    $vFlash = $flash ?? [];
+    $vLocked = !empty($unlock_locked);
+    $daily = $s['daily'] ?? [];
+    $hourly = $s['hourly'] ?? [];
+    $maxDay = max(1, $daily ? max($daily) : 1);
+    $maxHour = max(1, $hourly ? max($hourly) : 1);
+?>
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Návštevnosť | ElvoControll</title>
+    <link rel="icon" type="image/png" href="/templates/ElvosolarLogo1.png">
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #eef2f8; color: #0f172a; min-height: 100vh; }
+        a { text-decoration: none; }
+        .nav { height: 56px; background: #000c20; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 50; }
+        .nav-left { display: flex; align-items: center; gap: 14px; }
+        .nav img { height: 27px; }
+        .nav .sep { color: #334155; }
+        .nav h1 { font-size: 13px; font-weight: 800; color: #e2e8f0; display: flex; align-items: center; gap: 6px; }
+        .nav-links { display: flex; align-items: center; gap: 18px; }
+        .nav-links a { color: #94a3b8; font-size: 12px; font-weight: 700; }
+        .nav-links a:hover { color: #38bdf8; }
+        .nav-links a.logout { color: #ef4444; }
+        main { max-width: 1400px; margin: 0 auto; padding: 22px 22px 60px; }
+        .banner { border-radius: 12px; padding: 11px 16px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .banner.locked { background: #fde8e8; border: 1px solid #fca5a5; color: #991b1b; }
+        .banner.ok { background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+        .banner form { display: flex; gap: 8px; align-items: center; margin: 0; }
+        .banner input[type=password] { background: #fff; border: 1px solid #94a3b8; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
+        .btn { background: #0891b2; border: 0; color: #fff; border-radius: 8px; padding: 7px 14px; font-size: 11px; font-weight: 900; cursor: pointer; letter-spacing: .4px; }
+        .btn.ghost { background: transparent; border: 1px solid #94a3b8; color: #334155; }
+        .btn.green { background: #059669; }
+        .flash { border-radius: 10px; padding: 10px 14px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+        .flash.success { background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+        .flash.error { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+        .flash.info { background: #e0f2fe; border: 1px solid #7dd3fc; color: #075985; }
+        .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .kpi { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(15,23,42,.04); }
+        .kpi .label { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #64748b; }
+        .kpi .val { font-size: 26px; font-weight: 900; color: #0f172a; font-family: 'JetBrains Mono', monospace; margin-top: 4px; line-height: 1.1; }
+        .kpi .hint { font-size: 10px; color: #94a3b8; font-weight: 600; margin-top: 3px; }
+        .grid2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; margin-bottom: 18px; }
+        @media (max-width: 980px) { .grid2 { grid-template-columns: 1fr; } }
+        .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 2px 8px rgba(15,23,42,.04); }
+        .card h2 { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #334155; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding-top: 10px; }
+        .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; }
+        .bar { width: 100%; max-width: 34px; border-radius: 5px 5px 2px 2px; background: linear-gradient(180deg, #38bdf8, #0284c7); min-height: 2px; transition: height .2s; }
+        .bar.zero { background: #e2e8f0; }
+        .bar-label { font-size: 9px; color: #94a3b8; font-weight: 700; white-space: nowrap; }
+        .bar-val { font-size: 9px; color: #475569; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+        .hours { display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; }
+        .hour { border-radius: 6px; padding: 7px 3px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: #0f172a; background: #e2e8f0; }
+        .hour small { display: block; font-size: 8px; color: #64748b; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .8px; color: #64748b; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 9px 10px; font-size: 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+        td.mono { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; background: #e2e8f0; color: #334155; }
+        .pill.admin { background: #dbeafe; color: #1d4ed8; }
+        .pill.manazer { background: #dcfce7; color: #15803d; }
+        .pill.user { background: #e2e8f0; color: #334155; }
+        .pill.blocked { background: #fee2e2; color: #b91c1c; }
+        select { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 8px; font-size: 11px; font-weight: 700; color: #0f172a; }
+        .perf-list { display: flex; flex-direction: column; gap: 10px; }
+        .perf-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding-bottom: 9px; border-bottom: 1px solid #f1f5f9; }
+        .perf-row:last-child { border-bottom: 0; padding-bottom: 0; }
+        .perf-row span { color: #64748b; font-weight: 700; }
+        .perf-row strong { font-family: 'JetBrains Mono', monospace; font-size: 15px; color: #0f172a; }
+        .perf-row strong.green { color: #059669; }
+        .perf-row strong.red { color: #dc2626; }
+        .forms { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        @media (max-width: 980px) { .forms { grid-template-columns: 1fr; } }
+        .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .field label { font-size: 9px; font-weight: 900; letter-spacing: .8px; text-transform: uppercase; color: #64748b; }
+        .field input { border: 1px solid #cbd5e1; border-radius: 9px; padding: 9px 11px; font-size: 12px; font-weight: 600; color: #0f172a; background: #fff; }
+        .note { font-size: 10px; color: #94a3b8; font-weight: 600; margin-top: 6px; }
+        .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+        .tabs a { padding: 6px 12px; border-radius: 9px; background: #fff; border: 1px solid #e2e8f0; font-size: 11px; font-weight: 800; color: #475569; }
+        .tabs a.on { background: #0f172a; border-color: #0f172a; color: #fff; }
+    </style>
+</head>
+<body>
+
+<header class="nav">
+    <div class="nav-left">
+        <a href="<?php echo $vBase; ?>/"><img src="/templates/ElvosolarLogo1.png" alt="ElvoControll"></a>
+        <span class="sep">|</span>
+        <h1>📊 Návštevnosť &amp; Performance</h1>
+    </div>
+    <div class="nav-links">
+        <a href="<?php echo $vBase; ?>/">Riadiace centrum</a>
+        <a href="<?php echo $vBase; ?>/profile">Profil</a>
+        <a href="<?php echo $vBase; ?>/logout" class="logout">Odhlásiť</a>
+    </div>
+</header>
+
+<main>
+    <?php foreach ($vFlash as $f): ?>
+        <div class="flash <?php echo htmlspecialchars($f['category'] ?? 'info'); ?>"><?php echo htmlspecialchars($f['message'] ?? ''); ?></div>
+    <?php endforeach; ?>
+
+    <div class="banner <?php echo $vLocked ? 'locked' : 'ok'; ?>">
+        <?php if ($vLocked): ?>
+            <span>🔒 Úpravy sú zamknuté — zadaj admin kód:</span>
+            <form method="post" action="<?php echo $vBase; ?>/admin/unlock">
+                <input type="hidden" name="back" value="/navstevnost">
+                <input type="password" name="code" placeholder="Admin kód" autocomplete="off">
+                <button type="submit" class="btn">ODOMKNÚŤ</button>
+            </form>
+        <?php else: ?>
+            <span>🔓 Úpravy sú odomknuté (do <?php echo date('H:i', (int)($_SESSION['admin_edit_until'] ?? 0)); ?>).</span>
+            <form method="post" action="<?php echo $vBase; ?>/admin/lock">
+                <input type="hidden" name="back" value="/navstevnost">
+                <button type="submit" class="btn ghost">ZAMKNÚŤ</button>
+            </form>
+        <?php endif; ?>
+    </div>
+
+    <div class="tabs">
+        <?php foreach ([7 => '7 dní', 14 => '14 dní', 30 => '30 dní'] as $dOpt => $dLbl): ?>
+            <a href="<?php echo $vBase; ?>/navstevnost?days=<?php echo $dOpt; ?>" class="<?php echo ($vDays === $dOpt) ? 'on' : ''; ?>"><?php echo $dLbl; ?></a>
+        <?php endforeach; ?>
+    </div>
+
+    <div class="kpis">
+        <div class="kpi"><div class="label">Dnes</div><div class="val"><?php echo (int)($s['today'] ?? 0); ?></div><div class="hint">zobrazení stránok</div></div>
+        <div class="kpi"><div class="label">Včera</div><div class="val"><?php echo (int)($s['yesterday'] ?? 0); ?></div><div class="hint">zobrazení stránok</div></div>
+        <div class="kpi"><div class="label">Posledných 7 dní</div><div class="val"><?php echo (int)($s['week'] ?? 0); ?></div><div class="hint">zobrazení stránok</div></div>
+        <div class="kpi"><div class="label">Posledných 30 dní</div><div class="val"><?php echo (int)($s['month'] ?? 0); ?></div><div class="hint">zobrazení stránok</div></div>
+        <div class="kpi"><div class="label">Unikátni návštevníci</div><div class="val"><?php echo (int)($s['unique'] ?? 0); ?></div><div class="hint">za 30 dní</div></div>
+        <div class="kpi"><div class="label">Záznamov spolu</div><div class="val"><?php echo (int)($s['total'] ?? 0); ?></div><div class="hint">za 30 dní</div></div>
+    </div>
+
+    <div class="grid2">
+        <div class="card">
+            <h2>📈 Schéma návštevnosti — <?php echo (int)$vDays; ?> dní</h2>
+            <div class="chart">
+                <?php foreach ($daily as $dDen => $dCount): ?>
+                    <?php $h = (int)round(($dCount / $maxDay) * 100); ?>
+                    <div class="bar-wrap" title="<?php echo htmlspecialchars($dDen . ': ' . $dCount); ?>">
+                        <div class="bar-val"><?php echo (int)$dCount; ?></div>
+                        <div class="bar <?php echo $dCount ? '' : 'zero'; ?>" style="height:<?php echo max(2, $h); ?>%"></div>
+                        <div class="bar-label"><?php echo date('j.n.', strtotime($dDen)); ?></div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <h2 style="margin-top:22px;">🕒 Dnešná návštevnosť po hodinách</h2>
+            <div class="hours">
+                <?php for ($h = 0; $h < 24; $h++): ?>
+                    <?php $hc = (int)($hourly[$h] ?? 0); $alpha = $maxHour > 0 ? max(0.08, $hc / $maxHour) : 0.08; ?>
+                    <div class="hour" style="background:rgba(2,132,199,<?php echo round($alpha, 2); ?>);color:<?php echo $alpha > 0.55 ? '#fff' : '#0f172a'; ?>;" title="<?php echo $h . ':00 — ' . $hc; ?>">
+                        <?php echo $hc; ?><small><?php echo $h; ?>h</small>
+                    </div>
+                <?php endfor; ?>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>⚡ Performance</h2>
+            <div class="perf-list">
+                <div class="perf-row"><span>Zariadenia spolu</span><strong><?php echo (int)($p['devices'] ?? 0); ?></strong></div>
+                <div class="perf-row"><span>Online (telemetria &lt; 15 min)</span><strong class="green"><?php echo (int)($p['online'] ?? 0); ?></strong></div>
+                <div class="perf-row"><span>Bez spojenia / chyba</span><strong class="red"><?php echo (int)($p['faults'] ?? 0); ?></strong></div>
+                <div class="perf-row"><span>Výkon FVE</span><strong><?php echo number_format((float)($p['power_kw'] ?? 0), 2, ',', ' '); ?> kW</strong></div>
+                <div class="perf-row"><span>Priemerné SOC batérie</span><strong><?php echo round((float)($p['soc_avg'] ?? 0)); ?> %</strong></div>
+                <div class="perf-row"><span>Účty spolu</span><strong><?php echo (int)($p['users'] ?? 0); ?></strong></div>
+                <div class="perf-row"><span>Admini / Manažéri</span><strong><?php echo (int)($p['admins'] ?? 0); ?> / <?php echo (int)($p['managers'] ?? 0); ?></strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid2">
+        <div class="card">
+            <h2>🔝 Najčastejšie stránky (30 dní)</h2>
+            <table>
+                <thead><tr><th>Stránka</th><th style="text-align:right;">Zobrazenia</th></tr></thead>
+                <tbody>
+                <?php if (empty($s['top'])): ?>
+                    <tr><td colspan="2" style="color:#94a3b8;">Zatiaľ žiadne záznamy.</td></tr>
+                <?php else: foreach ($s['top'] as $tPath => $tCount): ?>
+                    <tr>
+                        <td class="mono"><?php echo htmlspecialchars($tPath); ?></td>
+                        <td class="mono" style="text-align:right;"><?php echo (int)$tCount; ?></td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>👤 Používatelia a roly</h2>
+            <table>
+                <thead><tr><th>Účet</th><th>Údaje profilu</th><th>Rola</th><th>Zmena</th></tr></thead>
+                <tbody>
+                <?php foreach ($vUsers as $u): ?>
+                    <tr>
+                        <?php
+                            // admin vidí profily, ale nie meno, e-mail ani heslo
+                            $uEmail = (string)($u['email'] ?? '');
+                            $uParts = explode('@', $uEmail);
+                            $uMask = ($uParts[0] ?? '') !== '' ? (substr($uParts[0], 0, 1) . '***@' . substr($uParts[1] ?? '', 0, 1) . '***') : '—';
+                        ?>
+                        <td>
+                            <div style="font-weight:800;">Profil #<?php echo (int)($u['id'] ?? 0); ?></div>
+                            <div style="font-size:10px;color:#94a3b8;"><?php echo htmlspecialchars($uMask); ?></div>
+                            <div style="font-size:9px;color:#cbd5e1;">meno a heslo skryté</div>
+                        </td>
+                        <?php
+                            $pId = (int)($u['id'] ?? 0);
+                            $pCreated = !empty($u['created_at']) ? date('d.m.Y', strtotime((string)$u['created_at'])) : '—';
+                            $pLogin = !empty($lastLogins[$pId]) ? date('d.m.Y H:i', strtotime((string)$lastLogins[$pId])) : '—';
+                        ?>
+                        <td style="font-size:10px;color:#64748b;line-height:1.55;">
+                            <div>Vytvorený: <strong style="color:#334155;"><?php echo $pCreated; ?></strong></div>
+                            <div>Posledné prihlásenie: <strong style="color:#334155;"><?php echo $pLogin; ?></strong></div>
+                            <div>Zariadenia: <strong style="color:#334155;"><?php echo (int)($devCounts[$pId] ?? 0); ?></strong></div>
+                            <?php if ((int)($u['email_verified'] ?? 0) === 1): ?>
+                                <div>E-mail: <strong style="color:#15803d;">overený</strong></div>
+                            <?php endif; ?>
+                            <?php if (($u['role'] ?? '') === 'editor'): ?>
+                                <div>Aktívne povolenia: <strong style="color:#334155;"><?php echo (int)($grantCounts[$pId] ?? 0); ?></strong></div>
+                            <?php endif; ?>
+                        </td>
+                        <td><span class="pill <?php echo htmlspecialchars($u['role'] ?? 'user'); ?>"><?php echo htmlspecialchars(elvo_role_label($u['role'] ?? 'user')); ?></span></td>
+                        <td>
+                            <form method="post" action="<?php echo $vBase; ?>/navstevnost/role" style="display:flex;gap:6px;align-items:center;margin:0;">
+                                <input type="hidden" name="csrf" value="<?php echo htmlspecialchars($csrf ?? ''); ?>">
+                                <input type="hidden" name="user_id" value="<?php echo (int)($u['id'] ?? 0); ?>">
+                                <select name="role">
+                                    <?php foreach (['admin' => 'Admin', 'manazer' => 'Manažér', 'editor' => 'Editor', 'user' => 'Používateľ', 'blocked' => 'Zablokovaný'] as $rVal => $rLbl): ?>
+                                        <option value="<?php echo $rVal; ?>" <?php echo (($u['role'] ?? '') === $rVal) ? 'selected' : ''; ?>><?php echo $rLbl; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="submit" class="btn" style="padding:5px 10px;">Uložiť</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <p class="note">Roly mení iba admin a len s odomknutými úpravami. Meno, e-mail a heslo admin nevidí — iba profil, rolu a oprávnenia. Manažér nemá grafy ani performance, ale môže upravovať zariadenia a schvaľovať povolenia editorovi.</p>
+        </div>
+    </div>
+
+    <div class="forms">
+        <div class="card">
+            <h2>➕ Vytvoriť manažéra</h2>
+            <form method="post" action="<?php echo $vBase; ?>/navstevnost/create-manager">
+                <input type="hidden" name="csrf" value="<?php echo htmlspecialchars($csrf ?? ''); ?>">
+                <div class="field"><label>Meno</label><input type="text" name="username" required maxlength="100"></div>
+                <div class="field"><label>E-mail</label><input type="email" name="email" required maxlength="190"></div>
+                <div class="field"><label>Heslo (min. 8 znakov)</label><input type="password" name="password" required minlength="8"></div>
+                <button type="submit" class="btn green">VYTVORIŤ MANAŽÉRA</button>
+            </form>
+            <p class="note">Manažér sa prihlasuje e-mailom a heslom (2FA kódom) rovnako ako ostatní.</p>
+        </div>
+
+        <div class="card">
+            <h2>ℹ️ Ako to funguje</h2>
+            <div class="perf-list">
+                <div class="perf-row"><span>Admin</span><strong>grafy + performance + kód</strong></div>
+                <div class="perf-row"><span>Manažér</span><strong>bez grafov, všetko upraví</strong></div>
+                <div class="perf-row"><span>Editor</span><strong>pridá zariadenia, úpravy len s povolením</strong></div>
+                <div class="perf-row"><span>Používateľ</span><strong>len svoje zariadenia</strong></div>
+            </div>
+            <p class="note">Návštevnosť sa počíta z prihlásených zobrazení stránok. Súbory, API a roboty sa nepočítajú.</p>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

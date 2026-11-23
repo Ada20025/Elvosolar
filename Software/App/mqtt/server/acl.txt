@@ -14,6 +14,12 @@
 
 pattern readwrite stroje/%u/#
 
+# web (Ruka) — píše príkazy do všetkých strojov, číta všetky stavy
+# ControlUser je účet, ktorým sa pripája web z Websupportu (mqtt_config.local.php)
 user webapp
+topic write stroje/+/prikazy
+topic read stroje/+/stav
+
+user ControlUser
 topic write stroje/+/prikazy
 topic read stroje/+/stav

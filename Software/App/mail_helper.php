@@ -1,87 +1,208 @@
 <?php
-// mail_helper.php
+// mail_helper.php - posielanie mailov cez WebSupport
+// 1. SMTP schránky, 2. PHP mail()
+// odosielateľ musí byť existujúca schránka, inak WebSupport mail zahodí
+//
+// údaje schránky patria do config.mail.php (nie je v gite):
+//   WebSupport panel → Emaily → Prihlasovacie údaje
+//   return [
+//       'mail_from'       => 'info@elvosolar.sk',   // MUSÍ byť existujúca schránka na doméne
+//       'smtp_host'       => 'smtp.m1.websupport.sk',
+//       'smtp_port'       => 465,
+//       'smtp_encryption' => 'ssl',                 // 'ssl' (465) alebo 'tls' (587)
+//       'smtp_user'       => 'info@elvosolar.sk',   // celá e-mailová adresa schránky
+//       'smtp_pass'       => 'heslo-schranky',
+//   ];
+// hodnoty so "SEM_" = nevyplnené
+
+$GLOBALS['elvo_mail_cfg'] = [];
+foreach (['config.mail.php', 'config.local.php'] as $elvo_mail_file) {
+    $elvo_mail_path = __DIR__ . '/' . $elvo_mail_file;
+    if (!is_file($elvo_mail_path)) continue;
+    $elvo_mail_data = @include $elvo_mail_path;
+    if (!is_array($elvo_mail_data)) continue;
+    foreach (['mail_from', 'smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_user', 'smtp_pass'] as $elvo_mail_k) {
+        if (!isset($GLOBALS['elvo_mail_cfg'][$elvo_mail_k]) && isset($elvo_mail_data[$elvo_mail_k])) {
+            $GLOBALS['elvo_mail_cfg'][$elvo_mail_k] = $elvo_mail_data[$elvo_mail_k];
+        }
+    }
+}
+
+if (!function_exists('elvo_mail_conf')) {
+    /** hodnota z configu, potom z prostredia, inak predvolená */
+    function elvo_mail_conf($key, $env, $default = '') {
+        $v = $GLOBALS['elvo_mail_cfg'][$key] ?? '';
+        if (is_string($v) && strpos(trim($v), 'SEM_') === 0) $v = '';
+        if ($v === '' || $v === null) $v = getenv($env);
+        if ($v === false || $v === null || trim((string)$v) === '') $v = $default;
+        return $v;
+    }
+}
 
 // ==========================================
-// --- NASTAVENIE ODOSIELANIA E-MAILOV ---
+// --- NASTAVENIE ODOSIELANIA MAILOV ---
 // ==========================================
+if (!defined('MAIL_FROM')) {
+    define('MAIL_FROM', (string)elvo_mail_conf('mail_from', 'MAIL_FROM', 'info@elvosolar.sk'));
+}
 if (!defined('USE_SMTP')) {
-    define('USE_SMTP', true);                  // Ak nefunguje klasický mail, prepíšte na: true
+    define('USE_SMTP', true);                  // false = posielať iba cez mail()
 }
 if (!defined('SMTP_HOST')) {
-    define('SMTP_HOST', getenv('SMTP_HOST') ?: ''); // nastav v Railway premenných (napr. smtp-adamdz.alwaysdata.net)
+    define('SMTP_HOST', (string)elvo_mail_conf('smtp_host', 'SMTP_HOST', 'smtp.m1.websupport.sk'));
 }
 if (!defined('SMTP_PORT')) {
-    define('SMTP_PORT', 587);                   // Port (najcastejsie 587 pre TLS, 465 pre SSL)
+    define('SMTP_PORT', (int)elvo_mail_conf('smtp_port', 'SMTP_PORT', 465));
 }
 if (!defined('SMTP_USER')) {
-    define('SMTP_USER', getenv('SMTP_USER') ?: '');   // Prihlasovacie meno — IBA z premennej prostredia
+    define('SMTP_USER', (string)elvo_mail_conf('smtp_user', 'SMTP_USER', ''));   // celá adresa schránky
 }
 if (!defined('SMTP_PASS')) {
-    define('SMTP_PASS', getenv('SMTP_PASS') ?: '');   // Heslo — NIKDY v kóde, iba z premennej prostredia
+    define('SMTP_PASS', (string)elvo_mail_conf('smtp_pass', 'SMTP_PASS', ''));   // nikdy nie priamo v kóde
 }
 if (!defined('SMTP_ENCRYPTION')) {
-    define('SMTP_ENCRYPTION', 'tls');           // Šifrovanie: 'tls', 'ssl' alebo 'none'
+    define('SMTP_ENCRYPTION', strtolower((string)elvo_mail_conf('smtp_encryption', 'SMTP_ENCRYPTION', 'ssl')));
 }
 // ==========================================
 
-if (!function_exists('elvo_mail_relay')) {
-    // Posle mail cez alwaysdata relay (mail() tam funguje). Vrati true/false.
-    // Ak RELAY_URL nie je nastavene, vrati false (ziaden timeout).
-    // Posle mail cez Resend HTTPS API - FUNGUJE NA RAILWAY (SMTP blokuju, HTTPS nie).
-    // Nastav na Railway premennu RESEND_API_KEY (resend.com - 3000 mailov/mesiac zdarma).
-    // Volitelne RESEND_FROM (default: onboarding@resend.dev).
-    function elvo_mail_resend($to, $subject, $message_html) {
-        $api_key = getenv('RESEND_API_KEY');
-        if (!$api_key || trim($api_key) === '') return false;
-        $from = getenv('RESEND_FROM') ?: 'ElvoControll <onboarding@resend.dev>';
-        // Predmet s diakritikou — Resend akceptuje plain UTF-8, ale bez RFC encoding
-        $payload = json_encode([
-            'from' => $from,
-            'to' => [$to],
-            'subject' => $subject,
-            'html' => $message_html,
-        ], JSON_UNESCAPED_UNICODE);
-        $ctx = stream_context_create(['http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $api_key . "\r\n",
-            'content' => $payload,
-            'timeout' => 3,
-            'ignore_errors' => true,
+if (!function_exists('elvo_mail_smtp')) {
+    /**
+     * pošle mail cez SMTP; true = odoslané, chyba v elvo_mail_last_error
+     */
+    function elvo_mail_smtp($to, $subject_encoded, $message_html, $from_email, $domain) {
+        $host = (string)SMTP_HOST;
+        $port = (int)SMTP_PORT;
+        $user = (string)SMTP_USER;
+        $pass = (string)SMTP_PASS;
+        $encryption = strtolower((string)SMTP_ENCRYPTION);
+
+        // Poistenie proti zámene: 587 = STARTTLS (tls), 465 = SSL hneď po pripojení.
+        // Pri zlej kombinácii sa spojenie neotvorí a mail sa ticho stratí.
+        if ($port === 587 && $encryption === 'ssl') {
+            $encryption = 'tls';
+            error_log('[MAIL] port 587 so ssl → prepínam na STARTTLS (tls).');
+        } elseif ($port === 465 && $encryption === 'tls') {
+            $encryption = 'ssl';
+            error_log('[MAIL] port 465 s tls → prepínam na SSL.');
+        }
+
+        // odosielateľ = účet schránky, inak MAIL_FROM
+        $sender = $user !== '' ? $user : ($from_email !== '' ? $from_email : MAIL_FROM);
+        $sender_email = $sender;
+        if (preg_match('/<([^>]+)>/', $sender, $mSender)) $sender_email = trim($mSender[1]);
+
+        $socket_host = ($encryption === 'ssl') ? 'ssl://' . $host : $host;
+        $context = stream_context_create(['ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true,
         ]]);
-        $resp = @file_get_contents('https://api.resend.com/emails', false, $ctx);
-        if ($resp === false) { error_log('[RESEND] Spojenie zlyhalo (timeout/DNS)'); return false; }
-        $ok = (strpos($resp, '"id"') !== false);
-        if (!$ok) {
-            // 403 = restricted key / From doména nie je overená (resend.dev posiela len na vlastný účet)
-            if (strpos($resp, '403') !== false || strpos($resp, 'restricted') !== false || strpos($resp, 'verified') !== false) {
-                error_log('[RESEND] RESTRICTED (From doména neoverená) pre ' . $to . ': ' . substr($resp, 0, 200));
-                $GLOBALS['elvo_mail_last_error'] = 'RESEND: odosielateľ nie je overený (From doména). Over doménu v Resende alebo nastav RESEND_FROM.';
-            } else {
-                error_log('[RESEND] Chyba pre ' . $to . ': ' . substr($resp, 0, 300));
-                $GLOBALS['elvo_mail_last_error'] = 'RESEND: ' . substr($resp, 0, 150);
+        $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 8, STREAM_CLIENT_CONNECT, $context);
+        if (!$socket) {
+            error_log('[MAIL] SMTP pripojenie zlyhalo (' . $host . ':' . $port . '): ' . $errstr . ' (' . $errno . ')');
+            $GLOBALS['elvo_mail_last_error'] = 'SMTP pripojenie na ' . $host . ':' . $port . ' zlyhalo (' . $errstr . ').';
+            return false;
+        }
+        stream_set_timeout($socket, 8);
+
+        $read = function ($socket) {
+            $response = '';
+            while (($line = fgets($socket, 512)) !== false) {
+                $response .= $line;
+                if (strlen($line) > 3 && substr($line, 3, 1) === ' ') break;
+            }
+            return $response;
+        };
+        $cmd = function ($socket, $line) use ($read) {
+            @fwrite($socket, $line . "\r\n");
+            return $read($socket);
+        };
+
+        $read($socket);                                  // banner 220
+        $cmd($socket, 'EHLO ' . $domain);
+
+        if ($encryption === 'tls') {
+            $st = $cmd($socket, 'STARTTLS');
+            if (strpos($st, '220') === false) {
+                error_log('[MAIL] STARTTLS odmietnutý: ' . trim($st));
+                $GLOBALS['elvo_mail_last_error'] = 'Server odmietol STARTTLS (skús port 465 so ssl).';
+                fclose($socket);
+                return false;
+            }
+            if (!@stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                error_log('[MAIL] TLS handshake zlyhal.');
+                $GLOBALS['elvo_mail_last_error'] = 'TLS handshake so SMTP serverom zlyhal.';
+                fclose($socket);
+                return false;
+            }
+            $cmd($socket, 'EHLO ' . $domain);
+        }
+
+        if ($user !== '' && $pass !== '') {
+            $auth = $cmd($socket, 'AUTH LOGIN');
+            if (strpos($auth, '334') === false) {
+                error_log('[MAIL] AUTH LOGIN odmietnutý: ' . trim($auth));
+                $GLOBALS['elvo_mail_last_error'] = 'SMTP server odmietol AUTH LOGIN.';
+                fclose($socket);
+                return false;
+            }
+            $cmd($socket, base64_encode($user));
+            $authRes = $cmd($socket, base64_encode($pass));
+            if (strpos($authRes, '235') === false) {
+                error_log('[MAIL] SMTP autentifikácia zlyhala pre ' . $user . ': ' . trim($authRes));
+                $GLOBALS['elvo_mail_last_error'] = 'Prihlásenie schránky ' . $user . ' zlyhalo — skontroluj heslo v config.mail.php.';
+                fclose($socket);
+                return false;
             }
         }
-        return $ok;
-    }
-    function elvo_mail_relay($to, $subject, $message_html, $accent_color = '#007aff') {
-        $relay = getenv('MAIL_RELAY_URL');
-        if (!$relay || trim($relay) === '') return false;
-        $payload = json_encode([
-            'to' => $to,
-            'subject' => $subject,
-            'html' => $message_html,
-            'accent' => $accent_color,
-        ]);
-        $relay_key = getenv('MAIL_RELAY_KEY') ?: 'elvo-relay-2026';
-        $ctx = stream_context_create(['http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/json\r\nX-Relay-Key: " . $relay_key . "\r\n",
-            'content' => $payload,
-            'timeout' => 3,
-            'ignore_errors' => true,
-        ]]);
-        $resp = @file_get_contents($relay, false, $ctx);
-        return ($resp !== false && strpos($resp, '"success":true') !== false);
+
+        $fromRes = $cmd($socket, 'MAIL FROM: <' . $sender_email . '>');
+        if (strpos($fromRes, '250') === false) {
+            error_log('[MAIL] MAIL FROM odmietnutý (' . $sender_email . '): ' . trim($fromRes));
+            $GLOBALS['elvo_mail_last_error'] = 'Server odmietol odosielateľa ' . $sender_email . ' — musí to byť existujúca schránka na hostingu.';
+            fclose($socket);
+            return false;
+        }
+        $rcptRes = $cmd($socket, 'RCPT TO: <' . $to . '>');
+        if (strpos($rcptRes, '250') === false) {
+            error_log('[MAIL] RCPT TO odmietnutý (' . $to . '): ' . trim($rcptRes));
+            $GLOBALS['elvo_mail_last_error'] = 'Server odmietol príjemcu ' . $to . '.';
+            fclose($socket);
+            return false;
+        }
+        $dataRes = $cmd($socket, 'DATA');
+        if (strpos($dataRes, '354') === false) {
+            error_log('[MAIL] DATA odmietnuté: ' . trim($dataRes));
+            $GLOBALS['elvo_mail_last_error'] = 'Server odmietol telo správy (DATA).';
+            fclose($socket);
+            return false;
+        }
+
+        $message_id = '<' . bin2hex(random_bytes(16)) . '@' . $domain . '>';
+        $headers  = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: ElvoControll <" . $sender_email . ">\r\n";
+        $headers .= "Reply-To: support@" . $domain . "\r\n";
+        $headers .= "To: <" . $to . ">\r\n";
+        $headers .= "Subject: " . $subject_encoded . "\r\n";
+        $headers .= "Date: " . date('r') . "\r\n";
+        $headers .= "Message-ID: " . $message_id . "\r\n";
+        $headers .= "X-Mailer: ElvoControll/" . phpversion() . "\r\n";
+        $headers .= "\r\n";
+
+        // Bodkovanie na začiatku riadkov (SMTP dot-stuffing)
+        $body = preg_replace('/^\./m', '..', $message_html);
+        @fwrite($socket, $headers . $body . "\r\n.\r\n");
+        $sent = $read($socket);
+        $cmd($socket, 'QUIT');
+        fclose($socket);
+
+        if (strpos($sent, '250') === false) {
+            error_log('[MAIL] SMTP server správu neprijal: ' . trim($sent));
+            $GLOBALS['elvo_mail_last_error'] = 'SMTP server správu neprijal: ' . substr(trim($sent), 0, 150);
+            return false;
+        }
+        return true;
     }
 }
 
@@ -92,7 +213,17 @@ if (!function_exists('send_elvo_email')) {
             $domain = substr($domain, 4);
         }
         
-        $from_email = "no-reply@" . $domain;
+        // WebSupport neodošle správu s neexistujúcim odosielateľom — preto musí byť
+        // MAIL_FROM existujúca schránka na doméne (config.mail.php).
+        // Odosielateľ MUSÍ byť existujúca schránka na doméne, inak WebSupport
+        // správu ticho zahodí (mail() pritom vráti true). Preto nikdy
+        // "no-reply@" — vždy reálna schránka.
+        $from_email = MAIL_FROM !== '' ? MAIL_FROM : ("info@" . $domain);
+        if (MAIL_FROM === '') {
+            error_log('[MAIL] MAIL_FROM nie je vyplnené — používam ' . $from_email . ' (doplň config.mail.php, ak máš inú schránku).');
+        }
+        $GLOBALS['elvo_mail_last_error'] = '';
+        $GLOBALS['elvo_mail_channel'] = '';
 
         // Moderná tmavá šablóna - ladi s aplikaciou ElvoControll
         $year = date('Y');
@@ -130,7 +261,6 @@ if (!function_exists('send_elvo_email')) {
   <tr>
     <td align="center" bgcolor="#04070f" style="padding:34px 36px 20px 36px;background-color:rgba(4,7,15,0.74);">
       <img src="%LOGO%" alt="ElvoControll" width="190" style="max-height:52px;width:auto;display:block;border:0;">
-      <div style="margin-top:16px;display:inline-block;padding:7px 18px;border-radius:999px;border:1px solid rgba(52,211,153,0.35);background-color:#0a2b1f;background-color:rgba(16,185,129,0.14);font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#34d399;font-family:Consolas,'Courier New',monospace;">Smart&nbsp;EMS</div>
     </td>
   </tr>
   <tr>
@@ -148,14 +278,14 @@ if (!function_exists('send_elvo_email')) {
   </tr>
   <tr>
     <td bgcolor="#03060d" style="padding:26px 30px 30px 30px;background-color:rgba(3,6,13,0.90);border-top:1px solid rgba(255,255,255,0.08);text-align:center;">
-      <div style="font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#34d399;font-family:Consolas,'Courier New',monospace;">ElvoControll &middot; Smart EMS</div>
+      <div style="font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#34d399;font-family:Consolas,'Courier New',monospace;">ElvoControll</div>
       <p style="margin:12px 0 5px 0;font-size:11px;color:#8494ab;line-height:1.7;">Automaticky generovaná správa z portálu ElvoControll.</p>
       <p style="margin:0;font-size:10px;color:#55637a;line-height:1.6;">&copy; 2011&ndash;%YEAR% Elvosolar s.r.o. &middot; Všetky práva vyhradené</p>
     </td>
   </tr>
 </table>
 <!--[if mso]></v:textbox></v:rect><![endif]-->
-<div style="margin-top:14px;font-size:10px;color:#55637a;">Powered by <span style="color:#34d399;font-weight:700;">ElvoControll</span> Smart EMS</div>
+<div style="margin-top:14px;font-size:10px;color:#55637a;">Powered by <span style="color:#34d399;font-weight:700;">ElvoControll</span></div>
 </td></tr>
 </table>
 </body>
@@ -171,129 +301,19 @@ ELVOTPL;
         // Zakódovanie predmetu správy do formátu RFC Base64 pre bezchybnú diakritiku a antispam
         $subject_encoded = "=?UTF-8?B?" . base64_encode($subject) . "?=";
 
-        // 0a. RESEND (HTTPS API - jedina cesta ako posielat maily z Railway free planu)
-        if (elvo_mail_resend($to, $subject, $message_html)) {
-            return true;
-        }
-
-        // 0b. REŽIM RELAY (posielanie cez alwaysdata - bez SSL certifikatov a nastavovania)
-        if (elvo_mail_relay($to, $subject, $message_html, $accent_color)) {
-            return true;
-        }
-
-        // RYCHLY LOGIN: na Railway je SMTP blokovane (Free plan) - socket by visel 5 s pri kazdom prihlaseni.
-        // Bez RESEND_API_KEY / MAIL_RELAY_URL na Railway SMTP vobec neskusame (kod sa zobrazi na obrazovke).
-        $is_railway = (strpos(($_SERVER['SERVER_NAME'] ?? ''), 'railway.app') !== false || getenv('RAILWAY_ENVIRONMENT') !== false);
-        $relay_configured = (getenv('MAIL_RELAY_URL') && trim(getenv('MAIL_RELAY_URL')) !== '');
-        if ($is_railway && !$relay_configured) {
-            error_log("[MAIL] Railway bez resend/relay - SMTP preskocene (rychly login), kod zobrazeny na obrazovke");
-            return false;
-        }
-
-        // 1. REŽIM SMTP (iba keď je host aj heslo nastavené - inak by spojenie viselo)
-        $has_pass = defined('SMTP_PASS') && trim(SMTP_PASS) !== '' && trim((string)SMTP_HOST) !== '';
-        if (defined('USE_SMTP') && USE_SMTP === true && $has_pass) {
-            $host = SMTP_HOST;
-            $port = SMTP_PORT;
-            $user = SMTP_USER;
-            $pass = SMTP_PASS;
-            $encryption = strtolower(SMTP_ENCRYPTION);
-
-            $socket_host = ($encryption === 'ssl') ? 'ssl://' . $host : $host;
-            
-            $context = stream_context_create([
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                ]
-            ]);
-
-            $socket = @stream_socket_client($socket_host . ':' . $port, $errno, $errstr, 2, STREAM_CLIENT_CONNECT, $context);
-            
-            if (!$socket) {
-                error_log("SMTP Pripojenie zlyhalo: $errstr ($errno)");
-                return false;
+        // 1. SMTP WebSupportu — smtp.m1.websupport.sk (údaje schránky v config.mail.php)
+        $smtp_ready = defined('USE_SMTP') && USE_SMTP === true
+            && trim((string)SMTP_USER) !== '' && trim((string)SMTP_PASS) !== ''
+            && trim((string)SMTP_HOST) !== '';
+        if ($smtp_ready) {
+            if (elvo_mail_smtp($to, $subject_encoded, $message_html, $from_email, $domain)) {
+                $GLOBALS['elvo_mail_channel'] = 'smtp';
+                return true;
             }
-
-            $read_response = function($socket) {
-                $response = '';
-                while (($line = fgets($socket, 512)) !== false) {
-                    $response .= $line;
-                    if (substr($line, 3, 1) == ' ') { break; }
-                }
-                return $response;
-            };
-
-            $read_response($socket);
-            fwrite($socket, "EHLO " . $domain . "\r\n");
-            $read_response($socket);
-
-            if ($encryption === 'tls') {
-                fwrite($socket, "STARTTLS\r\n");
-                $starttls_res = $read_response($socket);
-                if (strpos($starttls_res, '220') === false) {
-                    error_log("STARTTLS príkaz zamietnutý serverom: " . $starttls_res);
-                    fclose($socket);
-                    return false;
-                }
-                if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                    error_log("SMTP TLS handshake zlyhal.");
-                    fclose($socket);
-                    return false;
-                }
-                fwrite($socket, "EHLO " . $domain . "\r\n");
-                $read_response($socket);
-            }
-
-            if (!empty($user) && !empty($pass)) {
-                fwrite($socket, "AUTH LOGIN\r\n");
-                $read_response($socket);
-                fwrite($socket, base64_encode($user) . "\r\n");
-                $read_response($socket);
-                fwrite($socket, base64_encode($pass) . "\r\n");
-                $auth_res = $read_response($socket);
-                if (strpos($auth_res, '235') === false) {
-                    error_log("SMTP Autentifikácia zlyhala: " . $auth_res);
-                    fclose($socket);
-                    return false;
-                }
-            }
-
-            $sender = !empty($user) ? $user : $from_email;
-            $from_name = 'ElvoControll';
-            fwrite($socket, "MAIL FROM: <" . $sender . ">\r\n");
-            $read_response($socket);
-            fwrite($socket, "RCPT TO: <" . $to . ">\r\n");
-            $read_response($socket);
-            fwrite($socket, "DATA\r\n");
-            $read_response($socket);
-
-            $message_id = "<" . bin2hex(random_bytes(16)) . "@" . $domain . ">";
-
-            $headers = "MIME-Version: 1.0\r\n";
-            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: " . $from_name . " <" . $sender . ">\r\n";
-            $headers .= "Reply-To: support@" . $domain . "\r\n";
-            $headers .= "To: <" . $to . ">\r\n";
-            $headers .= "Subject: " . $subject_encoded . "\r\n";
-            $headers .= "Date: " . date('r') . "\r\n";
-            $headers .= "Message-ID: " . $message_id . "\r\n";
-            $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
-            $headers .= "\r\n";
-
-            fwrite($socket, $headers . $message_html . "\r\n.\r\n");
-            $data_res = $read_response($socket);
-
-            fwrite($socket, "QUIT\r\n");
-            fclose($socket);
-
-            $success = (strpos($data_res, '250') !== false);
-            if ($success) return true;
-            error_log("SMTP Server odmietol správu: " . $data_res . " -> skúšam native mail()");
+            error_log('[MAIL] SMTP WebSupport zlyhal, skúšam natívne mail() pre ' . $to);
         }
 
-        // 2. REŽIM NATIVE MAIL (Klasická funkcia mail() v PHP pre Linux)
+        // 2. NATIVE MAIL — poštový server WebSupportu (klasická funkcia mail() v PHP)
         $eol = "\n"; 
         $message_id = "<" . bin2hex(random_bytes(16)) . "@" . $domain . ">";
         
@@ -304,15 +324,6 @@ ELVOTPL;
         $headers .= "Message-ID: " . $message_id . $eol;
         $headers .= "X-Mailer: PHP/" . phpversion();
 
-        // Mail s timeoutom - na Railway mail() casto hanguje
-        $host_hint = $_SERVER['SERVER_NAME'] ?? '';
-        $is_railway = (strpos($host_hint, 'railway.app') !== false || getenv('RAILWAY_ENVIRONMENT') !== false);
-        if ($is_railway && !$has_pass) {
-            // Na Railway bez SMTP: mail() zvykne hanguj 15 s a aj tak neodide.
-            // Skusime raz s kratym timeoutom cez process, inak vzdame.
-            error_log("[MAIL] Railway bez SMTP_PASS - native mail() preskoceny (hang prevention)");
-            return false;
-        }
         $start = time();
         $result = false;
         try {
@@ -328,6 +339,11 @@ ELVOTPL;
         
         if (!$result) {
             error_log("Chyba PHP mail(). Skontrolujte logy alebo aktivujte SMTP režim.");
+            if (empty($GLOBALS['elvo_mail_last_error'])) {
+                $GLOBALS['elvo_mail_last_error'] = 'PHP mail() cez poštový server hostingu zlyhal — skontroluj logy a nastavenie schránky ' . $from_email . '.';
+            }
+        } else {
+            $GLOBALS['elvo_mail_channel'] = 'mail';
         }
         
         return $result;

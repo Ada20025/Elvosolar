@@ -66,9 +66,10 @@ Podrobné zapojenie a jednorazové povolenie overlay je v [`MANUAL.md`](MANUAL.m
 
 - **Web Push** — VAPID kľúč si appka vygeneruje sama (`push_keys`), odbery sú v `push_subs`.
   Push chodia aj pri zatvorenej appke cez service worker.
-- **E-mail** — na Railway je SMTP blokované, preto sa posiela cez HTTPS:
-  `RESEND_API_KEY` (+ voliteľne `RESEND_FROM`), alebo relay `MAIL_RELAY_URL` + `MAIL_RELAY_KEY`.
-  Bez nich appka pri registrácii zobrazí kód priamo na obrazovke.
+- **E-mail** — posiela sa cez WebSupport: SMTP `smtp.m1.websupport.sk` (465/SSL alebo 587/TLS),
+  inak natívne `mail()` hostingu. Údaje schránky patria do `config.mail.php`
+  (vzor: `Software/App/config.mail.example.php`). Bez vyplnenej schránky appka
+  pri registrácii zobrazí kód priamo na obrazovke.
 - Kanál pre každý typ notifikácie (`both` / `push` / `email` / `none`) sa nastavuje v appke.
 - Detaily a test: [`Software/App/db/README.md`](Software/App/db/README.md).
 

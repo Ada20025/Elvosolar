@@ -1,15 +1,13 @@
 <?php
 /**
- * Prihlasovanie cez Google / Apple / Microsoft.
- *
- * OAuth 2.0 + OpenID Connect, bez Composeru a bez externých knižníc —
- * všetko ide cez cURL. Konfigurácia je v premenných prostredia:
+ * prihlásenie cez Google, Apple a Microsoft (OAuth, cURL)
+ * kľúče patria do premenných prostredia:
  *
  *   Google:    GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
  *   Microsoft: MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, MICROSOFT_TENANT (nepovinné, default "common")
  *   Apple:     APPLE_CLIENT_ID (Service ID), APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (.p8 obsah)
  *
- * Callback URL, ktorú treba pridať v konzole poskytovateľa:
+ * callback adresy do konzoly poskytovateľa:
  *   https://<domena>/auth/google/callback
  *   https://<domena>/auth/apple/callback
  *   https://<domena>/auth/microsoft/callback
@@ -68,7 +66,7 @@ if (!function_exists('elvo_oauth_providers')) {
         return $p['secret'] !== '';
     }
 
-    /** Ktoré tlačidlá ukázať na prihlasovacej stránke: ['google' => 'Google', ...] */
+    /** tlačidlá na prihlasovacej stránke: ['google' => 'Google', ...] */
     function elvo_oauth_available(): array
     {
         $out = [];
@@ -78,7 +76,7 @@ if (!function_exists('elvo_oauth_providers')) {
         return $out;
     }
 
-    /** Absolútna adresa appky (na redirect_uri musí sedieť s konzolou poskytovateľa). */
+    /** adresa appky (musí sedieť s redirect_uri v konzole) */
     function elvo_oauth_absolute_base(): string
     {
         $env = rtrim((string)(getenv('APP_URL') ?: ''), '/');
@@ -89,7 +87,7 @@ if (!function_exists('elvo_oauth_providers')) {
         return ($https ? 'https' : 'http') . '://' . $host;
     }
 
-    /** Malý HTTP klient (POST s form-urlencoded alebo GET) → [status, telo]. */
+    /** malý HTTP klient -> [status, telo] */
     function elvo_oauth_http(string $url, ?array $post = null, array $headers = []): array
     {
         $ch = curl_init($url);
@@ -111,14 +109,14 @@ if (!function_exists('elvo_oauth_providers')) {
         return [$code, (string)$body];
     }
 
-    /** Apple client_secret = JWT podpísaný ES256 kľúčom .p8 (platí max 6 mesiacov). */
+    /** Apple client_secret = JWT podpísaný kľúčom .p8 (platí max 6 mesiacov) */
     function elvo_oauth_apple_secret(): string
     {
         $key  = (string)(getenv('APPLE_PRIVATE_KEY') ?: '');
         $team = (string)(getenv('APPLE_TEAM_ID') ?: '');
         $kid  = (string)(getenv('APPLE_KEY_ID') ?: '');
         $cid  = (string)(getenv('APPLE_CLIENT_ID') ?: '');
-        // V Railway sa nové riadky často uložia ako "\n" — opravíme to.
+        // nové riadky v kľúči bývajú uložené ako \n, opravíme
         if (strpos($key, 'BEGIN PRIVATE KEY') === false) {
             $key = str_replace(['\\n', '\n'], "\n", $key);
         }
@@ -142,7 +140,7 @@ if (!function_exists('elvo_oauth_providers')) {
         if (!$pem) return '';
         $der = '';
         if (!openssl_sign($signing, $der, $pem, OPENSSL_ALGO_SHA256)) return '';
-        // openssl_sign vracia už DER (r,s) sekvenciu — pre JWS ju treba rozložiť na 32+32 bajtov.
+        // DER (r,s) treba rozložiť na 32+32 bajtov
         $r = $s = '';
         $pos = 2; // preskočíme SEQUENCE header
         if (ord($der[1]) & 0x80) $pos = 2 + (ord($der[1]) & 0x7f);
@@ -156,7 +154,7 @@ if (!function_exists('elvo_oauth_providers')) {
         return $signing . '.' . $b64($r . $s);
     }
 
-    /** URL, na ktorú pošleme používateľa (prihlásenie u poskytovateľa). */
+    /** kam pošleme používateľa prihlásiť sa */
     function elvo_oauth_authorize_url(string $provider, string $redirect, string $state, string $nonce): string
     {
         $all = elvo_oauth_providers();
@@ -210,7 +208,7 @@ if (!function_exists('elvo_oauth_providers')) {
 
     /**
      * Zistí e-mail a meno prihláseného používateľa.
-     * Vracia ['email' => ..., 'email_verified' => bool, 'name' => ...] alebo null.
+     * vráti ['email','email_verified','name'] alebo null
      */
     function elvo_oauth_identity(string $provider, array $tokens, string $expectedNonce = ''): ?array
     {
@@ -245,14 +243,13 @@ if (!function_exists('elvo_oauth_providers')) {
         if ($name === '' && !empty($json['given_name'])) {
             $name = trim(($json['given_name'] ?? '') . ' ' . ($json['family_name'] ?? ''));
         }
-        // Microsoft vracia email_verified nepravdivo pri firemných účtoch — berieme,
-        // že e-mail z overeného Microsoft/Google účtu je dôveryhodný.
+        // e-mail z overeného konta berieme ako overený
         $verified = !isset($json['email_verified']) ? true : (bool)$json['email_verified'];
 
         return $email === '' ? null : ['email' => $email, 'email_verified' => $verified, 'name' => $name];
     }
 
-    /** Dočasné úložisko "state" (kvôli Apple, ktorý posiela odpoveď ako POST bez cookie). */
+    /** dočasné úložisko "state" (Apple posiela odpoveď ako POST bez cookie) */
     function elvo_oauth_state_save(PDO $pdo, string $state, string $provider, string $nonce, string $redirect): void
     {
         $pdo->exec("CREATE TABLE IF NOT EXISTS oauth_states (

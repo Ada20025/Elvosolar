@@ -22,14 +22,6 @@
             --fs-orange: #f97316;
             --fs-yellow: #eab308;
             --fs-bg: #edf1f7;
-            
-            --vsc-bg: #1e1e1e;
-            --vsc-sidebar: #252526;
-            --vsc-activity: #333333;
-            --vsc-title: #323233;
-            --vsc-border: #3c3c3c;
-            --vsc-text: #cccccc;
-            --vsc-blue: #007acc;
         }
 
         body {
@@ -286,7 +278,6 @@
         }
         .fs-site-link:hover { text-decoration: underline; }
 
-        /* 4. VS CODE ROZHRANIE PRE SÚBORY (READONLY + NAHRÁVANIE + ADMIN HESLO) */
         /* ===== RESPONSIVE: vsetky velkosti zariadeni ===== */
         @media (max-width: 1024px) {
             .fs-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
@@ -314,13 +305,6 @@
             .fs-kpi-grid { grid-template-columns: 1fr 1fr !important; }
             .fs-donut-panel { margin-top: 8px !important; }
             .fs-table-wrap, .sites-table { font-size: 11px !important; }
-            #vscodeModal .vscode-window { width: 98vw !important; height: 92vh !important; }
-            .vscode-body { flex-direction: column !important; }
-            .vscode-sidebar { width: 100% !important; max-height: 130px; border-right: none !important; border-bottom: 1px solid #333; }
-            .vscode-editor-container { min-height: 160px; }
-            .vscode-terminal-body { max-height: 110px; }
-            .vscode-top-actions { flex-wrap: wrap !important; }
-            .vscode-top-actions .vscode-btn { font-size: 11px !important; padding: 5px 8px !important; }
         }
         @media (max-width: 480px) {
             .fs-kpi-grid { grid-template-columns: 1fr !important; }
@@ -328,194 +312,6 @@
             .fs-brand-img { max-height: 22px !important; height: 22px !important; }
             .fs-hero { padding: 14px 12px 28px 12px !important; }
             .admin-badge-btn { font-size: 11px !important; padding: 5px 8px !important; }
-        }
-
-        .vscode-modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 8, 20, 0.88);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-
-        .vscode-window {
-            background: var(--vsc-bg);
-            color: var(--vsc-text);
-            border-radius: 8px;
-            width: 100%;
-            max-width: 1360px;
-            height: 90vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.85);
-            border: 1px solid var(--vsc-border);
-            overflow: hidden;
-            font-family: 'JetBrains Mono', Consolas, monospace;
-        }
-
-        .vscode-top-bar {
-            background: var(--vsc-title);
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            font-size: 12px;
-            border-bottom: 1px solid #222;
-        }
-
-        .vscode-top-actions { display: flex; align-items: center; gap: 8px; }
-
-        .vscode-btn {
-            background: #2d2d2d;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 5px 12px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-family: inherit;
-        }
-        .vscode-btn:hover { background: #3c3c3c; }
-        .vscode-btn.deploy { background: #059669; border-color: #10b981; font-weight: 700; }
-        .vscode-btn.deploy:hover { background: #047857; }
-
-        .vscode-body { display: flex; flex: 1; overflow: hidden; }
-
-        /* Prieskumník nahratých súborov */
-        .vscode-sidebar {
-            width: 250px;
-            background: var(--vsc-sidebar);
-            border-right: 1px solid var(--vsc-border);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .vscode-sidebar-header {
-            padding: 10px 14px;
-            font-size: 11px;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: #858585;
-            border-bottom: 1px solid #2d2d2d;
-        }
-
-        .vscode-file-list { flex: 1; overflow-y: auto; padding: 6px 0; }
-        .vscode-file-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 7px 14px;
-            font-size: 12px;
-            cursor: pointer;
-            color: var(--vsc-text);
-        }
-        .vscode-file-item:hover { background: #2a2d2e; }
-        .vscode-file-item.active { background: #37373d; color: #ffffff; font-weight: 600; }
-
-        .vscode-editor-area { flex: 1; display: flex; flex-direction: column; background: var(--vsc-bg); }
-
-        .vscode-tabs {
-            background: #252526;
-            display: flex;
-            height: 36px;
-            border-bottom: 1px solid #1e1e1e;
-        }
-
-        .vscode-tab {
-            background: var(--vsc-bg);
-            color: #ffffff;
-            padding: 0 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            border-top: 2px solid var(--vsc-blue);
-        }
-
-        .vscode-editor-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .vscode-line-numbers {
-            width: 50px;
-            background: var(--vsc-bg);
-            color: #858585;
-            padding: 12px 0;
-            text-align: right;
-            user-select: none;
-            font-size: 13px;
-            line-height: 22px;
-            border-right: 1px solid #2d2d2d;
-            padding-right: 12px;
-        }
-
-        /* READONLY KÓD - NEDÁ SA PREPISOVAŤ */
-        .vscode-code-input {
-            flex: 1;
-            background: var(--vsc-bg);
-            color: #9cdcfe;
-            font-family: 'JetBrains Mono', Consolas, monospace;
-            font-size: 13px;
-            line-height: 22px;
-            padding: 12px 16px;
-            border: none;
-            outline: none;
-            resize: none;
-            white-space: pre;
-            overflow: auto;
-            cursor: default;
-            user-select: text;
-        }
-
-        .vscode-terminal-wrap {
-            height: 160px;
-            background: #141414;
-            border-top: 1px solid #333333;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .vscode-terminal-header {
-            background: #252526;
-            padding: 5px 14px;
-            font-size: 11px;
-            color: #858585;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .vscode-terminal-body {
-            flex: 1;
-            padding: 8px 14px;
-            font-size: 12px;
-            color: #4ec9b0;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .vscode-footer {
-            background: var(--vsc-blue);
-            color: #ffffff;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 12px;
-            font-size: 11px;
         }
 
         .hidden { display: none !important; }
@@ -526,6 +322,9 @@
     <!-- PHP BACKEND: DÁTA Z DB A KATEGÓRIE PRE 2. KOLIESKO -->
     <?php
         $base_url = htmlspecialchars($base_path ?? '');
+        $is_manager = !empty($is_manager);
+        $role_label = $is_manager ? 'Manažér' : 'Admin';
+        $editorRequests = $requests ?? [];
         $rawDevices = $devices ?? [];
 
         if (empty($rawDevices)) {
@@ -652,19 +451,24 @@
                 <button onclick="location.reload()" class="fs-menu-link active">
                     <i data-lucide="cpu" style="width:14px;height:14px;"></i> Domov
                 </button>
-                <button onclick="openVsCodeModal()" class="fs-menu-link">
-                    <i data-lucide="code-2" style="width:14px;height:14px;"></i> Systém (Nahratie HW súborov)
-                </button>
+                <a href="<?php echo $base_url; ?>/dashboard" class="fs-menu-link" style="color:#38bdf8;">
+                    <i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i> Dashboard
+                </a>
                 <a href="<?php echo $base_url; ?>/setup" class="fs-menu-link" style="color:#34d399;">
                     <i data-lucide="plus-circle" style="width:14px;height:14px;"></i> Pridať zariadenie
                 </a>
+                <?php if (!$is_manager): ?>
+                <a href="<?php echo $base_url; ?>/navstevnost" class="fs-menu-link" style="color:#a78bfa;">
+                    <i data-lucide="bar-chart-3" style="width:14px;height:14px;"></i> Návštevnosť
+                </a>
+                <?php endif; ?>
             </nav>
         </div>
 
         <div class="fs-nav-right">
             <div class="admin-badge-btn">
                 <i data-lucide="shield-check" style="width:15px;height:15px;color:#38bdf8;"></i>
-                <span>Admin (<?php echo htmlspecialchars($_SESSION['username'] ?? 'Root'); ?>)</span>
+                <span><?php echo $role_label; ?> (<?php echo htmlspecialchars($_SESSION['username'] ?? 'Root'); ?>)</span>
             </div>
             <a href="<?php echo $base_url; ?>/logout" style="color:#ef4444;text-decoration:none;display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:6px 10px;">
                 <i data-lucide="log-out" style="width:14px;height:14px;"></i> Odhlásiť
@@ -672,7 +476,36 @@
         </div>
     </header>
 
+    <?php if ($is_manager): ?>
+    <!-- Manažér: bez grafov a performance, úpravy povolené -->
+    <div style="background:#0b3b2e;border-bottom:1px solid rgba(16,185,129,0.35);color:#a7f3d0;padding:10px 24px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;">
+        <i data-lucide="briefcase" style="width:15px;height:15px;"></i>
+        Režim Manažér — grafy a performance sú skryté. Zariadenia a nastavenia môžeš upravovať bez kódu.
+    </div>
+    <?php else: ?>
+    <!-- Admin: úpravy sa odomykajú kódom -->
+    <div style="background:<?php echo elvo_admin_edit_locked() ? '#4a1d1d' : '#0b3b2e'; ?>;border-bottom:1px solid <?php echo elvo_admin_edit_locked() ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.35)'; ?>;color:<?php echo elvo_admin_edit_locked() ? '#fecaca' : '#a7f3d0'; ?>;padding:10px 24px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <?php if (elvo_admin_edit_locked()): ?>
+            <i data-lucide="lock" style="width:15px;height:15px;"></i>
+            <span>Úpravy sú zamknuté — zadaj admin kód:</span>
+            <form method="post" action="<?php echo $base_url; ?>/admin/unlock" style="display:flex;gap:8px;align-items:center;margin:0;">
+                <input type="hidden" name="back" value="/">
+                <input type="password" name="code" placeholder="Admin kód" autocomplete="off" style="background:#020617;border:1px solid #475569;color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;">
+                <button type="submit" style="background:#0891b2;border:0;color:#fff;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:900;cursor:pointer;">ODOMKNÚŤ</button>
+            </form>
+        <?php else: ?>
+            <i data-lucide="unlock" style="width:15px;height:15px;"></i>
+            <span>Úpravy sú odomknuté (do <?php echo date('H:i', elvo_admin_edit_until()); ?>).</span>
+            <form method="post" action="<?php echo $base_url; ?>/admin/lock" style="margin:0;">
+                <input type="hidden" name="back" value="/">
+                <button type="submit" style="background:transparent;border:1px solid #64748b;color:#e2e8f0;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;">ZAMKNÚŤ</button>
+            </form>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
     <!-- 2. DARK HERO (1. Koliesko = Všetky zariadenia, 2. Koliesko = IBA CHYBY) -->
+    <?php if (!$is_manager): ?>
     <section class="fs-hero">
         <div class="fs-hero-inner">
             
@@ -836,6 +669,8 @@
         </div>
     </section>
 
+    <?php endif; ?>
+
     <!-- 3. TABUĽKA ZARIADENÍ (KLIKNUTIE OTVÁRA admin_device.html) -->
     <main class="fs-main-content">
         <div class="fs-card-table">
@@ -865,7 +700,9 @@
                         <th style="width:70px;">Náhľad</th>
                         <th>Názov zariadenia (Klik pre admin_device)</th>
                         <th>Sériové číslo (SN)</th>
+                        <?php if (!$is_manager): ?>
                         <th>Výkon / Dnešná výroba</th>
+                        <?php endif; ?>
                         <th>Diagnostické hlásenie z DB</th>
                         <th style="text-align:right;">Správa</th>
                     </tr>
@@ -898,17 +735,26 @@
                         <td style="font-family:'JetBrains Mono';font-size:12px;color:#64748b;">
                             <?php echo htmlspecialchars($dev['serial_number']); ?>
                         </td>
+                        <?php if (!$is_manager): ?>
                         <td style="font-family:'JetBrains Mono';font-weight:700;">
                             <?php echo $power; ?> <span style="color:#94a3b8;font-weight:400;">/</span> <?php echo $yield; ?>
                         </td>
+                        <?php endif; ?>
                         <td>
                             <span class="error-pill <?php echo $isNormal ? 'normal' : 'fault'; ?>">
                                 <i data-lucide="<?php echo $isNormal ? 'check-circle' : 'alert-octagon'; ?>" style="width:13px;height:13px;"></i>
                                 <?php echo htmlspecialchars($errText); ?>
                             </span>
                         </td>
-                        <td style="text-align:right;">
-                            <a href="<?php echo $deviceLink; ?>" style="color:#0284c7;text-decoration:none;">
+                        <td style="text-align:right;white-space:nowrap;">
+                            <!-- Premenovanie a baterka dostupné aj manažérovi -->
+                            <button type="button" onclick="renameAdminDevice(<?php echo (int)$dev['id']; ?>)" title="Premenovať zariadenie" aria-label="Premenovať zariadenie" style="background:none;border:0;color:#0284c7;cursor:pointer;padding:4px;vertical-align:middle;">
+                                <i data-lucide="pencil" style="width:16px;height:16px;"></i>
+                            </button>
+                            <button type="button" onclick="toggleAdminLed(<?php echo (int)$dev['id']; ?>)" title="Baterka — svetlo" aria-label="Baterka — svetlo" style="background:none;border:0;color:#f59e0b;cursor:pointer;padding:4px;vertical-align:middle;">
+                                <i data-lucide="flashlight" style="width:16px;height:16px;"></i>
+                            </button>
+                            <a href="<?php echo $deviceLink; ?>" style="color:#0284c7;text-decoration:none;margin-left:2px;">
                                 <i data-lucide="chevron-right" style="width:18px;height:18px;cursor:pointer;"></i>
                             </a>
                         </td>
@@ -925,305 +771,54 @@
         </div>
     </main>
 
-    <!-- 4. VS CODE SÚBOROVÝ MODAL (READONLY KÓD, UPLOAD SÚBOROV AJ PRIEČINKOV, ROVNO HESLO) -->
-    <div id="vscodeModal" class="vscode-modal-backdrop hidden">
-        <div class="vscode-window">
-            
-            <div class="vscode-top-bar">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <svg width="18" height="18" viewBox="0 0 100 100" fill="none">
-                        <path d="M72.2 4.2L28.6 37.8 11.2 24.5 3 28.5l14.4 21.5L3 71.5l8.2 4 17.4-13.3L72.2 95.8l24.8-11.8V16z" fill="#007ACC"/>
-                    </svg>
-                    <span style="font-weight:600;">ElvoControll HW File Studio [Read-Only Code]</span>
-                </div>
-
-                <!-- TLAČIDLÁ PRE NAHRÁVANIE SÚBOROV, PRIEČINKOV A DEPLOY S HESLOM -->
-                <div class="vscode-top-actions">
-                    <!-- Upload súborov -->
-                    <input type="file" id="fileUploadInput" class="hidden" multiple onchange="handleFilesUpload(event)">
-                    <!-- Upload celého priečinka -->
-                    <input type="file" id="folderUploadInput" class="hidden" webkitdirectory directory multiple onchange="handleFolderUpload(event)">
-
-                    <button class="vscode-btn" onclick="document.getElementById('fileUploadInput').click()">
-                        <i data-lucide="file-up" style="width:13px;height:13px;"></i> Nahrať súbory
-                    </button>
-                    <button class="vscode-btn" onclick="document.getElementById('folderUploadInput').click()">
-                        <i data-lucide="folder-up" style="width:13px;height:13px;"></i> Nahrať priečinok
-                    </button>
-                    
-                    <!-- CIELOVE ZARIADENIE (realny serial z DB) -->
-                    <select id="hwDeviceSelect" class="vscode-btn" style="max-width:230px;color:#e2e8f0;background:#1e1e1e;"></select>
-
-                    <!-- DEPLOY S HESLOM (server-side overenie) -->
-                    <button class="vscode-btn deploy" onclick="promptPasswordAndDeploy()">
-                        <i data-lucide="key" style="width:13px;height:13px;"></i> Nahrať do HW (Heslo)
-                    </button>
-
-                    <i data-lucide="x" style="width:18px;height:18px;cursor:pointer;margin-left:10px;" onclick="closeVsCodeModal()"></i>
-                </div>
-            </div>
-
-            <!-- VS Code Editor Body -->
-            <div class="vscode-body">
-                
-                <!-- Zoznam nahratých súborov -->
-                <div class="vscode-sidebar">
-                    <div class="vscode-sidebar-header">Nahraté súbory (Files)</div>
-                    <div class="vscode-file-list" id="vsFileList"></div>
-                </div>
-
-                <div class="vscode-editor-area">
-                    <div class="vscode-tabs">
-                        <div class="vscode-tab" id="activeTabName">
-                            <i data-lucide="file-code" style="width:13px;height:13px;color:#38bdf8;"></i>
-                            <span id="tabFileName">app.py</span>
-                        </div>
-                    </div>
-
-                    <!-- READONLY PREHLIADAČ - NEDÁ SA PREPISOVAŤ -->
-                    <div class="vscode-editor-container">
-                        <div class="vscode-line-numbers" id="lineNumbers"></div>
-                        <textarea id="vscodeSource" class="vscode-code-input" readonly spellcheck="false"></textarea>
-                    </div>
-
-                    <!-- Terminál -->
-                    <div class="vscode-terminal-wrap">
-                        <div class="vscode-terminal-header">
-                            <span>BASH LOGS & STATUS</span>
-                            <span style="cursor:pointer;" onclick="clearVsTerminal()">Vymazať výpis</span>
-                        </div>
-                        <div class="vscode-terminal-body" id="vscodeTerminalBody">
-                            <div>[SYSTEM] ElvoControll CM5 File System pripravený.</div>
-                            <div>[INFO] Režim zobrazenia je Read-Only. Kód sa upravuje v externom editore a nahráva ako súbor.</div>
-                            <div style="color:#a78bfa;">[READY] Nahrajte súbory/priečinok a kliknite na "Nahrať do HW (Heslo)".</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="vscode-footer">
-                <div style="display:flex;gap:16px;align-items:center;">
-                    <span><i data-lucide="lock" style="width:11px;height:11px;vertical-align:middle;"></i> Režim: Read-Only (Chránené)</span>
-                    <span id="vsFooterFile">app.py</span>
-                    <span>UTF-8</span>
-                </div>
+    <!-- POVOLENIA PRE EDITORA -->
+    <?php if ($is_admin || $is_manager): ?>
+    <section style="max-width:1760px;margin:0 auto 26px;padding:0 24px;">
+        <div class="fs-card-table">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
                 <div>
-                    <span>Riadiaca jednotka: ElvoControll CM5</span>
+                    <div style="font-size:14px;font-weight:900;color:#0f172a;">🔐 Povolenia editora</div>
+                    <div style="font-size:11px;color:#64748b;font-weight:600;">Editor môže upraviť zariadenie len po schválení. Povolenie platí 24 hodín.</div>
                 </div>
             </div>
-
+            <table class="fs-table">
+                <thead><tr><th>Editor</th><th>Zariadenie</th><th>Stav</th><th>Platnosť</th><th style="text-align:right;">Akcia</th></tr></thead>
+                <tbody>
+                <?php if (empty($editorRequests)): ?>
+                    <tr><td colspan="5" style="color:#94a3b8;">Žiadne žiadosti.</td></tr>
+                <?php else: foreach ($editorRequests as $er):
+                    $erGranted = (($er['status'] ?? '') === 'approved') && !empty($er['granted_until']) && strtotime((string)$er['granted_until']) > time();
+                    $erPending = (($er['status'] ?? '') === 'pending');
+                ?>
+                    <tr>
+                        <td style="font-weight:700;"><?php echo $is_admin ? ('Editor #' . (int)$er['editor_id']) : htmlspecialchars((string)($er['editor_name'] ?? ('Editor #' . (int)$er['editor_id']))); ?></td>
+                        <td><?php echo htmlspecialchars((string)($er['device_name'] ?? ('Zariadenie #' . (int)$er['device_id']))); ?></td>
+                        <td><?php echo $erGranted ? '✅ Povolené' : ($erPending ? '⏳ Čaká' : '🚫 Zamietnuté'); ?></td>
+                        <td style="font-family:'JetBrains Mono',monospace;font-size:11px;"><?php echo $erGranted ? date('d.m. H:i', strtotime((string)$er['granted_until'])) : '—'; ?></td>
+                        <td style="text-align:right;">
+                            <form method="post" action="<?php echo $base_url; ?>/editor/perm" style="display:inline-flex;gap:6px;margin:0;">
+                                <input type="hidden" name="csrf" value="<?php echo htmlspecialchars(elvo_admin_csrf()); ?>">
+                                <input type="hidden" name="id" value="<?php echo (int)$er['id']; ?>">
+                                <?php if ($erPending): ?>
+                                    <button name="action" value="approve" class="fs-btn-primary" style="padding:6px 12px;font-size:10px;">Povoliť 24h</button>
+                                    <button name="action" value="reject" class="fs-btn-secondary" style="padding:6px 12px;font-size:10px;">Zamietnuť</button>
+                                <?php elseif ($erGranted): ?>
+                                    <button name="action" value="revoke" class="fs-btn-secondary" style="padding:6px 12px;font-size:10px;">Odobrať</button>
+                                <?php else: ?>
+                                    <button name="action" value="approve" class="fs-btn-primary" style="padding:6px 12px;font-size:10px;">Povoliť 24h</button>
+                                <?php endif; ?>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
         </div>
-    </div>
+    </section>
+    <?php endif; ?>
 
     <script>
         lucide.createIcons();
-
-        // Databáza súborov (Pripravená na nahrávanie ďalších súborov a priečinkov)
-        let currentActiveFile = 'app.py';
-        const fileDatabase = {
-            'app.py': `# ElvoControll Modbus Service (Read-Only)
-import time
-import modbus_scan
-
-def telemetry_loop():
-    print("[INIT] Spúšťam zber dát zo striedačov...")
-    while True:
-        try:
-            data = modbus_scan.read_inverters()
-            print(f"[OK] Načítané: {data}")
-        except Exception as e:
-            print(f"[ERR] Výpadok RS485: {e}")
-        time.sleep(2)
-
-if __name__ == "__main__":
-    telemetry_loop()
-`,
-            'config.json': `{\n  "gateway": "Elvo-CM5",\n  "baudrate": 9600,\n  "modbus_slaves": [1, 2, 3, 4]\n}`
-        };
-
-        // openVsCodeModal je definovaná vyššie (s renderHwDeviceSelect)
-
-        function closeVsCodeModal() {
-            document.getElementById('vscodeModal').classList.add('hidden');
-        }
-
-        function renderFileList() {
-            const container = document.getElementById('vsFileList');
-            container.innerHTML = '';
-
-            Object.keys(fileDatabase).forEach(file => {
-                const div = document.createElement('div');
-                div.className = 'vscode-file-item' + (file === currentActiveFile ? ' active' : '');
-                div.innerHTML = `
-                    <i data-lucide="${file.endsWith('.json') ? 'file-json' : 'file-code'}" style="width:14px;height:14px;color:#38bdf8;"></i>
-                    <span>${file}</span>
-                `;
-                div.onclick = () => selectVsFile(file);
-                container.appendChild(div);
-            });
-
-            lucide.createIcons();
-        }
-
-        function selectVsFile(fileName) {
-            currentActiveFile = fileName;
-            document.getElementById('tabFileName').innerText = fileName;
-            document.getElementById('vsFooterFile').innerText = fileName;
-            
-            const editor = document.getElementById('vscodeSource');
-            editor.value = fileDatabase[fileName] || '';
-
-            // Generovanie čísel riadkov
-            const lines = editor.value.split('\n').length;
-            let lineNums = '';
-            for (let i = 1; i <= Math.max(lines, 16); i++) {
-                lineNums += i + '<br>';
-            }
-            document.getElementById('lineNumbers').innerHTML = lineNums;
-
-            renderFileList();
-        }
-
-        // NAHRÁVANIE VIACERÝCH SÚBOROV (FILES)
-        function handleFilesUpload(e) {
-            const files = e.target.files;
-            if (!files || files.length === 0) return;
-
-            const term = document.getElementById('vscodeTerminalBody');
-
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    fileDatabase[file.name] = event.target.result;
-                    term.innerHTML += `<div style="color:#38bdf8;">[UPLOAD FILE] Nahratý súbor: <b>${file.name}</b> (${Math.round(file.size/1024)} KB)</div>`;
-                    renderFileList();
-                    selectVsFile(file.name);
-                    term.scrollTop = term.scrollHeight;
-                };
-                reader.readAsText(file);
-            });
-        }
-
-        // NAHRÁVANIE CELÉHO PRIEČINKA (FOLDER)
-        function handleFolderUpload(e) {
-            const files = e.target.files;
-            if (!files || files.length === 0) return;
-
-            const term = document.getElementById('vscodeTerminalBody');
-            term.innerHTML += `<div style="color:#eab308;">[UPLOAD FOLDER] Spracovávam priečinok s ${files.length} súbormi...</div>`;
-
-            Array.from(files).forEach(file => {
-                const path = file.webkitRelativePath || file.name;
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    fileDatabase[path] = event.target.result;
-                    term.innerHTML += `<div>&bull; Načítané: ${path}</div>`;
-                    renderFileList();
-                    selectVsFile(path);
-                    term.scrollTop = term.scrollHeight;
-                };
-                reader.readAsText(file);
-            });
-        }
-
-        // Zoznam cielovych CM5 (realne serialy z DB, renderovane PHP-ckom)
-        const hwDevices = <?php echo json_encode(array_map(function($d){ return ['serial' => $d['serial_number'], 'name' => $d['name']]; }, array_values(array_filter($devicesList, function($d){ return !empty($d['serial_number']); })))); ?>;
-
-        let hwDeployPollTimer = null;
-
-        function openVsCodeModal() {
-            document.getElementById('vscodeModal').classList.remove('hidden');
-            renderFileList();
-            selectVsFile(currentActiveFile);
-            renderHwDeviceSelect();
-        }
-
-        function renderHwDeviceSelect() {
-            const sel = document.getElementById('hwDeviceSelect');
-            if (!sel) return;
-            if (!hwDevices.length) {
-                sel.innerHTML = '<option value="">Žiadne zariadenie v DB</option>';
-                return;
-            }
-            sel.innerHTML = hwDevices.map(d =>
-                `<option value="${d.serial}">${d.name} — ${d.serial}</option>`).join('');
-        }
-
-        // DEPLOY: server-side overenie hesla + realny zapis na vybrane CM5
-        async function promptPasswordAndDeploy() {
-            const term = document.getElementById('vscodeTerminalBody');
-            const pass = prompt("ZADAJTE ADMINISTRÁTORSKÉ HESLO PRE DEPLOY DO HARDVÉRU:");
-            if (!pass) return;
-
-            const sel = document.getElementById('hwDeviceSelect');
-            const serial = sel ? sel.value : '';
-            if (!serial) {
-                term.innerHTML += `<div style="color:#ef4444;">[TARGET] Vyber cieľové zariadenie CM5 zo zoznamu.</div>`;
-                term.scrollTop = term.scrollHeight;
-                return;
-            }
-
-            const fileCount = Object.keys(fileDatabase).length;
-            if (!fileCount) {
-                term.innerHTML += `<div style="color:#ef4444;">[FILES] Najprv nahraj súbory.</div>`;
-                term.scrollTop = term.scrollHeight;
-                return;
-            }
-
-            term.innerHTML += `<div style="color:#38bdf8;">[DEPLOY] Cieľ: ${serial} — odosielam ${fileCount} súborov na server (overenie hesla)...</div>`;
-            term.scrollTop = term.scrollHeight;
-
-            try {
-                const resp = await fetch('<?php echo $base_url; ?>/api/hw-deploy', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ files: fileDatabase, serial, password: pass })
-                });
-                const data = await resp.json();
-                if (!data || data.status !== 'success') {
-                    term.innerHTML += `<div style="color:#ef4444;">[AUTH FAILED] ${data && data.message ? data.message : 'Deploy zamietnutý'}</div>`;
-                    term.scrollTop = term.scrollHeight;
-                    return;
-                }
-                term.innerHTML += `<div style="color:#10b981;font-weight:700;">[AUTH OK] Server prijal ${data.count} súborov. Čakám, kým CM5 ${serial} prevezme a zapíše balík...</div>`;
-                term.scrollTop = term.scrollHeight;
-                pollHwDeployStatus(serial, term);
-            } catch (err) {
-                term.innerHTML += `<div style="color:#ef4444;">[ERROR] ${err}</div>`;
-                term.scrollTop = term.scrollHeight;
-            }
-        }
-
-        function pollHwDeployStatus(serial, term) {
-            if (hwDeployPollTimer) clearInterval(hwDeployPollTimer);
-            let ticks = 0;
-            hwDeployPollTimer = setInterval(async () => {
-                ticks++;
-                try {
-                    const r = await fetch('<?php echo $base_url; ?>/api/hw-deploy/status', {credentials: 'same-origin'});
-                    const d = await r.json();
-                    const st = d && d.deploy ? d.deploy.status : 'idle';
-                    if (st === 'success') {
-                        clearInterval(hwDeployPollTimer); hwDeployPollTimer = null;
-                        term.innerHTML += `<div style="color:#22c55e;font-weight:700;">[DEPLOY SUCCESS] ✅ CM5 ${serial} potvrdil zápis súborov (reštart vykonaný).</div>`;
-                        term.scrollTop = term.scrollHeight;
-                    } else if (st === 'error') {
-                        clearInterval(hwDeployPollTimer); hwDeployPollTimer = null;
-                        term.innerHTML += `<div style="color:#ef4444;">[DEPLOY FAILED] ❌ CM5 ${serial} oznámil chybu pri zápise. Pozri log na zariadení (elvo-log).</div>`;
-                        term.scrollTop = term.scrollHeight;
-                    } else if (ticks > 60) {
-                        clearInterval(hwDeployPollTimer); hwDeployPollTimer = null;
-                        term.innerHTML += `<div style="color:#eab308;">[TIMEOUT] CM5 ${serial} nepotvrdil do 5 minút. Skontroluj, či je online (elvo-log).</div>`;
-                        term.scrollTop = term.scrollHeight;
-                    }
-                } catch (e) { /* keep polling */ }
-            }, 5000);
-        }
-
-        function clearVsTerminal() {
-            document.getElementById('vscodeTerminalBody').innerHTML = '<div style="color:#858585;">[TERMINÁL VYČISTENÝ]</div>';
-        }
 
         // Filtrovanie tabuľky
         function applyFilters() {
@@ -1267,6 +862,47 @@ if __name__ == "__main__":
             document.getElementById('filterKeyword').value = '';
             document.getElementById('filterStatus').value = '';
             applyFilters();
+        }
+
+        // Premenovanie zariadenia priamo v tabuľke (admin aj manažér)
+        async function renameAdminDevice(id) {
+            const link = document.querySelector('#sitesTableBody a[href*="id=' + id + '"]');
+            const current = link ? link.textContent.trim() : '';
+            const name = prompt('Nové meno zariadenia:', current);
+            if (!name || name === current) return;
+            try {
+                const res = await fetch('<?php echo $base_url; ?>/api/device/' + id + '/rename', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name: name})
+                });
+                const d = await res.json().catch(() => ({}));
+                if (d.status === 'success') {
+                    if (link) link.textContent = name;
+                } else {
+                    alert('Chyba: ' + (d.message || d.error || 'nepodarilo sa uložiť'));
+                }
+            } catch (e) { alert('Chyba pri ukladaní'); }
+        }
+
+        // Baterka (LED svetlo) pre konkrétne zariadenie
+        async function toggleAdminLed(id) {
+            const val = prompt('Jas baterky 1–100 (0 = vypnúť):', '100');
+            if (val === null) return;
+            const brightness = Math.max(0, Math.min(100, parseInt(val, 10) || 0));
+            try {
+                const res = await fetch('<?php echo $base_url; ?>/api/device/' + id + '/led', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({mode: brightness > 0 ? 'flashlight' : 'off', brightness: brightness})
+                });
+                const d = await res.json().catch(() => ({}));
+                if (d.status === 'success') {
+                    alert(brightness > 0 ? 'Baterka svieti na ' + brightness + ' %.' : 'Baterka je vypnutá.');
+                } else {
+                    alert('Chyba: ' + (d.message || 'nepodarilo sa odoslať'));
+                }
+            } catch (e) { alert('Chyba pri odosielaní'); }
         }
     </script>
 </body>

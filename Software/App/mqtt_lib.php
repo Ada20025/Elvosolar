@@ -1,28 +1,16 @@
 <?php
-// =============================================================================
-// mqtt_lib.php — MQTT most pre webovú appku (RUKA)
+// mqtt_lib.php - MQTT klient pre web
+// pripojí sa k brokeru, pošle príkaz do stroje/{serial}/prikazy, prečíta stroje/+/stav
+// príkazy majú CSRF, whitelist, audit a limit 30/min
 //
-// Čistý PHP MQTT 3.1.1 klient (žiadne composer závislosti) + bezpečnostná vrstva.
-// Web sa na stotinu sekundy pripojí k firemnému brokeru (Mosquitto), publikuje
-// retained príkaz do stroje/{serial}/prikazy a odpojí sa. Stavy číta krátkym
-// subscribe-om na stroje/+/stav (retained správy prídu okamžite).
-//
-// BEZPEČNOSŤ (obojžmerný systém!):
-//  - Prístup chráni existujúca brána index.php (gate + session, admin/mechanik)
-//  - CSRF token per session pre každý publikovaný príkaz
-//  - Whitelist serial aj príkazu (regex + pevný zoznam)
-//  - Audit do DB tabuľky mqtt_audit (kto, kedy, čo) + rate limit 30/min
-//  - TLS na brokera (verify_peer defaultne ZAPNUTÝ)
-//
-// Konfigurácia: env premenné alebo súbor mqtt_config.local.php (NEkomituje sa!):
-//   <?php return ['host'=>'mqtt.example.sk','password'=>'...']; 
-// =============================================================================
+// nastavenie: premenné prostredia alebo mqtt_config.local.php:
+//   <?php return ['host'=>'mqtt.example.sk','password'=>'...'];
 
 if (!defined('ELVO_MQTT_LIB')) {
 define('ELVO_MQTT_LIB', 1);
 
 // ---------------------------------------------------------------------------
-// KONFIGURÁCIA
+// NASTAVENIE
 // ---------------------------------------------------------------------------
 if (!function_exists('elvo_mqtt_config')) {
 function elvo_mqtt_config() {
@@ -237,7 +225,7 @@ function elvo_mqtt_current_user($pdo) {
         $st = $pdo->prepare('SELECT id, username, role FROM users WHERE id = ? LIMIT 1');
         $st->execute([$_SESSION['user_id']]);
         $u = $st->fetch();
-        if ($u && in_array(($u['role'] ?? ''), ['admin', 'mechanik'], true)) return $u;
+        if ($u && in_array(($u['role'] ?? ''), ['admin', 'manazer'], true)) return $u;
     } catch (Exception $e) { /* DB chyba -> neprihlásený */ }
     return null;
 }

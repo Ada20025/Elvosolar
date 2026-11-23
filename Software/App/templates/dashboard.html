@@ -1439,7 +1439,6 @@
                 </div>
                 <div class="header-brand-text" style="display:flex;flex-direction:column;">
                     <span style="font-size:15px;font-weight:900;color:var(--text-primary);line-height:1.2;">ElvoControll</span>
-                    <span style="font-size:8px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent-battery);font-family:'JetBrains Mono',monospace;">SMART EMS</span>
                 </div>
             </div>
 
@@ -1491,6 +1490,13 @@
                         <?php endif; ?>
                     </div>
                 </div>
+                <?php $headerDevId = isset($devices[0]['id']) ? (int)$devices[0]['id'] : 0; ?>
+                <?php if ($headerDevId > 0): ?>
+                <!-- Premenovanie priamo v hlavičke — viditeľné pre každú rolu -->
+                <button type="button" onclick="renameDeviceFromHeader()" title="Premenovať zariadenie" aria-label="Premenovať zariadenie" style="background:none;border:1px solid var(--border-card);cursor:pointer;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;color:var(--text-muted);transition:all .2s;flex-shrink:0;">
+                    <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                </button>
+                <?php endif; ?>
             </div>
 
             <!-- Right: baterka + nastavenia -->
@@ -1526,6 +1532,14 @@
                                 <span>Nastavenia</span>
                             </button>
                         </a>
+                        <?php if (!empty($is_demo)): ?>
+                        <a href="<?php echo $base_path; ?>/dashboard?view=none" style="text-decoration:none;">
+                            <button class="user-dropdown-btn">
+                                <i data-lucide="monitor-x" style="width:14px;height:14px;"></i>
+                                <span>Demo: obrazovka bez zariadenia</span>
+                            </button>
+                        </a>
+                        <?php endif; ?>
                         <div style="height:1px;background:var(--border-card);margin:4px 0;"></div>
                         <a href="<?php echo $base_path; ?>/logout" style="text-decoration:none;">
                             <button class="user-dropdown-btn" style="color:var(--accent-warn);">
@@ -1964,7 +1978,7 @@
                             <i data-lucide="git-compare" style="color:var(--accent-solar);width:20px;height:20px;"></i>
                             <div>
                                 <div style="font-size:12px;font-weight:800;color:var(--text-primary);">Model 4: Plná arbitráž</div>
-                                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.5;">Nakupuje keď je lacno, predáva keď je drahо — plný cyklus arbitráže.</div>
+                                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.5;">Nakupuje keď je lacno, predáva keď je draho — plný cyklus arbitráže.</div>
                             </div>
                         </div>
                         <i id="aiModelCheck4" data-lucide="check" class="hidden" style="color:var(--accent-battery);width:16px;height:16px;"></i>
@@ -2321,7 +2335,6 @@
                 </div>
                 <div style="display:flex;flex-direction:column;">
                     <span style="font-size:12px;font-weight:800;color:var(--text-primary);">ElvoControll</span>
-                    <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:var(--accent-battery);font-family:'JetBrains Mono',monospace;">SMART EMS</span>
                 </div>
             </div>
             <div style="display:flex;align-items:center;gap:16px;font-size:10px;color:var(--text-muted);">
@@ -2414,6 +2427,12 @@
             }).catch(()=>{});
             fetchTelemetry();
             fetchMeterData();
+        }
+
+        // Premenovanie aktívneho zariadenia z hlavičky
+        function renameDeviceFromHeader() {
+            const activeId = metaEl ? metaEl.getAttribute('data-device-id') : null;
+            if (activeId) renameDevice(activeId);
         }
 
         // Rename device
@@ -4648,9 +4667,9 @@
             renderHolidayRelays();
             // Skryt relay sekciu ak neni zariadenie
             const deviceIds = metaEl ? JSON.parse(metaEl.getAttribute('data-device-ids') || '[]') : [];
-            // Bez zariadenia niet čo svietiť — tlačidlo baterky skryjeme
+            // Baterka ostáva v hlavičke viditeľná pre všetky role (aj bežný používateľ)
             const ledDock = document.getElementById('ledDock');
-            if (ledDock) ledDock.classList.toggle('hidden', deviceIds.length === 0);
+            if (ledDock) ledDock.classList.remove('hidden');
             if (deviceIds.length === 0) {
                 const relays = document.getElementById('relaysSection');
                 if (relays) relays.classList.add('hidden');
