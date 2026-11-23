@@ -2,6 +2,31 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
+// Sken WiFi smie spustiť len prihlásený admin/manažér — inak by to bola otvorená cesta do boxu.
+require_once __DIR__ . '/config.php';
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_set_cookie_params(['lifetime' => 31536000, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
+    session_start();
+}
+if (empty($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Neautorizované']);
+    exit;
+}
+if (!$pdo) {
+    http_response_code(503);
+    echo json_encode(['error' => 'Databáza nedostupná']);
+    exit;
+}
+$stW = $pdo->prepare("SELECT role FROM users WHERE id = ? LIMIT 1");
+$stW->execute([(int)$_SESSION['user_id']]);
+$wRow = $stW->fetch();
+if (!$wRow || !in_array((string)($wRow['role'] ?? ''), ['admin', 'manazer'], true)) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Nemáte oprávnenie']);
+    exit;
+}
+
 $networks = [];
 
 // Primárne dopytovanie lokálneho FastAPI jadra bežiaceho na pozadí pod administrátorským účtom

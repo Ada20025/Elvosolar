@@ -10,10 +10,17 @@
 header('Content-Type: application/json; charset=utf-8');
 
 // Bezpecnostny token (musi sediet s MAIL_RELAY_KEY na relay hostovi)
-$expected_key = getenv('MAIL_RELAY_KEY') ?: 'elvo-relay-2026';
+// Bez nastaveneho kluca sa relay NESPUSTI — inak by bol otvoreny pre kazdeho.
+$expected_key = trim((string)getenv('MAIL_RELAY_KEY'));
 $received_key = $_SERVER['HTTP_X_RELAY_KEY'] ?? '';
 
-if (!hash_equals($expected_key, $received_key)) {
+if ($expected_key === '') {
+    http_response_code(503);
+    echo json_encode(['success' => false, 'message' => 'Relay nie je nastaveny (chyba MAIL_RELAY_KEY)']);
+    exit;
+}
+
+if (!hash_equals($expected_key, (string)$received_key)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Invalid relay key']);
     exit;

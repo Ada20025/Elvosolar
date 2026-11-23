@@ -1,12 +1,14 @@
 <?php
 // admin_reset.php - jednorazove nastavenie hesla admina
-// otvor: https://<domena>/admin_reset.php?key=K7m2Qe9xLp4T
+// kluc sa NEPISE do kodu: nastav premennu ADMIN_RESET_KEY (a volitelne ADMIN_RESET_EMAIL)
+// otvor: https://<domena>/admin_reset.php?key=<ADMIN_RESET_KEY>
 // potom subor z hostingu ZMAZ
 
-$KEY = 'K7m2Qe9xLp4T';
-$ADMIN_EMAIL = 'admin@elvosolar.sk';
+$KEY = trim((string)(getenv('ADMIN_RESET_KEY') ?: ''));
+$ADMIN_EMAIL = trim((string)(getenv('ADMIN_RESET_EMAIL') ?: 'admin@elvosolar.sk'));
 
-if (($_GET['key'] ?? '') !== $KEY) {
+// bez nastaveneho kluca sa stranka sprava, akoby neexistovala
+if ($KEY === '' || !hash_equals($KEY, (string)($_GET['key'] ?? ''))) {
     http_response_code(404);
     exit;
 }

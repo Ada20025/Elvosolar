@@ -2681,13 +2681,23 @@ elseif ($path === '/api/admin/terminal-command' && $method === 'POST') {
     if (!isset($_SESSION['user_id'])) {
         send_json(['status' => 'error', 'message' => 'Neprihlásený používateľ'], 401);
     }
-    
+    // zapisovať príkaz do zariadenia smie IBA admin
+    $stRole = $pdo->prepare("SELECT role FROM users WHERE id = ? LIMIT 1");
+    $stRole->execute([(int)$_SESSION['user_id']]);
+    $roleRow = $stRole->fetch();
+    if (!$roleRow || (string)($roleRow['role'] ?? '') !== 'admin') {
+        send_json(['status' => 'error', 'message' => 'Nemáte oprávnenie'], 403);
+    }
+
     $data = get_json_input();
     $cmd = trim($data['command'] ?? '');
     $devId = intval($data['device_id'] ?? 0);
-    
+
     if (empty($cmd)) {
         send_json(['status' => 'error', 'message' => 'Príkaz nemôže byť prázdny'], 400);
+    }
+    if (strlen($cmd) > 200 || preg_match('/[\x00-\x1f\x7f]/', $cmd)) {
+        send_json(['status' => 'error', 'message' => 'Príkaz má neplatný tvar (max 200 znakov, bez riadiacich znakov)'], 400);
     }
     
     try {
@@ -3846,6 +3856,22 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
             $existing = $stmt->fetch();
         }
         if ($existing) {
+            // Zariadenie, ktoré už patrí inému účtu, nesmie prevziať nikto cudzí.
+            $ownQ = $pdo->prepare("SELECT user_id FROM devices WHERE id = ? LIMIT 1");
+            $ownQ->execute([$existing['id']]);
+            $own = $ownQ->fetch();
+            $ownerId = ($own && $own['user_id'] !== null) ? (int)$own['user_id'] : 0;
+            $who = (int)($_SESSION['user_id'] ?? 0);
+            $isAdminClaim = false;
+            if ($who) {
+                $stWho = $pdo->prepare("SELECT role FROM users WHERE id = ? LIMIT 1");
+                $stWho->execute([$who]);
+                $whoRow = $stWho->fetch();
+                $isAdminClaim = $whoRow && (string)($whoRow['role'] ?? '') === 'admin';
+            }
+            if ($ownerId > 0 && $ownerId !== (int)$user_id && !$isAdminClaim) {
+                send_json(['status' => 'error', 'message' => 'Zariadenie je už priradené inému účtu'], 409);
+            }
             // prázdny serial nikdy nevymaže existujúci
             $pdo->prepare("UPDATE devices SET name = ?, brand_id = ?, model_id = ?, sub_type = ?, user_id = ?, serial_number = CASE WHEN ? = '' THEN serial_number ELSE ? END, status = COALESCE(status, 'offline') WHERE id = ?")
                 ->execute([$name, $brand_id, $model_id, $category_id, $user_id, $serial, $serial, $existing['id']]);
