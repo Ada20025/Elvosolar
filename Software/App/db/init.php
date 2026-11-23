@@ -1,6 +1,6 @@
 <?php
 // db/init.php — ručné vytvorenie všetkých tabuliek
-// Použitie (Railway Console alebo lokálne):
+// Použitie (cez SSH/konzolu hostingu alebo lokálne):
 //     php db/init.php
 // Skript je idempotentný, existujúce tabuľky a dáta necháva tak.
 

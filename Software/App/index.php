@@ -2296,7 +2296,7 @@ elseif ($path === '/login') {
     $attempt_key = 'login_att_' . md5(strtolower(trim($_POST['email'] ?? '')) . '|' . ($_SERVER['REMOTE_ADDR'] ?? '-'));
     $attempts = $_SESSION[$attempt_key] ?? ['count' => 0, 'until' => 0];
     // Turnstile sa ukáže len keď sú kľúče
-    // (TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY v Railway Variables).
+    // (TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY v premenných prostredia hostingu).
     $elvo_ts_site = elvo_turnstile_enabled() ? (elvo_turnstile_keys()['site'] ?? '') : '';
     if ($method === 'POST') {
         // formulár chránime rovnako ako bránu

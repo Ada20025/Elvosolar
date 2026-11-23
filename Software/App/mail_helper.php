@@ -231,8 +231,8 @@ if (!function_exists('send_elvo_email')) {
         // Nowdoc <<<'ELVOTPL' = ziadne PHP escapovanie (predchadzajuce \" rozbijali background-image).
         $year = date('Y');
         // Obrázky v maily musia byť na verejne dostupnej adrese bez prihlásenia
-        // (mailový klient ich sťahuje z internetu). Predtým tu bol mŕtvy host
-        // adamdz.alwaysdata.net, preto sa logo v mailoch nenačítalo.
+        // (mailový klient ich sťahuje z internetu). Predtým tu bol mŕtvy host,
+        // preto sa logo v mailoch nenačítalo.
         // Overené: oba odkazy nižšie vracajú 200 + správny Content-Type.
         // Prepísať sa dá premennými MAIL_LOGO_URL / MAIL_BG_IMAGE.
         $logo_url = (string)(getenv('MAIL_LOGO_URL') ?: 'https://raw.githubusercontent.com/dzurkoadam1-la/Hardware/main/Software/App/templates/ElvosolarLogo1.png');
