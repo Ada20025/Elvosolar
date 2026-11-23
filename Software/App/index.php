@@ -2516,7 +2516,7 @@ elseif ($path === '/register') {
             require_once __DIR__ . '/mail_helper.php';
             try {
                 send_elvo_email($email, 'Vitajte v ElvoControll!', 'Účet úspešne vytvorený',
-                    elvo_mail_tpl_welcome($username, 'https://' . ($_SERVER['SERVER_NAME'] ?? 'elvosolar-production.up.railway.app') . '/login'),
+                    elvo_mail_tpl_welcome($username, 'https://' . ($_SERVER['SERVER_NAME'] ?? 'elvocontrol.elvosolar.sk') . '/login'),
                     '#10b981');
             } catch (Exception $me) { /* mail nie je kritický */ }
             header("Location: " . $base_path . "/dashboard");
