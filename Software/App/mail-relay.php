@@ -1,19 +1,15 @@
 <?php
 // ============================================================
-// ELVO MAIL RELAY v2 - HTTP na porte 443 (funguje VZDY,
-// lebo Railway blokuje SMTP porty na Free/Hobby plane,
-// ale HTTPS/HTTP vystup je povoleny)
+// ELVO MAIL RELAY v2 - posielanie e-mailov cez HTTP na porte 443,
+// aby fungovalo aj tam, kde su SMTP porty blokovane.
 //
-// UMIESTNI NA ALWAYSADATA do /www/mail-relay.php
-// URL: https://adamdz.alwaysdata.net/mail-relay.php
-//
-// NA RAILWAY nastav premennu:
-//   MAIL_RELAY_URL = https://adamdz.alwaysdata.net/mail-relay.php
+// Nahraj tento subor na relay host (napr. /www/mail-relay.php)
+// a v appke nastav MAIL_RELAY_URL na jeho adresu.
 // ============================================================
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Bezpecnostny token (musi sediet s MAIL_RELAY_KEY na Railway)
+// Bezpecnostny token (musi sediet s MAIL_RELAY_KEY na relay hostovi)
 $expected_key = getenv('MAIL_RELAY_KEY') ?: 'elvo-relay-2026';
 $received_key = $_SERVER['HTTP_X_RELAY_KEY'] ?? '';
 
@@ -49,11 +45,11 @@ $headers .= "From: ElvoControll <no-reply@elvosolar.sk>\r\n";
 $headers .= "Reply-To: no-reply@elvosolar.sk\r\n";
 $headers .= "X-Mailer: ElvoRelay/2.0\r\n";
 
-// alwaysdata: mail() funguje nativne (pres ich server)
+// relay host odosiela cez vlastny mail()
 $ok = @mail($to, $subject_encoded, $html, $headers, '-f no-reply@elvosolar.sk');
 
 if ($ok) {
-    echo json_encode(['success' => true, 'via' => 'alwaysdata-mail()']);
+    echo json_encode(['success' => true, 'via' => 'relay-mail()']);
 } else {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'mail() failed on relay host']);
