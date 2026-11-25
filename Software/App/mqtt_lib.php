@@ -5,6 +5,10 @@
 //
 // nastavenie: premenné prostredia alebo mqtt_config.local.php:
 //   <?php return ['host'=>'mqtt.example.sk','password'=>'...'];
+//
+// Broker má nešifrované spojenie zakázané -> TLS na porte 8883 je predvolené.
+// CA certifikát: MQTT_CAFILE, inak isrgrootx1.pem vedľa tohto súboru,
+// inak systémový store (WebSupport ho má).
 
 if (!defined('ELVO_MQTT_LIB')) {
 define('ELVO_MQTT_LIB', 1);
@@ -27,12 +31,15 @@ function elvo_mqtt_config() {
         'timeout'   => 5,
         'states_ttl' => 5,
     ];
+    if ($cfg['cafile'] === '') {
+        $localCa = __DIR__ . '/isrgrootx1.pem';
+        if (is_file($localCa)) $cfg['cafile'] = $localCa;
+    }
     $local = __DIR__ . '/mqtt_config.local.php';
     if (is_file($local)) {
         $override = include $local;
         if (is_array($override)) $cfg = array_merge($cfg, $override);
     }
-    if ($cfg['tls'] === false && $cfg['port'] === 8883) $cfg['port'] = 1883;
     return $cfg;
 }
 }
@@ -68,6 +75,7 @@ class ElvoMqttClient {
             'verify_peer_name' => $cfg['verify'],
             'allow_self_signed' => !$cfg['verify'],
             'SNI_enabled' => true,
+            'peer_name' => $cfg['host'],
         ]]);
         if ($cfg['tls'] && $cfg['cafile'] !== '') stream_context_set_option($ctx, 'ssl', 'cafile', $cfg['cafile']);
         $errno = 0; $errstr = '';

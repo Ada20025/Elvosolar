@@ -51,6 +51,7 @@ UPDATE_FILES = {
     "smart_meter_service.py": RAW_BASE + "smart_meter_service.py",
     "serial_config_service.py": RAW_BASE + "serial_config_service.py",
     "mqtt_client.py": RAW_BASE + "mqtt_client.py",
+    "isrgrootx1.pem": RAW_BASE + "isrgrootx1.pem",
     "modbus_compat.py": RAW_BASE + "modbus_compat.py",
     "update_service.py": RAW_BASE + "update_service.py",
     "start.sh": RAW_BASE + "start.sh",

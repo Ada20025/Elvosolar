@@ -93,16 +93,21 @@ input:focus{border-color:#06b6d4}
   <div class="card">
     <h2>Konfigurácia brokera (nastaví sa raz)</h2>
     <label>Adresa firemného servera (host)</label>
-    <input id="cHost" placeholder="napr. mqtt.elvosolar.sk alebo 1.2.3.4">
+    <input id="cHost" placeholder="elvocontrol.elvosolar.sk" value="elvocontrol.elvosolar.sk">
     <label>Port</label>
-    <input id="cPort" type="number" placeholder="8883 (TLS) alebo 1883">
+    <input id="cPort" type="number" placeholder="8883" value="8883">
     <label>Používateľ (serial zariadenia)</label>
     <input id="cUser" placeholder="napr. CM5_452">
     <label>Heslo zariadenia (od správcu brokera)</label>
     <input id="cPass" type="password" placeholder="— nechaj prázdne pre zachovanie —">
-    <div class="chk"><input type="checkbox" id="cTls" checked><span>Použiť TLS (port 8883, odporúčané)</span></div>
+    <div class="chk"><input type="checkbox" id="cTls" checked disabled><span>TLS (port 8883) — nešifrované spojenie broker nepovolí</span></div>
     <div class="btns"><button class="b-sec" id="bSave" onclick="saveConfig()">Uložiť a pripojiť</button></div>
     <div id="cfgMsg" class="msg"></div>
+    <div class="help" style="margin-top:12px">
+      Box overuje certifikát brokera cez <b>isrgrootx1.pem</b> v priečinku aplikácie
+      (stiahne ho automatická aktualizácia). Adresa musí byť
+      <b>elvocontrol.elvosolar.sk</b> — certifikát je vydaný na tento názov, nie na IP.
+    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -175,10 +180,10 @@ function sendCmd(cmd){
 function loadConfig(){
   fetch('/api/mqtt/config').then(function(r){ return r.json(); }).then(function(d){
     if (d.status !== 'success') return;
-    $('cHost').value = d.host || '';
-    $('cPort').value = d.port || '';
+    $('cHost').value = d.host || 'elvocontrol.elvosolar.sk';
+    $('cPort').value = (!d.port || d.port === 1883) ? 8883 : d.port;
     $('cUser').value = d.username || '';
-    $('cTls').checked = !!d.tls;
+    $('cTls').checked = true;
     if (d.serial) { $('cUser').placeholder = d.serial; }
   }).catch(function(){ /* ticho */ });
 }

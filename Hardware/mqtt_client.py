@@ -17,8 +17,10 @@
 #   či problém je v stroji (lokálne zlyhá) alebo v sieti (lokálne funguje).
 #
 # Konfigurácia: DB tabuľka system_settings (mqtt_host, mqtt_port, mqtt_username,
-#   mqtt_password, mqtt_tls) alebo env premenné MQTT_HOST, MQTT_PORT,
-#   MQTT_USERNAME, MQTT_PASSWORD, MQTT_TLS (env prevažuje).
+#   mqtt_password, mqtt_tls, mqtt_cafile) alebo env premenné MQTT_HOST, MQTT_PORT,
+#   MQTT_USERNAME, MQTT_PASSWORD, MQTT_TLS, MQTT_CAFILE (env prevažuje).
+# Broker má nešifrované spojenie zakázané -> TLS na 8883 je vynútené.
+# CA certifikát: isrgrootx1.pem vedľa appky (sťahuje ho updater).
 # Nastavuje sa raz káblom cez lokálnu stránku http://<IP-boxu>/mqtt
 # =============================================================================
 
@@ -200,17 +202,45 @@ def load_config():
     tls = str(tls_raw).strip().lower() in ("1", "true", "yes", "on")
     if port <= 0:
         port = 8883 if tls else 1883
+    # Nešifrované spojenie broker nepovolí. Výnimka len pre lokálny test.
+    allow_plain = str(os.environ.get("MQTT_ALLOW_PLAINTEXT", "")).strip().lower() in ("1", "true", "yes")
+    if not allow_plain:
+        tls = True
+        if port == 1883:
+            port = 8883
     return host, port, username, password, tls
 
 
+def resolve_cafile():
+    """CA certifikát: env MQTT_CAFILE -> DB mqtt_cafile -> isrgrootx1.pem vedľa appky."""
+    path = (os.environ.get("MQTT_CAFILE") or _db_get_setting("mqtt_cafile") or "").strip()
+    if path and os.path.isfile(path):
+        return path
+    local = os.path.join(os.path.dirname(os.path.abspath(__file__)), "isrgrootx1.pem")
+    if os.path.isfile(local):
+        return local
+    return ""
+
+
+def _apply_tls(client):
+    """TLS s overovaním certifikátu. Priložený ISRG Root X1 je istota,
+    keď v systéme CM5 chýba alebo je store neúplný."""
+    cafile = resolve_cafile()
+    if cafile:
+        client.tls_set(ca_certs=cafile)
+    else:
+        client.tls_set()
+
+
 def save_config(host, port, username, password, tls):
-    """Uloží broker config do DB — nastavuje sa raz káblom cez /mqtt."""
+    """Uloží broker config do DB — nastavuje sa raz káblom cez /mqtt.
+    Nešifrované spojenie sa neukladá, broker ho aj tak odmietne."""
     _db_set_setting("mqtt_host", host)
-    _db_set_setting("mqtt_port", int(port))
+    _db_set_setting("mqtt_port", 8883 if int(port or 0) in (0, 1883) else int(port))
     _db_set_setting("mqtt_username", username)
     if password:
         _db_set_setting("mqtt_password", password)
-    _db_set_setting("mqtt_tls", "1" if tls else "0")
+    _db_set_setting("mqtt_tls", "1")
 
 
 # ---------------------------------------------------------------------------
@@ -237,7 +267,7 @@ def _publish_one_shot(topic, payload):
     if username:
         c.username_pw_set(username, password)
     if tls:
-        c.tls_set()
+        _apply_tls(c)
     c.connect(host, port, keepalive=KEEPALIVE_S)
     c.loop_start()
     try:
@@ -408,7 +438,7 @@ def _run_client():
     if username:
         client.username_pw_set(username, password)
     if tls:
-        client.tls_set()  # systémové CA — Let's Encrypt funguje bez nastavovania
+        _apply_tls(client)
     # LWT: ak CM5 stratí spojenie, broker vypublikuje STATUS_OFFLINE (retained)
     client.will_set(topic_stav, "STATUS_OFFLINE", qos=1, retain=True)
     client.on_message = _on_message
@@ -425,7 +455,8 @@ def _run_client():
     client.reconnect_delay_set(min_delay=1, max_delay=60)
     _client = client
 
-    _event("Spojujem s brokerom %s:%s (TLS=%s, client_id=%s)" % (host, port, tls, client_id))
+    _event("Spojujem s brokerom %s:%s (TLS=%s, CA=%s, client_id=%s)"
+           % (host, port, tls, resolve_cafile() or "systémový", client_id))
     try:
         client.loop_forever(retry_first_connection=True)  # auto-reconnect navždy
     except Exception as e:
