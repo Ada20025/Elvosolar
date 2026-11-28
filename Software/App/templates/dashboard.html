@@ -1736,7 +1736,7 @@
             <div id="powerToggleLabel" style="display:none;"></div>
             <div id="settingsPanel" style="display:none;"></div>
             <input type="number" id="settingsMinPower" value="0" style="display:none;">
-            <input type="number" id="settingsMaxPower" value="15000" style="display:none;">
+            <input type="number" id="settingsMaxPower" value="100" style="display:none;">
             <input type="number" id="settingsMinSoc" value="10" style="display:none;">
             <input type="number" id="settingsMaxSoc" value="100" style="display:none;">
             <div id="tempArc" style="display:none;"></div>
@@ -1897,22 +1897,22 @@
                                     <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Min výkon</label>
                                     <span id="gearModalMinVal" style="font-size:16px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-battery);">0%</span>
                                 </div>
-                                <input type="range" id="gearModalMin" min="-100" max="100" step="1" value="0" oninput="updateGearModal('min',this.value)" style="width:100%;">
+                                <input type="range" id="gearModalMin" min="0" max="100" step="1" value="0" oninput="updateGearModal('min',this.value)" style="width:100%;">
                                 <div style="display:flex;justify-content:space-between;margin-top:6px;">
-                                    <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono';">-100%</span>
-                                    <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono';">+100%</span>
+                                    <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono';">0%</span>
+                                    <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono';">100%</span>
                                 </div>
-                                <div class="gear-hint"><span>⚡</span><span><strong style="color:var(--text-primary);">Pozitívne</strong> = výkon do siete (predaj)<br><strong style="color:var(--text-primary);">Negatívne</strong> = nabíjanie batérie zo siete</span></div>
+                                <div class="gear-hint"><span>⚡</span><span>Minimálny výkon FVE v % (0–100 %).</span></div>
                             </div>
                             <div class="glass-card" style="margin:0;padding:16px 18px;">
                                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
                                     <label style="font-size:10px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Max výkon</label>
                                     <span id="gearModalMaxVal" style="font-size:16px;font-weight:900;font-family:'JetBrains Mono';color:var(--accent-solar);">100%</span>
                                 </div>
-                                <input type="range" id="gearModalMax" min="-100" max="100" step="1" value="100" oninput="updateGearModal('max',this.value)" style="width:100%;">
+                                <input type="range" id="gearModalMax" min="0" max="100" step="1" value="100" oninput="updateGearModal('max',this.value)" style="width:100%;">
                                 <div style="display:flex;justify-content:space-between;margin-top:6px;">
-                                    <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono';">-100%</span>
-                                    <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono';">+100%</span>
+                                    <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono';">0%</span>
+                                    <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono';">100%</span>
                                 </div>
                                 <div class="gear-hint"><span>🔋</span><span>Maximálny výkon FVE pri predaji/nabíjaní. <strong style="color:var(--text-primary);">SmartLogger:</strong> I16 register 40428.</span></div>
                             </div>
@@ -3467,33 +3467,33 @@
             const devTypes = metaEl ? JSON.parse(metaEl.getAttribute('data-device-types') || '[]') : [];
             const activeIdx = metaEl ? devTypes.indexOf(metaEl.getAttribute('data-device-id')) : -1;
             const isLogger = devTypes.some(t => t === 'smartlogger');
-            // SmartLogger: -100..+100, striadac: 0..100
-            const rangeMin = isLogger ? -100 : 0;
+            // Vždy 0–100 % (žiadne záporné hodnoty)
+            const rangeMin = 0;
             const rangeMax = 100;
             minSlider.min = rangeMin; minSlider.max = rangeMax;
             maxSlider.min = rangeMin; maxSlider.max = rangeMax;
             // Update labels
             const minLabels = minSlider.parentElement.querySelectorAll('span');
             const maxLabels = maxSlider.parentElement.querySelectorAll('span');
-            if (minLabels.length >= 3) { minLabels[0].textContent = rangeMin + '%'; minLabels[2].textContent = '+' + rangeMax + '%'; }
-            if (maxLabels.length >= 3) { maxLabels[0].textContent = rangeMin + '%'; maxLabels[2].textContent = '+' + rangeMax + '%'; }
+            if (minLabels.length >= 3) { minLabels[0].textContent = rangeMin + '%'; minLabels[2].textContent = rangeMax + '%'; }
+            if (maxLabels.length >= 3) { maxLabels[0].textContent = rangeMin + '%'; maxLabels[2].textContent = rangeMax + '%'; }
             const minText = document.getElementById('riadenieMinVal').textContent.replace('%','').trim();
             const maxText = document.getElementById('riadenieMaxVal').textContent.replace('%','').trim();
             const minVal = Math.max(rangeMin, Math.min(rangeMax, parseInt(minText) || 0));
             const maxVal = Math.max(rangeMin, Math.min(rangeMax, parseInt(maxText) || 100));
             minSlider.value = minVal;
             maxSlider.value = maxVal;
-            document.getElementById('gearModalMinVal').textContent = (minVal > 0 ? '+' : '') + minVal + '%';
-            document.getElementById('gearModalMaxVal').textContent = (maxVal > 0 ? '+' : '') + maxVal + '%';
-            minSlider.style.setProperty('--fill', ((minVal + 100) / 200 * 100) + '%');
-            maxSlider.style.setProperty('--fill', ((maxVal + 100) / 200 * 100) + '%');
+            document.getElementById('gearModalMinVal').textContent = minVal + '%';
+            document.getElementById('gearModalMaxVal').textContent = maxVal + '%';
+            minSlider.style.setProperty('--fill', minVal + '%');
+            maxSlider.style.setProperty('--fill', maxVal + '%');
             const okteSlider = document.getElementById('gearModalOkte');
             if (okteSlider) {
                 const okteVal = parseInt(okteSlider.value) || 0;
                 okteSlider.style.setProperty('--fill', (okteVal / 200 * 100) + '%');
             }
-            document.getElementById('gearScreenMinVal').textContent = (minVal > 0 ? '+' : '') + minVal;
-            document.getElementById('gearScreenMaxVal').textContent = (maxVal > 0 ? '+' : '') + maxVal;
+            document.getElementById('gearScreenMinVal').textContent = minVal;
+            document.getElementById('gearScreenMaxVal').textContent = maxVal;
             updateGearScreenArrow('min', minVal);
             updateGearScreenArrow('max', maxVal);
             modal.style.display = 'block';
@@ -3503,15 +3503,13 @@
             document.getElementById('gearModal').style.display = 'none';
         }
         function updateGearScreenArrow(type, value) {
-            const v = parseInt(value) || 0;
-            const min = -100;
-            const max = 100;
-            const pct = Math.max(0, Math.min(1, (v - min) / (max - min)));
+            const v = Math.max(0, Math.min(100, parseInt(value) || 0));
+            const pct = v / 100;
             const angle = -90 + (pct * 180);
             const arrow = document.getElementById(type === 'min' ? 'gearScreenMinArrow' : 'gearScreenMaxArrow');
             if (arrow) arrow.style.transform = 'rotate(' + angle + 'deg)';
             const valEl = document.getElementById(type === 'min' ? 'gearScreenMinVal' : 'gearScreenMaxVal');
-            if (valEl) valEl.textContent = (v > 0 ? '+' : '') + v;
+            if (valEl) valEl.textContent = v;
         }
         function updateGearModal(type, value) {
             if (type === 'okte') {
@@ -3521,17 +3519,17 @@
                 if (sl) sl.style.setProperty('--fill', (value / 200 * 100) + '%');
                 return;
             }
-            // progress fill pre min/max slidry (rozsah -100..+100)
+            // progress fill pre min/max slidry (rozsah 0..100)
             const r = document.getElementById(type === 'min' ? 'gearModalMin' : 'gearModalMax');
-            if (r) r.style.setProperty('--fill', ((parseInt(value) + 100) / 200 * 100) + '%');
+            if (r) r.style.setProperty('--fill', Math.max(0, Math.min(100, parseInt(value) || 0)) + '%');
             const pVal = value + '%';
             if (document.getElementById('gearModalMinVal')) document.getElementById('gearModalMinVal').textContent = type === 'min' ? pVal : document.getElementById('gearModalMinVal').textContent;
             if (document.getElementById('gearModalMaxVal')) document.getElementById('gearModalMaxVal').textContent = type === 'max' ? pVal : document.getElementById('gearModalMaxVal').textContent;
             updateGearScreenArrow(type, value);
         }
         function saveGearSettings() {
-            const minV = parseInt(document.getElementById('gearModalMin').value);
-            const maxV = parseInt(document.getElementById('gearModalMax').value);
+            const minV = Math.max(0, Math.min(100, parseInt(document.getElementById('gearModalMin').value) || 0));
+            const maxV = Math.max(0, Math.min(100, parseInt(document.getElementById('gearModalMax').value) || 100));
             const okteEl = document.getElementById('gearModalOkte');
             const okteV = okteEl ? parseInt(okteEl.value) : 0;
             // Update display on main dashboard
@@ -3916,7 +3914,7 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        min_power_pct: Math.max(-100, Math.min(100, parseInt(document.getElementById('settingsMinPower').value) || (cur.min_power_pct ?? 0))),
+                        min_power_pct: Math.max(0, Math.min(100, parseInt(document.getElementById('settingsMinPower').value) || (cur.min_power_pct ?? 0))),
                         max_power_pct: Math.max(0, Math.min(100, parseInt(document.getElementById('settingsMaxPower').value) || (cur.max_power_pct ?? 100))),
                         min_okte_price: cur.min_okte_price ?? 0
                     })
