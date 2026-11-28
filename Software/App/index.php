@@ -816,6 +816,11 @@ if (isset($pdo) && !$migrations_done) {
         if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
         // režim prevádzky má vlastný stĺpec
         if (!in_array('meter_control_mode', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN meter_control_mode VARCHAR(20) DEFAULT 'SMART'");
+        // Min/Max výkon je len 0–100 % — oprav stare zaporné hodnoty v DB (napr. -100)
+        try { $pdo->exec("UPDATE devices SET min_power_pct = 0 WHERE min_power_pct < 0"); } catch (Exception $e) { /* ignore */ }
+        try { $pdo->exec("UPDATE devices SET min_power_pct = 100 WHERE min_power_pct > 100"); } catch (Exception $e) { /* ignore */ }
+        try { $pdo->exec("UPDATE devices SET max_power_pct = 0 WHERE max_power_pct < 0"); } catch (Exception $e) { /* ignore */ }
+        try { $pdo->exec("UPDATE devices SET max_power_pct = 100 WHERE max_power_pct > 100"); } catch (Exception $e) { /* ignore */ }
         // index pre telemetriu (rýchlejšie načítanie)
         try { $pdo->exec("CREATE INDEX idx_tel_dev_id ON telemetry (device_id, id)"); } catch (Exception $e2) { /* uz existuje */ }
     } catch (Exception $e) { /* ignore */ }
@@ -3453,8 +3458,8 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                     $ctrl = [
                         'manual_override' => strtoupper(trim($rC['manual_override'] ?? 'AUTO')) ?: 'AUTO',
                         'active_model_id' => ($rC['active_model_id'] ?? 'AI') ?: 'AI',
-                        'min_power_pct' => floatval($rC['min_power_pct'] ?? 0),
-                        'max_power_pct' => floatval($rC['max_power_pct'] ?? 100),
+                        'min_power_pct' => max(0, min(100, floatval($rC['min_power_pct'] ?? 0))),
+                        'max_power_pct' => max(0, min(100, floatval($rC['max_power_pct'] ?? 100))),
                         'min_okte_price' => floatval($rC['min_okte_price_cz_eur'] ?? 0),
                         // Zap/Vyp/Smart AI → smart_meter.control_mode
                         'meter_control_mode' => strtoupper(trim($rC['meter_control_mode'] ?? 'SMART')) ?: 'SMART',
@@ -4274,8 +4279,8 @@ elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && 
     
     send_json([
         'status' => 'success',
-        'min_power_pct' => $row ? floatval($row['min_power_pct'] ?? 0) : 0,
-        'max_power_pct' => $row ? floatval($row['max_power_pct'] ?? 100) : 100,
+        'min_power_pct' => $row ? max(0, min(100, floatval($row['min_power_pct'] ?? 0))) : 0,
+        'max_power_pct' => $row ? max(0, min(100, floatval($row['max_power_pct'] ?? 100))) : 100,
         'min_okte_price' => $row ? floatval($row['min_okte_price_cz_eur'] ?? 0) : 0
     ]);
 }
@@ -4582,10 +4587,20 @@ elseif (preg_match('#^/api/device/(\d+)/meter$#', $path, $matches) && $method ==
         if (!in_array('meter_control_mode', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
             $pdo->exec("ALTER TABLE devices ADD COLUMN meter_control_mode VARCHAR(20) DEFAULT 'SMART'");
         }
-        $stmt = $pdo->prepare("UPDATE devices SET meter_control_mode = ? WHERE id = ?");
-        $stmt->execute([$mode, $dev_id]);
+        // Zap/Vyp/Smart AI musí sedieť aj v manual_override, inak DB ostane 'AUTO'
+        // (a CM5 by podľa nej ďalej bežal v automatike).
+        $overrideMap = ['UNLIMITED' => 'ON', 'PLUS' => 'OFF', 'SMART' => 'AUTO'];
+        $override = $overrideMap[$mode] ?? 'AUTO';
+        try {
+            $stmt = $pdo->prepare("UPDATE devices SET meter_control_mode = ?, manual_override = ? WHERE id = ?");
+            $stmt->execute([$mode, $override, $dev_id]);
+        } catch (Exception $eOvr) {
+            // stara schema bez manual_override — aspon rezim prevadzky
+            $stmt = $pdo->prepare("UPDATE devices SET meter_control_mode = ? WHERE id = ?");
+            $stmt->execute([$mode, $dev_id]);
+        }
     } catch (Exception $e) { /* ignore */ }
-    send_json(['status' => 'success', 'meter_control_mode' => $mode]);
+    send_json(['status' => 'success', 'meter_control_mode' => $mode, 'manual_override' => $override]);
 }
 
 // --- DEVICE RELAY CONTROL ---

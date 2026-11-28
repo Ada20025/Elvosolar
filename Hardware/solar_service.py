@@ -852,11 +852,17 @@ class SolarBackgroundService:
                             _minp = ctrl.get("min_power_pct")
                             _maxp = ctrl.get("max_power_pct")
                             _okte = ctrl.get("min_okte_price")
-                            if _minp is not None and float(_minp) != float(getattr(self, 'cloud_min_power_pct', -999)):
-                                self.cloud_min_power_pct = float(_minp)
-                                self.log_to_terminal(f"☁️ Cloud: Min výkon -> {float(_minp):.0f}%")
-                            if _maxp is not None and float(_maxp) != float(getattr(self, 'cloud_max_power_pct', -999)):
-                                self.cloud_max_power_pct = float(_maxp)
+                            # Min/Max vykon je len 0-100 % (ziadne zaporne hodnoty z appky)
+                            if _minp is not None:
+                                _minp = max(0.0, min(100.0, float(_minp)))
+                                if _minp != float(getattr(self, 'cloud_min_power_pct', -999)):
+                                    self.cloud_min_power_pct = _minp
+                                    self.log_to_terminal(f"☁️ Cloud: Min výkon -> {_minp:.0f}%")
+                            if _maxp is not None:
+                                _maxp = max(0.0, min(100.0, float(_maxp)))
+                                if _maxp != float(getattr(self, 'cloud_max_power_pct', -999)):
+                                    self.cloud_max_power_pct = _maxp
+                                    self.log_to_terminal(f"☁️ Cloud: Max výkon -> {_maxp:.0f}%")
                                 self.log_to_terminal(f"☁️ Cloud: Max výkon -> {float(_maxp):.0f}%")
                             if _okte is not None:
                                 self.cloud_min_okte_price = float(_okte)
@@ -1041,8 +1047,8 @@ class SolarBackgroundService:
                             # Nastav vykon: ON=100%, OFF=0%, AUTO=AI rozhodne
                             # Huawei register 40428 (Active power adjustment %, gain 10, offset -1 => wire adresa 40427)
                             # LIMITY z cloudu (DB): min/max % sa aplikuju na cielovy vykon
-                            _min_pct = float(getattr(self, 'cloud_min_power_pct', 0) or 0)
-                            _max_pct = float(getattr(self, 'cloud_max_power_pct', 100) or 100)
+                            _min_pct = max(0.0, min(100.0, float(getattr(self, 'cloud_min_power_pct', 0) or 0)))
+                            _max_pct = max(0.0, min(100.0, float(getattr(self, 'cloud_max_power_pct', 100) or 100)))
                             if target_on:
                                 power_pct = _max_pct if _max_pct > 0 else 100.0
                             else:
