@@ -216,6 +216,18 @@ def safe_apply_system_state(manual_override=None, active_model_id=None, night_sl
                 changes_detected.append(f"Prevádzkový stav: '{old_override}' ---> '{clean_override}'")
                 bg_service.manual_override = clean_override
 
+        if active_model_id is not None:
+            clean_model = str(active_model_id).strip().upper()
+            if clean_model and len(clean_model) <= 32:
+                old_model = getattr(bg_service, 'active_model_id', None)
+                if str(old_model).strip().upper() != clean_model:
+                    changes_detected.append(f"Model: '{old_model}' ---> '{clean_model}'")
+                    bg_service.active_model_id = clean_model
+                    try:
+                        db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('active_model', ?)", (clean_model,))
+                    except Exception:
+                        pass
+
         if night_sleep is not None:
             try:
                 val = int(float(str(night_sleep).strip()))
@@ -2348,6 +2360,11 @@ def execute_mqtt_action(action: str, params: dict) -> dict:
             return {"status": "error", "message": "Neplatný model"}
         # Rovnaká cesta ako lokálne /api/system/model
         bg_service.active_model_id = val
+        # Ulož aj do DB — inak sa po reštarte vráti starý model
+        try:
+            db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('active_model', ?)", (val,))
+        except Exception:
+            pass
         try:
             bg_service.process_control_commands()
         except Exception:

@@ -2930,9 +2930,17 @@ elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 
         // CM5 ho vyzdvihne do 5 s
         $stmtU = $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?");
         $stmtU->execute([$cmd, $target_id]);
-        // posledný príkaz pre dashboard
+        // posledný príkaz pre dashboard (info_on/info_off nemení stav baterky)
+        $isInfoMode = ($mode === 'info_on' || $mode === 'info_off');
+        $prevOn = false;
+        try {
+            $stP = $pdo->prepare("SELECT `value` FROM system_settings WHERE `key` = ? LIMIT 1");
+            $stP->execute(['led_state_' . $target_id]);
+            $rowP = $stP->fetch();
+            if ($rowP) { $prev = json_decode((string)$rowP['value'], true); $prevOn = !empty($prev['on']); }
+        } catch (Exception $eP) { /* ignore */ }
         elvo_set_setting($pdo, 'led_state_' . $target_id, json_encode([
-            'on' => $mode !== 'off',
+            'on' => $isInfoMode ? $prevOn : ($mode !== 'off'),
             'brightness' => $brightness,
             'at' => date('c'),
         ]));
@@ -2941,7 +2949,9 @@ elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 
             'target_device_id' => $target_id,
             'mode' => $mode,
             'brightness' => $brightness,
-            'message' => $mode === 'off' ? 'Svetlo vypnuté.' : 'Svetlo zapnuté (do 5 s).'
+            'message' => $isInfoMode
+                ? ($mode === 'info_on' ? 'LED informácia zapnutá (do 5 s).' : 'LED informácia vypnutá (do 5 s).')
+                : ($mode === 'off' ? 'Svetlo vypnuté.' : 'Svetlo zapnuté (do 5 s).')
         ]);
     } catch (Exception $e) {
         send_json(['status' => 'error', 'message' => 'Chyba: ' . $e->getMessage()], 500);
