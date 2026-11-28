@@ -3293,6 +3293,19 @@
                 const descEl2 = document.getElementById('meterModeDesc');
                 if (descEl2 && descMap[mcm]) descEl2.innerHTML = descMap[mcm];
 
+                // Aktivny model z DB — rovnaky model na PC aj mobile (nie posledne kliknutie).
+                // 'AI' = ziaden z modelov 1-5, vtedy ostane oznacenie na rezime prevadzky.
+                const amServer = String(data.active_model_id || '').trim().toUpperCase();
+                if (amServer) {
+                    document.querySelectorAll('.ai-model-card').forEach(card => {
+                        const cardId = (card.id || '').replace('aiModel', '');
+                        const isActive = (cardId === amServer);
+                        card.classList.toggle('active', isActive);
+                        const chk = document.getElementById('aiModelCheck' + cardId);
+                        if (chk) chk.classList.toggle('hidden', !isActive);
+                    });
+                }
+
                 const connectionTypeIcon = document.getElementById('connectionTypeIcon');
                 const connectionTypeText = document.getElementById('connectionTypeText');
                 const wifiBarsEl = document.getElementById('wifiBars');
@@ -3550,6 +3563,7 @@
         }
 
         async function setAiModel(id) {
+            if (document.querySelector('.ai-model-list') && document.querySelector('.ai-model-list').style.pointerEvents === 'none') return;
             document.querySelectorAll('.ai-model-card').forEach((card, idx) => {
                 card.classList.remove('active');
                 const check = document.getElementById('aiModelCheck' + (idx + 1));

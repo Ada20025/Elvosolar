@@ -3059,6 +3059,8 @@ elseif (preg_match('#^/api/device/(\d+)/telemetry$#', $path, $matches) && $metho
         'history' => $history,
         'manual_override' => $device['manual_override'] ?? 'AUTO',
         'meter_control_mode' => $device['meter_control_mode'] ?? 'SMART',
+        // Aktívny model z DB — jediný zdroj pravdy pre PC aj mobil
+        'active_model_id' => ($device['active_model_id'] ?? 'AI') ?: 'AI',
         'name' => $device['name'] ?? '',
         'connection_type' => $device['connection_type'] ?? 'modbus_tcp',
         'brand_id' => $device['brand_id'] ?? '',
@@ -3453,7 +3455,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
             // dashboard mení devices, CM5 to odtiaľto číta
             $ctrl = [];
             try {
-                $stC = $pdo->prepare("SELECT manual_override, active_model_id, min_power_pct, max_power_pct, min_okte_price_cz_eur FROM devices WHERE id = ?");
+                $stC = $pdo->prepare("SELECT manual_override, active_model_id, meter_control_mode, min_power_pct, max_power_pct, min_okte_price_cz_eur FROM devices WHERE id = ?");
                 $stC->execute([$device_id]);
                 $rC = $stC->fetch();
                 if ($rC) {
@@ -4560,7 +4562,8 @@ elseif (preg_match('#^/api/device/(\d+)/control$#', $path, $matches) && $method 
 elseif (preg_match('#^/api/device/(\d+)/model$#', $path, $matches) && $method === 'POST') {
     $dev_id = intval($matches[1]);
     $data = get_json_input();
-    $model_id = trim($data['model_id'] ?? '1');
+    $model_id = strtoupper(trim($data['model_id'] ?? '1'));
+    if (!in_array($model_id, ['1', '2', '3', '4', '5', 'AI'])) $model_id = '1';
     try {
         $stmt = $pdo->prepare("UPDATE devices SET active_model_id = ? WHERE id = ?");
         $stmt->execute([$model_id, $dev_id]);
@@ -4584,15 +4587,15 @@ elseif (preg_match('#^/api/device/(\d+)/meter$#', $path, $matches) && $method ==
     $data = get_json_input();
     $mode = trim($data['control_mode'] ?? 'SMART');
     if (!in_array($mode, ['UNLIMITED', 'PLUS', 'SMART'])) $mode = 'SMART';
+    // Zap/Vyp/Smart AI musí sedieť aj v manual_override, inak DB ostane 'AUTO'
+    // (a CM5 by podľa nej ďalej bežal v automatike).
+    $overrideMap = ['UNLIMITED' => 'ON', 'PLUS' => 'OFF', 'SMART' => 'AUTO'];
+    $override = $overrideMap[$mode] ?? 'AUTO';
     try {
         // Self-healing: stlpec moze neexistovat v starej scheme
         if (!in_array('meter_control_mode', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
             $pdo->exec("ALTER TABLE devices ADD COLUMN meter_control_mode VARCHAR(20) DEFAULT 'SMART'");
         }
-        // Zap/Vyp/Smart AI musí sedieť aj v manual_override, inak DB ostane 'AUTO'
-        // (a CM5 by podľa nej ďalej bežal v automatike).
-        $overrideMap = ['UNLIMITED' => 'ON', 'PLUS' => 'OFF', 'SMART' => 'AUTO'];
-        $override = $overrideMap[$mode] ?? 'AUTO';
         try {
             $stmt = $pdo->prepare("UPDATE devices SET meter_control_mode = ?, manual_override = ? WHERE id = ?");
             $stmt->execute([$mode, $override, $dev_id]);
@@ -4601,6 +4604,16 @@ elseif (preg_match('#^/api/device/(\d+)/meter$#', $path, $matches) && $method ==
             $stmt = $pdo->prepare("UPDATE devices SET meter_control_mode = ? WHERE id = ?");
             $stmt->execute([$mode, $dev_id]);
         }
+        // Hneď príkaz na CM5 — zariadenie zareaguje okamžite, nie až pri ďalšej synchronizácii.
+        if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
+            $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
+        }
+        $modeCmd = json_encode([
+            'action' => 'set_mode',
+            'value' => $override,
+            'cmd_key' => 'mode_' . $dev_id . '_' . time(),
+        ]);
+        $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?")->execute([$modeCmd, $dev_id]);
     } catch (Exception $e) { /* ignore */ }
     send_json(['status' => 'success', 'meter_control_mode' => $mode, 'manual_override' => $override]);
 }
