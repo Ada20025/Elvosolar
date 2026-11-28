@@ -11,13 +11,14 @@ def get_db_connection():
     return conn
 
 def db_execute(query: str, params: tuple = ()) -> list:
-    """Univerzálny bezpečný databázový wrapper."""
+    """Univerzálny bezpečný databázový wrapper.
+    Vracia zoznam slovníkov — funguje row['stlpec'] aj row.get('stlpec')."""
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(query, params)
             conn.commit()
-            return cursor.fetchall()
+            return [dict(r) for r in cursor.fetchall()]
     except Exception as e:
         print(f"[SQL CHYBA CORE]: {e}")
         return []
