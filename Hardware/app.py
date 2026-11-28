@@ -26,7 +26,7 @@ import subprocess
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from database import init_db, get_db_connection, verify_password
+from database import init_db, get_db_connection, verify_password, db_execute
 from solar_service import SolarBackgroundService
 from system_service import SystemService
 from led_service import LedService
