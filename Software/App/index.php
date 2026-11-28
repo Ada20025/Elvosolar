@@ -821,6 +821,8 @@ if (isset($pdo) && !$migrations_done) {
         try { $pdo->exec("UPDATE devices SET min_power_pct = 100 WHERE min_power_pct > 100"); } catch (Exception $e) { /* ignore */ }
         try { $pdo->exec("UPDATE devices SET max_power_pct = 0 WHERE max_power_pct < 0"); } catch (Exception $e) { /* ignore */ }
         try { $pdo->exec("UPDATE devices SET max_power_pct = 100 WHERE max_power_pct > 100"); } catch (Exception $e) { /* ignore */ }
+        // Min OKTE cena je tiez len nezaporna (ziadne -100)
+        try { $pdo->exec("UPDATE devices SET min_okte_price_cz_eur = 0 WHERE min_okte_price_cz_eur < 0"); } catch (Exception $e) { /* ignore */ }
         // index pre telemetriu (rýchlejšie načítanie)
         try { $pdo->exec("CREATE INDEX idx_tel_dev_id ON telemetry (device_id, id)"); } catch (Exception $e2) { /* uz existuje */ }
     } catch (Exception $e) { /* ignore */ }
@@ -3460,7 +3462,7 @@ elseif ($path === '/api/cloud/sync-telemetry' && $method === 'POST') {
                         'active_model_id' => ($rC['active_model_id'] ?? 'AI') ?: 'AI',
                         'min_power_pct' => max(0, min(100, floatval($rC['min_power_pct'] ?? 0))),
                         'max_power_pct' => max(0, min(100, floatval($rC['max_power_pct'] ?? 100))),
-                        'min_okte_price' => floatval($rC['min_okte_price_cz_eur'] ?? 0),
+                        'min_okte_price' => max(0, floatval($rC['min_okte_price_cz_eur'] ?? 0)),
                         // Zap/Vyp/Smart AI → smart_meter.control_mode
                         'meter_control_mode' => strtoupper(trim($rC['meter_control_mode'] ?? 'SMART')) ?: 'SMART',
                     ];
@@ -4281,7 +4283,7 @@ elseif (preg_match('#^/api/device/([0-9]+)/power-limits$#', $path, $matches) && 
         'status' => 'success',
         'min_power_pct' => $row ? max(0, min(100, floatval($row['min_power_pct'] ?? 0))) : 0,
         'max_power_pct' => $row ? max(0, min(100, floatval($row['max_power_pct'] ?? 100))) : 100,
-        'min_okte_price' => $row ? floatval($row['min_okte_price_cz_eur'] ?? 0) : 0
+        'min_okte_price' => $row ? max(0, floatval($row['min_okte_price_cz_eur'] ?? 0)) : 0
     ]);
 }
 

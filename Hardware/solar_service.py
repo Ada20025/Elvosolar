@@ -865,7 +865,8 @@ class SolarBackgroundService:
                                     self.log_to_terminal(f"☁️ Cloud: Max výkon -> {_maxp:.0f}%")
                                 self.log_to_terminal(f"☁️ Cloud: Max výkon -> {float(_maxp):.0f}%")
                             if _okte is not None:
-                                self.cloud_min_okte_price = float(_okte)
+                                # Min OKTE cena je len nezaporna (ziadne -100)
+                                self.cloud_min_okte_price = max(0.0, float(_okte))
                         except Exception:
                             pass
                 except ValueError:
