@@ -62,6 +62,9 @@ RED = (255, 0, 0, 0)
 RED_ORANGE = (255, 40, 0, 0)
 WHITE = (0, 0, 0, 255)
 
+# Informačné stavy — dajú sa vypnúť v nastaveniach (LED potom nebliká pri každej komunikácii)
+INFO_STATES = ("bus", "app")
+
 # =============================================================================
 #  SLOVNÍK SVETLA — každý stav má farbu, vzor a význam
 # =============================================================================
@@ -102,6 +105,15 @@ STATE_TABLE = {
     "scanning": dict(
         color=PURPLE, effect="chase", label="Hľadanie",
         meaning="Fialová behá po 3 LED = hľadajú sa zariadenia na zbernici.",
+    ),
+    "bus": dict(
+        color=BLUE, effect="chase", label="Zbernica",
+        meaning="Modrá prechádza po LED = komunikácia so SmartLoggerom / striedačom (Modbus).",
+    ),
+    "app": dict(
+        color=GREEN, effect="blink", blink=(1, 0.15, 0.15, 0.35),
+        label="App / DB",
+        meaning="Zelená krátko blikne = komunikácia s aplikáciou alebo databázou.",
     ),
     "ok": dict(
         color=GREEN, effect="solid", label="OK",
@@ -433,6 +445,8 @@ class LedService:
         self._error_state = None
         self._last_auto_state = "boot"
         self._manual_color = WHITE
+        # Informačné stavy (bus/app) sa dajú v nastaveniach vypnúť — LED potom ticho svieti.
+        self._info_enabled = True
         self._driver = None
         self._driver_error = ""
         self._render_thread = None
@@ -566,6 +580,9 @@ class LedService:
         if code not in STATE_TABLE:
             code = "ok"
         with self._lock:
+            # Vypnutá LED informácia: bus/app sa vôbec nezobrazuje (ostane posledný stav).
+            if code in INFO_STATES and not self._info_enabled and not force:
+                return self._state
             if self._manual_state is not None and not force:
                 return self._state
             if time.time() < self._error_until and not force:
@@ -580,6 +597,22 @@ class LedService:
             logger.info("[LED] Stav: %s (%s)%s", code,
                         STATE_TABLE[code]["label"], f" — {note}" if note else "")
         return self._state
+
+    def set_info_enabled(self, enabled):
+        """Zapne/vypne informačné blikanie (bus/app). Vypnuté = LED neruší."""
+        with self._lock:
+            self._info_enabled = bool(enabled)
+            if not self._info_enabled and self._state in INFO_STATES:
+                fallback = self._last_auto_state
+                if fallback in INFO_STATES or fallback in ("manual", "flashlight", "off"):
+                    fallback = "ok"
+                self._state = fallback
+                self._state_since = time.monotonic()
+            logger.info("[LED] Informačné blikanie: %s", "zapnuté" if self._info_enabled else "vypnuté")
+        return self._info_enabled
+
+    def info_enabled(self):
+        return self._info_enabled
 
     def signal_error(self, code="cmd_error", hold_seconds=20):
         """Dočasná chyba (napr. príkaz nevykonaný) — bliká a potom sa vráti stav."""
@@ -676,6 +709,7 @@ class LedService:
             "label": spec["label"],
             "meaning": spec["meaning"],
             "note": self._state_note,
+            "info_enabled": self._info_enabled,
             "brightness": self._brightness,
             "num_leds": self._num_leds,
             "pin": DATA_PIN,

@@ -612,7 +612,11 @@
             let cloudUser = "";
             let cloudPass = "";
             if (selectedMode === 'CLOUD') {
-                if (document.getElementById("useSessionAccount").checked) {
+                // Ručne zadaný e-mail má VŽDY prednosť (zariadenie patrí zákazníkovi,
+                // nie adminovi, ktorý setup robí). Session účet je len fallback.
+                cloudUser = (document.getElementById('cloudUser').value || '').trim();
+                cloudPass = document.getElementById('cloudPass').value;
+                if (!cloudUser && document.getElementById("useSessionAccount").checked) {
                     try {
                         const meRes = await fetch('/api/user/me', {credentials: 'same-origin'});
                         const meData = await meRes.json();
@@ -621,9 +625,6 @@
                             cloudPass = "session_auth";
                         }
                     } catch(e) {}
-                } else {
-                    cloudUser = document.getElementById('cloudUser').value.trim();
-                    cloudPass = document.getElementById('cloudPass').value;
                 }
             }
 

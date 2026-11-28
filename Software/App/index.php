@@ -205,7 +205,7 @@ if (!function_exists('elvo_role_manages')) {
         return in_array((string)$role, ['admin', 'manazer'], true);
     }
     function elvo_role_label($role) {
-        $map = ['admin' => 'Admin', 'manazer' => 'Manažér', 'editor' => 'Editor', 'user' => 'Používateľ', 'blocked' => 'Zablokovaný'];
+        $map = ['admin' => 'Admin', 'manazer' => 'Manažér', 'editor' => 'Editor', 'user' => 'Používateľ', 'demo' => 'Demo', 'blocked' => 'Zablokovaný'];
         return $map[(string)$role] ?? (string)$role;
     }
 }
@@ -491,6 +491,23 @@ if (!function_exists('elvo_is_demo_user')) {
             } catch (Throwable $e) { return false; }
         }
         return $email === 'demo@elvosolar.sk';
+    }
+}
+if (!function_exists('elvo_skip_login_2fa')) {
+    /**
+     * Kedy sa pri prihlásení nežiada kód z e-mailu:
+     *  - overený e-mail (users.email_verified = 1),
+     *  - admin účet (role = admin),
+     *  - demo účet (demo@elvosolar.sk),
+     *  - účet admin@elvosolar.sk.
+     * Ostatné účty majú 2FA pri každom prihlásení.
+     */
+    function elvo_skip_login_2fa($user) {
+        if (!is_array($user)) return false;
+        if ((int)($user['email_verified'] ?? 0) === 1) return true;
+        if (strtolower(trim((string)($user['role'] ?? ''))) === 'admin') return true;
+        $email = strtolower(trim((string)($user['email'] ?? '')));
+        return $email === 'demo@elvosolar.sk' || $email === 'admin@elvosolar.sk';
     }
 }
 if (!function_exists('elvo_redirect_web')) {
@@ -933,26 +950,24 @@ if (isset($pdo) && !$migrations_done) {
     } catch (Exception $eDedup) { /* ignore */ }
 }
 
-// === DEMO ÚČET JE PREDVOLENE VYPNUTÝ ===
-// demo účet je blocked, pokiaľ nie je SEED_DEMO=1
+// === DEMO ÚČET ===
+// demo účet má rolu 'demo' a neblokuje sa — s SEED_DEMO=1 sa pri prvom
+// spustení vytvorí, inak sa existujúcemu demo účtu nastaví rola 'demo'
 if (isset($pdo) && !$migrations_done) {
     try {
         if (getenv('SEED_DEMO') === '1') {
             $demoCheck = $pdo->query("SELECT id FROM users WHERE email = 'demo@elvosolar.sk' LIMIT 1")->fetch();
             if (!$demoCheck) {
                 $demoHash = password_hash('demo123', PASSWORD_BCRYPT);
-                $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'user', 1)")
+                $pdo->prepare("INSERT INTO users (username, email, password_hash, role, email_verified) VALUES (?, ?, ?, 'demo', 1)")
                      ->execute(['Demo ElvoSolar', 'demo@elvosolar.sk', $demoHash]);
                 $demoUserId = $pdo->lastInsertId();
                 $pdo->prepare("INSERT INTO devices (user_id, name, serial_number, brand_id, category_id, model_id, sub_type, status, min_power_pct, max_power_pct, active_model_id, connection_type, smartlogger_ip, smartlogger_port, modbus_slave_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline', 0, 100, 'AI', 'modbus_tcp', '192.168.0.10', 502, 205)")
                      ->execute([$demoUserId, 'ElvoControll Demo', 'DEMO-CM5-001', 'huawei', 'smartlogger', 'smartlogger3000a', 'smartlogger']);
             }
         } else {
-            // blocked len keď má ešte heslo demo123
-            $demoRow = $pdo->query("SELECT id, password_hash FROM users WHERE LOWER(email) = 'demo@elvosolar.sk' AND role <> 'blocked' LIMIT 1")->fetch();
-            if ($demoRow && password_verify('demo123', (string)$demoRow['password_hash'])) {
-                $pdo->prepare("UPDATE users SET role = 'blocked' WHERE id = ?")->execute([$demoRow['id']]);
-            }
+            // demo účet sa NIKDY neblokuje — má rolu 'demo' a zostať funkčný
+            $pdo->prepare("UPDATE users SET role = 'demo' WHERE LOWER(email) = 'demo@elvosolar.sk' AND role IN ('blocked', 'user')")->execute();
         }
     } catch (Exception $e) { /* ignore */ }
 
@@ -980,6 +995,15 @@ if (isset($pdo) && !$migrations_done) {
         if (!in_array('status', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN status VARCHAR(20) DEFAULT 'offline'");
         if (!in_array('last_seen', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN last_seen DATETIME NULL");
         if (!in_array('min_okte_price_cz_eur', $cols)) $pdo->exec("ALTER TABLE devices ADD COLUMN min_okte_price_cz_eur FLOAT DEFAULT 0");
+    } catch (Exception $e) { /* ignore */ }
+
+    // email_verified: staršie DB ho nemajú — bez neho sa nedá vypnúť 2FA
+    try {
+        $ucols = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('email_verified', $ucols)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN email_verified TINYINT DEFAULT 0");
+            error_log('[DB] Pridaný stĺpec users.email_verified');
+        }
     } catch (Exception $e) { /* ignore */ }
 }
 
@@ -1093,7 +1117,7 @@ if (!function_exists('get_json_input')) {
 }
 
 // admin má úpravy zamknuté, kým nezadá kód (manažér upravuje bez kódu)
-if ($method !== 'GET' && elvo_admin_edit_locked()) {
+if ($method !== 'GET' && (($_SERVER['HTTP_X_ELVO_SETUP'] ?? '') !== '1') && elvo_admin_edit_locked()) {
     $elvoWritePaths = ['/api/device/', '/api/devices', '/api/system/', '/api/admin/', '/api/cm5/register', '/api/user/claim-device'];
     foreach ($elvoWritePaths as $elvoWp) {
         if (strpos($path, $elvoWp) === 0) {
@@ -1740,6 +1764,28 @@ if (!function_exists('elvo_notif_channels')) {
 }
 
 // key/value store (system_settings), aj posledný stav svetla
+if (!function_exists('elvo_cm5_poll_note')) {
+    // Diagnostika skusky 2: co CM5 naposledy poslalo do /api/cm5/poll (serial + vysledok).
+    function elvo_cm5_poll_note($pdo, $serial, $result) {
+        if (!$pdo) return;
+        try {
+            $prev = null;
+            $stP = $pdo->prepare("SELECT `value` FROM system_settings WHERE `key` = 'cm5_last_poll' LIMIT 1");
+            $stP->execute();
+            $rowP = $stP->fetch();
+            if ($rowP && !empty($rowP['value'])) $prev = json_decode((string)$rowP['value'], true);
+            // bezny poll kazdych 5 s -> zapisujeme max raz za minutu
+            if ($result === 'no_pending' && is_array($prev) && (($prev['result'] ?? '') === 'no_pending')) {
+                $prevAt = strtotime((string)($prev['at'] ?? ''));
+                if ($prevAt && (time() - $prevAt) < 60) return;
+            }
+            elvo_set_setting($pdo, 'cm5_last_poll', json_encode([
+                'at' => date('c'), 'serial' => (string)$serial, 'result' => (string)$result,
+            ]));
+        } catch (Throwable $e) { /* diagnostika nesmie rozbit poll */ }
+    }
+}
+
 if (!function_exists('elvo_set_setting')) {
     function elvo_set_setting($pdo, $key, $value) {
         if (!$pdo) return false;
@@ -2117,7 +2163,7 @@ elseif ($path === '/navstevnost/role' && $method === 'POST') {
     }
     $vUid = (int)($_POST['user_id'] ?? 0);
     $vNewRole = (string)($_POST['role'] ?? '');
-    if ($vUid > 0 && in_array($vNewRole, ['admin', 'manazer', 'editor', 'user', 'blocked'], true)) {
+    if ($vUid > 0 && in_array($vNewRole, ['admin', 'manazer', 'editor', 'user', 'demo', 'blocked'], true)) {
         if ($vUid === (int)$_SESSION['user_id'] && $vNewRole !== 'admin') {
             flash('Vlastný admin účet si nemôžeš zablokovať.', 'error');
         } else {
@@ -2329,10 +2375,17 @@ elseif ($path === '/login') {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
+            // demo účet sa nikdy neblokuje — pri prihlásení má vždy rolu 'demo'
+            if ($user && strtolower(trim((string)($user['email'] ?? ''))) === 'demo@elvosolar.sk'
+                && strtolower(trim((string)($user['role'] ?? ''))) === 'blocked') {
+                $user['role'] = 'demo';
+                try { $pdo->prepare("UPDATE users SET role = 'demo' WHERE id = ?")->execute([(int)$user['id']]); } catch (Exception $e) { /* ignore */ }
+            }
             $user_role = $user['role'] ?? '';
-            // admin, manažér, editor aj bežný používateľ
-            // Blokované sú len neznáme/zablokované roly.
-            $role_allowed = in_array($user_role, ['admin', 'manazer', 'editor', 'user'], true);
+            // admin, manažér, editor, bežný používateľ aj demo
+            // Blokované sú len neznáme/zablokované roly — demo nikdy.
+            $is_demo_account = strtolower(trim((string)($user['email'] ?? ''))) === 'demo@elvosolar.sk';
+            $role_allowed = $is_demo_account || in_array($user_role, ['admin', 'manazer', 'editor', 'user', 'demo'], true);
             
             if ($user && $role_allowed && password_verify($password, $user['password_hash'])) {
                 // Až PO overení hesla: povolený e-mail (ADMIN_EMAILS, predvolene
@@ -2343,7 +2396,25 @@ elseif ($path === '/login') {
                 $user = elvo_ensure_some_admin($pdo, $user);
                 $user_role = $user['role'] ?? $user_role;
                 unset($_SESSION[$attempt_key]);
-                // 2FA pri každom prihlásení
+                // Overený e-mail / admin / demo → prihlásenie bez kódu z mailu (2FA sa preskočí)
+                if (elvo_skip_login_2fa($user)) {
+                    try {
+                        $pdo->exec("CREATE TABLE IF NOT EXISTS login_devices (id INTEGER PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, device_hash VARCHAR(64) NOT NULL, device_name VARCHAR(100) DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login DATETIME NULL, UNIQUE KEY uq_userdev (user_id, device_hash))");
+                        $pdo->prepare("INSERT INTO login_devices (user_id, device_hash, device_name, last_login) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE last_login = NOW()")
+                            ->execute([(int)$user['id'], $device_hash, substr($_SERVER['HTTP_USER_AGENT'] ?? 'Zariadenie', 0, 100)]);
+                    } catch (Exception $e) { /* best effort */ }
+                    unset($_SESSION['pending_login']);
+                    session_regenerate_id(true);
+                    $_SESSION['user_id'] = (int)$user['id'];
+                    $_SESSION['username'] = (string)$user['username'];
+                    $_SESSION['email'] = (string)($user['email'] ?? $email);
+                    $_SESSION['role'] = (string)($user_role ?: ($user['role'] ?? 'user'));
+                    $_SESSION['last_activity'] = time();
+                    $_SESSION['stay_logged_in'] = isset($_POST['stay_logged_in']);
+                    header("Location: " . $base_path . "/");
+                    exit;
+                }
+                // 2FA pri každom prihlásení (len pre neoverený e-mail, ktorý nie je admin ani demo)
                 {
                     $code = strval(random_int(100000, 999999));
                     $_SESSION['pending_login'] = [
@@ -2516,7 +2587,7 @@ elseif ($path === '/register') {
             require_once __DIR__ . '/mail_helper.php';
             try {
                 send_elvo_email($email, 'Vitajte v ElvoControll!', 'Účet úspešne vytvorený',
-                    elvo_mail_tpl_welcome($username, 'https://' . ($_SERVER['SERVER_NAME'] ?? 'elvocontrol.elvosolar.sk') . '/login'),
+                    elvo_mail_tpl_welcome($username, 'https://' . ($_SERVER['SERVER_NAME'] ?? 'app.elvosolar.sk') . '/login'),
                     '#10b981');
             } catch (Exception $me) { /* mail nie je kritický */ }
             header("Location: " . $base_path . "/dashboard");
@@ -2622,7 +2693,11 @@ elseif ($path === '/mqtt' && $method === 'GET') {
         header("Location: " . $base_path . "/dashboard");
         exit;
     }
-    render_template('mqtt_dashboard.html', ['csrf' => elvo_mqtt_csrf_token()]);
+    render_template('mqtt_dashboard.html', [
+        'csrf' => elvo_mqtt_csrf_token(),
+        'commands' => elvo_mqtt_commands(),
+        'is_admin' => (($roleRowM['role'] ?? '') === 'admin'),
+    ]);
 }
 
 // =============================================================================
@@ -2819,7 +2894,7 @@ elseif (preg_match('#^/api/device/(\d+)/led$#', $path, $matches) && $method === 
     $data = get_json_input();
     $devId = intval($matches[1]);
     $mode = strtolower(trim($data['mode'] ?? 'off'));
-    if (!in_array($mode, ['off', 'flashlight', 'white', 'color'], true)) { $mode = 'off'; }
+    if (!in_array($mode, ['off', 'flashlight', 'white', 'color', 'info_on', 'info_off'], true)) { $mode = 'off'; }
     $brightness = max(0, min(100, intval($data['brightness'] ?? 100)));
     $channels = [];
     foreach (['r', 'g', 'b', 'w'] as $ch) {
@@ -3018,17 +3093,34 @@ elseif ($path === '/api/mqtt/publish' && $method === 'POST') {
     if (!elvo_mqtt_valid_serial($elvoMqttSerial) || !elvo_mqtt_valid_command($elvoMqttCommand)) {
         send_json(['status' => 'error', 'message' => 'Neplatný stroj alebo príkaz'], 400);
     }
+    // Privilegované príkazy (reštart, nastavenia, názov…) len pre rolu admin
+    if (elvo_mqtt_command_is_admin($elvoMqttCommand) && ($elvoMqttUser['role'] ?? '') !== 'admin') {
+        send_json(['status' => 'error', 'message' => 'Tento príkaz smie poslať len admin'], 403);
+    }
+    $elvoMqttParams = $elvoMqttData['params'] ?? [];
+    if (!is_array($elvoMqttParams)) $elvoMqttParams = [];
+    // Poheldne prijmi aj hodnotu na najvyššej úrovni ({"command":"SET_POWER","value":50})
+    if (array_key_exists('value', $elvoMqttData) && !array_key_exists('value', $elvoMqttParams)) {
+        $elvoMqttParams['value'] = $elvoMqttData['value'];
+    }
+    $elvoMqttParamErr = null;
+    $elvoMqttClean = elvo_mqtt_sanitize_params($elvoMqttCommand, $elvoMqttParams, $elvoMqttParamErr);
+    if ($elvoMqttClean === false) {
+        send_json(['status' => 'error', 'message' => $elvoMqttParamErr ?: 'Neplatné parametre príkazu'], 400);
+    }
     if (!elvo_mqtt_rate_ok($pdo, (int)$elvoMqttUser['id'], 30)) {
         elvo_mqtt_audit($pdo, $elvoMqttUser['id'], $elvoMqttUser['username'], 'publish', $elvoMqttSerial, $elvoMqttCommand, 'RATE_LIMIT', 'limit 30/min prekroceny');
         send_json(['status' => 'error', 'message' => 'Príliš veľa príkazov (max 30/min)'], 429);
     }
     $elvoMqttErr = null;
-    $elvoMqttOk = elvo_mqtt_publish_command($elvoMqttSerial, $elvoMqttCommand, $elvoMqttErr);
-    elvo_mqtt_audit($pdo, $elvoMqttUser['id'], $elvoMqttUser['username'], 'publish', $elvoMqttSerial, $elvoMqttCommand, $elvoMqttOk ? 'OK' : 'ERROR', $elvoMqttErr ?? '');
+    $elvoMqttOk = elvo_mqtt_publish_command($elvoMqttSerial, $elvoMqttCommand, $elvoMqttClean, $elvoMqttErr);
+    $elvoMqttDetail = $elvoMqttClean ? json_encode($elvoMqttClean, JSON_UNESCAPED_UNICODE) : ($elvoMqttErr ?? '');
+    elvo_mqtt_audit($pdo, $elvoMqttUser['id'], $elvoMqttUser['username'], 'publish', $elvoMqttSerial, $elvoMqttCommand, $elvoMqttOk ? 'OK' : 'ERROR', (string)$elvoMqttDetail);
     if (!$elvoMqttOk) {
         send_json(['status' => 'error', 'message' => 'Broker nedostupný: ' . (string)$elvoMqttErr], 502);
     }
     send_json(['status' => 'success', 'serial' => $elvoMqttSerial, 'command' => $elvoMqttCommand,
+               'params' => $elvoMqttClean,
                'message' => 'Príkaz ' . $elvoMqttCommand . ' uložený do stroje/' . $elvoMqttSerial . '/prikazy (retained)']);
 }
 
@@ -3038,7 +3130,9 @@ elseif ($path === '/api/mqtt/states' && $method === 'GET') {
         send_json(['status' => 'error', 'message' => 'Nepovolený prístup'], 403);
     }
     $elvoMqttErr2 = null;
-    $elvoMqttStates = elvo_mqtt_collect_states(2, $elvoMqttErr2);
+    $elvoMqttPayload = elvo_mqtt_collect_states(2, $elvoMqttErr2);
+    $elvoMqttStates = $elvoMqttPayload['states'] ?? [];
+    $elvoMqttResults = $elvoMqttPayload['results'] ?? [];
     $elvoMqttNames = [];
     try {
         $stNames = $pdo->query("SELECT serial_number, name FROM devices WHERE serial_number IS NOT NULL AND serial_number != ''");
@@ -3047,6 +3141,7 @@ elseif ($path === '/api/mqtt/states' && $method === 'GET') {
         }
     } catch (Exception $e) { /* tabuľka devices nemusí existovať */ }
     send_json(['status' => 'success', 'states' => $elvoMqttStates, 'names' => $elvoMqttNames,
+               'results' => $elvoMqttResults,
                'message' => $elvoMqttErr2 ? ('Broker hlási: ' . $elvoMqttErr2) : '']);
 }
 
@@ -3094,8 +3189,24 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
         $sStmt = $pdo->prepare("SELECT serial_number FROM devices WHERE serial_number = ? LIMIT 1");
         $sStmt->execute([$serial]);
         if (!$sStmt->fetch()) {
-            // Neznamy serial — CM5 sa samo pre-registruje (self-healing serialu v DB)
-            send_json(['status' => 'unknown_serial']);
+            // SETUP BEZ KÁBLA: riadok vytvorený setupom nemá serial (prehliadač ho nepozná),
+            // ale čaká na ňom príkaz. Previažeme ho na serial, ktorým sa CM5 hlási →
+            // príkaz sa doručí (inak by ostal visieť na riadku, ktorý CM5 nikdy nečíta).
+            $bound = false;
+            try {
+                $bStmt = $pdo->prepare("SELECT id FROM devices WHERE (serial_number IS NULL OR serial_number = '') AND admin_command IS NOT NULL AND admin_command <> '' ORDER BY id DESC LIMIT 1");
+                $bStmt->execute();
+                $bRow = $bStmt->fetch();
+                if ($bRow) {
+                    $pdo->prepare("UPDATE devices SET serial_number = ? WHERE id = ?")->execute([$serial, intval($bRow['id'])]);
+                    $bound = true;
+                }
+            } catch (Exception $eB) { /* fallback nizsie */ }
+            if (!$bound) {
+                // Neznamy serial — CM5 sa samo pre-registruje (self-healing serialu v DB)
+                elvo_cm5_poll_note($pdo, $serial, 'unknown_serial');
+                send_json(['status' => 'unknown_serial']);
+            }
         }
     } catch (Exception $eS) { /* tabulka neexistuje -> pokracuj (cloud sync prvy krat registruje) */ }
     
@@ -3131,6 +3242,7 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
                         'status' => 'received', 'message' => 'Prijaté — CM5 vykonáva',
                     ])]);
             } catch (Exception $eRcv) { /* ignore */ }
+            elvo_cm5_poll_note($pdo, $serial, 'delivered');
             send_json([
                 'status' => 'success',
                 'command' => $action,
@@ -3141,7 +3253,42 @@ elseif ($path === '/api/cm5/poll' && $method === 'POST') {
         }
     } catch (Exception $eD) { /* ignore */ }
     
+    elvo_cm5_poll_note($pdo, $serial, 'no_pending');
     send_json(['status' => 'no_pending']);
+}
+
+// --- CM5 STATUS (diagnostika skusky 2: ozvalo sa CM5? akym serialom? caka prikaz?) ---
+elseif (preg_match('#^/api/device/(\d+)/cm5-status$#', $path, $matches) && $method === 'GET') {
+    try {
+        $cDevId = intval($matches[1]);
+        $cDev = null;
+        $stC = $pdo->prepare("SELECT serial_number, last_seen, admin_command FROM devices WHERE id = ? LIMIT 1");
+        $stC->execute([$cDevId]);
+        $cDev = $stC->fetch();
+        $cPoll = null; $cRes = null;
+        try {
+            $stP = $pdo->prepare("SELECT `value` FROM system_settings WHERE `key` = 'cm5_last_poll' LIMIT 1");
+            $stP->execute();
+            $rP = $stP->fetch();
+            if ($rP && !empty($rP['value'])) $cPoll = json_decode((string)$rP['value'], true);
+        } catch (Throwable $eP) { }
+        try {
+            $stR2 = $pdo->prepare("SELECT `value` FROM system_settings WHERE `key` = ? LIMIT 1");
+            $stR2->execute(['last_cmd_result_dev_' . $cDevId]);
+            $rR2 = $stR2->fetch();
+            if ($rR2 && !empty($rR2['value'])) $cRes = json_decode((string)$rR2['value'], true);
+        } catch (Throwable $eR2) { }
+        send_json([
+            'status' => 'success',
+            'device_serial' => $cDev ? (string)($cDev['serial_number'] ?? '') : '',
+            'last_seen' => $cDev ? (string)($cDev['last_seen'] ?? '') : '',
+            'pending_command' => ($cDev && !empty($cDev['admin_command'])) ? 1 : 0,
+            'last_poll' => $cPoll,
+            'last_cmd_result' => $cRes,
+        ]);
+    } catch (Throwable $eC) {
+        send_json(['status' => 'error', 'message' => $eC->getMessage()], 500);
+    }
 }
 
 // --- CM5 RESULT (CM5 ohlási výsledok vykonaného príkazu — ok/chyba + readback) ---
@@ -3811,8 +3958,11 @@ elseif ($path === '/device-logout' && $method === 'GET') {
 elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $data = get_json_input();
     $user_id = $_SESSION['user_id'] ?? 0;
+    // Setup (CM5 cez X-Elvo-Setup) posiela e-mail zákazníka — zariadenie patrí JEMU,
+    // nie adminovi, ktorý setup práve robí. Preto má owner_email prednosť.
+    $elvoIsSetupCall = (($_SERVER['HTTP_X_ELVO_SETUP'] ?? '') === '1');
     // owner_email z CM5 (platí pre presne tento účet)
-    if (!$user_id && !empty($data['owner_email'])) {
+    if (!empty($data['owner_email']) && ($elvoIsSetupCall || !$user_id)) {
         try {
             $stO = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
             $stO->execute([trim($data['owner_email'])]);
@@ -3841,7 +3991,31 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
     $slave_id = intval($data['slave_id'] ?? 1);
     $has_battery = $data['has_battery'] ?? true;
     $serial = trim($data['serial'] ?? '');
-    
+
+    // SETUP BEZ KÁBLA: prehliadač serial CM5 nepozná (žiadny USB kábel). Prevezmeme serial
+    // z DB — najprv z riadku, ktorý CM5 práve hlási (report-ip plní last_seen), inak
+    // z jediného existujúceho riadku so serialom. Bez toho príkaz zo skúšky 2 nikdy
+    // netrafí riadok, ktorý CM5 číta.
+    if ($serial === '' && (($_SERVER['HTTP_X_ELVO_SETUP'] ?? '') === '1')) {
+        try {
+            $liveRow = false;
+            try {
+                $stLive = $pdo->query("SELECT serial_number FROM devices WHERE serial_number IS NOT NULL AND serial_number <> '' AND last_seen IS NOT NULL AND last_seen >= NOW() - INTERVAL 10 MINUTE ORDER BY last_seen DESC LIMIT 1");
+                $liveRow = $stLive ? $stLive->fetch() : false;
+            } catch (Exception $eLv) { $liveRow = false; }
+            if (!$liveRow) {
+                try {
+                    $stAny = $pdo->query("SELECT serial_number FROM devices WHERE serial_number IS NOT NULL AND serial_number <> '' ORDER BY id DESC LIMIT 2");
+                    $rowsAny = $stAny ? $stAny->fetchAll() : [];
+                    if (count($rowsAny) === 1) { $liveRow = $rowsAny[0]; }
+                } catch (Exception $eAn) { }
+            }
+            if ($liveRow && !empty($liveRow['serial_number'])) {
+                $serial = (string)$liveRow['serial_number'];
+            }
+        } catch (Exception $eAdopt) { /* ostava prazdny serial */ }
+    }
+
     try {
         // anonymný claim bez serialu odmietneme
         // (inak by kazdy nezavany POST prepisal prve zariadenie admina!)
@@ -3926,7 +4100,19 @@ elseif ($path === '/api/user/claim-device' && $method === 'POST') {
                     '\u{1F50C} Nové zariadenie: ' . $name, $pushBody, 'new-device', '/dashboard', $mailHtml, '#06b6d4');
             } catch (Exception $eM) { /* notifikacia best-effort */ }
         }
-        send_json(['status' => 'success', 'name' => $name, 'user_id' => $user_id, 'serial' => $serial, 'device_id' => isset($keep_id) ? intval($keep_id) : null]);
+        // device_id MUSÍ prísť aj vtedy, keď zariadenie už existovalo — inak skúška 2 nemá kam poslať príkaz
+        $final_dev_id = isset($keep_id) ? intval($keep_id) : intval($existing['id'] ?? 0);
+        // reálny serial z DB (setup bez kábla: CM5 sa mohlo medzitým samo zaregistrovať)
+        $out_serial = $serial;
+        try {
+            if ($final_dev_id) {
+                $qS = $pdo->prepare("SELECT serial_number FROM devices WHERE id = ? LIMIT 1");
+                $qS->execute([$final_dev_id]);
+                $rowS = $qS->fetch();
+                if ($rowS && !empty($rowS['serial_number'])) { $out_serial = (string)$rowS['serial_number']; }
+            }
+        } catch (Exception $eS3) { }
+        send_json(['status' => 'success', 'name' => $name, 'user_id' => $user_id, 'serial' => $serial, 'device_serial' => $out_serial, 'device_id' => $final_dev_id ? $final_dev_id : null]);
     } catch (Exception $e) {
         send_json(['status' => 'error', 'message' => $e->getMessage()]);
     }
@@ -4360,6 +4546,16 @@ elseif (preg_match('#^/api/device/(\d+)/model$#', $path, $matches) && $method ==
     try {
         $stmt = $pdo->prepare("UPDATE devices SET active_model_id = ? WHERE id = ?");
         $stmt->execute([$model_id, $dev_id]);
+        // Zmenu musí dostať aj CM5 — inak ostane visieť len v cloud DB a zariadenie ju nevykoná.
+        if (!in_array('admin_command', $pdo->query("SHOW COLUMNS FROM devices")->fetchAll(PDO::FETCH_COLUMN))) {
+            $pdo->exec("ALTER TABLE devices ADD COLUMN admin_command TEXT NULL");
+        }
+        $modelCmd = json_encode([
+            'action' => 'set_model',
+            'value' => strtoupper($model_id),
+            'cmd_key' => 'model_' . $dev_id . '_' . time(),
+        ]);
+        $pdo->prepare("UPDATE devices SET admin_command = ? WHERE id = ?")->execute([$modelCmd, $dev_id]);
     } catch (Exception $e) { /* ignore */ }
     send_json(['status' => 'success']);
 }

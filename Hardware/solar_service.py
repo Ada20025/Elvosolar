@@ -1324,8 +1324,28 @@ class SolarBackgroundService:
         except Exception as eW:
             self.log_to_terminal(f"[FAIL-SAFE] Watchdog chyba: {eW}")
 
+    def _poll_interval_s(self):
+        """Ako casto sa pytame SmartLoggera / striedaca (predvolene 5 min)."""
+        try:
+            rows = db_execute("SELECT value FROM system_settings WHERE key = 'poll_interval_s'")
+            if rows and str(rows[0]['value']).strip():
+                return max(30, int(float(rows[0]['value'])))
+        except Exception:
+            pass
+        return 300
+
+    def _live_snapshot(self):
+        """Plocha kopla stavu (bez vnorenych objektov) na porovnanie zmien."""
+        try:
+            return {k: {kk: vv for kk, vv in (v or {}).items()
+                        if not isinstance(vv, (dict, list))}
+                    for k, v in (self.live_data or {}).items()}
+        except Exception:
+            return {}
+
     def start_loop(self):
         last_ctrl_time = 0
+        last_read_time = 0.0
         while self.running:
             try:
                 if getattr(self, 'paused', False):
@@ -1353,11 +1373,20 @@ class SolarBackgroundService:
                     self.log_to_terminal(f"Smart Meter update chyba: {e}")
 
                 if devices_list:
-                    with self.lock:
-                        self.read_and_sync_devices(devices_list)
-
                     now_ts = time.time()
-                    if now_ts - last_ctrl_time >= 15:
+                    # 1) Citanie zo SmartLoggera / striedaca v nastavenom intervale (5 min)
+                    if now_ts - last_read_time >= self._poll_interval_s():
+                        last_read_time = now_ts
+                        before = self._live_snapshot()
+                        with self.lock:
+                            self.read_and_sync_devices(devices_list)
+                        after = self._live_snapshot()
+                        # 2) Zmena zistena -> zapis/riadenie HNEĎ, nie az v dalsom cykle
+                        if before and after and after != before:
+                            self.log_to_terminal("[POLL] Zmena zo SmartLoggera/striedaca — zapisujem hneď")
+                            last_ctrl_time = now_ts
+                            self.process_control_commands()
+                    elif now_ts - last_ctrl_time >= 15:
                         last_ctrl_time = now_ts
                         self.process_control_commands()
 

@@ -412,6 +412,12 @@ def execute_test_power(ip, port, unit_id, pct):
     Vracia dict s výsledkom (ok, readback, chybová správa).
     """
     try:
+        # LED: modra prechadzajuca = komunikacia so SmartLoggerom / striedacom
+        try:
+            from led_service import LedService
+            LedService().set_state("bus")
+        except Exception:
+            pass
         from pymodbus.client import ModbusTcpClient
         client = ModbusTcpClient(host=ip, port=int(port or 502), timeout=3)
         if not client.connect():

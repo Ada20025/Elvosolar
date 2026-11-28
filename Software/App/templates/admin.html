@@ -398,8 +398,9 @@
                     'name' => $row['name'] ?? ('Zariadenie #' . ($idx + 1)),
                     'serial_number' => $row['serial_number'] ?? ('SN-ELVO-0' . ($idx + 1)),
                     'status' => $status,
-                    'power_kw' => (float)($row['power_kw'] ?? 0),
+                    'power_kw' => (float)($row['power_ac'] ?? $row['power_kw'] ?? 0),
                     'yield_today_kwh' => (float)($row['yield_today_kwh'] ?? 0),
+                    'total_kwh' => (float)($row['total_kwh'] ?? 0),
                     'error_code' => $errFromDb,
                     'error_category' => $cat
                 ];
@@ -411,6 +412,7 @@
         $countFault = 0;
         $sumLivePower = 0.0;
         $sumDailyYield = 0.0;
+        $sumTotalKwh = 0.0;
 
         $errRs485 = 0;
         $errOffline = 0;
@@ -427,7 +429,10 @@
             }
             $sumLivePower += $dev['power_kw'];
             $sumDailyYield += $dev['yield_today_kwh'];
+            $sumTotalKwh += (float)($dev['total_kwh'] ?? 0);
         }
+        // Celková produkcia: skutočná hodnota z DB, žiadne natvrdo zadané číslo.
+        $sumTotalMwh = $sumTotalKwh / 1000;
 
         // 2. Koliesko = 100% tvoria iba chyby!
         $totalErrors = max($countFault, 1);
@@ -477,10 +482,10 @@
     </header>
 
     <?php if ($is_manager): ?>
-    <!-- Manažér: bez grafov a performance, úpravy povolené -->
+    <!-- Manažér: všetko ako admin okrem návštevnosti, úpravy povolené bez kódu -->
     <div style="background:#0b3b2e;border-bottom:1px solid rgba(16,185,129,0.35);color:#a7f3d0;padding:10px 24px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;">
         <i data-lucide="briefcase" style="width:15px;height:15px;"></i>
-        Režim Manažér — grafy a performance sú skryté. Zariadenia a nastavenia môžeš upravovať bez kódu.
+        Režim Manažér — rovnaký prehľad ako admin (bez návštevnosti). Zariadenia a nastavenia môžeš upravovať bez kódu.
     </div>
     <?php else: ?>
     <!-- Admin: úpravy sa odomykajú kódom -->
@@ -505,7 +510,6 @@
     <?php endif; ?>
 
     <!-- 2. DARK HERO (1. Koliesko = Všetky zariadenia, 2. Koliesko = IBA CHYBY) -->
-    <?php if (!$is_manager): ?>
     <section class="fs-hero">
         <div class="fs-hero-inner">
             
@@ -553,7 +557,7 @@
                         <div class="fs-kpi-circle-icon"><i data-lucide="database"></i></div>
                         <div>
                             <div>
-                                <span class="fs-kpi-val">124,80</span>
+                                <span class="fs-kpi-val"><?php echo number_format($sumTotalMwh, 2, ',', ' '); ?></span>
                                 <span class="fs-kpi-unit">MWh</span>
                             </div>
                             <div class="fs-kpi-label">Celková produkcia FTV</div>
@@ -700,9 +704,7 @@
                         <th style="width:70px;">Náhľad</th>
                         <th>Názov zariadenia (Klik pre admin_device)</th>
                         <th>Sériové číslo (SN)</th>
-                        <?php if (!$is_manager): ?>
                         <th>Výkon / Dnešná výroba</th>
-                        <?php endif; ?>
                         <th>Diagnostické hlásenie z DB</th>
                         <th style="text-align:right;">Správa</th>
                     </tr>
@@ -735,11 +737,9 @@
                         <td style="font-family:'JetBrains Mono';font-size:12px;color:#64748b;">
                             <?php echo htmlspecialchars($dev['serial_number']); ?>
                         </td>
-                        <?php if (!$is_manager): ?>
                         <td style="font-family:'JetBrains Mono';font-weight:700;">
                             <?php echo $power; ?> <span style="color:#94a3b8;font-weight:400;">/</span> <?php echo $yield; ?>
                         </td>
-                        <?php endif; ?>
                         <td>
                             <span class="error-pill <?php echo $isNormal ? 'normal' : 'fault'; ?>">
                                 <i data-lucide="<?php echo $isNormal ? 'check-circle' : 'alert-octagon'; ?>" style="width:13px;height:13px;"></i>

@@ -1516,6 +1516,10 @@ def cloud_sync_loop():
             command_id = data.get("command_id", 0)
             action = config.get("action", "")
             log_message(f"[CLOUD SYNC] Prikaz: {action} (cmd_id={command_id})")
+            try:
+                led.set_state("app")  # zelena = komunikacia s appkou/cloudom (nie zbernica)
+            except Exception:
+                pass
             result = {"status": "error", "message": "Neznama akcia"}
 
             led.anim_cloud_connecting()
@@ -1686,6 +1690,10 @@ def cloud_sync_loop():
                                     if _retry < 2:
                                         time.sleep(3)
                             log_message(f"[CLOUD SYNC] Vysledok odoslany: {result.get('status')}")
+                            try:
+                                led.set_state("app")  # zelena = odoslanie vysledku do appky
+                            except Exception:
+                                pass
                         except Exception as e:
                             log_message(f"[CLOUD SYNC] Chyba pri odosielani vysledku: {e}")
                         bg_service.paused = False
@@ -1851,6 +1859,20 @@ def cloud_sync_loop():
                 except Exception as e_led:
                     result = {"status": "error", "message": str(e_led)[:200]}
 
+            elif action in ("set_model", "set_mode", "set_settings"):
+                # ZMENA MODELU / REZIMU Z APPKY: appka to ulozi do cloud DB a posle sem,
+                # box to musi vykonat HNEĎ (inak sa zmena nikdy neprejavi).
+                try:
+                    _mapped = {"set_model": "SET_MODEL", "set_mode": "SET_OVERRIDE",
+                               "set_settings": "SET_SETTINGS"}[action]
+                    _params = dict(config or {})
+                    if action == "set_mode" and "value" not in _params:
+                        _params["value"] = str(config.get("mode") or "AUTO")
+                    result = execute_mqtt_action(_mapped, _params)
+                    log_message(f"[CLOUD SYNC] {action} -> {result.get('message', result)}")
+                except Exception as e_act:
+                    result = {"status": "error", "message": str(e_act)[:200]}
+
             elif action == "deploy_files":
                 # ADMIN DEPLOY HW SUBOROV: stiahne balik z cloudu, zapise subory, restart app.py
                 try:
@@ -1894,6 +1916,10 @@ def cloud_sync_loop():
                 # Prijme pct (0-100), zapíše na SmartLogger (40428, FC16, gain 10) cez LAN
                 try:
                     from serial_config_service import execute_test_power
+                    try:
+                        led.set_state("bus")  # modra prechadzajuca = komunikacia so SmartLoggerom
+                    except Exception:
+                        pass
                     pct = float(config.get('pct', 0))
                     sl_ip = str(config.get('ip', '') or '')
                     sl_port = int(config.get('port', 502) or 502)
@@ -1925,6 +1951,10 @@ def cloud_sync_loop():
                 #_pct prišiel z cloudu (pôvodná hodnota uložená pred testom)
                 try:
                     from serial_config_service import execute_test_power
+                    try:
+                        led.set_state("bus")  # modra prechadzajuca = komunikacia so SmartLoggerom
+                    except Exception:
+                        pass
                     pct = float(config.get('pct', 0))
                     sl_ip = str(config.get('ip', '') or '')
                     sl_port = int(config.get('port', 502) or 502)
@@ -1972,6 +2002,10 @@ def cloud_sync_loop():
                         if _retry < 2:
                             time.sleep(3)
                 log_message(f"[CLOUD SYNC] Vysledok odoslany: {result.get('status')}")
+                try:
+                    led.set_state("app")  # zelena = odoslanie vysledku do appky
+                except Exception:
+                    pass
             except Exception as e:
                 log_message(f"[CLOUD SYNC] Chyba pri odosielani vysledku: {e}")
 
@@ -1982,6 +2016,13 @@ def cloud_sync_loop():
 
 # ─── LED SERVICE START ────────────────────────────────
 led = LedService()
+# Nastavenie z appky: informacne blikanie (modra = SmartLogger, zelena = app/DB) zap/vyp
+try:
+    _led_info_rows = db_execute("SELECT value FROM system_settings WHERE key = 'led_info_enabled'")
+    if _led_info_rows and str(_led_info_rows[0]['value']) == '0':
+        led.set_info_enabled(False)
+except Exception:
+    pass
 led.anim_boot()  # cervena - system sa spusta
 
 # Smart meter init
@@ -1993,6 +2034,16 @@ smart_meter = get_smart_meter_service(bg_service)
 def apply_led_command(cfg: dict) -> dict:
     """Jednotné ovládanie svetla pre lokálne API aj príkazy z appky (cloud)."""
     mode = str(cfg.get("mode", "off")).strip().lower()
+    # Vypinac informacnej LED v nastaveniach (modra = SmartLogger, zelena = app/DB)
+    if mode in ("info_on", "info_off"):
+        enabled = (mode == "info_on")
+        led.set_info_enabled(enabled)
+        try:
+            db_execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('led_info_enabled', ?)",
+                       ('1' if enabled else '0',))
+        except Exception:
+            pass
+        return led.status()
     try:
         brightness = int(float(cfg.get("brightness", 100)))
     except (TypeError, ValueError):
