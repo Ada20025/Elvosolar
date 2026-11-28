@@ -76,8 +76,8 @@ STATE_TABLE = {
         meaning="Pásek nesvieti.",
     ),
     "boot": dict(
-        color=BLUE, effect="breathe", label="Štart",
-        meaning="Modrá pomaly dýcha = systém sa spúšťa (boot).",
+        color=BLUE, effect="solid", label="Štart",
+        meaning="Modrá stále svieti rovnakým jasom = systém sa spúšťa (boot).",
     ),
     "no_data": dict(
         color=BLUE, effect="blink", blink=(2, 0.6, 0.4, 0.6),
@@ -99,8 +99,8 @@ STATE_TABLE = {
         meaning="Modrá sa rozsvecuje LED po LED = pripája sa zbernica / cloud mimo DB; na konci zelené prebliknutie.",
     ),
     "cloud": dict(
-        color=AZURE, effect="pulse", label="Cloud",
-        meaning="Modrozelený pulz = komunikácia s cloudom.",
+        color=AZURE, effect="solid", label="Cloud",
+        meaning="Modrozelená stále svieti rovnakým jasom = komunikácia s cloudom.",
     ),
     "scanning": dict(
         color=PURPLE, effect="chase", label="Hľadanie",
@@ -120,8 +120,8 @@ STATE_TABLE = {
         meaning="Zelená ticho svieti = všetko v poriadku, komunikácia beží.",
     ),
     "warn": dict(
-        color=AMBER, effect="breathe", label="Varovanie",
-        meaning="Jantárová dýcha = varovanie: vysoká teplota alebo nízke SOC.",
+        color=AMBER, effect="solid", label="Varovanie",
+        meaning="Jantárová stále svieti = varovanie: vysoká teplota alebo nízke SOC.",
     ),
     "bus_error": dict(
         color=RED, effect="blink", blink=(3, 0.2, 0.2, 1.4),
@@ -158,8 +158,8 @@ STATE_TABLE = {
         meaning="Zelená 3× blik = zapisujú sa nové súbory.",
     ),
     "update_restart": dict(
-        color=GREEN, effect="pulse", label="Update: reštart",
-        meaning="Zelená rýchlo pulzuje = reštart aplikácie po update.",
+        color=GREEN, effect="solid", label="Update: reštart",
+        meaning="Zelená stále svieti = reštart aplikácie po update.",
     ),
     "flashlight": dict(
         color=WHITE, effect="solid", label="Baterka",
@@ -514,11 +514,11 @@ class LedService:
         elif effect == "solid":
             pixels = [color] * n
         elif effect == "breathe":
-            f = 0.15 + 0.85 * (0.5 + 0.5 * math.sin(2 * math.pi * elapsed / 3.0))
-            pixels = [_scale(color, f)] * n
+            # Jas sa NEMENÍ — farba svieti stále rovnako (žiadané: LED neblikajú jasom).
+            pixels = [color] * n
         elif effect == "pulse":
-            f = 0.15 + 0.85 * (0.5 + 0.5 * math.sin(2 * math.pi * elapsed / 1.2))
-            pixels = [_scale(color, f)] * n
+            # Jas sa NEMENÍ — farba svieti stále rovnako.
+            pixels = [color] * n
         elif effect == "blink":
             count, on_s, off_s, pause_s = spec.get("blink", (2, 0.2, 0.2, 1.0))
             unit = on_s + off_s
