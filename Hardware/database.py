@@ -198,8 +198,14 @@ def init_db():
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('night_sleep', '1')")
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('installation_type', 'HOME')")
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('allow_grid_export', '0')")
-        cloud_url = os.environ.get('CLOUD_SERVER_URL', 'https://elvocontrol.elvosolar.sk') + '/api/cloud/sync-telemetry'
+        cloud_url = os.environ.get('CLOUD_SERVER_URL', 'https://app.elvosolar.sk') + '/api/cloud/sync-telemetry'
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('cloud_sync_url', ?)", (cloud_url,))
+        # STARSIE BOXY: cloud_sync_url uz v DB je (INSERT OR IGNORE ho neprepise)
+        # -> prepis stary host, inak telemetria chodi na neexistujuci server.
+        try:
+            cursor.execute("UPDATE system_settings SET value = ? WHERE key = 'cloud_sync_url' AND value LIKE '%elvocontrol.elvosolar.sk%'", (cloud_url,))
+        except Exception:
+            pass
         
         # Smart Meter konfigurácia
         cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('meter_mode', 'NONE')")

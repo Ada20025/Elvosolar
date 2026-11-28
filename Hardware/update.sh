@@ -2,17 +2,72 @@
 # ============================================================
 #  ELVOCONTROLL CM5 — KOMPLETNÝ UPDATE (1 príkaz)
 #  Použitie:  bash ~/update.sh
+#
+#  Vždy ťahá NAJNOVŠIE úložisko: najprv zistí posledný commit
+#  na vetve main a zip stiahne pinutý naň (branch zip je
+#  ~5 min cachovaný, takto nikdy nepríde stará verzia).
 # ============================================================
+
+REPO="Ada20025/Elvosolar"
+BRANCH="main"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# Stiahne URL do súboru — curl, wget alebo python3 (niečo z toho na CM5 vždy je)
+fetch() {
+    if have curl; then
+        curl -fsSL --max-time 60 -A "elvocontroll-update" -o "$2" "$1"
+    elif have wget; then
+        wget -q -O "$2" "$1"
+    elif have python3; then
+        python3 -c 'import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])' "$1" "$2"
+    else
+        echo "    ❌ Nenašiel som curl, wget ani python3" >&2
+        return 1
+    fi
+}
 
 echo "=================================================="
 echo "   ELVOCONTROLL — UPDATE Z GITHUBU"
 echo "=================================================="
 
-# 1. Stiahni čerstvý zip (vždy nový, žiadne staré rozbité)
+# 1. Zisti najnovší commit a stiahni čerstvý zip
 echo "[1/6] Sťahujem najnovší kód..."
+echo "    Nástroje: curl=$(have curl && echo áno || echo NIE), wget=$(have wget && echo áno || echo NIE), python3=$(have python3 && echo áno || echo NIE)"
+
+COMMIT=""
+if fetch "https://api.github.com/repos/${REPO}/commits/${BRANCH}" /tmp/elvosolar_commit.json; then
+    COMMIT=$(sed -n 's/^[[:space:]]*"sha": "\([0-9a-f]\{40\}\)".*/\1/p' /tmp/elvosolar_commit.json | head -1)
+fi
+
+if [ -n "$COMMIT" ]; then
+    ZIP_URL="https://github.com/${REPO}/archive/${COMMIT}.zip"
+    echo "    Vetva: ${BRANCH} | Commit: $(echo "$COMMIT" | cut -c1-7)"
+else
+    ZIP_URL="https://github.com/${REPO}/archive/refs/heads/${BRANCH}.zip"
+    echo "    ⚠️  Commit sa nepodarilo zistiť — použijem vetvu ${BRANCH}"
+fi
+
 rm -f /tmp/elvosolar_main.zip
-wget -q -O /tmp/elvosolar_main.zip "https://github.com/Ada20025/Elvosolar/archive/refs/heads/main.zip" \
-    || { echo "❌ Sťahovanie zlyhalo — skontroluj internet"; exit 1; }
+if ! fetch "$ZIP_URL" /tmp/elvosolar_main.zip; then
+    echo ""
+    echo "❌ Sťahovanie zlyhalo. Diagnostika:"
+    echo "    systémový čas: $(date)"
+    if have getent; then
+        HOST=$(getent hosts github.com 2>/dev/null | head -1)
+        [ -n "$HOST" ] && echo "    DNS github.com: $HOST" || echo "    DNS github.com: NEFUNGUJE (žiadny internet?)"
+    fi
+    if have ping; then
+        if ping -c1 -W3 1.1.1.1 >/dev/null 2>&1; then
+            echo "    internet (ping 1.1.1.1): OK → problém je DNS alebo TLS (zlý čas?)"
+        else
+            echo "    internet (ping 1.1.1.1): NEDOSTUPNÝ → CM5 nemá internet"
+        fi
+    fi
+    echo "    Skús ručne:  curl -v -o /dev/null https://github.com"
+    rm -f /tmp/elvosolar_main.zip /tmp/elvosolar_commit.json
+    exit 1
+fi
 
 # Over že zip je validný
 unzip -t /tmp/elvosolar_main.zip > /dev/null 2>&1 \
@@ -24,6 +79,10 @@ echo "[2/6] Rozbaľujem..."
 rm -rf /tmp/elvosolar_extract
 mkdir -p /tmp/elvosolar_extract
 unzip -q /tmp/elvosolar_main.zip -d /tmp/elvosolar_extract
+# Zip pinutý na commit sa rozbaľuje ako Elvosolar-<sha> — zjednoťme cestu
+if [ ! -d /tmp/elvosolar_extract/Elvosolar-main ] && [ -d /tmp/elvosolar_extract/Elvosolar-"$COMMIT" ]; then
+    mv /tmp/elvosolar_extract/Elvosolar-"$COMMIT" /tmp/elvosolar_extract/Elvosolar-main
+fi
 [ -d /tmp/elvosolar_extract/Elvosolar-main/Hardware ] || { echo "❌ Zip nemá očakávanú štruktúru"; exit 1; }
 echo "    ✅ Rozbalené"
 
@@ -78,7 +137,7 @@ sudo systemctl is-active elvosolar > /dev/null \
     || echo "    ❌ Aplikácia nejde — pozri: sudo journalctl -u elvosolar -n 20"
 
 # Upratuj
-rm -rf /tmp/elvosolar_main.zip /tmp/elvosolar_extract
+rm -rf /tmp/elvosolar_main.zip /tmp/elvosolar_commit.json /tmp/elvosolar_extract
 
 echo ""
 echo "=================================================="

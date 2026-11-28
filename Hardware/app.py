@@ -35,7 +35,7 @@ logging.getLogger("LED").addHandler(logging.StreamHandler())
 logging.getLogger("LED").setLevel(logging.INFO)
 from Config import DEVICE_DB, PORT, WEB_PORT
 
-CLOUD_SERVER_URL = os.environ.get("CLOUD_SERVER_URL", "https://elvocontrol.elvosolar.sk")
+CLOUD_SERVER_URL = os.environ.get("CLOUD_SERVER_URL", "https://app.elvosolar.sk")
 
 app = FastAPI(
     title="Industrial IoT Core Server (Waveshare CM5)",
@@ -1479,12 +1479,33 @@ def cloud_sync_loop():
                         _rows = db_execute("SELECT name FROM devices LIMIT 1")
                         if _rows and _rows[0].get('name'): _name = str(_rows[0]['name'])
                     except Exception: pass
-                    requests.post(CLOUD_SERVER_URL + "/api/user/claim-device",
-                        json={"serial": serial_num, "name": _name, "brand_id": "huawei",
-                              "category_id": "smartlogger", "model_id": "sl3000", "slave_id": 1,
-                              "has_battery": True, "owner_email": _get_cloud_username()},
-                        timeout=10, verify=False)
-                    log_message("[CLOUD SYNC] unknown_serial -> samo-pre-registracia vykonana")
+                    _payload = {"serial": serial_num, "name": _name, "brand_id": "huawei",
+                                "category_id": "smartlogger", "model_id": "sl3000", "slave_id": 1,
+                                "has_battery": True, "owner_email": _get_cloud_username()}
+                    _rsh = requests.post(CLOUD_SERVER_URL + "/api/user/claim-device",
+                        json=_payload, timeout=10, verify=False)
+                    _ok_sh = False
+                    try:
+                        _ok_sh = (_rsh.json().get('status') == 'success')
+                    except Exception:
+                        _ok_sh = False
+                    # owner_email moze byt zastarany/neexistujuci -> cloud vrati 404.
+                    # Skusime znova bez neho (cloud priradi prveho admina) — inak by
+                    # zariadenie ostalo navzdy mimo DB a prikaz zo skusky 2 by nedosiel.
+                    if not _ok_sh and _payload.get('owner_email'):
+                        _payload.pop('owner_email', None)
+                        _rsh2 = requests.post(CLOUD_SERVER_URL + "/api/user/claim-device",
+                            json=_payload, timeout=10, verify=False)
+                        try:
+                            _ok_sh = (_rsh2.json().get('status') == 'success')
+                        except Exception:
+                            _ok_sh = False
+                        if not _ok_sh:
+                            log_message(f"[CLOUD SYNC] Self-heal bez owner_email zlyhal: {_rsh2.status_code} {_rsh2.text[:120]}")
+                    if _ok_sh:
+                        log_message(f"[CLOUD SYNC] unknown_serial -> samo-pre-registracia OK (serial={serial_num})")
+                    else:
+                        log_message(f"[CLOUD SYNC] unknown_serial -> samo-pre-registracia ZLYHALA: {_rsh.status_code} {_rsh.text[:120]}")
                 except Exception as _e_sh:
                     log_message(f"[CLOUD SYNC] Self-heal registracia zlyhala: {_e_sh}")
                 continue
@@ -2188,6 +2209,201 @@ except Exception as _e:
     log_message(f"[SERIAL-CONFIG] Nepodarilo sa spustit: {_e}")
 
 # =============================================================================
+# MQTT MOST — telemetria a rozšírené príkazy pre mqtt_client.py
+# Web tak cez MQTT vidí všetko, čo box vie, a vie mu poslať všetky príkazy
+# (rovnaká logika ako lokálne API a cloud poll).
+# =============================================================================
+def collect_mqtt_telemetry() -> dict:
+    """Kompletný stav boxu do retained správy stroje/<serial>/stav (JSON)."""
+    from database import db_execute
+    data = {
+        "name": "",
+        "override": "AUTO",
+        "model": "",
+        "night_sleep": False,
+        "power_ac": 0.0,
+        "battery_soc": 0.0,
+        "temp": 0.0,
+        "grid_freq": 0.0,
+        "devices": [],
+        "online": True,
+    }
+    try:
+        rows = db_execute("SELECT value FROM system_settings WHERE key = 'device_name'")
+        if rows:
+            data["name"] = str(rows[0].get("value") or "")
+    except Exception:
+        pass
+    try:
+        data["override"] = str(getattr(bg_service, "manual_override", "AUTO") or "AUTO")
+        data["model"] = str(getattr(bg_service, "active_model_id", "") or "")
+        data["night_sleep"] = bool(getattr(bg_service, "night_sleep", False))
+        live = getattr(bg_service, "live_data", {}) or {}
+        total_power = 0.0
+        socs, temps, freqs = [], [], []
+        for sid, item in live.items():
+            if not isinstance(item, dict):
+                continue
+            power = float(item.get("power_ac", 0) or 0)
+            soc = float(item.get("battery_soc", 0) or 0)
+            temp = float(item.get("temp", 0) or 0)
+            freq = float(item.get("freq", 0) or 0)
+            total_power += power
+            if soc > 0:
+                socs.append(soc)
+            if temp > 0:
+                temps.append(temp)
+            if freq > 0:
+                freqs.append(freq)
+            data["devices"].append({
+                "slave_id": sid,
+                "power_ac": round(power, 1),
+                "battery_soc": round(soc, 1),
+                "temp": round(temp, 1),
+                "status_msg": str(item.get("status_msg", ""))[:80],
+            })
+        data["power_ac"] = round(total_power, 1)
+        data["battery_soc"] = round(sum(socs) / len(socs), 1) if socs else 0.0
+        data["temp"] = round(sum(temps) / len(temps), 1) if temps else 0.0
+        data["grid_freq"] = round(sum(freqs) / len(freqs), 1) if freqs else 0.0
+    except Exception as e:
+        data["telemetry_error"] = str(e)[:160]
+    return data
+
+
+def execute_mqtt_action(action: str, params: dict) -> dict:
+    """Vykoná rozšírený príkaz z MQTT — tá istá logika ako lokálne API."""
+    from database import db_execute
+    action = str(action or "").strip().upper()
+    params = params if isinstance(params, dict) else {}
+
+    def _num(key, default=None):
+        try:
+            return float(params.get(key, default))
+        except (TypeError, ValueError):
+            return None
+
+    if action == "SET_OVERRIDE":
+        val = str(params.get("value", "")).strip().upper()
+        if val not in ("ON", "OFF", "AUTO"):
+            return {"status": "error", "message": "Neplatný režim (ON/OFF/AUTO)"}
+        if not safe_apply_system_state(manual_override=val):
+            return {"status": "error", "message": "Zápis režimu zlyhal"}
+        return {"status": "success", "message": f"Režim meniča: {val}"}
+
+    if action == "SET_MODEL":
+        val = str(params.get("value", "")).strip().upper()
+        if not val or len(val) > 32:
+            return {"status": "error", "message": "Neplatný model"}
+        # Rovnaká cesta ako lokálne /api/system/model
+        bg_service.active_model_id = val
+        try:
+            bg_service.process_control_commands()
+        except Exception:
+            pass
+        return {"status": "success", "message": f"Aktívny model: {val}"}
+
+    if action == "SET_NIGHT_SLEEP":
+        raw = params.get("value", False)
+        enabled = raw if isinstance(raw, bool) else str(raw).strip().lower() in ("1", "true", "on", "yes", "ano", "zap")
+        # safe_apply_system_state očakáva číslo (0/1)
+        if not safe_apply_system_state(night_sleep=1 if enabled else 0):
+            return {"status": "error", "message": "Zápis nočného spánku zlyhal"}
+        return {"status": "success", "message": f"Nočný spánok: {'ZAP' if enabled else 'VYP'}"}
+
+    if action == "SET_SETTINGS":
+        allowed = ['min_power_w', 'max_power_w', 'min_soc_pct', 'max_soc_pct', 'auto_mode', 'night_sleep']
+        saved = []
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        for key in allowed:
+            if key not in params:
+                continue
+            cursor.execute("DELETE FROM system_settings WHERE key = ?", (key,))
+            cursor.execute("INSERT INTO system_settings (key, value) VALUES (?, ?)", (key, str(params[key])[:64]))
+            saved.append(key)
+        conn.commit()
+        conn.close()
+        if not saved:
+            return {"status": "error", "message": "Žiadne známe nastavenia"}
+        if 'night_sleep' in saved:
+            try:
+                enabled = str(params['night_sleep']).strip().lower() in ("1", "true", "on", "yes", "ano", "zap")
+                safe_apply_system_state(night_sleep=1 if enabled else 0)
+            except Exception:
+                pass
+        return {"status": "success", "message": "Uložené: " + ", ".join(saved)}
+
+    if action == "SET_NAME":
+        name = str(params.get("value", "")).strip()
+        if not name or len(name) > 80:
+            return {"status": "error", "message": "Neplatný názov (1–80 znakov)"}
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM system_settings WHERE key = 'device_name'")
+        cursor.execute("INSERT INTO system_settings (key, value) VALUES ('device_name', ?)", (name,))
+        conn.commit()
+        conn.close()
+        log_message(f"[MQTT] Názov zariadenia zmenený na: {name}")
+        return {"status": "success", "message": f"Názov: {name}"}
+
+    if action == "SET_LED":
+        res = apply_led_command(params)
+        return {"status": "success",
+                "message": f"Svetlo: {res.get('mode')} ({res.get('brightness')} %)",
+                "led": res}
+
+    if action == "SET_POWER":
+        from serial_config_service import execute_test_power
+        pct = _num("value", _num("pct", -1))
+        if pct is None or pct < 0 or pct > 100:
+            return {"status": "error", "message": "Výkon musí byť 0–100 %"}
+        ip = str(params.get("ip", "") or "")
+        try:
+            port = int(params.get("port", 0) or 0)
+            unit = int(params.get("unit_id", 0) or 0)
+        except (TypeError, ValueError):
+            port, unit = 0, 0
+        if not ip:
+            rows = db_execute("SELECT smartlogger_ip, smartlogger_port, modbus_slave_id FROM devices LIMIT 1")
+            if rows:
+                ip = str(rows[0].get("smartlogger_ip") or "")
+                port = int(rows[0].get("smartlogger_port") or 0)
+                unit = int(rows[0].get("modbus_slave_id") or 0)
+        if not ip:
+            return {"status": "error", "message": "SmartLogger IP nie je nastavená"}
+        res = execute_test_power(ip, port or 502, unit, pct)
+        log_message(f"[MQTT POWER] Zápis {pct}% -> {ip}:{port or 502}: {res}")
+        if res.get("ok"):
+            return {"status": "success", "message": f"Výkon nastavený na {pct}%",
+                    "readback_pct": res.get("readback_pct"), "original_pct": res.get("original_pct")}
+        return {"status": "error", "message": str(res.get("error", "Zápis zlyhal"))[:200]}
+
+    if action == "RESTART_SERVICES":
+        bg_service.paused = True
+        time.sleep(0.5)
+        if bg_service.ser and bg_service.ser.is_open:
+            try:
+                bg_service.ser.close()
+            except Exception:
+                pass
+        bg_service.ser = None
+        bg_service.paused = False
+        return {"status": "success", "message": "Rozhrania reštartované"}
+
+    if action == "CLEAR_LOGS":
+        SYSTEM_LOGS.clear()
+        bg_service.terminal_logs.clear()
+        return {"status": "success", "message": "Logy vymazané"}
+
+    if action == "REBOOT":
+        threading.Thread(target=lambda: (time.sleep(2), os.system("sudo reboot")), daemon=True).start()
+        return {"status": "success", "message": "Reštartujem CM5…"}
+
+    return {"status": "error", "message": f"Neznámy príkaz: {action}"}
+
+
+# =============================================================================
 # MQTT KLIENT (Ovládač) — retained príkazy z cloudu + lokálna skúška káblom
 # Ruka=web (Websupport) -> Mozog=Mosquitto (firemný server) -> toto vlákno na CM5
 # Príkazy: stroje/<serial>/prikazy (retained) | Stav: stroje/<serial>/stav
@@ -2199,6 +2415,8 @@ try:
         apply_state_fn=safe_apply_system_state,
         get_override_fn=lambda: getattr(bg_service, "manual_override", "AUTO"),
         led_service=led,
+        command_fn=execute_mqtt_action,
+        state_fn=collect_mqtt_telemetry,
     )
     _mqtt_client.start()
     log_message("[MQTT] MQTT klient spustený (počúva stroje/<serial>/prikazy)")

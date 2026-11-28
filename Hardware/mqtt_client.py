@@ -15,6 +15,10 @@
 # - handle_command() je SPOLOČNÝ pre príkazy z cloudu (MQTT) aj pre lokálnu
 #   skúšku káblom -> identické príkazy na oboch cestách = jednoduchá diagnostika,
 #   či problém je v stroji (lokálne zlyhá) alebo v sieti (lokálne funguje).
+# - Protokol v2: stav je JSON s celou telemetriou (výkon, SOC, teplota, režim,
+#   zoznam zariadení). Rozšírené príkazy (výkon, model, spánok, svetlo,
+#   nastavenia, názov, servis) chodia ako JSON s parametrami a box ich potvrdí
+#   do stroje/<serial>/vysledok. Starý holý text (STROJ_START) funguje ďalej.
 #
 # Konfigurácia: DB tabuľka system_settings (mqtt_host, mqtt_port, mqtt_username,
 #   mqtt_password, mqtt_tls, mqtt_cafile) alebo env premenné MQTT_HOST, MQTT_PORT,
@@ -40,6 +44,8 @@ _log_fn = print
 _apply_fn = None                      # safe_apply_system_state z app.py
 _get_override_fn = (lambda: "AUTO")   # getter bg_service.manual_override
 _led = None                           # LedService (voliteľné)
+_command_fn = None                    # vykonávač rozšírených príkazov z app.py
+_state_fn = None                      # telemetria z app.py (do JSON stavu)
 
 _serial = None
 _client = None
@@ -59,6 +65,7 @@ _state = {
     "last_command_source": "",
     "last_command_time": "",
     "last_state_published": "",
+    "last_result": "",
     "last_connect_time": "",
     "reconnects": 0,
     "last_error": "",
@@ -84,10 +91,31 @@ STATE_MAP = {
     "AUTO": "STATUS_AUTO",
 }
 
+# Rozšírené príkazy — vykonáva ich app.py cez command_fn (rovnaká logika ako
+# lokálne API a cloud poll). Web ich posiela ako JSON s parametrami.
+EXTRA_COMMANDS = {
+    "SET_POWER",          # {"command":"SET_POWER","value":0-100}
+    "SET_OVERRIDE",       # {"command":"SET_OVERRIDE","value":"ON|OFF|AUTO"}
+    "SET_MODEL",          # {"command":"SET_MODEL","value":"AI"}
+    "SET_NIGHT_SLEEP",    # {"command":"SET_NIGHT_SLEEP","value":true}
+    "SET_SETTINGS",       # min_power_w, max_power_w, min_soc_pct, max_soc_pct, auto_mode, night_sleep
+    "SET_LED",            # mode, brightness, r/g/b/w
+    "SET_NAME",           # {"command":"SET_NAME","value":"Názov"}
+    "RESTART_SERVICES",
+    "CLEAR_LOGS",
+    "REBOOT",
+}
+BASE_COMMANDS = ["STROJ_START", "STROJ_STOP", "STROJ_AUTO", "STROJ_STATUS"]
+ALL_COMMANDS = sorted(set(BASE_COMMANDS) | EXTRA_COMMANDS)
+STATE_TOPIC_SUFFIX = "stav"
+RESULT_TOPIC_SUFFIX = "vysledok"
 
-def configure(log_fn=None, apply_state_fn=None, get_override_fn=None, led_service=None):
-    """Napojenie na app.py (log_message, safe_apply_system_state, bg_service, led)."""
-    global _log_fn, _apply_fn, _get_override_fn, _led
+
+def configure(log_fn=None, apply_state_fn=None, get_override_fn=None, led_service=None,
+              command_fn=None, state_fn=None):
+    """Napojenie na app.py (log_message, safe_apply_system_state, bg_service, led,
+    rozšírené príkazy a telemetria)."""
+    global _log_fn, _apply_fn, _get_override_fn, _led, _command_fn, _state_fn
     if log_fn:
         _log_fn = log_fn
     if apply_state_fn:
@@ -96,6 +124,10 @@ def configure(log_fn=None, apply_state_fn=None, get_override_fn=None, led_servic
         _get_override_fn = get_override_fn
     if led_service:
         _led = led_service
+    if command_fn:
+        _command_fn = command_fn
+    if state_fn:
+        _state_fn = state_fn
 
 
 def _now():
@@ -156,7 +188,7 @@ def get_diagnostics():
         override = "AUTO"
     snap["state_current_override"] = override
     snap["state_text"] = STATE_MAP.get(override, "STATUS_NEZNAME")
-    snap["known_commands"] = sorted(set(list(CMD_MAP.keys()) + ["STROJ_STATUS"]))
+    snap["known_commands"] = ALL_COMMANDS
     return snap
 
 # ---------------------------------------------------------------------------
@@ -278,66 +310,155 @@ def _publish_one_shot(topic, payload):
         c.disconnect()
 
 
-def _publish_state(state_text, mqtt_client=None):
-    topic = "%s/%s/stav" % (TOPIC_ROOT, get_serial())
+def build_state_payload(state_text=None):
+    """JSON stav pre web: režim + všetka telemetria, ktorú box pozná.
+    Starý web čítal holý text (STATUS_BEZI) — preto je stav aj v kľúči
+    "state" a v poli "v" je verzia protokolu."""
+    payload = {
+        "v": 2,
+        "state": state_text or get_state_text(),
+        "serial": get_serial(),
+        "ts": int(time.time()),
+    }
+    if _state_fn is not None:
+        try:
+            extra = _state_fn()
+            if isinstance(extra, dict):
+                for k, v in extra.items():
+                    if k not in payload:
+                        payload[k] = v
+        except Exception as e:
+            payload["telemetry_error"] = str(e)[:160]
+    return json.dumps(payload, ensure_ascii=False)
+
+
+def _publish_state(state_text=None, mqtt_client=None):
+    topic = "%s/%s/%s" % (TOPIC_ROOT, get_serial(), STATE_TOPIC_SUFFIX)
+    text = state_text or get_state_text()
+    payload = build_state_payload(text)
     try:
-        if mqtt_client is not None and mqtt_client.is_connected():
-            info = mqtt_client.publish(topic, state_text, qos=1, retain=True)
+        client = mqtt_client if mqtt_client is not None else _client
+        if client is not None and client.is_connected():
+            info = client.publish(topic, payload, qos=1, retain=True)
             try:
                 info.wait_for_publish(timeout=5)
             except Exception:
                 pass
         else:
-            _publish_one_shot(topic, state_text)
-        _set(last_state_published=state_text)
+            _publish_one_shot(topic, payload)
+        _set(last_state_published=text)
         return True
     except Exception as e:
         _set(last_error="publish stav: %s" % e)
         return False
 
 
+def _publish_result(command, result, mqtt_client=None):
+    """Potvrdenie príkazu (retained) — web hneď vidí, ako príkaz dopadol."""
+    topic = "%s/%s/%s" % (TOPIC_ROOT, get_serial(), RESULT_TOPIC_SUFFIX)
+    res = result if isinstance(result, dict) else {"status": "error", "message": str(result)[:200]}
+    payload = json.dumps({
+        "v": 2,
+        "command": str(command or "")[:64],
+        "status": str(res.get("status", "success"))[:16],
+        "message": str(res.get("message", ""))[:300],
+        "ts": int(time.time()),
+    }, ensure_ascii=False)
+    _set(last_result=payload)
+    try:
+        client = mqtt_client if mqtt_client is not None else _client
+        if client is not None and client.is_connected():
+            info = client.publish(topic, payload, qos=1, retain=True)
+            try:
+                info.wait_for_publish(timeout=5)
+            except Exception:
+                pass
+        else:
+            _publish_one_shot(topic, payload)
+        return True
+    except Exception as e:
+        _set(last_error="publish vysledok: %s" % e)
+        return False
+
+
 # ---------------------------------------------------------------------------
 # SPOLOČNÝ SPRACOVATEĽ PRÍKAZOV (cloud MQTT aj lokálna skúška káblom)
 # ---------------------------------------------------------------------------
-def handle_command(payload, source="MQTT"):
-    """Prijme príkaz (čistý text alebo JSON {"command": ...}).
-    Podporované: STROJ_START, STROJ_STOP, STROJ_AUTO, STROJ_STATUS.
-    Vykoná zmenu cez safe_apply_system_state (tá istá cesta ako lokálne API
-    aj cloud poll) a potvrdí nový stav do topic .../stav (retained)."""
+def _parse_command(payload):
+    """Vráti (príkaz, parametre). Podporuje holý text aj JSON:
+    {"command":"SET_POWER","value":50} alebo {"action":"set_power","pct":50}."""
     raw = str(payload or "").strip()
-    cmd = ""
     if raw.startswith("{"):
         try:
-            cmd = str(json.loads(raw).get("command", "")).strip().upper()
+            obj = json.loads(raw)
+            if isinstance(obj, dict):
+                cmd = str(obj.get("command") or obj.get("action") or "").strip().upper()
+                return cmd, obj
         except Exception:
-            cmd = ""
-    if not cmd:
-        cmd = raw.upper()
+            pass
+    return raw.upper(), {}
 
+
+def handle_command(payload, source="MQTT"):
+    """Prijme príkaz — holý text alebo JSON s parametrami.
+    Základ: STROJ_START, STROJ_STOP, STROJ_AUTO, STROJ_STATUS.
+    Rozšírené (EXTRA_COMMANDS): výkon, model, nočný spánok, nastavenia, LED,
+    názov, reštart služieb, logy, reboot. Tie vykonáva app.py cez command_fn,
+    takže MQTT, lokálne API a cloud poll používajú tú istú logiku.
+    Výsledok ide do .../vysledok, nový stav do .../stav (oba retained)."""
+    cmd, params = _parse_command(payload)
     _set(last_command=cmd, last_command_source=source, last_command_time=_now())
 
-    if cmd == "STROJ_STATUS":
+    if cmd in ("STROJ_STATUS", "REFRESH"):
         st = get_state_text()
         _publish_state(st)
-        return {"status": "success", "command": cmd, "state": st,
-                "message": "Aktuálny stav: %s" % st}
+        res = {"status": "success", "command": cmd, "state": st,
+               "message": "Aktuálny stav: %s" % st}
+        _publish_result(cmd, res)
+        return res
+
+    if cmd in EXTRA_COMMANDS:
+        if _command_fn is None:
+            res = {"status": "error", "command": cmd,
+                   "message": "Rozšírené príkazy nie sú pripojené (app.py)"}
+        else:
+            try:
+                res = _command_fn(cmd, params)
+                if not isinstance(res, dict):
+                    res = {"status": "error", "message": "Neplatná odpoveď vykonávača"}
+            except Exception as e:
+                res = {"status": "error", "message": str(e)[:200]}
+            res.setdefault("command", cmd)
+        # Po každom rozšírenom príkaze pošli čerstvý stav (výkon, LED, ...)
+        _publish_state()
+        _publish_result(cmd, res)
+        _event("Príkaz %s (%s): %s" % (cmd, source, res.get("message", res.get("status"))))
+        return res
 
     mapped = CMD_MAP.get(cmd)
     if not mapped:
         _event("Neznámy príkaz: %r (zdroj %s)" % (cmd, source))
-        return {"status": "error", "message": "Neznámy príkaz: %s" % cmd}
+        res = {"status": "error", "message": "Neznámy príkaz: %s" % cmd}
+        _publish_result(cmd, res)
+        return res
 
     if _apply_fn is None:
-        return {"status": "error", "message": "Aplikačná vrstva nie je pripojená"}
+        res = {"status": "error", "message": "Aplikačná vrstva nie je pripojená"}
+        _publish_result(cmd, res)
+        return res
 
     try:
         ok = bool(_apply_fn(manual_override=mapped))
     except Exception as e:
         _set(last_error="apply: %s" % e)
-        return {"status": "error", "message": "Zápis na menič zlyhal: %s" % e}
+        res = {"status": "error", "message": "Zápis na menič zlyhal: %s" % e}
+        _publish_result(cmd, res)
+        return res
 
     if not ok:
-        return {"status": "error", "message": "Zápis na menič zlyhal"}
+        res = {"status": "error", "message": "Zápis na menič zlyhal"}
+        _publish_result(cmd, res)
+        return res
 
     st = STATE_MAP.get(mapped, "STATUS_NEZNAME")
     if _led is not None:
@@ -347,8 +468,10 @@ def handle_command(payload, source="MQTT"):
             pass
     _publish_state(st)
     _event("Príkaz %s vykonaný (zdroj: %s) -> %s" % (cmd, source, st))
-    return {"status": "success", "command": cmd, "applied": mapped, "state": st,
-            "message": "Stroj: %s (%s)" % (mapped, st)}
+    res = {"status": "success", "command": cmd, "applied": mapped, "state": st,
+           "message": "Stroj: %s (%s)" % (mapped, st)}
+    _publish_result(cmd, res)
+    return res
 
 
 def handle_local_command(command):
@@ -440,7 +563,10 @@ def _run_client():
     if tls:
         _apply_tls(client)
     # LWT: ak CM5 stratí spojenie, broker vypublikuje STATUS_OFFLINE (retained)
-    client.will_set(topic_stav, "STATUS_OFFLINE", qos=1, retain=True)
+    client.will_set(topic_stav,
+                    json.dumps({"v": 2, "state": "STATUS_OFFLINE", "serial": serial,
+                                "ts": int(time.time())}, ensure_ascii=False),
+                    qos=1, retain=True)
     client.on_message = _on_message
     if paho_v2:
         client.on_connect = _on_connect

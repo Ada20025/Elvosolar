@@ -4,7 +4,7 @@ ElvoControll CM5 - Serial Config Service
 Cita JSON config z USB UART konzoly (kedy pouzivatel posiela setup z web stranky cez WebSerial).
 
 Ako to funguje:
-1. Pouzivatel otvori setup na https://elvocontrol.elvosolar.sk/setup
+1. Pouzivatel otvori setup na https://app.elvosolar.sk/setup
 2. Klikne "🔌 Pripojiť cez USB UART" (Chrome na PC, kabel z PC do CM5)
 3. WebSerial posle JSON config cez USB kabel do CM5 konzoly
 4. Tento service ho precita a ulozi do database.db (rovnako ako /api/admin/claim)
@@ -239,7 +239,7 @@ def register_to_cloud(config):
     """
     import requests
 
-    CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvocontrol.elvosolar.sk")
+    CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://app.elvosolar.sk")
 
     # Serial z lokalnej DB - INAK by sa kazdou registraciou vytvorilo nove zariadenie v cloude
     _serial = get_box_serial()
@@ -359,6 +359,52 @@ def connect_wifi_if_needed(ssid, password):
         log(f"⚠️ WiFi pripojenie zlyhalo (pokracujem bez WiFi): {e}")
 
 
+def _cm5_net_hint():
+    """Vypise lokalne IPv4 CM5 - pomoze odhalit, ze CM5 je v inej sieti ako SmartLogger."""
+    try:
+        import subprocess
+        out = subprocess.check_output(['hostname', '-I'], timeout=3).decode('utf-8', 'ignore').split()
+        ips = [x for x in out if '.' in x and not x.startswith('127.')]
+        if ips:
+            return ' CM5 je v sieti: ' + ', '.join(ips) + ' — IP SmartLoggera musi byt z rovnakej siete.'
+    except Exception:
+        pass
+    return ''
+
+
+def _ensure_smartlogger_route(ip):
+    """CM5 musi mat adresu v sieti SmartLoggera + host route cez eth0 (to iste ako start.sh).
+    Vola sa len ked sa prve pripojenie nepodarilo - napr. po zmene IP SmartLoggera v setupe,
+    kedy start.sh este adresu na eth0 nepridal (ten bezi len pri starte sluzby).
+    Vracia True ak sa nieco zmenilo (oplati sa skusit pripojenie znova)."""
+    try:
+        import subprocess
+        parts = str(ip).split('.')
+        if len(parts) != 4:
+            return False
+        net = '.'.join(parts[:3])
+        changed = False
+        have = subprocess.run(['ip', '-4', 'addr', 'show'], capture_output=True, text=True, timeout=4).stdout
+        if net + '.' not in have:
+            subprocess.run(['ip', 'link', 'set', 'eth0', 'up'], capture_output=True, timeout=4)
+            r = subprocess.run(['ip', 'addr', 'add', net + '.20/24', 'dev', 'eth0'],
+                               capture_output=True, text=True, timeout=4)
+            changed = (r.returncode == 0)
+            if changed:
+                log(f"[NETWORK] eth0 dostal adresu {net}.20/24 (siet SmartLoggera {ip})")
+        ping = subprocess.run(['ping', '-c', '1', '-W', '2', str(ip)], capture_output=True, timeout=6)
+        if ping.returncode != 0:
+            r2 = subprocess.run(['ip', 'route', 'replace', str(ip), 'dev', 'eth0'],
+                                capture_output=True, text=True, timeout=4)
+            changed = changed or (r2.returncode == 0)
+            if r2.returncode == 0:
+                log(f"[NETWORK] host route {ip} dev eth0")
+        return changed
+    except Exception as e:
+        log(f"[NETWORK] ⚠️ Nepodarilo sa doplnit siet pre {ip}: {e}")
+        return False
+
+
 def execute_test_power(ip, port, unit_id, pct):
     """
     Testovací zápis výkonu priamo na SmartLogger (Modbus TCP) z CM5.
@@ -369,7 +415,13 @@ def execute_test_power(ip, port, unit_id, pct):
         from pymodbus.client import ModbusTcpClient
         client = ModbusTcpClient(host=ip, port=int(port or 502), timeout=3)
         if not client.connect():
-            return {'ok': False, 'error': f'Nepodarilo sa pripojiť k {ip}:{port}'}
+            # Siet SmartLoggera nemusi byt na eth0 (napr. po zmene IP v setupe) - dopln adresu + route a skus znova
+            client.close()
+            if _ensure_smartlogger_route(ip):
+                time.sleep(0.5)
+            client = ModbusTcpClient(host=ip, port=int(port or 502), timeout=3)
+            if not client.connect():
+                return {'ok': False, 'error': f'Nepodarilo sa pripojiť k {ip}:{port}.' + _cm5_net_hint()}
         try:
             # Presne podla overeneho PC skriptu: FC16 write_registers na adrese 40428 (BEZ offsetu)
             # Priklad z PC co fungoval: write_registers(address=40428, values=[490], device_id=0) pre 49%
@@ -649,7 +701,7 @@ def ensure_cloud_registration():
         # Skús registráciu (retry nekonečne kým nie je online)
         attempt = 0
         import requests as _rq
-        CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://elvocontrol.elvosolar.sk")
+        CLOUD = os.environ.get("CLOUD_SERVER_URL", "https://app.elvosolar.sk")
         while True:
             attempt += 1
             if attempt % 3 == 1:  # každé 3 minúty: skontroluj default route konflikt
